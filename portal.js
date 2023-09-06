@@ -102,7 +102,7 @@ class portalForm {
 		var service = document.getElementById('service');
 		console.log('this.$classDeatils.classLevel', this.$classDeatils)
 		var classLevel = (this.$classDeatils != null) ? this.$classDeatils.classLevel : '';
-		service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+")";
+		service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+")";
 	}
 	
 	/**
@@ -515,7 +515,7 @@ class PortalTabs {
 				document.getElementById("service-para").style.display = "none";
 				var tabsE = creEl("li", activeliClass, 'li-tab'+currentIndex);
 				var classLevel = (formData.classDetail != null)? formData.classDetail.classLevel : '';
-				tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.startTime+"("+formData.classLoactionDeatils.locationName+")";
+				tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+"("+formData.classLoactionDeatils.locationName+")";
 				tabsE.setAttribute("data-tab-id", 'tab'+currentIndex )
 				tabs.appendChild(tabsE);
 				
