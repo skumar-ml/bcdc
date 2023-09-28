@@ -128,6 +128,30 @@ li.fade.active{
         color: #000;
     }
 }
+@media (min-width:1230px) and (max-width:1300px){
+    .main .container{
+        width:740px;
+    }
+    ul li .progress{
+        width: 120px;
+        height: 20px;
+     }
+    .progress::after{
+        right: 120px;
+    }
+    .main .head p {
+    font-size: 12px;
+    }
+    ul li .progress p{
+        font-size: 12px;
+    }
+    ul li .text{
+        font-size: 12px;
+        font-weight: 600;
+        color: #000;
+    }
+}
+
 
 @media (max-width: 768px) {
     
