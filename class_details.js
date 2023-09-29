@@ -141,10 +141,10 @@ class classLocation{
 			locationActionLink.setAttribute("data-scrolling", true);
 		}
 		var btnlbl = 'Register';
-		var btnlink = 'https://form.jotform.com/231871555621457?classlevel='+this.levelName+'&classlocation='+this.responseText.locationName+'&classday='+timeData.day+'&classtime='+timeData.startTime+'&classspots='+timeData.leftSpots+'&memberId='+this.webflowMemberId+'&classUniqueId='+timeData.classUniqueId+'&parentEmail='+this.accountEmail;
+		var btnlink = 'https://form.jotform.com/231868905552162?classlevel='+this.levelName+'&classlocation='+this.responseText.locationName+'&classday='+timeData.day+'&classtime='+timeData.startTime+'&classspots='+timeData.leftSpots+'&memberId='+this.webflowMemberId+'&classUniqueId='+timeData.classUniqueId+'&parentEmail='+this.accountEmail;
 		if(alertMessage && alertMessage.type == 'waitlist'){
 			btnlbl = 'Join Waitlist';
-			btnlink = 'https://form.jotform.com/231871645541458?classlevel='+this.levelName+'&classlocation='+this.responseText.locationName+'&classday='+timeData.day+'&classtime='+timeData.startTime+'&classspots='+timeData.leftSpots+'&memberId='+this.webflowMemberId+'&classUniqueId='+timeData.classUniqueId+'&parentEmail='+this.accountEmail;
+			btnlink = 'https://form.jotform.com/231870526936160?classlevel='+this.levelName+'&classlocation='+this.responseText.locationName+'&classday='+timeData.day+'&classtime='+timeData.startTime+'&classspots='+timeData.leftSpots+'&memberId='+this.webflowMemberId+'&classUniqueId='+timeData.classUniqueId+'&parentEmail='+this.accountEmail;
 		}
 		locationActionLink.href = btnlink; 
 
