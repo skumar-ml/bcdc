@@ -57,6 +57,7 @@ class classLists {
 				console.log('levelIdData', levelIdData)
 				if(levelIdData.length <= 0){
 					detailsLinkElement[j].style.display = 'none'
+					detailsLinkElement[j].parentElement.parentElement.parentElement.parentElement.parentElement.style.display = 'none'
 				}
 				//detailsLinkElement[j].href = 'https://www.bergendebate.com/portal/class-details?levelId='+linkLevelId;
 			}
