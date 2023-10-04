@@ -26,6 +26,7 @@ class classLists {
 		var timingElement = document.getElementsByClassName('location-dropdown-day-time');
 		var detailsLinkElement = document.getElementsByClassName('main-button w-button');
 		for(let i=0; i<timingElement.length; i++){
+			timingElement[i].parentElement.parentElement.parentElement.style.display = 'none'
 			let levelId = timingElement[i].getAttribute('levelId');
 			let location = timingElement[i].getAttribute('location');
 			var levelData = classData.filter(item=>item.levelId == levelId)	
@@ -42,6 +43,7 @@ class classLists {
 					timingText = timingText.replace(/PM/g, "")
 					timingText = timingText.replace(/AM/g, "")
 					timingElement[i].innerHTML = timingText;
+					timingElement[i].parentElement.parentElement.parentElement.style.display = 'block'
 				}else{
 					timingElement[i].parentElement.parentElement.parentElement.style.display = 'none'
 				}
