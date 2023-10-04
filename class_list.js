@@ -50,12 +50,17 @@ class classLists {
 			})
 			
 		}
-		/*for(let j=0; j<detailsLinkElement.length; j++){
+		for(let j=0; j<detailsLinkElement.length; j++){
 			let linkLevelId = detailsLinkElement[j].getAttribute('levelId');
 			if(linkLevelId){
-				detailsLinkElement[j].href = 'https://www.bergendebate.com/portal/class-details?levelId='+linkLevelId;
+				var levelIdData = classData.filter(item=>item.levelId == linkLevelId)
+				console.log('levelIdData', levelIdData)
+				if(levelIdData.length <= 0){
+					detailsLinkElement[j].style.display = 'none'
+				}
+				//detailsLinkElement[j].href = 'https://www.bergendebate.com/portal/class-details?levelId='+linkLevelId;
 			}
-		}*/
+		}
 		var spinner = document.getElementById('half-circle-spinner');
 		spinner.style.display = 'none';
 	}
