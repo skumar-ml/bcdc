@@ -202,7 +202,7 @@ li.fade.active{
         text-align: center;
     }
     ul li .progress::after {
-        width: 70%;
+        width: 80%;
         height: 8px;
     }
     .main ul li {
