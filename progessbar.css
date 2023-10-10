@@ -113,7 +113,7 @@ li.fade.active{
     background-image: linear-gradient(to right, #bd979e,#bd979e);
 }
 .progress.four::after{
-    background-image: linear-gradient(to right, #A8865C, #B59E64);
+    background-image: linear-gradient(to right, #d3c2ad, #d3c2ad);
 }
 
 /* Media Query */
