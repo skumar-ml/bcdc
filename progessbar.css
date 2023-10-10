@@ -103,7 +103,7 @@ li.fade.active{
 /* Progress bar */
 
 .progress.two::after{
-    background-image: linear-gradient(to right, #7C303E,#894846);
+    background-image: linear-gradient(to right, #c9aea6, #c9ada6);
 }
 .progress.three::after{
     background-image: linear-gradient(to right, #894846, #A8865C);
