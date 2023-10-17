@@ -115,7 +115,11 @@ class portalForm {
 		if($this.$formList){
 			let parentFormList = this.$formList;
 			var accordionDiv = document.getElementById("accordionforms-"+$this.currentIndex);
-			accordionDiv.innerHTML = "";
+			if($this.$formList.length <= 0){
+				accordionDiv.innerHTML = "No forms required. Registration complete from previous enrollment";
+			}else{
+				accordionDiv.innerHTML = "";
+			}
 			var $tabNo = 1;
 			$this.$totalForm = 0;
 			parentFormList.sort(function(r,a){return r.sequence-a.sequence}); // order invoice categories via order specified in MongoDB
