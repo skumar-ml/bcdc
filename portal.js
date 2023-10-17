@@ -79,12 +79,14 @@ class portalForm {
 		  $this.viewForms();
 		  $this.viewService();
 		  $this.viewInvoice();
+		  if(responseText.formList.length > 0){
 		  // unhide when form is live
 		  $this.renderAccordionFormsHeader();
 		  
 		  ;
 		  // unhide when form is live
 		  $this.setPercentage();
+		 }
 		  if(responseText.invoiceList){
 				$this.renderAccordionInvoiceHeader()
 				$this.setInvoicePercentage();
