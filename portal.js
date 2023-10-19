@@ -253,7 +253,7 @@ class portalForm {
 						}else{
 							formLink.addEventListener('click', function () {
 								span.innerHTML = "Processing..."
-								$this.initializeStripePayment(invoice.invoice_id, link.title, link.amount, link.paymentLinkId)
+								$this.initializeStripePayment(invoice.invoice_id, invoice.invoiceName, link.amount, link.paymentLinkId)
 							})
 						}
 						
