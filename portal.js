@@ -253,7 +253,7 @@ class portalForm {
 						}else{
 							formLink.addEventListener('click', function () {
 								span.innerHTML = "Processing..."
-								$this.initializeStripePayment(invoice.invoice_id, link.title, link.amount)
+								$this.initializeStripePayment(invoice.invoice_id, link.title, link.amount, link.paymentLinkId)
 							})
 						}
 						
@@ -296,7 +296,7 @@ class portalForm {
  	*
   	*Initilize stripe payment
    	*/
-	initializeStripePayment(invoice_id, title, amount){
+	initializeStripePayment(invoice_id, title, amount, paymentLinkId){
 		
 		var data = {
 			"email":this.$studentDetail.parentEmail,
@@ -305,6 +305,8 @@ class portalForm {
 			"paymentType": "card",
 			"amount": amount*100,
 			"invoiceId": invoice_id,
+			"paymentId": this.$studentDetail.uniqueIdentification,
+			"paymentLinkId": paymentLinkId,
 			"memberId": this.webflowMemberId,
 			"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": "https://www.bergendebate.com/members/"+this.webflowMemberId,
