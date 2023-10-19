@@ -244,11 +244,19 @@ class portalForm {
 				   if(jotFormUrlLink.length > 0){
 					jotFormUrlLink.forEach(link => {
 						var formLink=creEl('a');
+						var span=creEl('span', 'invoice_text');
+							span.innerHTML = link.title;
+						if(link.paymentType == 'jotform'){
 						formLink.href = (link.formid) ? "https://form.jotform.com/"+link.formid+"?memberId="+$this.webflowMemberId+"&invoiceId="+invoice.invoice_id+"&paymentLinkId="+link.paymentLinkId+"&paymentId="+$this.$studentDetail.uniqueIdentification : "";
 						//Add iframe when it's live and above certain screenwidth
 						formLink.className = (window.innerWidth > 1200) ? "iframe-lightbox-link" : "";
-						var span=creEl('span', 'invoice_text');
-							span.innerHTML = link.title;
+						}else{
+							formLink.addEventListener('click', function () {
+								span.innerHTML = "Processing..."
+								$this.initializeStripePayment(invoice.invoice_id, link.title, link.amount)
+							})
+						}
+						
 							
 						formLink.append(span)
 						linkContainer.append(formLink);
@@ -284,7 +292,37 @@ class portalForm {
 			accordionDiv.classList.add("all_completed_form")
 		}
 	}
-	
+	/**
+ 	*
+  	*Initilize stripe payment
+   	*/
+	initializeStripePayment(invoice_id, title, amount){
+		
+		var data = {
+			"email":this.$studentDetail.parentEmail,
+			"name":this.$studentDetail.studentName,
+			"label": title,
+			"paymentType": "card",
+			"amount": amount*100,
+			"invoiceId": invoice_id,
+			"memberId": this.webflowMemberId,
+			"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
+			"cancelUrl": "https://www.bergendebate.com/members/"+this.webflowMemberId,
+		}
+		var xhr = new XMLHttpRequest()
+		var $this = this;
+		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl", true)
+		xhr.withCredentials = false
+		xhr.send(JSON.stringify(data))
+		xhr.onload = function() {
+			let responseText = JSON.parse(xhr.responseText);
+			console.log('responseText', responseText)
+			if(responseText.success){
+				window.location.href = responseText.stripe_url;
+			}
+
+		}
+	}
 	/**
 	 * Check form's id in completedForm list (from MongoDB) and use to determine if form is editable
 	 * @param formId - Jotform Id
