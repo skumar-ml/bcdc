@@ -253,7 +253,7 @@ class portalForm {
 						}else{
 							formLink.addEventListener('click', function () {
 								span.innerHTML = "Processing..."
-								$this.initializeStripePayment(invoice.invoice_id, invoice.invoiceName, link.amount, link.paymentLinkId, span, link.title)
+								$this.initializeStripePayment(invoice.invoice_id, invoice.invoiceName, link.amount, link.paymentLinkId, span, link.title, link.paymentType)
 							})
 						}
 						
@@ -296,13 +296,13 @@ class portalForm {
  	*
   	*Initilize stripe payment
    	*/
-	initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title){
+	initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType){
 		
 		var data = {
 			"email":this.$studentDetail.parentEmail,
 			"name":this.$studentDetail.studentName,
 			"label": title,
-			"paymentType": "card",
+			"paymentType": paymentType,
 			"amount": amount*100,
 			"invoiceId": invoice_id,
 			"paymentId": this.$studentDetail.uniqueIdentification,
