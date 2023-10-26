@@ -578,7 +578,7 @@ class portalForm {
 		  const y = el.hasAttribute('tip-top') ? '-100%' : '0'
 		  tip.style.transform = `translate(${x}, ${y})`
 		  el.appendChild(tip)
-		  /*el.onpointermove = e => {
+		  el.onpointermove = e => {
 			if (e.target !== e.currentTarget) return
 
 			const rect = tip.getBoundingClientRect()
@@ -590,7 +590,7 @@ class portalForm {
 			const x = rectX < minX ? rectWidth : rectX > maxX ? vWidth : e.clientX
 			tip.style.left = `${x}px`
 			tip.style.top = `${e.clientY}px`
-		  }*/
+		  }
 		}
 	}
 }
