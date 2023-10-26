@@ -94,6 +94,7 @@ class portalForm {
 		  
 		  $this.initiateAccordion();
 		  $this.initiateLightbox();
+		  $this.initializeToolTips();
 		  var spinner = document.getElementById('half-circle-spinner');
 		  spinner.style.display = 'none';
 	}
@@ -229,18 +230,40 @@ class portalForm {
 		   parentInvoiceForm.forEach((invoice) => {
 			   //check it's editable
 			   let editable = (invoice.is_completed) ? true : false;
+			   
+			   let completed = (editable && !invoice.status);
+			   let failed = (invoice.status == 'Failed');
+			   let processing = (invoice.status == 'Processing');
+			   let info_text = creEl('span', 'info_text')
+			   info_text.innerHTML = 'i';
+			   
 			   var li=creEl('li');;
 			   // Added cross line for completed forms
-			   var li_text=creEl('span', 'invoice_name'+((editable)? ' completed_form': ''));
+			   var li_text=creEl('span', 'invoice_name'+((completed)? ' completed_form': ((failed) ? ' failed_form' : '')));
 			   var imgCheck = creEl("img");
-			   imgCheck.src = $this.getCheckedIcon(editable);
+			   
+			   imgCheck.src = $this.getCheckedIcon(completed, failed, processing);
+			   if(failed){
+				   imgCheck.title = "Last transaction failed!";
+				   
+			   }
+			   
 			   li_text.innerHTML = invoice.invoiceName;
+
+			   if(failed){
+				li_text.append(info_text)
+				info_text.setAttribute('tip', 'Last transaction failed, Pay again!')
+				 
+				info_text.setAttribute('tip-top','')
+				info_text.setAttribute('tip-left','')
+			   }
+			   
 			   li.prepend(imgCheck, li_text);
 
 			   var jotFormUrlLink = invoice.jotFormUrlLink;	
 			   jotFormUrlLink.sort((a,b) => (a.title > b.title) ? 1 : ((b.title > a.title) ? -1 : 0));
 			   var linkContainer = creEl('div', 'link-container'); 
-			   if(!editable){
+			   if(!editable || failed){
 				   if(jotFormUrlLink.length > 0){
 					jotFormUrlLink.forEach(link => {
 						var formLink=creEl('a');
@@ -270,7 +293,11 @@ class portalForm {
 					//Add iframe when it's live and above certain screenwidth
 					//formLink.className = (window.innerWidth > 1200) ? "iframe-lightbox-link" : "";
 					var span=creEl('span', 'invoice_text');
-						span.innerHTML = 'Completed';
+						if(processing){
+							span.innerHTML = 'Processing...';
+						}else{
+							span.innerHTML = 'Completed';	
+						}
 					formLink.append(span)
 					linkContainer.append(formLink);
 					li.append(linkContainer);
@@ -387,8 +414,15 @@ class portalForm {
 	/**
 	 * Get Checkbox icon for form complete or complete
 	 */
-	getCheckedIcon(status){
-		if(status){
+	getCheckedIcon(status, failed, processing){
+		
+		if(processing){
+			return "https://uploads-ssl.webflow.com/64091ce7166e6d5fb836545e/653a046b720f1634ea7288cc_loading-circles.gif";
+		}
+		else if(failed){
+			return "https://uploads-ssl.webflow.com/64091ce7166e6d5fb836545e/6539ec996a84c0196f6009bc_circle-xmark-regular.png";
+		}
+		else if(status){
 			return "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/639c495f35742c15354b2e0d_circle-check-regular.png";
 		}else{
 			return "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/639c495fdc487955887ade5b_circle-regular.png";
@@ -533,6 +567,31 @@ class portalForm {
 			scrolling: true,
 		  });
 		});
+	}
+	initializeToolTips(){
+		const elements = [...document.querySelectorAll('[tip]')]
+		for (const el of elements) {
+		  const tip = document.createElement('div')
+		  tip.classList.add('tooltip')
+		  tip.textContent = el.getAttribute('tip')
+		  const x = el.hasAttribute('tip-left') ? 'calc(-100% - 5px)' : '16px'
+		  const y = el.hasAttribute('tip-top') ? '-100%' : '0'
+		  tip.style.transform = `translate(${x}, ${y})`
+		  el.appendChild(tip)
+		  /*el.onpointermove = e => {
+			if (e.target !== e.currentTarget) return
+
+			const rect = tip.getBoundingClientRect()
+			const rectWidth = rect.width + 16
+			const vWidth = window.innerWidth - rectWidth
+			const rectX = el.hasAttribute('tip-left') ? e.clientX - rectWidth : e.clientX + rectWidth
+			const minX = el.hasAttribute('tip-left') ? 0 : rectX
+			const maxX = el.hasAttribute('tip-left') ? vWidth : window.innerWidth
+			const x = rectX < minX ? rectWidth : rectX > maxX ? vWidth : e.clientX
+			tip.style.left = `${x}px`
+			tip.style.top = `${e.clientY}px`
+		  }*/
+		}
 	}
 }
 class PortalTabs {
