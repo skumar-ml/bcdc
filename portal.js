@@ -231,7 +231,7 @@ class portalForm {
 			   //check it's editable
 			   let editable = (invoice.is_completed) ? true : false;
 			   
-			   let completed = (editable && !invoice.status);
+			   let completed = (editable && (invoice.status =='Complete' || !invoice.status));
 			   let failed = (invoice.status == 'Failed');
 			   let processing = (invoice.status == 'Processing');
 			   let info_text = creEl('span', 'info_text')
