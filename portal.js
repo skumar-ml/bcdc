@@ -642,7 +642,20 @@ class PortalTabs {
 			tabContent.prepend(program_dates, accordionHeading, accordionFormsHeader,accordionforms, accordionInvoiceHeader, accordion)
 			contentSection.appendChild(tabContent);
 		});
-		tabsContainer.prepend(tabs,contentSection)
+		
+		/ failed message display
+		var failedData = this.getFaildData(responseText);
+		if(failedData.length > 0){
+			var notificationDiv = creEl('div', 'notification_container');
+			failedData.forEach(item => {
+				let noText = creEl('span', 'noti_text');
+				noText.innerHTML = item;
+				notificationDiv.appendChild(noText);
+			})
+			tabsContainer.prepend(notificationDiv, tabs,contentSection)
+		}else{
+			tabsContainer.prepend(tabs,contentSection)
+		}
 	}
 	/**
 	 * initialize  Tabs feature - adds toggle function for folders in accordion 
@@ -705,6 +718,34 @@ class PortalTabs {
 		if(activeMainTabLi){
 			activeMainTabLi.classList.add("active_tab");
 		}
+	}
+	getFaildData(data){
+		console.log('failed data', data)
+		if(data.length <= 0){
+			return false;
+		}
+		var failedData = data.filter(item=>{
+			if(item.invoiceList != null && item.invoiceList.length > 0 ){
+				let failedSingleData = item.invoiceList.filter(invoice => invoice.status == "Failed" );
+				if(failedSingleData.length > 0){
+					return true;
+				}else{
+					return false;
+				}
+			}else{
+				return false;
+			}
+		})
+		
+		var FailedInvoiceData = [];
+		failedData.forEach(i =>{
+			let fInvoice = i.invoiceList.filter(invoice => invoice.status == "Failed");
+			fInvoice.forEach(iData=>{
+				let invoiceText = iData.invoiceName+' Invoice is failed for '+i.studentDetail.studentName
+				FailedInvoiceData.push(invoiceText);
+			})
+		})
+		return FailedInvoiceData;
 	}
 	async renderPortalData(memberId) {
 		try {
