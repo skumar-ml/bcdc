@@ -643,7 +643,7 @@ class PortalTabs {
 			contentSection.appendChild(tabContent);
 		});
 		
-		/ failed message display
+		// failed message display
 		var failedData = this.getFaildData(responseText);
 		if(failedData.length > 0){
 			var notificationDiv = creEl('div', 'notification_container');
