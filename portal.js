@@ -748,6 +748,8 @@ class PortalTabs {
 		return FailedInvoiceData;
 	}
 	async renderPortalData(memberId) {
+		var spinner = document.getElementById('half-circle-spinner');
+		spinner.style.display = 'block';
 		try {
 		  var $this = this;	
 		  this.getCurrentActiveTag();
@@ -764,10 +766,12 @@ class PortalTabs {
 		  document.getElementById("paid-resources").style.display = "block";
 		  setTimeout(function(){
 			$this.setCurrentActiveTag();
+			spinner.style.display = 'none';
 		  },30)
 		} catch (error) {
 			document.getElementById("free-resources").style.display = "block";
 			console.error('Error rendering random number:', error);
+			spinner.style.display = 'none';
 		}
 	}
 }
