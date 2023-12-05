@@ -255,7 +255,8 @@ class checkInForm {
 		var paginationStudentList = document.getElementsByClassName('pagination-student-list')[0];
 		btn.style.opacity = 0;
 		studentlist.style.opacity = 0;
-		studentlistfilter.style.opacity = 0;
+		//studentlistfilter.style.opacity = 0;
+		studentlistfilter.style.display = "none";
 		paginationStudentList.style.opacity = 0;
 	}
 	// Create Class select box html element 
