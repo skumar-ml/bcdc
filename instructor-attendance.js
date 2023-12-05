@@ -321,13 +321,15 @@ class checkInForm {
 		
 		
 		var opacity = (classId) ? 1 : 0;
+		var display = (classId) ? "block" : "none";
 		
 		var btn = document.getElementsByClassName('student-list-head')[0];
 		btn.style.opacity = opacity;
 		//btn.style.transition = 'all 2s';
 		
 		var studentlistfilter = document.getElementsByClassName('student-list-filter')[0];
-		studentlistfilter.style.opacity = opacity;
+		studentlistfilter.style.display = display;
+		//studentlistfilter.style.opacity = opacity;
 		//studentlistfilter.style.transition = 'all 2s';
 		
 		studentlist.style.opacity = opacity;
