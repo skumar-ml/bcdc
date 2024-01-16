@@ -106,7 +106,7 @@ class portalForm {
 		console.log('this.$classDeatils.classLevel', this.$classDeatils)
 		var classLevel = (this.$classDeatils != null) ? this.$classDeatils.classLevel : '';
 		//service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+")";
-		service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+" "+this.$classDeatils.sessionName+" "+this.$classDeatils.currentYear +")";
+		service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+", "+this.$classDeatils.sessionName+" "+this.$classDeatils.currentYear +")";
 	}
 	
 	/**
@@ -623,7 +623,7 @@ class PortalTabs {
 				var tabsE = creEl("li", activeliClass, 'li-tab'+currentIndex);
 				var classLevel = (formData.classDetail != null)? formData.classDetail.classLevel : '';
 				//tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+"("+formData.classLoactionDeatils.locationName+")";
-				tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+" ("+formData.classLoactionDeatils.locationName+" "+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
+				tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+" ("+formData.classLoactionDeatils.locationName+", "+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
 				tabsE.setAttribute("data-tab-id", 'tab'+currentIndex )
 				tabs.appendChild(tabsE);
 				
