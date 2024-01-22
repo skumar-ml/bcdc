@@ -60,9 +60,11 @@ class PortalTabs {
 	}
 	// Get API data with the help of an endpoint
 	async fetchData(endpoint) {
+		var infoMessage = document.getElementById('info-message');
 		try {
 			const response = await fetch(`${this.baseUrl}${endpoint}`);
 			if (!response.ok) {
+			infoMessage.style.display = 'block'
 			throw new Error('Network response was not ok');
 			}
 			const data = await response.json();
@@ -76,6 +78,12 @@ class PortalTabs {
 	async renderPortalData(memberId) {
 		try {
 		  const data = await this.fetchData('getInvoiceDetail/'+this.webflowMemberId);
+		  // filter current session
+		  data = data.filter(item => item.classDetail.isCurrentSession == true)
+          	  if(data.length == 0){
+			  var infoMessage = document.getElementById('info-message');
+			  infoMessage.style.display = 'block'
+		  }
 		  this.createMakeUpSession(data)
 		} catch (error) {
 			console.error('Error rendering random number:', error);
