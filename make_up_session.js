@@ -77,7 +77,7 @@ class PortalTabs {
 	// After the API response we call the createMakeUpSession method to manipulate student data
 	async renderPortalData(memberId) {
 		try {
-		  const data = await this.fetchData('getInvoiceDetail/'+this.webflowMemberId);
+		  var data = await this.fetchData('getInvoiceDetail/'+this.webflowMemberId);
 		  // filter current session
 		  data = data.filter(item => item.classDetail.isCurrentSession == true)
           	  if(data.length == 0){
