@@ -98,6 +98,8 @@ class CheckOutWebflow {
 		var prevStudent = document.getElementById('prevStudent');
 		var suppProIdE = document.getElementById('suppProIds');
 		var core_product_price = document.getElementById('core_product_price');
+		var fort_lee_location = document.getElementById('fort_lee_location');
+		var glen_rock_location = document.getElementById('glen_rock_location');
 
 		//Payment button
 		var ach_payment = document.getElementById('ach_payment');
@@ -124,6 +126,7 @@ class CheckOutWebflow {
 			"school": studentSchool.value,
 			"gender": studentGender.value,
 			"prevStudent": prevStudent,
+			"location": (fort_lee_location.checked) ? 1 : 2,
 			"programId" : this.memberData.programId,
 			"successUrl" : "https://www.nsdebatecamp.com/payment-confirmation?programName="+this.memberData.programName,
 			"cancelUrl" : cancelUrl.href,
@@ -262,6 +265,8 @@ class CheckOutWebflow {
 			var studentSchool = document.getElementById('Student-School');
 			var studentGender = document.getElementById('Student-Gender');
 			var prevStudent = document.getElementById('prevStudent');
+			var fort_lee_location = document.getElementById('fort_lee_location');
+		        var glen_rock_location = document.getElementById('glen_rock_location');
 			// Update all local storage data
 			studentEmail.value = paymentData.studentEmail;
 			
@@ -283,19 +288,12 @@ class CheckOutWebflow {
 			if(paymentData.prevStudent){
 				studentGender.value = paymentData.prevStudent;
 			}
-			
-			if(paymentData.supplementaryProgramIds.length > 0){
-				var SuppCheckbox = document.getElementsByClassName("suppCheckbox");
-				
-				for (let i = 0; i < SuppCheckbox.length; i++) {
-					var checkBoxProgramdetailid = SuppCheckbox[i].getAttribute('programdetailid');
-					console.log('checkBoxProgramdetailid', checkBoxProgramdetailid)
-					if(paymentData.supplementaryProgramIds.includes(checkBoxProgramdetailid)){
-						SuppCheckbox[i].click();
-					}
-				}
-				
+			if(paymentData.location == 1){
+				fort_lee_location.checked = true;
+			}else{
+				glen_rock_location.checked = true;
 			}
+			
 			if(paymentData.checkoutData){
 				this.$checkoutData = paymentData.checkoutData;
 				this.activateDiv('checkout_payment');
