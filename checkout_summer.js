@@ -134,16 +134,7 @@ class CheckOutWebflow {
 			"achAmount": parseFloat(this.memberData.achAmount.replace(/,/g, '')),
 			"cardAmount": parseFloat(this.memberData.cardAmount.replace(/,/g, ''))
 		}
-		// Added paymentId for supplementary program 
-		if(this.memberData.productType == 'supplementary'){
-			var supStuData = localStorage.getItem("supStuEmail");
-			if(supStuData != null){
-				supStuData = JSON.parse(supStuData);
-				if(supStuData.uniqueIdentification){
-					data.paymentId = supStuData.uniqueIdentification
-				}
-			}
-		}
+		
 		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
