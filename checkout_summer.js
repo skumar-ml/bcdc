@@ -241,19 +241,7 @@ class CheckOutWebflow {
 			window.location.href = $this.$checkoutData.payLaterUrl;
 		})
 	}
-	
-	// update default checkbox checked always
-	updateDefaultCheckbox(){
-		var dCheckbox = document.getElementById('checkbox-2');
-		dCheckbox.setAttribute('disabled', true)
-		// Update default price
-		var cPrice = document.getElementsByClassName('pCorePrice');
-		for (var i = 0; i < cPrice.length; i++) {
-		   let price = parseFloat(cPrice[i].innerHTML.replace(/,/g, '').replace(/\$/g, ''));
-		   cPrice[i].innerHTML = '$'+this.numberWithCommas(price.toFixed(2))
-		}
-		
-	}
+
 	// Setup back stripe button and browser back button
 	setUpBackButtonTab(){
 		var query = window.location.search;
@@ -320,9 +308,6 @@ class CheckOutWebflow {
 	// After API response we call the createMakeUpSession method to manipulate student data 
 	async renderPortalData(memberId) {
 		try {
-			
-			// Update readOnly for core program
-			this.updateDefaultCheckbox();
 			// Handle checkout button
 			this.handlePaymentEvent();
 			// Handle previous and next button
