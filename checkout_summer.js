@@ -74,7 +74,7 @@ class CheckOutWebflow {
 			"label": this.memberData.programName,
 			"school": studentSchool.value,
 			"gender": studentGender.value,
-			"prevStudent": prevStudent,
+			"prevStudent": prevStudent.value,
 			"location": (fort_lee_location.checked) ? 1 : 2,
 			"programId" : this.memberData.programId,
 			"successUrl" : "https://www.nsdebatecamp.com/payment-confirmation?programName="+this.memberData.programName,
