@@ -35,57 +35,6 @@ class CheckOutWebflow {
 	numberWithCommas(x) {
 		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	}
-	// This method use to display selected supplementary program in sidebar
-	displaySelectedSuppProgram(suppIds){
-		// selected Supplementary program main dom element
-		var selectedSuppPro = document.getElementById('selected_supplimentary_program');
-		selectedSuppPro.innerHTML = "";
-		// Filtering selected Supplementary program id from all Supplementary program data
-		var selectedData = this.$suppPro.filter(item => suppIds.some(d => d == item.programDetailId))
-		//Manipulating price text for with supplementary program and without
-		var respricelabel = document.getElementById('res-price-label');
-        var commpricelabel = document.getElementById('comm-price-label');
-		if(selectedData.length == 0){
-			respricelabel.innerHTML = "Total Price";
-			respricelabel.innerHTML = "Total Price";
-			selectedSuppPro.classList.remove('added_supp_data')
-			return false;
-		}else{
-			respricelabel.innerHTML = "Price";
-			respricelabel.innerHTML = "Price";
-			selectedSuppPro.classList.add('added_supp_data')
-		}
-		// Selected supplementary program heading 
-		var head = creEl('p', 'dm-sans font-14 order-summary-border bold marginbottom-3');
-		head.innerHTML = "Supplementary Program"
-		selectedSuppPro.appendChild(head);
-		var label = '';
-		// Added single supplementary program heading in sidebar
-		selectedData.forEach(sup=>{
-			label = creEl('p', 'dm-sans font-14 bold')
-			label.innerHTML = sup.label
-			selectedSuppPro.appendChild(label);
-			label = creEl('p', 'dm-sans font-14')
-			label.innerHTML = sup.desc
-			selectedSuppPro.appendChild(label);
-		});
-		
-		console.log('selectedData',selectedData)
-	}
-	// Method is use update supplementary program price after tab change
-	updateOnlyTotalAmount(){
-		// Webflow total price dom element
-		var totalPriceText = document.getElementById('totalPrice');
-		// core product price for resdential, commuter and online 
-		var core_product_price = document.getElementById('core_product_price');
-		// total amount price for supplementary program
-		var totalAmountInput = document.getElementById('totalAmount');
-		// manupulating total price based on selected supplementary program and core product price 
-		var amount = parseFloat(core_product_price.value.replace(/,/g, ''))+parseFloat(totalAmountInput.value);
-		// added total price in dom element
-		totalPriceText.innerHTML = this.numberWithCommas(amount.toFixed(2));
-	}
-	
 	
 	// API call for checkout URL 
 	initializeStripePayment(){
@@ -95,7 +44,7 @@ class CheckOutWebflow {
 		var studentGrade = document.getElementById('Student-Grade');
 		var studentSchool = document.getElementById('Student-School');
 		var studentGender = document.getElementById('Student-Gender');
-		var prevStudent = document.getElementById('prevStudent');
+		var prevStudent = document.getElementById('prevStudent-2');
 		var suppProIdE = document.getElementById('suppProIds');
 		var core_product_price = document.getElementById('core_product_price');
 		var fort_lee_location = document.getElementById('fort_lee_location');
@@ -138,7 +87,7 @@ class CheckOutWebflow {
 		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://3yf0irxn2c.execute-api.us-west-1.amazonaws.com/dev/camp/createBothCheckoutUrls", true)
+		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createNewProgramCheckoutUrls", true)
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function() {
@@ -187,7 +136,7 @@ class CheckOutWebflow {
 		})
 		next_page_2.addEventListener('click', function(){
 			$this.activateDiv('checkout_payment');
-			//this.initializeStripePayment();
+			$this.initializeStripePayment();
 				
 			
 		})
@@ -255,7 +204,7 @@ class CheckOutWebflow {
 			var studentGrade = document.getElementById('Student-Grade');
 			var studentSchool = document.getElementById('Student-School');
 			var studentGender = document.getElementById('Student-Gender');
-			var prevStudent = document.getElementById('prevStudent');
+			var prevStudent = document.getElementById('prevStudent-2');
 			var fort_lee_location = document.getElementById('fort_lee_location');
 		        var glen_rock_location = document.getElementById('glen_rock_location');
 			// Update all local storage data
