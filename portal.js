@@ -104,13 +104,16 @@ class portalForm {
 	 */
 	viewService(){
 		var service = document.getElementById('service');
+		var serviceTitle = document.getElementById('singlePurchaseTitle');
 		console.log('this.$classDeatils.classLevel', this.$classDeatils)
 		var classLevel = (this.$classDeatils != null) ? this.$classDeatils.classLevel : '';
 		//service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+")";
 		if(Object.keys(this.$classDeatils).length > 0){
 			service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+", "+this.$classDeatils.sessionName+" "+this.$classDeatils.currentYear +")";
+			serviceTitle.innerHTML = 'Class';
 		}else{
 			service.innerHTML = this.$studentDetail.studentName+" - "+this.$summerProgramDetail.programName+" ("+this.$summerProgramDetail.location+", "+this.$summerProgramDetail.currentYear+" Summer) ";
+			serviceTitle.innerHTML = 'Program';
 		}
 	}
 	
