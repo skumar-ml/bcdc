@@ -623,7 +623,11 @@ class PortalTabs {
 				var tabsE = creEl("li", activeliClass, 'li-tab'+currentIndex);
 				var classLevel = (formData.classDetail != null)? formData.classDetail.classLevel : '';
 				//tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+"("+formData.classLoactionDeatils.locationName+")";
-				tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+" ("+formData.classLoactionDeatils.locationName+", "+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
+				if(Object.keys(formData.classDetail).length > 0){
+					tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+" ("+formData.classLoactionDeatils.locationName+", "+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
+				}else{
+					tabsE.innerHTML = formData.studentDetail.studentName+" - "+formData.summerProgramDetail.programName+" ("+formData.summerProgramDetail.location+", "+formData.summerProgramDetail.currentYear+" Summer) ";
+				}
 				tabsE.setAttribute("data-tab-id", 'tab'+currentIndex )
 				tabs.appendChild(tabsE);
 				
@@ -755,7 +759,8 @@ class PortalTabs {
 		try {
 		  var $this = this;	
 		  this.getCurrentActiveTag();
-		  const data = await this.apiClient.fetchData('getInvoiceDetail/'+this.webflowMemberId);
+		  //const data = await this.apiClient.fetchData('getInvoiceDetail/'+this.webflowMemberId);
+		  const data = await this.apiClient.fetchData('getAllStudentDetails/'+this.webflowMemberId);
 		  this.viewtabs(data);
 		  this.initiateTabs();
 		  var $this = this;
