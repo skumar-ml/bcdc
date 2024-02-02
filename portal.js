@@ -109,7 +109,7 @@ class portalForm {
 		if(Object.keys(this.$classDeatils).length > 0){
 			service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+", "+this.$classDeatils.sessionName+" "+this.$classDeatils.currentYear +")";
 		}else{
-			tabsE.innerHTML = this.$studentDetail.studentName+" - "+this.$summerProgramDetail.programName+" ("+this.$summerProgramDetail.location+", "+this.$summerProgramDetail.currentYear+" Summer) ";
+			service.innerHTML = this.$studentDetail.studentName+" - "+this.$summerProgramDetail.programName+" ("+this.$summerProgramDetail.location+", "+this.$summerProgramDetail.currentYear+" Summer) ";
 		}
 	}
 	
