@@ -29,13 +29,101 @@ class CheckOutWebflow {
 		this.renderPortalData();
 	}
 	
-	
+	// Passing all supplementary program data and creating a cart list
+	displaySessionsData(data){
+		this.$suppPro = data.summerSessionData;
+		// Getting main dom elment object to add supplementary program list with checkbox
+		var sessionList = document.getElementById('checkout_session_data');
+		// Supplementary program heading
+		// var supplementaryProgramHead = document.getElementById('supplementary-program-head');
+		var $this = this
+		sessionList.innerHTML = "";
+		// Remove duplicate data like Supplementary program
+		//data = data.filter(item=>item.programDetailId !=this.memberData.programId);
+		console.log('data', data)
+		if(data.summerSessionData.length > 0){
+			// showing supplementary program heading when data in not empty
+			//supplementaryProgramHead.style.display = "block"
+			data.summerSessionData.forEach((sData, i)=>{
+				// Getting single supplementary program cart list
+				var sList = this.createSessionList(sData, i);
+					sessionList.appendChild(sList);
+			})
+		}else{
+			// hiding supplementary program heading when data is empty
+			//supplementaryProgramHead.style.display = "none"
+		}
+	}
+	// Manipulating a single supplementary program list
+	createSessionList(suppData, i){
+		var coreProductContainer = creEl('div', 'core-session-container core-product-container margin-top');
+		var $this = this;
+		
+		// Creating checkbox for cart
+		var coreCheckbox = creEl('div', 'core-checkbox');
+		var wCheckbox = creEl('label', 'checkbox-field w-checkbox')
+		var checkboxS = creEl('input', 'w-checkbox-input core-checkbox suppCheckbox');
+		checkboxS.type ="radio";
+		checkboxS.name ="checkbox";
+		if(!i){
+			checkboxS.checked = true
+		}
+		checkboxS.value =suppData.summerSessionId;
+		//checkboxS.setAttribute('programDetailId', suppData.programDetailId)
+		checkboxS.setAttribute('data-name', 'Checkbox')
+		checkboxS.addEventListener('change', function() {
+		 //$this.updateAmount(this, suppData.amount)
+		});
+		wCheckbox.appendChild(checkboxS)
+		var spantext = creEl('span', 'core-checkbox-label w-form-label')
+		wCheckbox.appendChild(spantext)
+		coreCheckbox.appendChild(wCheckbox)
+		
+		// Creating heading for supplementary program heading
+		var coreProductTitle = creEl('div', 'core-product-title')
+		var h1 = creEl('h1', 'core-product-title-text')
+		h1.innerHTML = suppData.summerSessionName;
+		var div = creEl('div','core-product-title-subtext')
+		const startDate = new Date(suppData.startDate)
+		const endDate = new Date(suppData.endDate)
+		const month = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+		div.innerHTML = startDate.getDate()+' '+month[startDate.getMonth()]+' '+startDate.getFullYear()+' - '+endDate.getDate()+' '+month[endDate.getMonth()]+' '+startDate.getFullYear();
+		
+		//var mobileResponsiveHide = creEl('div', 'mobile-responsive-hide')
+		// Mobile responsive price text. it will display on mobile
+		//var productPriceText = creEl('div', 'product-price-text')
+		//productPriceText.innerHTML = '$'+suppData.amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+		//mobileResponsiveHide.appendChild(productPriceText)
+		coreProductTitle.prepend(h1, div)
+		// Desktop responsive price text. it will display on mobile
+		//var productPriceText1 = creEl('div', 'product-price-text')
+		//productPriceText1.innerHTML = '$'+suppData.amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+		//var productPriceContainer = creEl('div', 'product-price-container hide-mobile')
+		//productPriceContainer.appendChild(productPriceText1)
+		// append title , price and checkbox
+		coreProductContainer.prepend(coreProductTitle, coreCheckbox)
+
+		return coreProductContainer;
+	}
 	
 	// formating price in comma based value
 	numberWithCommas(x) {
 		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	}
-	
+	// Get API data with the help of endpoint
+	async fetchData(endpoint) {
+		try {
+			const response = await fetch(`${this.baseUrl}${endpoint}`);
+			if (!response.ok) {
+			throw new Error('Network response was not ok');
+			}
+			const data = await response.json();
+			return data;
+		} catch (error) {
+			console.error('Error fetching data:', error);
+			throw error;
+		}
+	}
 	// API call for checkout URL 
 	initializeStripePayment(){
 		var studentFirstName = document.getElementById('Student-First-Name');
@@ -254,7 +342,18 @@ class CheckOutWebflow {
 			// activate program tab
 			this.activateDiv('checkout_program')
 			
+			// loader icon code
+			var spinner = document.getElementById('half-circle-spinner');
+			spinner.style.display = 'block';
+			// API call
+			const data = await this.fetchData('getSummerSessionDetails/'+this.memberData.memberId+'/'+this.memberData.programId);
+			// Display supplementary program
+			this.displaySessionsData(data)
+			// Setup back button for browser and stripe checkout page
 			this.setUpBackButtonTab();
+			
+			// Hide spinner 
+			spinner.style.display = 'none';
 		} catch (error) {
 			console.error('Error rendering random number:', error);
 		}
