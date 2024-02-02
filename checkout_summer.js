@@ -137,6 +137,7 @@ class CheckOutWebflow {
 		var core_product_price = document.getElementById('core_product_price');
 		var fort_lee_location = document.getElementById('fort_lee_location');
 		var glen_rock_location = document.getElementById('glen_rock_location');
+		var summerSessionId = document.querySelector('input[name = checkbox]:checked').value;
 
 		//Payment button
 		var ach_payment = document.getElementById('ach_payment');
@@ -164,6 +165,7 @@ class CheckOutWebflow {
 			"gender": studentGender.value,
 			"prevStudent": prevStudent.value,
 			"locationId": (fort_lee_location.checked) ? 1 : 2,
+			"summerSessionId": summerSessionId,
 			"programId" : this.memberData.programId,
 			"successUrl" : "https://www.bergendebate.com/payment-confirmation?programName="+this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
