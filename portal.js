@@ -72,6 +72,7 @@ class portalForm {
 		  $this.$formList = responseText.formList;
 		  $this.$classDeatils = responseText.classDetail;
 		  $this.$studentDetail = responseText.studentDetail;
+		  $this.$summerProgramDetail = responseText.summerProgramDetail;
 		  $this.$classLoactionDeatils = responseText.classLoactionDeatils;
 		  //$this.$formCompletedList = [];
 		  //$this.checkProgramDeadline();
