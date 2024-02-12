@@ -173,6 +173,26 @@ class CheckOutWebflow {
         
 		
 	}
+	// API Call for validateUserForProgram
+	async validateUserForProgram(){
+		var studentFirstName = document.getElementById('Student-First-Name');
+		var studentLastName = document.getElementById('Student-Last-Name');
+		var data = {
+			"firstName" : studentFirstName.value,
+			"lastName" : studentLastName.value,
+			"memberId": this.memberData.memberId,
+		}
+		const rawResponse = await fetch('https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/validateUserForProgram', {
+			method: 'POST',
+			headers: {
+			  'Accept': 'application/json',
+			  'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(data)
+		  });
+		  const content = await rawResponse.json();
+		  return content;
+	}
 	// formating price in comma based value
 	numberWithCommas(x) {
 		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -289,7 +309,19 @@ class CheckOutWebflow {
 		var form = $( "#checkout-form" );
 		next_page_1.addEventListener('click', function(){
 			if(form.valid()){
-			$this.activateDiv('checkout_student_details');
+				var eligible = true; 
+				if($this.memberData.programId == '101'){
+					next_page_1.innerHTML = 'Processing'
+					const validate = await $this.validateUserForProgram();
+					next_page_1.innerHTML = 'Next'
+					eligible = validate.eligible;
+				}
+				if(eligible){
+					$this.activateDiv('checkout_student_details');
+					checkoutFormError.style.display = 'none';
+				}else{
+					checkoutFormError.style.display = 'block';
+				}
 			}
 		})
 		next_page_2.addEventListener('click', function(){
