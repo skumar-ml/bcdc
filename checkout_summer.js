@@ -308,7 +308,7 @@ class CheckOutWebflow {
 		var checkoutFormError = document.getElementById('checkout-form-error');
 		var $this = this;
 		var form = $( "#checkout-form" );
-		next_page_1.addEventListener('click', function(){
+		next_page_1.addEventListener('click', async function(){
 			if(form.valid()){
 				var eligible = true; 
 				if($this.memberData.programId == '101'){
