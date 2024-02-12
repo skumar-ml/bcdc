@@ -305,6 +305,7 @@ class CheckOutWebflow {
 		var next_page_2 = document.getElementById('next_page_2');
 		var prev_page_1 = document.getElementById('prev_page_1');
 		var prev_page_2 = document.getElementById('prev_page_2');
+		var checkoutFormError = document.getElementById('checkout-form-error');
 		var $this = this;
 		var form = $( "#checkout-form" );
 		next_page_1.addEventListener('click', function(){
