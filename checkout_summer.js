@@ -42,6 +42,17 @@ class CheckOutWebflow {
 		//data = data.filter(item=>item.programDetailId !=this.memberData.programId);
 		console.log('data', data)
 		if(data.summerSessionData.length > 0){
+			// filter summer inventory empty left spots
+			var summerSessionData = data.summerSessionData.filter((item)=>{
+				var findFortLee = item.location.find((i)=>i.locationId == 2 && i.leftSpot == 0)
+				var findGlenRock = item.location.find((i)=>i.locationId == 1 && i.leftSpot == 0)
+				
+				if(findFortLee == undefined || findGlenRock == undefined){
+					return true
+				}else{
+					return false
+				}
+			})
 			// showing supplementary program heading when data in not empty
 			//supplementaryProgramHead.style.display = "block"
 			data.summerSessionData.forEach((sData, i)=>{
@@ -66,13 +77,14 @@ class CheckOutWebflow {
 		checkboxS.type ="radio";
 		checkboxS.name ="checkbox";
 		if(!i){
+			this.updateLocation(suppData);
 			checkboxS.checked = true
 		}
 		checkboxS.value =suppData.summerSessionId;
 		//checkboxS.setAttribute('programDetailId', suppData.programDetailId)
 		checkboxS.setAttribute('data-name', 'Checkbox')
 		checkboxS.addEventListener('change', function() {
-		 //$this.updateAmount(this, suppData.amount)
+		  $this.updateLocation(suppData);
 		});
 		wCheckbox.appendChild(checkboxS)
 		var spantext = creEl('span', 'core-checkbox-label w-form-label')
@@ -105,7 +117,62 @@ class CheckOutWebflow {
 
 		return coreProductContainer;
 	}
-	
+	// Update Location based on session
+	updateLocation(sessionData){
+		
+		var location = sessionData.location;
+		var fortLeeContainer = document.getElementById('fortLeeContainer');
+		var GlenRockContainer = document.getElementById('GlenRockContainer');
+		var fort_lee_location = document.getElementById('fort_lee_location');
+		var glen_rock_location = document.getElementById('glen_rock_location');
+		var next_page_2 = document.getElementById('next_page_2');
+		GlenRockContainer.style.display = "none"
+		fortLeeContainer.style.display = "none"
+		next_page_2.style.display = 'block';
+		if(this.memberData.programId == '102'){
+			var findFortLee = location.find((i)=>i.locationId == 2 && i.leftSpot == 0)
+			var findGlenRock = location.find((i)=>i.locationId == 1 && i.leftSpot == 0)
+			if(findFortLee == undefined){
+				fortLeeContainer.style.display = "flex"
+			}
+			if(findGlenRock == undefined){
+				GlenRockContainer.style.display = "flex"
+			}
+			
+			if(findFortLee== undefined && findGlenRock != undefined){
+				fort_lee_location.click()
+			}else if(findFortLee != undefined && findGlenRock == undefined){
+				glen_rock_location.click()
+			}else if(findFortLee != undefined && findGlenRock != undefined){
+				next_page_2.style.display = 'none';
+			}else{
+				fort_lee_location.click()
+			}
+			
+		}else{
+			var findFortLee = location.find((i)=>i.locationId == 2 && i.programId == this.memberData.programId && i.leftSpot > 0)
+			if(findFortLee != undefined){
+				fortLeeContainer.style.display = "flex"
+			}
+			var findGlenRock = location.find((i)=>i.locationId == 1 && i.programId == this.memberData.programId && i.leftSpot > 0)
+			
+			if(findGlenRock != undefined){
+				GlenRockContainer.style.display = "flex"
+			}
+			if(findFortLee!= undefined && findGlenRock == undefined){
+				fort_lee_location.click()
+			}else if(findFortLee== undefined && findGlenRock != undefined){
+				glen_rock_location.click()
+			}else if(findFortLee== undefined && findGlenRock == undefined){
+				next_page_2.style.display = 'none';
+			}else{
+				fort_lee_location.click()
+			}
+		}
+		
+        
+		
+	}
 	// formating price in comma based value
 	numberWithCommas(x) {
 		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
