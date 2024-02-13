@@ -254,7 +254,7 @@ class CheckOutWebflow {
 			"school": studentSchool.value,
 			"gender": studentGender.value,
 			"prevStudent": prevStudent.value,
-			"locationId": (fort_lee_location.checked) ? 1 : 2,
+			"locationId": (fort_lee_location.checked) ? 2 : 1,
 			"summerSessionId": parseInt(summerSessionId),
 			"programId" : this.memberData.programId,
 			"successUrl" : "https://www.bergendebate.com/payment-confirmation?programName="+this.memberData.programName,
