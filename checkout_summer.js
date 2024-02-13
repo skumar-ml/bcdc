@@ -55,7 +55,7 @@ class CheckOutWebflow {
 			})
 			// showing supplementary program heading when data in not empty
 			//supplementaryProgramHead.style.display = "block"
-			data.summerSessionData.forEach((sData, i)=>{
+			summerSessionData.forEach((sData, i)=>{
 				// Getting single supplementary program cart list
 				var sList = this.createSessionList(sData, i);
 					sessionList.appendChild(sList);
