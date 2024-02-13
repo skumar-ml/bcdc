@@ -327,10 +327,10 @@ class CheckOutWebflow {
 			}
 		})
 		next_page_2.addEventListener('click', function(){
-			var summerSessionId = document.querySelector('input[name = checkbox]');
-			var locationId = document.querySelector('input[name = radio]');
+			var summerSessionId = document.querySelector('input[name = checkbox]:checked');
+			var locationId = document.querySelector('input[name = radio]:checked');
 			var locationSessionError = document.getElementById('locationSessionError');
-			if(summerSessionId.checked && locationId.checked){
+			if(summerSessionId && locationId){
 				locationSessionError.style.display = 'none';
 				$this.activateDiv('checkout_payment');
 				$this.initializeStripePayment();
