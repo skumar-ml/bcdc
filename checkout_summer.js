@@ -296,7 +296,7 @@ class CheckOutWebflow {
 	}
 	// Hide and show tab for program selection, student infor and checkout payment
 	activateDiv(divId){
-		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment'];
+		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment','pf_labs_error_message'];
 		 // Remove the active class from all div elements
 		divIds.forEach(id => document.getElementById(id).classList.remove('active_checkout_tab'));
 		// Add the active class to the div with the specified id
@@ -308,7 +308,6 @@ class CheckOutWebflow {
 		var next_page_2 = document.getElementById('next_page_2');
 		var prev_page_1 = document.getElementById('prev_page_1');
 		var prev_page_2 = document.getElementById('prev_page_2');
-		var checkoutFormError = document.getElementById('checkout-form-error');
 		var $this = this;
 		var form = $( "#checkout-form" );
 		next_page_1.addEventListener('click', async function(){
@@ -322,9 +321,8 @@ class CheckOutWebflow {
 				}
 				if(eligible){
 					$this.activateDiv('checkout_student_details');
-					checkoutFormError.style.display = 'none';
 				}else{
-					checkoutFormError.style.display = 'block';
+					$this.activateDiv('pf_labs_error_message');
 				}
 			}
 		})
@@ -343,6 +341,9 @@ class CheckOutWebflow {
 			
 		})
 		prev_page_1.addEventListener('click', function(){
+			$this.activateDiv('checkout_program');
+		})
+		pflabs_prev_page_1.addEventListener('click', function(){
 			$this.activateDiv('checkout_program');
 		})
 		prev_page_2.addEventListener('click', function(){
