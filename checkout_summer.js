@@ -78,13 +78,16 @@ class CheckOutWebflow {
 		checkboxS.name ="checkbox";
 		if(!i){
 			this.updateLocation(suppData);
-			checkboxS.checked = true
+			//checkboxS.checked = true
 		}
 		checkboxS.value =suppData.summerSessionId;
 		//checkboxS.setAttribute('programDetailId', suppData.programDetailId)
 		checkboxS.setAttribute('data-name', 'Checkbox')
 		checkboxS.addEventListener('change', function() {
-		  $this.updateLocation(suppData);
+			var locationSessionError = document.getElementById('locationSessionError');
+		  	locationSessionError.style.display = 'none';
+			$this.updateLocation(suppData);
+	
 		});
 		wCheckbox.appendChild(checkboxS)
 		var spantext = creEl('span', 'core-checkbox-label w-form-label')
@@ -140,11 +143,11 @@ class CheckOutWebflow {
 			}
 			
 			if(findFortLee== undefined && findGlenRock != undefined){
-				fort_lee_location.click()
+				//fort_lee_location.click()
 			}else if(findFortLee != undefined && findGlenRock == undefined){
-				glen_rock_location.click()
+				//glen_rock_location.click()
 			}else if(findFortLee != undefined && findGlenRock != undefined){
-				next_page_2.style.display = 'none';
+				//next_page_2.style.display = 'none';
 			}else{
 				fort_lee_location.click()
 			}
@@ -160,13 +163,13 @@ class CheckOutWebflow {
 				GlenRockContainer.style.display = "flex"
 			}
 			if(findFortLee!= undefined && findGlenRock == undefined){
-				fort_lee_location.click()
+				//fort_lee_location.click()
 			}else if(findFortLee== undefined && findGlenRock != undefined){
-				glen_rock_location.click()
+				//glen_rock_location.click()
 			}else if(findFortLee== undefined && findGlenRock == undefined){
 				next_page_2.style.display = 'none';
 			}else{
-				fort_lee_location.click()
+				//fort_lee_location.click()
 			}
 		}
 		
@@ -326,8 +329,16 @@ class CheckOutWebflow {
 			}
 		})
 		next_page_2.addEventListener('click', function(){
-			$this.activateDiv('checkout_payment');
-			$this.initializeStripePayment();
+			var summerSessionId = document.querySelector('input[name = checkbox]');
+			var locationId = document.querySelector('input[name = radio]');
+			var locationSessionError = document.getElementById('locationSessionError');
+			if(summerSessionId.checked && locationId.checked){
+				locationSessionError.style.display = 'none';
+				$this.activateDiv('checkout_payment');
+				$this.initializeStripePayment();
+			}else{
+				locationSessionError.style.display = 'block';
+			}
 				
 			
 		})
