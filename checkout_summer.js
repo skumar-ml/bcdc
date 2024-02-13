@@ -147,9 +147,9 @@ class CheckOutWebflow {
 			}else if(findFortLee != undefined && findGlenRock == undefined){
 				//glen_rock_location.click()
 			}else if(findFortLee != undefined && findGlenRock != undefined){
-				//next_page_2.style.display = 'none';
+				next_page_2.style.display = 'none';
 			}else{
-				fort_lee_location.click()
+				//fort_lee_location.click()
 			}
 			
 		}else{
