@@ -523,7 +523,8 @@ class CheckOutWebflow {
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
 			this.setUpBackButtonTab();
-			
+			// Update basic data
+			this.updateBasicData();
 			// Hide spinner 
 			spinner.style.display = 'none';
 		} catch (error) {
