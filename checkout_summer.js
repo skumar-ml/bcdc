@@ -312,6 +312,7 @@ class CheckOutWebflow {
 		var form = $( "#checkout-form" );
 		next_page_1.addEventListener('click', async function(){
 			if(form.valid()){
+				$this.storeBasicData();
 				var eligible = true; 
 				if($this.memberData.programId == '101'){
 					next_page_1.innerHTML = 'Processing'
@@ -359,7 +360,64 @@ class CheckOutWebflow {
 			$this.activateDiv('checkout_student_details');
 		})
 	}
-	
+	// store basic form data
+	storeBasicData(){
+		var studentFirstName = document.getElementById('Student-First-Name');
+		var studentLastName = document.getElementById('Student-Last-Name');
+		var studentEmail = document.getElementById('Student-Email');
+		var studentGrade = document.getElementById('Student-Grade');
+		var studentSchool = document.getElementById('Student-School');
+		var studentGender = document.getElementById('Student-Gender');
+		var prevStudent = document.getElementById('prevStudent-2');
+		var studentName = document.getElementById('studentName');
+		//save data in local storage
+		var data = {
+			"studentEmail" : studentEmail.value,
+			"firstName" : studentFirstName.value,
+			"lastName" : studentLastName.value,
+			"grade" : studentGrade.value,
+			"school": studentSchool.value,
+			"gender": studentGender.value,
+			"prevStudent": prevStudent.value,
+		}
+		studentName.innerHTML = studentFirstName.value+' '+studentLastName.value;
+		localStorage.setItem("checkOutBasicData", JSON.stringify(data));
+	}
+	// update basic form data
+	updateBasicData(){
+		var checkoutJson= localStorage.getItem("checkOutBasicData");
+		if(checkoutJson != undefined){
+			var paymentData = JSON.parse(checkoutJson);
+			var studentFirstName = document.getElementById('Student-First-Name');
+			var studentLastName = document.getElementById('Student-Last-Name');
+			var studentEmail = document.getElementById('Student-Email');
+			var studentGrade = document.getElementById('Student-Grade');
+			var studentSchool = document.getElementById('Student-School');
+			var studentGender = document.getElementById('Student-Gender');
+			var prevStudent = document.getElementById('prevStudent-2');
+			
+			studentEmail.value = paymentData.studentEmail;
+				
+			studentFirstName.value = paymentData.firstName;
+			
+			studentLastName.value = paymentData.lastName;
+			
+			if(paymentData.grade){
+				studentGrade.value = paymentData.grade;
+			}
+			
+			if(paymentData.school){
+				studentSchool.value = paymentData.school;
+			}
+			
+			if(paymentData.gender){
+				studentGender.value = paymentData.gender;
+			}
+			if(paymentData.prevStudent){
+				prevStudent.value = paymentData.prevStudent;
+			}
+		}
+	}
 	// handle payment button click
 	handlePaymentEvent(){
 		var ach_payment = document.getElementById('ach_payment');
@@ -429,7 +487,7 @@ class CheckOutWebflow {
 				studentGender.value = paymentData.gender;
 			}
 			if(paymentData.prevStudent){
-				studentGender.value = paymentData.prevStudent;
+				prevStudent.value = paymentData.prevStudent;
 			}
 			if(paymentData.location == 1){
 				fort_lee_location.checked = true;
