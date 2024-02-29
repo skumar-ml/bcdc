@@ -1,4 +1,3 @@
-
 /**
  * 	
  * @param name - HTML element name
@@ -58,7 +57,7 @@ class CheckOutWebflow {
 		}
 	}
 	// Manipulating a single summer session list
-	createSessionList(suppData, i) {
+	createSessionList(sessionProData, i) {
 		var coreProductContainer = creEl('div', 'core-session-container core-product-container margin-top');
 		var $this = this;
 
@@ -69,14 +68,14 @@ class CheckOutWebflow {
 		checkboxS.type = "radio";
 		checkboxS.name = "checkbox";
 		if (!i) {
-			this.updateLocation(suppData);
+			this.updateLocation(sessionProData);
 		}
-		checkboxS.value = suppData.summerSessionId;
+		checkboxS.value = sessionProData.summerSessionId;
 		checkboxS.setAttribute('data-name', 'Checkbox')
 		checkboxS.addEventListener('change', function () {
 			var locationSessionError = document.getElementById('locationSessionError');
 			locationSessionError.style.display = 'none';
-			$this.updateLocation(suppData);
+			$this.updateLocation(sessionProData);
 
 		});
 		wCheckbox.appendChild(checkboxS)
@@ -87,10 +86,10 @@ class CheckOutWebflow {
 		// Creating heading for summer session heading
 		var coreProductTitle = creEl('div', 'core-product-title')
 		var h1 = creEl('h1', 'core-product-title-text')
-		h1.innerHTML = suppData.summerSessionName;
+		h1.innerHTML = sessionProData.summerSessionName;
 		var div = creEl('div', 'core-product-title-subtext')
-		const startDate = new Date(suppData.startDate)
-		const endDate = new Date(suppData.endDate)
+		const startDate = new Date(sessionProData.startDate)
+		const endDate = new Date(sessionProData.endDate)
 		const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 		div.innerHTML = startDate.getDate() + ' ' + month[startDate.getMonth()] + ' ' + startDate.getFullYear() + ' - ' + endDate.getDate() + ' ' + month[endDate.getMonth()] + ' ' + startDate.getFullYear();
 
@@ -496,5 +495,3 @@ class CheckOutWebflow {
 		}
 	}
 }
-
-
