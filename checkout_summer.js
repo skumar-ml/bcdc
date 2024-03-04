@@ -322,6 +322,25 @@ class CheckOutWebflow {
 
 			$this.activateDiv('checkout_student_details');
 		})
+
+		//Coupon code variable
+		var coupon_code_button = document.getElementById('coupon_code_button');
+		var coupon_2f_code = document.getElementById('coupon_2f_code');
+		var code2fErrorMsg = document.getElementById('code-2f-error-msg');
+		//Added event for validate 2F coupon code
+		coupon_code_button.addEventListener('click',function(event){
+			event.preventDefault();
+			if(coupon_2f_code.value == ''){
+				code2fErrorMsg.style.display = 'block';
+				code2fErrorMsg.innerHTML = 'Please insert coupon code';
+			}else if(coupon_2f_code.value != 'TVUM89NX4P'){
+				code2fErrorMsg.style.display = 'block';
+				code2fErrorMsg.innerHTML = 'The code you entered is invalid. Please enter a different code.';
+			}else{
+				code2fErrorMsg.style.display = 'none';
+				$this.activateDiv('checkout_student_details');
+			}
+		})
 	}
 	// store basic student form data in local storage
 	storeBasicData() {
