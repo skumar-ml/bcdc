@@ -197,7 +197,7 @@ class classLocationStripe {
 		var studentGrade = document.getElementById('Student-Grade');
 		var studentSchool = document.getElementById('Student-School');
 		var studentGender = document.getElementById('Student-Gender');
-		var prevStudent = document.getElementById('prevStudent-2');
+		var prevStudent = document.getElementById('prevStudent');
 
 		var iBackButton = document.getElementById("backbuttonstate");
 		
@@ -312,7 +312,7 @@ class classDetailsStripe {
 			var studentGrade = document.getElementById('Student-Grade');
 			var studentSchool = document.getElementById('Student-School');
 			var studentGender = document.getElementById('Student-Gender');
-			var prevStudent = document.getElementById('prevStudent-2');
+			var prevStudent = document.getElementById('prevStudent');
 			var fort_lee_location = document.getElementById('fort_lee_location');
 			var glen_rock_location = document.getElementById('glen_rock_location');
 			// Update all local storage data
@@ -355,7 +355,7 @@ class classDetailsStripe {
 		var studentGrade = document.getElementById('Student-Grade');
 		var studentSchool = document.getElementById('Student-School');
 		var studentGender = document.getElementById('Student-Gender');
-		var prevStudent = document.getElementById('prevStudent-2');
+		var prevStudent = document.getElementById('prevStudent');
 		var studentName = document.getElementById('studentName');
 		//save data in local storage
 		var data = {
@@ -380,7 +380,7 @@ class classDetailsStripe {
 			var studentGrade = document.getElementById('Student-Grade');
 			var studentSchool = document.getElementById('Student-School');
 			var studentGender = document.getElementById('Student-Gender');
-			var prevStudent = document.getElementById('prevStudent-2');
+			var prevStudent = document.getElementById('prevStudent');
 
 			studentEmail.value = paymentData.studentEmail;
 
