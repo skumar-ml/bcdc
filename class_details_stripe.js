@@ -116,20 +116,21 @@ class classLocationStripe {
 
 		var locationActionLink = document.createElement("a");
 		locationActionLink.className = "main-button red w-button";
-		if (window.innerWidth > 1200) {
-			locationActionLink.classList.add("iframe-lightbox-link");
-			locationActionLink.setAttribute("data-scrolling", true);
-		}
+		
 		var btnlbl = 'Register';
 		var btnlink = 'https://form.jotform.com/231868905552162?classlevel=' + this.levelName + '&classlocation=' + this.responseText.locationName + '&classday=' + timeData.day + '&classtime=' + timeData.startTime + '&classspots=' + timeData.leftSpots + '&memberId=' + this.webflowMemberId + '&classUniqueId=' + timeData.classUniqueId + '&parentEmail=' + this.accountEmail;
 		if (alertMessage && alertMessage.type == 'waitlist') {
+			if (window.innerWidth > 1200) {
+				locationActionLink.classList.add("iframe-lightbox-link");
+				locationActionLink.setAttribute("data-scrolling", true);
+			}	
 			btnlbl = 'Join Waitlist';
 			btnlink = 'https://form.jotform.com/231870526936160?classlevel=' + this.levelName + '&classlocation=' + this.responseText.locationName + '&classday=' + timeData.day + '&classtime=' + timeData.startTime + '&classspots=' + timeData.leftSpots + '&memberId=' + this.webflowMemberId + '&classUniqueId=' + timeData.classUniqueId + '&parentEmail=' + this.accountEmail;
 			locationActionLink.href = btnlink;
 		}else{
 			locationActionLink.addEventListener('click', function(event){
 				event.preventDefault();
-				$this.initializeStripePayment(event, responseText, timingText, selectBox);
+				$this.initializeStripePayment(locationActionLink, responseText, timingText, selectBox);
 			})
 		}
 		
@@ -178,7 +179,7 @@ class classLocationStripe {
 
 	// ------------Start new code for stripe payment integration----------
 	// API call for stripe checkout URL 
-	initializeStripePayment(event, responseText, timingText, selectBox) {
+	initializeStripePayment(locationActionLink, responseText, timingText, selectBox) {
 		
 		console.log('responseText', responseText)
 		console.log('timingText', timingText)
@@ -202,8 +203,10 @@ class classLocationStripe {
 		var iBackButton = document.getElementById("backbuttonstate");
 		
 		//Payment button
-		event.innerHTML = "Processing..."
-		event.disabled = true;
+		console.log('event',locationActionLink)
+		locationActionLink.innerHTML = "Processing..."
+		locationActionLink.disabled = true;
+		
 		
 		//var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
 		var cancelUrl = new URL(window.location.href);
