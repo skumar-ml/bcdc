@@ -225,6 +225,8 @@ class classLocationStripe {
 			"prevStudent": prevStudent.value,
 			"levelId": this.levelId,
 			"classUniqueId":classId,
+			"device": (/Mobi|Android/i.test(navigator.userAgent))? 'Mobile': 'Desktop',
+			"deviceUserAgent": navigator.userAgent,
 			"name":this.parentName,
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?programName="+label,
 			"cancelUrl": cancelUrl.href,
