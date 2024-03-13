@@ -16,7 +16,7 @@ function creEl(name, className, idName) {
 }
 
 class classLocationStripe {
-	constructor(webflowMemberId, responseText, currentIndex, accountEmail, levelId, levelName, parentName, email) {
+	constructor(webflowMemberId, responseText, currentIndex, accountEmail, levelId, levelName, parentName) {
 		this.webflowMemberId = webflowMemberId;
 		this.currentIndex = currentIndex;
 		this.accountEmail = accountEmail;
@@ -24,7 +24,6 @@ class classLocationStripe {
 		this.levelId = levelId;
 		this.levelName = levelName;
 		this.parentName = parentName;
-		this.email = email;
 		this.renderClassLocations() // gets mongoDB data from responseText object for specific registrations
 
 	}
@@ -190,7 +189,7 @@ class classLocationStripe {
 		}
 		console.log('timingText', timingText)
 		console.log('classId', classId)
-		var label = responseText.locationName +'|'+this.levelName+'|'+timingText;
+		var label = responseText.locationName +' | '+this.levelName+' | '+timingText;
 		//return;
 		var studentFirstName = document.getElementById('Student-First-Name');
 		var studentLastName = document.getElementById('Student-Last-Name');
@@ -212,7 +211,7 @@ class classLocationStripe {
 		cancelUrl.searchParams.append('returnType', 'back')
 		//console.log(cancelUrl)
 		var data = {
-			"email": this.email,
+			"email": this.accountEmail,
 			"studentEmail": studentEmail.value,
 			"firstName": studentFirstName.value,
 			"lastName": studentLastName.value,
@@ -261,13 +260,12 @@ class classLocationStripe {
  * This Class used to get class details based on location and pass the data to classLocation class
  */
 class classDetailsStripe {
-	constructor(baseUrl, webflowMemberId, accountEmail, levelId, parentName, email) {
+	constructor(baseUrl, webflowMemberId, accountEmail, levelId, parentName) {
 		this.baseUrl = baseUrl;
 		this.webflowMemberId = webflowMemberId;
 		this.accountEmail = accountEmail;
 		this.levelId = levelId;
 		this.parentName = parentName;
-		this.email = email;
 		this.renderPortalData();
 	}
 	// Creating main dom for location
@@ -455,7 +453,7 @@ class classDetailsStripe {
 			Object.values(locationData).forEach((formData, index) => {
 				setTimeout(function () {
 					let currentIndex = index + 1;
-					new classLocationStripe($this.webflowMemberId, formData, currentIndex, $this.accountEmail, levelId, levelName, $this.parentName, $this.email);
+					new classLocationStripe($this.webflowMemberId, formData, currentIndex, $this.accountEmail, levelId, levelName, $this.parentName);
 				}, 30)
 			})
 		} catch (error) {
