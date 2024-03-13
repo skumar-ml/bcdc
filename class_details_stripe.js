@@ -226,9 +226,9 @@ class classLocationStripe {
 			"levelId": this.levelId,
 			"classUniqueId":classId,
 			"name":this.parentName,
-			"successUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
-			//"cancelUrl": cancelUrl.href,
-			"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
+			"successUrl": "https://www.bergendebate.com/payment-confirmation?programName="+label,
+			"cancelUrl": cancelUrl.href,
+			//"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
 			"memberId": this.webflowMemberId,
 			"amount":300
 		}
