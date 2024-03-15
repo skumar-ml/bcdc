@@ -170,12 +170,12 @@ class portalForm {
 					if(editable){
 					   let dbData = $this.getformData(cForm.formId)
 						if(this.$isLiveProgram  && cForm.is_editable){
-							formLink.href = (cForm.formId) ? "https://www.jotform.com/edit/"+dbData.submissionId+"?memberId="+$this.webflowMemberId+"&classId="+$this.$classDeatils.classId+"&studentName="+$this.$studentDetail.studentName+"&accountEmail="+$this.accountEmail+"&paymentId="+$this.$studentDetail.uniqueIdentification : "";
+							formLink.href = (cForm.formId) ? "https://www.jotform.com/edit/"+dbData.submissionId+"?memberId="+$this.webflowMemberId+"&classId="+$this.$classDeatils.classId+"&studentName="+$this.$studentDetail.studentName+"&accountEmail="+$this.accountEmail+"&paymentId="+$this.$studentDetail.uniqueIdentification+"&locationId="+$this.$classLoactionDeatils.locationId : "";
 						}else{
 						   formLink.href = "https://www.jotform.com/submission/"+dbData.submissionId;
 					   }
 					}else{
-						formLink.href = (cForm.formId) ? "https://form.jotform.com/"+cForm.formId+"?memberId="+$this.webflowMemberId+"&classId="+$this.$classDeatils.classId+"&studentName="+$this.$studentDetail.studentName+"&accountEmail="+$this.accountEmail+"&paymentId="+$this.$studentDetail.uniqueIdentification	 : "";
+						formLink.href = (cForm.formId) ? "https://form.jotform.com/"+cForm.formId+"?memberId="+$this.webflowMemberId+"&classId="+$this.$classDeatils.classId+"&studentName="+$this.$studentDetail.studentName+"&accountEmail="+$this.accountEmail+"&paymentId="+$this.$studentDetail.uniqueIdentification+"&locationId="+$this.$classLoactionDeatils.locationId: "";
 				    }
 					}
 					//Add iframe when it's live and above certain screenwidth
