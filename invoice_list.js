@@ -472,14 +472,18 @@ class InvoiceApi {
 		this.getInvoiceData();
 	}
 	async fetchData(url) {
+		var spinner = document.getElementById('half-circle-spinner');
 		try {
+			spinner.style.display = 'block';
 			const response = await fetch(`${url}`);
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
 			}
 			const data = await response.json();
+			spinner.style.display = 'none';
 			return data;
 		} catch (error) {
+			spinner.style.display = 'none';
 			console.error('Error fetching data:', error);
 			throw error;
 		}
