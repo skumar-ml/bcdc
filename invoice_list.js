@@ -111,7 +111,7 @@ class Notification {
 			img.src = "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/6434ff69906fb9a8c9c8b4d3_download-file.svg";
 		} else {
 			var img = creEl('img')
-			img.src = "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642e8f4e85af6b0ef1e409b6_link-solid.png";
+			img.src = "https://uploads-ssl.webflow.com/64091ce7166e6d5fb836545e/65fa4cad1c30f8603b7a1161_view-icon.png";
 		}
 		a.appendChild(img);
 		a.addEventListener('click', function () {
