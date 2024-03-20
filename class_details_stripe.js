@@ -16,7 +16,7 @@ function creEl(name, className, idName) {
 }
 
 class classLocationStripe {
-	constructor(webflowMemberId, responseText, currentIndex, accountEmail, levelId, levelName, parentName) {
+	constructor(webflowMemberId, responseText, currentIndex, accountEmail, levelId, levelName, parentName, amount) {
 		this.webflowMemberId = webflowMemberId;
 		this.currentIndex = currentIndex;
 		this.accountEmail = accountEmail;
@@ -24,6 +24,7 @@ class classLocationStripe {
 		this.levelId = levelId;
 		this.levelName = levelName;
 		this.parentName = parentName;
+		this.amount = amount;
 		this.renderClassLocations() // gets mongoDB data from responseText object for specific registrations
 
 	}
@@ -232,7 +233,8 @@ class classLocationStripe {
 			"cancelUrl": cancelUrl.href,
 			//"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
 			"memberId": this.webflowMemberId,
-			"amount":100
+			//"amount":100
+			"amount": this.amount * 100
 		}
 
 		console.log('Data !!!!!', data)
@@ -265,12 +267,13 @@ class classLocationStripe {
  * This Class used to get class details based on location and pass the data to classLocation class
  */
 class classDetailsStripe {
-	constructor(baseUrl, webflowMemberId, accountEmail, levelId, parentName) {
+	constructor(baseUrl, webflowMemberId, accountEmail, levelId, parentName, amount) {
 		this.baseUrl = baseUrl;
 		this.webflowMemberId = webflowMemberId;
 		this.accountEmail = accountEmail;
 		this.levelId = levelId;
 		this.parentName = parentName;
+		this.amount = amount;
 		this.renderPortalData();
 	}
 	// Creating main dom for location
@@ -458,7 +461,7 @@ class classDetailsStripe {
 			Object.values(locationData).forEach((formData, index) => {
 				setTimeout(function () {
 					let currentIndex = index + 1;
-					new classLocationStripe($this.webflowMemberId, formData, currentIndex, $this.accountEmail, levelId, levelName, $this.parentName);
+					new classLocationStripe($this.webflowMemberId, formData, currentIndex, $this.accountEmail, levelId, levelName, $this.parentName,  $this.amount);
 				}, 30)
 			})
 		} catch (error) {
