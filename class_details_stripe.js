@@ -232,7 +232,7 @@ class classLocationStripe {
 			"cancelUrl": cancelUrl.href,
 			//"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
 			"memberId": this.webflowMemberId,
-			"amount":30000
+			"amount":100
 		}
 
 		console.log('Data !!!!!', data)
