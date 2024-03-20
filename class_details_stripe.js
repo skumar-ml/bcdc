@@ -233,8 +233,8 @@ class classLocationStripe {
 			"cancelUrl": cancelUrl.href,
 			//"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
 			"memberId": this.webflowMemberId,
-			//"amount":100
-			"amount": this.amount * 100
+			"amount":100
+			//"amount": this.amount * 100
 		}
 
 		console.log('Data !!!!!', data)
