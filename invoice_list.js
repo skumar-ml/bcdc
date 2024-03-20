@@ -15,11 +15,11 @@ function creEl(name, className, idName) {
 	return el;
 }
 /**
- * Class for handling Notification List
+ * Class for handling InvoiceList List
  * @param webflowMemberId - memberId
- * @param messageData - notification data by API
+ * @param messageData - invoice data by API
  */
-class Notification {
+class InvoiceList {
 	constructor(webflowMemberId, messageData) {
 		this.webflowMemberId = webflowMemberId;
 		messageData.sort(function (a, b) {
@@ -35,7 +35,7 @@ class Notification {
 	/*Creating pagination array object*/
 	paginatorList(items, page, per_page) {
 		var page = page || 1,
-			per_page = per_page || 20,
+			per_page = per_page || 100,
 			offset = (page - 1) * per_page,
 
 			paginatedItems = items.slice(offset).slice(0, per_page),
@@ -69,35 +69,6 @@ class Notification {
 		boldText.innerHTML = text;
 		return boldText;
 	}
-	/*Creating Read and unread icon for list page*/
-	getCheckedIcon(status) {
-		var img = creEl('img', 'is_read_icon')
-		if (status) {
-			var src = "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a83485b6551a71e5b7e12_dd-check.png";
-		} else {
-			var src = "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a834899a0eb5204d6dafd_dd-cross.png";
-		}
-		img.src = src;
-		return img
-	}
-	/*Download the file with the help of file url*/
-	download(fileLink, fileName) {
-		fetch(fileLink)
-			.then(resp => resp.blob())
-			.then(blob => {
-				const url = window.URL.createObjectURL(blob);
-				const a = document.createElement('a');
-				a.style.display = 'none';
-				a.href = url;
-				// the filename you want
-				a.download = fileName;
-				document.body.appendChild(a);
-				a.click();
-				window.URL.revokeObjectURL(url);
-				//alert('your file has downloaded!'); // or you know, something with better UX...
-			})
-			.catch(() => alert('File not found'));
-	}
 	/*Display download file icon for detail and listing page*/
 	downLoadLinkIcon(fileLink, type = '') {
 		var $this = this;
@@ -115,7 +86,7 @@ class Notification {
 		}
 		a.appendChild(img);
 		a.addEventListener('click', function () {
-			$this.download(fileLink, fileLink.substring(fileLink.lastIndexOf('/') + 1));
+			//$this.download(fileLink, fileLink.substring(fileLink.lastIndexOf('/') + 1));
 		})
 		return a;
 	}
@@ -159,19 +130,7 @@ class Notification {
 			//downloadButton.textContent = originalButtonText;
 		}
 	}
-	/*Iframe view icon*/
-	viewDownLoadedFile(fileLink) {
-		var $this = this;
-		var fileName = fileLink
-		var a = creEl('a', 'downloadLink iframe-lightbox-link')
-		var img = creEl('img', 'viewIcon')
-		img.src = "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/643501a495c54e74d70e60ba_view-file.svg";
-		img.title = 'View';
-		a.appendChild(img);
-		a.href = fileLink;
-
-		return a;
-	}
+	
 	/*Creating dom element for message list*/
 	craeteMessageList() {
 		var $this = this;
@@ -184,14 +143,14 @@ class Notification {
 			var sessionName = item.sessionName;
 			var currentYear = item.currentYear;
 			var title = item.studentName + " - " + classLevel + " - " + item.day + " " + startTime + " (" + item.location + ", " + sessionName + " " + currentYear + ")"
-			var col_1 = this.createCol(title, 5);
+			var col_1 = this.createCol(title, 6);
 			row.appendChild(col_1);
 
 
 
 
 			var div = document.createElement("div");
-			div.innerHTML = '$' + item.totalAmount;
+			div.innerHTML = '$' + this.numberWithCommas((parseFloat(item.totalAmount) + parseFloat(item.depositAmount)).toFixed(2));
 			var text = div.textContent || div.innerText || "";
 
 			//console.log('item.message', text)
@@ -214,6 +173,10 @@ class Notification {
 
 		return messageList;
 	}
+	// Format the amount with comma separated 
+	numberWithCommas(x) {
+		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+	}
 	/*Creating dom element message list header*/
 	createMessageTitle() {
 		var title = ['Student', 'Amount', 'Action']
@@ -223,7 +186,7 @@ class Notification {
 			if (item == '') {
 				col_width = 1
 			} else if (item == 'Student') {
-				col_width = 5
+				col_width = 6
 			} else if (item == 'Action') {
 				col_width = 2;
 			} else if (item == 'Amount') {
@@ -236,17 +199,17 @@ class Notification {
 	}
 	/*Refreshing the message list*/
 	refreshData() {
-		var notification = document.getElementById("notification");
-		notification.innerHTML = "";
+		var invoice = document.getElementById("invoice");
+		invoice.innerHTML = "";
 		this.makeMessageList();
 
 	}
 	/*hide and show message list and details page*/
 	showListPage() {
-		var notification = document.getElementById("notification");
-		var notificationDetails = document.getElementById("notification-details");
-		var notificationHeading = document.getElementsByClassName("notification-heading")[0];
-		notification.style.display = 'block';
+		var invoice = document.getElementById("invoice");
+		var notificationDetails = document.getElementById("invoice-details");
+		var notificationHeading = document.getElementsByClassName("invoice-heading")[0];
+		invoice.style.display = 'block';
 		notificationDetails.style.display = 'none';
 		notificationHeading.style.display = 'block';
 	}
@@ -266,17 +229,7 @@ class Notification {
 		})
 		return backButton;
 	}
-	/*deatailPageRow(text, text_head){
-		var row = creEl('div', 'w-row')
-		var title_head = this.creBoldText(text_head)
-		var title = text;
-		var col_1 = this.createCol('', 2);
-		col_1.appendChild(title_head);
-		var col_2 = this.createCol(title, 10);
-		row.appendChild(col_1);
-		row.appendChild(col_2);
-		return row;
-	}*/
+	
 	/*Foramated date for list and details page*/
 	formatedDate(dateString, type = '') {
 		const monthText = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -373,7 +326,7 @@ class Notification {
 		details.classList.add('invoice-details');
 
 		var invoiceFor = document.createElement('p');
-		invoiceFor.innerHTML = '<strong>Invoice for'+item.sessionName+' '+item.currentYear+' Bergen Debate Club Semester Course</strong>';
+		invoiceFor.innerHTML = '<strong>Invoice for '+item.sessionName+' '+item.currentYear+' Bergen Debate Club Semester Course</strong>';
 		details.appendChild(invoiceFor);
 
 		var studentName = document.createElement('p');
@@ -381,56 +334,32 @@ class Notification {
 		details.appendChild(studentName);
 
 		var amount = document.createElement('p');
-		amount.innerHTML = '<strong>Amount:</strong> $'+item.totalAmount;
+		amount.innerHTML = '<strong>Amount:</strong> $'+this.numberWithCommas((parseFloat(item.totalAmount) + parseFloat(item.depositAmount)).toFixed(2));
 		details.appendChild(amount);
 
 		var status = document.createElement('p');
 		status.innerHTML = '<strong>Status:</strong> Paid';
 		details.appendChild(status);
 
+		var invoiceDate = (item.invoiceDateLast) ? item.invoiceDateLast : item.paymentDate;
 		var dateOfBilling = document.createElement('p');
-		dateOfBilling.innerHTML = '<strong>Date of Billing:</strong> March 20, 2024';
+		dateOfBilling.innerHTML = '<strong>Date of Billing:</strong> '+this.formatedDate(invoiceDate, 'detailPage');
 		details.appendChild(dateOfBilling);
 
 		var location = document.createElement('p');
-		location.innerHTML = '<strong>Location:</strong> '+item.location;
+		location.innerHTML = '<strong>Location:</strong> 440 West Street, Fort Lee NJ 07024';
 		details.appendChild(location);
 
 		var paymentMadeTo = document.createElement('p');
-		paymentMadeTo.innerHTML = '<strong>Payment Made To:</strong> Bergen Debate Club';
+		paymentMadeTo.innerHTML = '<strong>Payment Made To:</strong> DCA - Bergen County, LLC<br/>201-421-8621';
 		details.appendChild(paymentMadeTo);
+
+		var ein = document.createElement('p');
+		ein.innerHTML = '<strong>EIN:</strong> 92-1876164';
+		details.appendChild(ein);
 
 		invoice.appendChild(details);
 		contain.appendChild(invoice);
-
-
-		if (item.uploadedFiles) {
-			//var viewIcon = this.viewDownLoadedFile(item.uploadedFiles)
-			var downloadCol = creEl("div", 'w-col w-col-12 download-icon');
-			var download_head = this.creBoldText('Attachments: ')
-			if (item.uploadedFiles) {
-				downloadCol.appendChild(download_head);
-				if (Array.isArray(item.uploadedFiles)) {
-					item.uploadedFiles.forEach(url => {
-						var downloadIcon = this.downLoadLinkIcon(url, 'download');
-
-						downloadCol.appendChild(downloadIcon);
-					})
-				} else {
-					var urls = item.uploadedFiles.split(",");
-					urls.forEach(url => {
-						var downloadIcon = this.downLoadLinkIcon(url, 'download');
-
-						downloadCol.appendChild(downloadIcon);
-					})
-				}
-
-			}
-			//downloadCol.appendChild(viewIcon);
-			contain.appendChild(downloadCol);
-		}
-
-
 		return contain;
 	}
 	
@@ -439,19 +368,19 @@ class Notification {
 	displayDetailsPage(item) {
 		var $this = this;
 		/*hide and show detail and list page*/
-		var notification = document.getElementById("notification");
-		var notificationDetails = document.getElementById("notification-details");
-		var notificationHeading = document.getElementsByClassName("notification-heading")[0];
+		var invoice = document.getElementById("invoice");
+		var notificationDetails = document.getElementById("invoice-details");
+		var notificationHeading = document.getElementsByClassName("invoice-heading")[0];
 
 		notificationDetails.innerHTML = "";
-		notification.style.display = 'none';
+		invoice.style.display = 'none';
 		notificationDetails.style.display = 'block';
 		notificationHeading.style.display = 'none';
 
 		var backButton = this.detailPageBackButton('top-button');
 		notificationDetails.appendChild(backButton);
 
-		var notificationInnerDetails = creEl("div", 'notification-details')
+		var notificationInnerDetails = creEl("div", 'invoice-details')
 
 		
 
@@ -471,7 +400,7 @@ class Notification {
 	/* Creating dom element pagination */
 	createPagination() {
 		var $this = this;
-		var pagination = creEl('div', 'w-pagination-wrapper', 'notification-body');
+		var pagination = creEl('div', 'w-pagination-wrapper', 'invoice-body');
 		/*Previous Button*/
 		if (this.paginateData.pre_page != null) {
 			var preBtn = creEl('a', 'w-pagination-previous');
@@ -498,23 +427,23 @@ class Notification {
 
 	/* Creating dom element for message list */
 	makeMessageList() {
-		var notification = document.getElementById("notification");
+		var invoice = document.getElementById("invoice");
 
 		/*Message Title*/
 		var messageTitle = this.createMessageTitle();
-		var notificationTitle = creEl('div', 'notification-title', 'notification-title');
+		var notificationTitle = creEl('div', 'invoice-title', 'invoice-title');
 		notificationTitle.appendChild(messageTitle);
-		notification.appendChild(notificationTitle);
+		invoice.appendChild(notificationTitle);
 		/*Message List*/
 		var messageList = this.craeteMessageList();
-		var notificationbody = creEl('div', 'notification-body', 'notification-body');
+		var notificationbody = creEl('div', 'invoice-body', 'invoice-body');
 		notificationbody.appendChild(messageList);
-		notification.appendChild(notificationbody);
+		invoice.appendChild(notificationbody);
 
 		/*Message Pagination*/
 
 		var pagination = this.createPagination();
-		notification.appendChild(pagination);
+		invoice.appendChild(pagination);
 
 	}
 	/* Initialize iframe for view button */
@@ -532,15 +461,15 @@ class Notification {
 
 }
 /**
- * Class for Handling API for notification center
+ * Class for Handling API for invoice center
  * @param webflowMemberId - MemberId
  */
-class NotificationApi {
+class InvoiceApi {
 	$isLoading = true;
 	$messageData = '';
 	constructor(webflowMemberId) {
 		this.webflowMemberId = webflowMemberId;
-		this.getNotificationData();
+		this.getInvoiceData();
 	}
 	async fetchData(url) {
 		try {
@@ -555,8 +484,8 @@ class NotificationApi {
 			throw error;
 		}
 	}
-	async getNotificationData() {
+	async getInvoiceData() {
 		const data = await this.fetchData("https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getSemesterInvoiceData/" + this.webflowMemberId);
-		new Notification(this.webflowMemberId, data);
+		new InvoiceList(this.webflowMemberId, data);
 	}
 }
