@@ -144,6 +144,12 @@ class InvoiceList {
 		var $this = this;
 		var messageList = creEl('div', 'message-list');
 		var invoicePaginationData = ($type == 'summer') ? this.summerPaginateData  : this.paginateData;
+		console.log('invoicePaginationData', invoicePaginationData)
+		if(invoicePaginationData.data.length == 0){
+			var errorMessage = creEl('p', 'text-center no-records-founds')
+			errorMessage.innerHTML = "No records founds..";
+			messageList.appendChild(errorMessage);
+		}
 		invoicePaginationData.data.forEach((item, index) => {
 			var row = creEl('div', 'w-row ')
 			var programName = item.programName;
