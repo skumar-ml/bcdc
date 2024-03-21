@@ -147,7 +147,7 @@ class InvoiceList {
 		console.log('invoicePaginationData', invoicePaginationData)
 		if(invoicePaginationData.data.length == 0){
 			var errorMessage = creEl('p', 'text-center no-records-founds')
-			errorMessage.innerHTML = "No records founds..";
+			errorMessage.innerHTML = "No Records found..";
 			messageList.appendChild(errorMessage);
 		}
 		invoicePaginationData.data.forEach((item, index) => {
