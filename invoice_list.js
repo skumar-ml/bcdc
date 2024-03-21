@@ -164,7 +164,7 @@ class InvoiceList {
 
 
 			var div = document.createElement("div");
-			var totalAmount = ($type == 'summer') ? parseFloat(item.paymentTotal)  : parseFloat(item.totalAmount) + parseFloat(item.depositAmount);
+			var totalAmount = ($type == 'summer') ? parseFloat(item.paymentTotal)  : parseFloat(item.totalAmount*1) + parseFloat((item.depositAmount) ? item.depositAmount : 0);
 			div.innerHTML = '$' + this.numberWithCommas(totalAmount.toFixed(2));
 			var text = div.textContent || div.innerText || "";
 
@@ -355,7 +355,7 @@ class InvoiceList {
 		details.appendChild(studentName);
 
 		var amount = document.createElement('p');
-		var totalAmount = ($type == 'summer') ? parseFloat(item.paymentTotal) : (parseFloat(item.totalAmount) + parseFloat(item.depositAmount));
+		var totalAmount = ($type == 'summer') ? parseFloat(item.paymentTotal) : (parseFloat(item.totalAmount) + parseFloat((item.depositAmount) ? item.depositAmount : 0));
 		amount.innerHTML = '<strong>Amount:</strong> $'+this.numberWithCommas(totalAmount.toFixed(2));
 		details.appendChild(amount);
 
