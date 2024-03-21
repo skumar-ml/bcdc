@@ -157,7 +157,7 @@ class InvoiceList {
 				var title = item.studentName + " - " + programName + " (" + item.location + ", " + currentYear + " " + sessionName + ")"
 			}
 			
-			var col_1 = this.createCol(title, 6);
+			var col_1 = this.createCol(title, 7);
 			row.appendChild(col_1);
 
 
@@ -201,7 +201,7 @@ class InvoiceList {
 			if (item == '') {
 				col_width = 1
 			} else if (item == 'Student') {
-				col_width = 6
+				col_width = 7
 			} else if (item == 'Action') {
 				col_width = 2;
 			} else if (item == 'Amount') {
