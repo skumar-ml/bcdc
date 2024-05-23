@@ -222,7 +222,7 @@ class CheckOutWebflow {
 			"locationId": (fort_lee_location.checked) ? 2 : 1,
 			"summerSessionId": parseInt(summerSessionId),
 			"programId": this.memberData.programId,
-			"successUrl": "https://www.bergendebate.com/payment-confirmation?programName=" + this.memberData.programName,
+			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href,
 			"memberId": this.memberData.memberId,
