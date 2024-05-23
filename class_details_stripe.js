@@ -229,7 +229,7 @@ class classLocationStripe {
 			"device": (/Mobi|Android/i.test(navigator.userAgent))? 'Mobile': 'Desktop',
 			"deviceUserAgent": navigator.userAgent,
 			"name":this.parentName,
-			"successUrl": "https://www.bergendebate.com/payment-confirmation?programName="+label,
+			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Academic&programName="+label,
 			"cancelUrl": cancelUrl.href,
 			//"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
 			"memberId": this.webflowMemberId,
