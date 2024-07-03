@@ -333,13 +333,13 @@ class portalForm {
   	*Initilize stripe payment
    	*/
 	initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType){
-		
+		var centAmount = (amount*100).toFixed(2);
 		var data = {
 			"email":this.$studentDetail.parentEmail,
 			"name":this.$studentDetail.studentName,
 			"label": title,
 			"paymentType": paymentType,
-			"amount": amount*100,
+			"amount": parseFloat(centAmount),
 			"invoiceId": invoice_id,
 			"paymentId": this.$studentDetail.uniqueIdentification,
 			"paymentLinkId": paymentLinkId,
