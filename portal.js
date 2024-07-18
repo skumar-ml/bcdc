@@ -95,7 +95,7 @@ class portalForm {
 		  
 		  $this.initiateAccordion();
 		  $this.initiateLightbox();
-		  $this.initializeToolTips();
+		  //$this.initializeToolTips();
 		  var spinner = document.getElementById('half-circle-spinner');
 		  spinner.style.display = 'none';
 	}
@@ -243,6 +243,7 @@ class portalForm {
 			   let completed = (editable && (invoice.status =='Complete' || !invoice.status));
 			   let failed = (invoice.status == 'Failed');
 			   let processing = (invoice.status == 'Processing');
+			   let paymentProcessMsg = (invoice.paymentProcessMsg != '');
 			   let info_text = creEl('span', 'info_text')
 			   info_text.innerHTML = 'i';
 			   
@@ -293,6 +294,13 @@ class portalForm {
 						formLink.append(span)
 						linkContainer.append(formLink);
 					})
+					if(paymentProcessMsg){
+						linkContainer.prepend(info_text)
+						info_text.setAttribute('tip', invoice.paymentProcessMsg)
+							
+						info_text.setAttribute('tip-top','')
+						info_text.setAttribute('tip-left','')
+					}
 					li.append(linkContainer);
 				   }
 				   
@@ -577,31 +585,31 @@ class portalForm {
 		  });
 		});
 	}
-	initializeToolTips(){
-		const elements = [...document.querySelectorAll('[tip]')]
-		for (const el of elements) {
-		  const tip = document.createElement('div')
-		  tip.classList.add('tooltip')
-		  tip.textContent = el.getAttribute('tip')
-		  const x = el.hasAttribute('tip-left') ? 'calc(-100% - 5px)' : '16px'
-		  const y = el.hasAttribute('tip-top') ? '-100%' : '0'
-		  tip.style.transform = `translate(${x}, ${y})`
-		  el.appendChild(tip)
-		  el.onpointermove = e => {
-			if (e.target !== e.currentTarget) return
+	// initializeToolTips(){
+	// 	const elements = [...document.querySelectorAll('[tip]')]
+	// 	for (const el of elements) {
+	// 	  const tip = document.createElement('div')
+	// 	  tip.classList.add('tooltip')
+	// 	  tip.textContent = el.getAttribute('tip')
+	// 	  const x = el.hasAttribute('tip-left') ? 'calc(-100% - 5px)' : '16px'
+	// 	  const y = el.hasAttribute('tip-top') ? '-100%' : '0'
+	// 	  tip.style.transform = `translate(${x}, ${y})`
+	// 	  el.appendChild(tip)
+	// 	  el.onpointermove = e => {
+	// 		if (e.target !== e.currentTarget) return
 
-			const rect = tip.getBoundingClientRect()
-			const rectWidth = rect.width + 16
-			const vWidth = window.innerWidth - rectWidth
-			const rectX = el.hasAttribute('tip-left') ? e.clientX - rectWidth : e.clientX + rectWidth
-			const minX = el.hasAttribute('tip-left') ? 0 : rectX
-			const maxX = el.hasAttribute('tip-left') ? vWidth : window.innerWidth
-			const x = rectX < minX ? rectWidth : rectX > maxX ? vWidth : e.clientX
-			tip.style.left = `${x}px`
-			tip.style.top = `${e.clientY}px`
-		  }
-		}
-	}
+	// 		const rect = tip.getBoundingClientRect()
+	// 		const rectWidth = rect.width + 16
+	// 		const vWidth = window.innerWidth - rectWidth
+	// 		const rectX = el.hasAttribute('tip-left') ? e.clientX - rectWidth : e.clientX + rectWidth
+	// 		const minX = el.hasAttribute('tip-left') ? 0 : rectX
+	// 		const maxX = el.hasAttribute('tip-left') ? vWidth : window.innerWidth
+	// 		const x = rectX < minX ? rectWidth : rectX > maxX ? vWidth : e.clientX
+	// 		tip.style.left = `${x}px`
+	// 		tip.style.top = `${e.clientY}px`
+	// 	  }
+	// 	}
+	// }
 }
 class PortalTabs {
 	$activeTabID = "";
@@ -778,6 +786,7 @@ class PortalTabs {
 				  new portalForm($this.webflowMemberId, formData,currentIndex, $this.accountEmail);
 			  //},30)
 		  })
+		  this.initializeToolTips()
 		  document.getElementById("paid-resources").style.display = "block";
 		  setTimeout(function(){
 			$this.setCurrentActiveTag();
@@ -787,6 +796,31 @@ class PortalTabs {
 			document.getElementById("free-resources").style.display = "block";
 			console.error('Error rendering random number:', error);
 			spinner.style.display = 'none';
+		}
+	}
+	initializeToolTips(){
+		const elements = [...document.querySelectorAll('[tip]')]
+		for (const el of elements) {
+		  const tip = document.createElement('div')
+		  tip.classList.add('tooltip')
+		  tip.textContent = el.getAttribute('tip')
+		  const x = el.hasAttribute('tip-left') ? 'calc(-100% - 5px)' : '16px'
+		  const y = el.hasAttribute('tip-top') ? '-100%' : '0'
+		  tip.style.transform = `translate(${x}, ${y})`
+		  el.appendChild(tip)
+		  el.onpointermove = e => {
+			if (e.target !== e.currentTarget) return
+
+			const rect = tip.getBoundingClientRect()
+			const rectWidth = rect.width + 16
+			const vWidth = window.innerWidth - rectWidth
+			const rectX = el.hasAttribute('tip-left') ? e.clientX - rectWidth : e.clientX + rectWidth
+			const minX = el.hasAttribute('tip-left') ? 0 : rectX
+			const maxX = el.hasAttribute('tip-left') ? vWidth : window.innerWidth
+			const x = rectX < minX ? rectWidth : rectX > maxX ? vWidth : e.clientX
+			tip.style.left = `${x}px`
+			tip.style.top = `${e.clientY}px`
+		  }
 		}
 	}
 }
