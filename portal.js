@@ -352,7 +352,7 @@ class portalForm {
 			"paymentId": this.$studentDetail.uniqueIdentification,
 			"paymentLinkId": paymentLinkId,
 			"memberId": this.webflowMemberId,
-			"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
+			"successUrl":encodeURI("https://www.bergendebate.com/members/"+this.webflowMemberId+"?programName="+title),
 			"cancelUrl": "https://www.bergendebate.com/members/"+this.webflowMemberId,
 		}
 		var xhr = new XMLHttpRequest()
