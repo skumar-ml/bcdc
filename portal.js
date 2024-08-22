@@ -238,7 +238,7 @@ class portalForm {
 			// for every form category in parentInvoiceForm, start building accordion
 		   parentInvoiceForm.forEach((invoice) => {
 			   //check it's editable
-			   let editable = (invoice.is_completed) ? true : false;
+			   let editable = (invoice.is_completed || invoice.status == 'Processing') ? true : false;
 			   
 			   let completed = (editable && (invoice.status =='Complete' || !invoice.status));
 			   let failed = (invoice.status == 'Failed');
