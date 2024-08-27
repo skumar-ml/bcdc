@@ -375,8 +375,49 @@ class classDetailsStripe {
 			"gender": studentGender.value,
 			"prevStudent": prevStudent.value,
 		}
+		this.checkOldStudent(studentEmail.value, studentFirstName.value, studentLastName.value);
 		localStorage.setItem("checkOutBasicData", JSON.stringify(data));
 	}
+	// check old student records
+ 	checkOldStudent(sEmail, sFirstName, sLastName) {
+ 		return new Promise((resolve, reject) => {
+ 			var data = {
+ 				"email": this.accountEmail,
+ 				"studentEmail": sEmail,
+ 				"firstName": sFirstName,
+ 				"lastName": sLastName
+ 			}
+ 			//return;
+ 			var xhr = new XMLHttpRequest()
+ 			var $this = this;
+ 			xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/checkPreviousStudent", true)
+ 			xhr.withCredentials = false
+ 			xhr.send(JSON.stringify(data))
+ 			xhr.onload = function () {
+ 				if (xhr.status == 200) {
+ 					let responseText = JSON.parse(xhr.responseText);
+ 					let isPreviousStudent = responseText.isPreviousStudent;
+ 					$this.hideShowOldStudentText(isPreviousStudent)
+ 					resolve(isPreviousStudent)
+ 				} else {
+ 					reject(xhr.status)
+ 				}
+
+ 			}
+ 		})
+
+ 	}
+ 	hideShowOldStudentText(isPreviousStudent) {
+ 		let prevStudentLabel = document.getElementById('prevStudentLabel');
+ 		let prevStudentCheckBox = document.getElementById('prevStudent');
+ 		if (!isPreviousStudent) {
+ 			prevStudentLabel.style.display = "block"
+ 			prevStudentCheckBox.disabled = true;
+ 		} else {
+ 			prevStudentLabel.style.display = "none"
+ 			prevStudentCheckBox.disabled = false;
+ 		}
+ 	}
 	// update basic student form data from local storage
 	updateBasicData() {
 		var checkoutJson = localStorage.getItem("checkOutBasicData");
@@ -427,6 +468,7 @@ class classDetailsStripe {
 		})
 
 		prev_page_1.addEventListener('click', function () {
+			$this.hideShowOldStudentText(true)
 			$this.activateDiv('checkout_student_details');
 		})
 	}
