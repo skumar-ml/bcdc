@@ -411,7 +411,7 @@ class classDetailsStripe {
  		let prevStudentLabel = document.getElementById('prevStudentLabel');
  		let prevStudentCheckBox = document.getElementById('prevStudent');
  		if (!isPreviousStudent) {
- 			prevStudentLabel.style.display = "block"
+ 			prevStudentLabel.style.display = "grid"
  			prevStudentCheckBox.disabled = true;
  		} else {
  			prevStudentLabel.style.display = "none"
