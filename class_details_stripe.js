@@ -275,6 +275,7 @@ class classDetailsStripe {
 		this.parentName = parentName;
 		this.amount = amount;
 		this.renderPortalData();
+		this.initializeToolTips();
 	}
 	// Creating main dom for location
 	viewClassLocations(locationData) {
@@ -397,7 +398,7 @@ class classDetailsStripe {
  				if (xhr.status == 200) {
  					let responseText = JSON.parse(xhr.responseText);
  					let isPreviousStudent = responseText.isPreviousStudent;
- 					$this.hideShowOldStudentText(isPreviousStudent)
+ 					$this.checkUncheckOldStudentCheckBox(isPreviousStudent,$this);
  					resolve(isPreviousStudent)
  				} else {
  					reject(xhr.status)
@@ -407,16 +408,70 @@ class classDetailsStripe {
  		})
 
  	}
- 	hideShowOldStudentText(isPreviousStudent) {
- 		let prevStudentLabel = document.getElementById('prevStudentLabel');
- 		let prevStudentCheckBox = document.getElementById('prevStudent');
- 		if (!isPreviousStudent) {
- 			prevStudentLabel.style.display = "grid"
- 			prevStudentCheckBox.disabled = true;
- 		} else {
- 			prevStudentLabel.style.display = "none"
- 			prevStudentCheckBox.disabled = false;
+ 	checkUncheckOldStudentCheckBox(isPreviousStudent,$this) {
+ 		let prevStudentCheckBox = document.getElementsByClassName('prev_student_checkbox');
+ 		for (let i = 0; i < prevStudentCheckBox.length; i++) {
+			if (!isPreviousStudent) {
+				prevStudentCheckBox[i].setAttribute("checked", true);
+				//Update total price
+				let total_price = document.getElementsByClassName('total_price');
+				let totalAmount = parseFloat(total_price[0].innerHTML.replace(/,/g, "").replace(/\$/g, ""))
+				for (let i = 0; i < total_price.length; i++) {
+					if(prevStudentCheckBox[i].checked){
+						total_price[i].innerHTML = "$" + (totalAmount + 100);
+					}
+				}
+ 			} else {
+				prevStudentCheckBox[i].setAttribute("checked", false);
+ 			}
  		}
+
+ 	}
+	eventUpdateTotalAmountPrice(){
+		let prevStudentCheckBox = document.getElementsByClassName('prev_student_checkbox');
+ 		let total_price = document.getElementsByClassName('total_price');
+		let totalAmount = parseFloat(total_price[0].innerHTML.replace(/,/g, "").replace(/\$/g, ""))
+		
+ 		for (let i = 0; i < prevStudentCheckBox.length; i++) {
+			prevStudentCheckBox[i].addEventListener("change", function(ele){
+				if(prevStudentCheckBox[i].checked){
+					total_price[i].innerHTML = "$" + (totalAmount + 100);
+				}else{
+					total_price[i].innerHTML = "$" + (totalAmount);
+				}
+			})
+		}
+	}
+	
+ 	// Add Custom tooltip
+ 	initializeToolTips() {
+ 		const elements = [...document.querySelectorAll('[tip]')]
+ 		var i = 0;
+ 		for (const el of elements) {
+ 			console.log('el', el)
+ 			const tip = document.createElement('div')
+ 			tip.innerHTML = '';
+ 			tip.classList.add('tooltip')
+ 			tip.textContent = el.getAttribute('tip')
+ 			const x = el.hasAttribute('tip-left') ? 'calc(-100% - 5px)' : '16px'
+ 			const y = el.hasAttribute('tip-top') ? '-100%' : '0'
+ 			tip.style.transform = `translate(${x}, ${y})`
+ 			el.appendChild(tip)
+ 			el.onpointermove = e => {
+ 				if (e.target !== e.currentTarget) return
+
+ 				const rect = tip.getBoundingClientRect()
+ 				const rectWidth = rect.width + 16
+ 				const vWidth = window.innerWidth - rectWidth
+ 				const rectX = el.hasAttribute('tip-left') ? e.clientX - rectWidth : e.clientX + rectWidth
+ 				const minX = el.hasAttribute('tip-left') ? 0 : rectX
+ 				const maxX = el.hasAttribute('tip-left') ? vWidth : window.innerWidth
+ 				const x = rectX < minX ? rectWidth : rectX > maxX ? vWidth : e.clientX
+ 				tip.style.left = `${x}px`
+ 				tip.style.top = `${e.clientY}px`
+ 			}
+ 		}
+		this.eventUpdateTotalAmountPrice();
  	}
 	// update basic student form data from local storage
 	updateBasicData() {
