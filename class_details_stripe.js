@@ -408,21 +408,23 @@ class classDetailsStripe {
  		})
 
  	}
- 	checkUncheckOldStudentCheckBox(isPreviousStudent,$this) {
+ 	checkUncheckOldStudentCheckBox(isPreviousStudent, $this) {
  		let prevStudentCheckBox = document.getElementsByClassName('prev_student_checkbox');
  		for (let i = 0; i < prevStudentCheckBox.length; i++) {
-			if (!isPreviousStudent) {
-				prevStudentCheckBox[i].setAttribute("checked", true);
-				//Update total price
-				let total_price = document.getElementsByClassName('total_price');
-				let totalAmount = parseFloat(total_price[0].innerHTML.replace(/,/g, "").replace(/\$/g, ""))
-				for (let i = 0; i < total_price.length; i++) {
-					if(prevStudentCheckBox[i].checked){
-						total_price[i].innerHTML = "$" + (totalAmount + 100);
-					}
-				}
+ 			let total_price = document.getElementsByClassName('total_price');
+ 			let totalAmount = parseFloat(total_price[0].innerHTML.replace(/,/g, "").replace(/\$/g, ""))
+
+ 			if (!isPreviousStudent) {
+ 				prevStudentCheckBox[i].setAttribute("checked", true);
+ 				//Update total price
+ 				for (let i = 0; i < total_price.length; i++) {
+ 					if (prevStudentCheckBox[i].checked) {
+ 						total_price[i].innerHTML = "$" + (totalAmount + 100);
+ 					}
+ 				}
  			} else {
-				prevStudentCheckBox[i].setAttribute("checked", false);
+				total_price[i].innerHTML = "$" + (totalAmount-100);
+ 				prevStudentCheckBox[i].removeAttribute("checked");
  			}
  		}
 
