@@ -523,7 +523,6 @@ class classDetailsStripe {
 		})
 
 		prev_page_1.addEventListener('click', function () {
-			$this.hideShowOldStudentText(true)
 			$this.activateDiv('checkout_student_details');
 		})
 	}
