@@ -52,10 +52,11 @@ class portalForm {
 	$totalInvoice = 0;
 	$isLiveProgram = true;
 	$completetdInvoice = 0;
-	constructor(webflowMemberId,responseText,currentIndex, accountEmail){
+	constructor(webflowMemberId,responseText,currentIndex, accountEmail, creditPoints){
 		this.webflowMemberId = webflowMemberId;
 		this.currentIndex = currentIndex;
 		this.accountEmail = accountEmail;
+		this.creditPoints = creditPoints;
 		this.$completedForm = [];
 		this.renderFormData(responseText) // gets mongoDB data from responseText object for specific registrations
 		
@@ -105,7 +106,7 @@ class portalForm {
 	viewService(){
 		var service = document.getElementById('service');
 		var serviceTitle = document.getElementById('singlePurchaseTitle');
-		console.log('this.$classDeatils.classLevel', this.$classDeatils)
+		//console.log('this.$classDeatils.classLevel', this.$classDeatils)
 		var classLevel = (this.$classDeatils != null) ? this.$classDeatils.classLevel : '';
 		//service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+")";
 		if(Object.keys(this.$classDeatils).length > 0){
@@ -134,7 +135,7 @@ class portalForm {
 			$this.$totalForm = 0;
 			parentFormList.sort(function(r,a){return r.sequence-a.sequence}); // order invoice categories via order specified in MongoDB
 			parentFormList.forEach((form) => {
-				console.log('forms', form)
+				//console.log('forms', form)
 				var accordionContainerDiv = creEl("div", "accordion-container", "accordion-container-"+$tabNo+$this.currentIndex)
 				var labelDiv = creEl("div", "label label-"+$this.currentIndex);
 				// check forms for completion and put corresponding icon & text
@@ -326,6 +327,13 @@ class portalForm {
 			   $this.$totalInvoice++;
 		   })
 		   accordionContentDiv.appendChild(ul)
+	       	   this.creditPoints.then(data=>{
+				if(data.credit_data.credit_balance != undefined && data.credit_data.credit_balance != 0){
+					var creditText = creEl("p", "credit_text")
+			   		creditText.innerHTML = `Your credit of $ ${data.credit_data.credit_balance} will be applied to your outstanding invoices`
+			   		accordionContentDiv.prepend(creditText)
+				}
+		   })
 		   accordionContainerDiv.prepend(labelDiv, accordionContentDiv);
 		   accordionDiv.appendChild(accordionContainerDiv);
 		   $tabNo++;
@@ -362,7 +370,7 @@ class portalForm {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function() {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log('responseText', responseText)
+			//console.log('responseText', responseText)
 			span.innerHTML = link_title;
 			if(responseText.success){
 				window.location.href = responseText.stripe_url;
@@ -403,7 +411,7 @@ class portalForm {
 			//var formsId = forms.map((formItem) => formItem.formId.toString());
 			var completedFormsId = this.$completedForm.map((formItem) => formItem.formId.toString());
 			const compareForm = completedFormsId.filter((obj) => formsId.indexOf(obj) !== -1);
-			console.log('compareForm', compareForm)
+			//console.log('compareForm', compareForm)
 			const uniqueform = compareForm.filter((value, index, self) => self.indexOf(value) === index)
 			return ((formsId.length === uniqueform.length) && (formsId.every(val => uniqueform.includes(val))));
 		}
@@ -709,10 +717,10 @@ class PortalTabs {
 	 */
 	getCurrentActiveTag(){
 		const accordion = document.getElementsByClassName('active');
-		console.log('accordion', accordion.length)
+		//console.log('accordion', accordion.length)
 		var $this = this;
 		for (let i=0; i<accordion.length; i++) {
-			console.log('accordion[i].id', accordion[i].id)
+			//console.log('accordion[i].id', accordion[i].id)
 			$this.$activeTabID = accordion[i].id;
 		}
 		const tabs = document.getElementsByClassName('active_tab');
@@ -726,9 +734,9 @@ class PortalTabs {
 	 */
 	setCurrentActiveTag(){
 		var $this = this;
-		console.log('?????', $this.$activeTabID)
+		//console.log('?????', $this.$activeTabID)
 		const accordion = document.getElementById($this.$activeTabID);
-		console.log('accordion>>>>', accordion)
+		//console.log('accordion>>>>', accordion)
 		if(accordion){
 			accordion.classList.add("active");
 		}
@@ -742,7 +750,7 @@ class PortalTabs {
 		}
 	}
 	getFaildData(data){
-		console.log('failed data', data)
+		//console.log('failed data', data)
 		if(data.length <= 0){
 			return false;
 		}
@@ -777,13 +785,14 @@ class PortalTabs {
 		  this.getCurrentActiveTag();
 		  //const data = await this.apiClient.fetchData('getInvoiceDetail/'+this.webflowMemberId);
 		  const data = await this.apiClient.fetchData('getAllStudentDetails/'+this.webflowMemberId);
+		  const creditPoints = this.fetchCreditPoints()
 		  this.viewtabs(data);
 		  this.initiateTabs();
 		  var $this = this;
 		  data.forEach((formData,index) => {
 			  //setTimeout(function(){
 				  let currentIndex = index+1;
-				  new portalForm($this.webflowMemberId, formData,currentIndex, $this.accountEmail);
+				  new portalForm($this.webflowMemberId, formData,currentIndex, $this.accountEmail, creditPoints);
 			  //},30)
 		  })
 		  this.initializeToolTips()
@@ -822,5 +831,10 @@ class PortalTabs {
 			tip.style.top = `${e.clientY}px`
 		  }
 		}
+	}
+
+	async fetchCreditPoints(){
+		const data = await this.apiClient.fetchData('getCreditPoint/'+this.webflowMemberId);
+		return data;
 	}
 }
