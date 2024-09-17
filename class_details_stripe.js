@@ -129,6 +129,7 @@ class classLocationStripe {
 			btnlink = 'https://form.jotform.com/231870526936160?classlevel=' + this.levelName + '&classlocation=' + this.responseText.locationName + '&classday=' + timeData.day + '&classtime=' + timeData.startTime + '&classspots=' + timeData.leftSpots + '&memberId=' + this.webflowMemberId + '&classUniqueId=' + timeData.classUniqueId + '&parentEmail=' + this.accountEmail;
 			locationActionLink.href = btnlink;
 		}else{
+			locationActionLink.classList.add('register_btn_card')
 			locationActionLink.addEventListener('click', function(event){
 				event.preventDefault();
 				$this.initializeStripePayment(locationActionLink, responseText, timingText, selectBox);
@@ -177,92 +178,75 @@ class classLocationStripe {
 			});
 		});
 	}
-
-	// ------------Start new code for stripe payment integration----------
+	
 	// API call for stripe checkout URL 
-	initializeStripePayment(locationActionLink, responseText, timingText, selectBox) {
-		
-		console.log('responseText', responseText)
-		console.log('timingText', timingText)
-		let classId = responseText.timing[0].classUniqueId
-		if(selectBox){
-			timingText = selectBox.options[selectBox.selectedIndex].text
-			classId = selectBox.options[selectBox.selectedIndex].getAttribute('classId')
+ 	initializeStripePayment(locationActionLink, responseText, timingText, selectBox) {
+
+ 		console.log('responseText', responseText)
+ 		console.log('timingText', timingText)
+ 		let classId = responseText.timing[0].classUniqueId
+ 		if (selectBox) {
+ 			timingText = selectBox.options[selectBox.selectedIndex].text
+ 			classId = selectBox.options[selectBox.selectedIndex].getAttribute('classId')
+ 		}
+ 		console.log('timingText', timingText)
+ 		console.log('classId', classId)
+ 		var label = responseText.locationName + ' | ' + this.levelName + ' | ' + timingText;
+
+ 		var iBackButton = document.getElementById("backbuttonstate");
+
+ 		//Payment button
+ 		console.log('event', locationActionLink)
+ 		locationActionLink.innerHTML = "Processing..."
+ 		locationActionLink.disabled = true;
+
+
+ 		//var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
+ 		var cancelUrl = new URL(window.location.href);
+ 		console.log(window.location.href)
+ 		cancelUrl.searchParams.append('returnType', 'back')
+ 		//console.log(cancelUrl)
+		var checkOutLocalData = localStorage.getItem('checkOutData')
+		if( checkOutLocalData == undefined){
+			return;
 		}
-		console.log('timingText', timingText)
-		console.log('classId', classId)
-		var label = responseText.locationName +' | '+this.levelName+' | '+timingText;
-		//return;
-		var studentFirstName = document.getElementById('Student-First-Name');
-		var studentLastName = document.getElementById('Student-Last-Name');
-		var studentEmail = document.getElementById('Student-Email');
-		var studentGrade = document.getElementById('Student-Grade');
-		var studentSchool = document.getElementById('Student-School');
-		var studentGender = document.getElementById('Student-Gender');
-		var prevStudent = document.getElementById('prevStudent');
+		checkOutLocalData = JSON.parse(checkOutLocalData);
+ 		var data = {
+ 			"checkoutId": checkOutLocalData.checkoutData.checkoutId,
+ 			"label": label,
+ 			"classUniqueId": classId,
+ 			"successUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
+ 			//"cancelUrl": cancelUrl.href,
+ 			"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
+ 			
+ 		}
 
-		var iBackButton = document.getElementById("backbuttonstate");
-		
-		//Payment button
-		console.log('event',locationActionLink)
-		locationActionLink.innerHTML = "Processing..."
-		locationActionLink.disabled = true;
-		
-		
-		//var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
-		var cancelUrl = new URL(window.location.href);
-		console.log(window.location.href)
-		cancelUrl.searchParams.append('returnType', 'back')
-		//console.log(cancelUrl)
-		var data = {
-			"email": this.accountEmail,
-			"studentEmail": studentEmail.value,
-			"firstName": studentFirstName.value,
-			"lastName": studentLastName.value,
-			"grade": studentGrade.value,
-			"label": label,
-			"school": studentSchool.value,
-			"gender": studentGender.value,
-			"prevStudent": prevStudent.value,
-			"levelId": this.levelId,
-			"classUniqueId":classId,
-			"device": (/Mobi|Android/i.test(navigator.userAgent))? 'Mobile': 'Desktop',
-			"deviceUserAgent": navigator.userAgent,
-			"name":this.parentName,
-			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Academic&programName="+label,
-			"cancelUrl": cancelUrl.href,
-			//"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
-			"memberId": this.webflowMemberId,
-			//"amount":100
-			"amount": this.amount * 100
-		}
+ 		console.log('Data !!!!!', data)
+ 		//return;
+ 		var xhr = new XMLHttpRequest()
+ 		var $this = this;
+ 		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl", true)
+ 		xhr.withCredentials = false
+ 		xhr.send(JSON.stringify(data))
+ 		xhr.onload = function () {
+ 			let responseText = JSON.parse(xhr.responseText);
+ 			console.log('responseText', responseText)
+ 			if (responseText.success) {
 
-		console.log('Data !!!!!', data)
-		
-		var xhr = new XMLHttpRequest()
-		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForClasses", true)
-		xhr.withCredentials = false
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function () {
-			let responseText = JSON.parse(xhr.responseText);
-			console.log('responseText', responseText)
-			if (responseText.success) {
+ 				$this.$checkoutData = responseText;
 
-				$this.$checkoutData = responseText;
+ 				//Storing data in local storage
+ 				data.checkoutData = responseText
+ 				localStorage.setItem("checkOutData", JSON.stringify(data));
 
-				//Storing data in local storage
-				data.checkoutData = responseText
-				localStorage.setItem("checkOutData", JSON.stringify(data));
+ 				iBackButton.value = "1";
+ 				window.location.href = responseText.cardUrl;
+ 			}
 
-				iBackButton.value = "1";
-				window.location.href = responseText.stripe_url;
-			}
-
-		}
-	}
-	// ------------Start new code for stripe payment integration----------
+ 		}
+ 	}	
 }
+// ------------Start new code for stripe payment integration----------
 /*
  * This Class used to get class details based on location and pass the data to classLocation class
  */
@@ -520,6 +504,7 @@ class classDetailsStripe {
 		next_page_1.addEventListener('click', async function () {
 			if (form.valid()) {
 				$this.storeBasicData();
+				$this.AddStudentData();
 				$this.activateDiv('checkout_payment');
 			}
 		})
@@ -564,6 +549,69 @@ class classDetailsStripe {
 			})
 		} catch (error) {
 			console.error('Error rendering random number:', error);
+		}
+	}
+
+	// Add student data before checkout url created in database 
+	AddStudentData() {
+		var studentFirstName = document.getElementById('Student-First-Name');
+		var studentLastName = document.getElementById('Student-Last-Name');
+		var studentEmail = document.getElementById('Student-Email');
+		var studentGrade = document.getElementById('Student-Grade');
+		var studentSchool = document.getElementById('Student-School');
+		var studentGender = document.getElementById('Student-Gender');
+		var prevStudent = document.getElementById('prevStudent');
+
+		
+		var register_btn_card = document.querySelectorAll('.register_btn_card')
+		register_btn_card.forEach(e=>{
+			e.innerHTML = 'Processing...';
+		})
+		//var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
+		var cancelUrl = new URL(window.location.href);
+		console.log(window.location.href)
+		cancelUrl.searchParams.append('returnType', 'back')
+		//console.log(cancelUrl)
+		var data = {
+			"email": this.accountEmail,
+			"studentEmail": studentEmail.value,
+			"firstName": studentFirstName.value,
+			"lastName": studentLastName.value,
+			"grade": studentGrade.value,
+			"school": studentSchool.value,
+			"gender": studentGender.value,
+			"prevStudent": prevStudent.value,
+			"levelId": this.levelId,
+			"device": (/Mobi|Android/i.test(navigator.userAgent)) ? 'Mobile' : 'Desktop',
+			"deviceUserAgent": navigator.userAgent,
+			"name": this.parentName,
+			//"successUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
+			//"cancelUrl": cancelUrl.href,
+			//"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
+			"memberId": this.webflowMemberId,
+			"amount": this.amount * 100
+		}
+
+		console.log('Data !!!!!', data)
+		//return;
+		var xhr = new XMLHttpRequest()
+		var $this = this;
+		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForClasses", true)
+		xhr.withCredentials = false
+		xhr.send(JSON.stringify(data))
+		xhr.onload = function () {
+			let responseText = JSON.parse(xhr.responseText);
+			console.log('responseText', responseText)
+			if (responseText.success) {
+				$this.$checkoutData = responseText;
+				//Storing data in local storage
+				data.checkoutData = responseText
+				localStorage.setItem("checkOutData", JSON.stringify(data));
+				register_btn_card.forEach(e=>{
+					e.innerHTML = 'Register';
+				})
+			}
+
 		}
 	}
 }
