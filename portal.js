@@ -330,7 +330,7 @@ class portalForm {
 	       	   this.creditPoints.then(data=>{
 				if(data.credit_data.credit_balance != undefined && data.credit_data.credit_balance != 0){
 					var creditText = creEl("p", "credit_text")
-			   		creditText.innerHTML = `Your credit of $ ${data.credit_data.credit_balance} will be applied to your outstanding invoices`
+			   		creditText.innerHTML = `Your credit of $${data.credit_data.credit_balance} will be applied to your outstanding invoices`
 			   		accordionContentDiv.prepend(creditText)
 				}
 		   })
