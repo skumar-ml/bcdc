@@ -215,9 +215,8 @@ class classLocationStripe {
  			"checkoutId": checkOutLocalData.checkoutData.checkoutId,
  			"label": label,
  			"classUniqueId": classId,
- 			"successUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
- 			//"cancelUrl": cancelUrl.href,
- 			"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
+ 			"successUrl": encodeURI("https://www.bergendebate.com/payment-confirmation?type=Academic&programName="+label),
+			"cancelUrl": cancelUrl.href,
  			
  		}
 
