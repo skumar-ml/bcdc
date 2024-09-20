@@ -190,20 +190,14 @@ class CheckOutWebflow {
 		var prevStudent = document.getElementById('prevStudent-2');
 		var suppProIdE = document.getElementById('suppProIds');
 		var core_product_price = document.getElementById('core_product_price');
-		var fort_lee_location = document.getElementById('fort_lee_location');
-		var glen_rock_location = document.getElementById('glen_rock_location');
-		var summerSessionId = document.querySelector('input[name = checkbox]:checked').value;
+		// var fort_lee_location = document.getElementById('fort_lee_location');
+		// var glen_rock_location = document.getElementById('glen_rock_location');
+		// var summerSessionId = document.querySelector('input[name = checkbox]:checked').value;
 
 		//Payment button
-		var ach_payment = document.getElementById('ach_payment');
-		var card_payment = document.getElementById('card_payment');
-		var paylater_payment = document.getElementById('paylater_payment');
-		ach_payment.innerHTML = "Processing..."
-		ach_payment.disabled = true;
-		card_payment.innerHTML = "Processing..."
-		card_payment.disabled = true;
-		paylater_payment.innerHTML = "Processing..."
-		paylater_payment.disabled = true;
+		var next_page_2 = document.getElementById('next_page_2');
+		next_page_2.innerHTML ="Processing..."
+		
 		//var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
 		var cancelUrl = new URL(window.location.href);
 		console.log(window.location.href)
@@ -219,8 +213,8 @@ class CheckOutWebflow {
 			"school": studentSchool.value,
 			"gender": studentGender.value,
 			"prevStudent": prevStudent.value,
-			"locationId": (fort_lee_location.checked) ? 2 : 1,
-			"summerSessionId": parseInt(summerSessionId),
+			// "locationId": (fort_lee_location.checked) ? 2 : 1,
+			// "summerSessionId": parseInt(summerSessionId),
 			"programId": this.memberData.programId,
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
@@ -247,16 +241,79 @@ class CheckOutWebflow {
 				data.checkoutData = responseText
 				localStorage.setItem("checkOutData", JSON.stringify(data));
 
-				ach_payment.innerHTML = "Checkout"
-				ach_payment.disabled = false;
-				card_payment.innerHTML = "Checkout"
-				card_payment.disabled = false;
-				paylater_payment.innerHTML = "Checkout"
-				paylater_payment.disabled = false;
+				next_page_2.innerHTML ="Next"
 			}
 
 		}
 	}
+
+	updateStudentDataInDB(){
+		let checkOutData = localStorage.getItem('checkOutData')
+		if(checkOutData == undefined){
+			return true
+		}
+		var fort_lee_location = document.getElementById('fort_lee_location');
+		var summerSessionId = document.querySelector('input[name = checkbox]:checked').value;
+		
+		//Payment button
+		var ach_payment = document.getElementById('ach_payment');
+		var card_payment = document.getElementById('card_payment');
+		var paylater_payment = document.getElementById('paylater_payment');
+		ach_payment.innerHTML = "Processing..."
+		ach_payment.disabled = true;
+		card_payment.innerHTML = "Processing..."
+		card_payment.disabled = true;
+		paylater_payment.innerHTML = "Processing..."
+		paylater_payment.disabled = true;
+		
+		checkOutData = JSON.parse(checkOutData)
+		var data = {
+			"checkoutId": checkOutData.checkoutData.checkoutId,
+			"locationId": (fort_lee_location.checked) ? 2 : 1,
+			"summerSessionId": parseInt(summerSessionId)
+		}
+
+		var xhr = new XMLHttpRequest()
+		var $this = this;
+		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl", true)
+		xhr.withCredentials = false
+		xhr.send(JSON.stringify(data))
+		xhr.onload = function () {
+			let responseText = JSON.parse(xhr.responseText);
+			console.log('responseText', responseText)
+			ach_payment.innerHTML = "Checkout"
+			ach_payment.disabled = false;
+			card_payment.innerHTML = "Checkout"
+			card_payment.disabled = false;
+			paylater_payment.innerHTML = "Checkout"
+			paylater_payment.disabled = false;
+
+		}
+	}
+
+	updateClickEventInDB(checkOutUrl){
+		let checkOutData = localStorage.getItem('checkOutData')
+		if(checkOutData == undefined){
+			return true
+		}
+		checkOutData = JSON.parse(checkOutData)
+		var data = {
+			"checkoutId": checkOutData.checkoutData.checkoutId,
+			"isSummerData": true,
+		}
+
+		var xhr = new XMLHttpRequest()
+		var $this = this;
+		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl", true)
+		xhr.withCredentials = false
+		xhr.send(JSON.stringify(data))
+		xhr.onload = function () {
+			let responseText = JSON.parse(xhr.responseText);
+			console.log('responseText', responseText)
+			window.location = checkOutUrl;
+		}
+	}
+	
 	// Hide and show tab for program selection, student info and checkout payment
 	activateDiv(divId) {
 		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment', 'pf_labs_error_message'];
@@ -283,6 +340,7 @@ class CheckOutWebflow {
 					next_page_1.innerHTML = 'Next'
 					eligible = validate.eligible;
 				}
+				$this.initializeStripePayment();
 				if (eligible) {
 					$this.activateDiv('checkout_student_details');
 				} else {
@@ -297,7 +355,7 @@ class CheckOutWebflow {
 			if (summerSessionId && locationId) {
 				locationSessionError.style.display = 'none';
 				$this.activateDiv('checkout_payment');
-				$this.initializeStripePayment();
+				$this.updateStudentDataInDB();
 			} else {
 				locationSessionError.style.display = 'block';
 			}
@@ -412,19 +470,22 @@ class CheckOutWebflow {
 			// ach_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('us_bank_account', ach_payment);
 			ibackbutton.value = "1";
-			window.location.href = $this.$checkoutData.achUrl;
+			$this.updateClickEventInDB($this.$checkoutData.achUrl)
+			//window.location.href = $this.$checkoutData.achUrl;
 		})
 		card_payment.addEventListener('click', function () {
 			// card_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('card', card_payment);
 			ibackbutton.value = "1";
-			window.location.href = $this.$checkoutData.cardUrl;
+			$this.updateClickEventInDB($this.$checkoutData.cardUrl)
+			//window.location.href = $this.$checkoutData.cardUrl;
 		})
 		paylater_payment.addEventListener('click', function () {
 			// paylater_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('paylater', paylater_payment);
 			ibackbutton.value = "1";
-			window.location.href = $this.$checkoutData.payLaterUrl;
+			$this.updateClickEventInDB($this.$checkoutData.payLaterUrl)
+			//window.location.href = $this.$checkoutData.payLaterUrl;
 		})
 	}
 
