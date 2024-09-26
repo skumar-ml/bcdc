@@ -670,6 +670,23 @@ class PortalTabs {
 			var accordionInvoiceHeader = creEl("div","accordion-forms-header","accordion-invoice-header-"+currentIndex)
 			
 			tabContent.prepend(program_dates, accordionHeading, accordionFormsHeader,accordionforms, accordionInvoiceHeader, accordion)
+			if(formData.studentDetail.home_work_link){
+				var home_work_link_row = creEl("div", "accordion")
+				home_work_link_row.innerHTML = `<div class="accordion-container">
+				<div class="label label-1">Home Work Link</div>
+					<div class="accordion-content">
+						<ul><li>
+							<span class="invoice_name">Home Work Link</span>
+							<div class="link-container">
+								<a target="_blank" href="${formData.studentDetail.home_work_link}">
+									<span class="invoice_text">View</span>
+								</a>
+							</div>
+						</li></ul>
+					</div>
+				</div>`
+				tabContent.appendChild(home_work_link_row)
+			}
 			contentSection.appendChild(tabContent);
 		});
 		
