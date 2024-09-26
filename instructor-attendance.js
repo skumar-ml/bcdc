@@ -301,6 +301,14 @@ class checkInForm {
 		})
 		return row;
 	}
+	// New Ribbon html created
+	newRibbon(){
+		let newRibbon = creEl('div', 'new-ribbon')
+		let newRibbonText = creEl('span')
+		newRibbonText.innerHTML = "New"
+		newRibbon.appendChild(newRibbonText)
+		return newRibbon;
+	}
 	/*Creating DOM element for student list*/
 	displayStudentList(classId, type=''){
 		
@@ -374,6 +382,11 @@ class checkInForm {
 			
 			
 			row.appendChild(col_3);
+			// new-ribbon html code
+			if(item.prevStudent != "Yes"){
+				let newRibbon = this.newRibbon();
+				row.appendChild(newRibbon)	
+			}
 			studentlist.appendChild(row)
 		})
 		
