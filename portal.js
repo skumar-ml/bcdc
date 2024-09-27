@@ -330,7 +330,7 @@ class portalForm {
 	       	   this.creditPoints.then(data=>{
 				if(data.credit_data.credit_balance != undefined && data.credit_data.credit_balance != 0){
 					var creditText = creEl("p", "credit_text")
-			   		creditText.innerHTML = `Your credit of $${data.credit_data.credit_balance} will be applied to your outstanding invoices`
+			   		creditText.innerHTML = `Your credit of $${parseFloat(data.credit_data.credit_balance).toFixed(2)} will be applied to your outstanding invoices`
 			   		accordionContentDiv.prepend(creditText)
 				}
 		   })
@@ -671,7 +671,7 @@ class PortalTabs {
 			
 			tabContent.prepend(program_dates, accordionHeading, accordionFormsHeader,accordionforms, accordionInvoiceHeader, accordion)
 			if(formData.studentDetail.home_work_link){
-				var home_work_link_row = creEl("div", "accordion")
+				var home_work_link_row = creEl("div", "accordion", "home_work_link")
 				home_work_link_row.innerHTML = `<div class="accordion-container">
 				<div class="label label-1">Home Work Link</div>
 					<div class="accordion-content">
