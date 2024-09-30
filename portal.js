@@ -673,10 +673,10 @@ class PortalTabs {
 			if(formData.studentDetail.home_work_link){
 				var home_work_link_row = creEl("div", "accordion", "home_work_link")
 				home_work_link_row.innerHTML = `<div class="accordion-container">
-				<div class="label label-1">Home Work Link</div>
+				<div class="label label-1">Homework</div>
 					<div class="accordion-content">
 						<ul><li>
-							<span class="invoice_name">Home Work Link</span>
+							<span class="invoice_name">Homework Link</span>
 							<div class="link-container">
 								<a target="_blank" href="${formData.studentDetail.home_work_link}">
 									<span class="invoice_text">View</span>
