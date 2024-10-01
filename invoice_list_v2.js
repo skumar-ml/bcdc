@@ -748,7 +748,7 @@ class InvoiceList {
 		if(newStudentFee){
 			var newStudentFeeHtml = document.createElement('p');
 			newStudentFee =  parseFloat(newStudentFee) ;
-			newStudentFeeHtml.innerHTML = '<strong>New Student Fee:</strong> +$'+this.numberWithCommas(newStudentFee.toFixed(2));
+			newStudentFeeHtml.innerHTML = '<strong>New Student Fee:</strong> $'+this.numberWithCommas(newStudentFee.toFixed(2));
 			details.appendChild(newStudentFeeHtml);
 		}
 
