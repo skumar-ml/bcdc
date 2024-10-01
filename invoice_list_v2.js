@@ -741,7 +741,7 @@ class InvoiceList {
 		if(earlyBirdsDiscount){
 			var earlyBirdsDiscountHtml = document.createElement('p');
 			earlyBirdsDiscount =  parseFloat(earlyBirdsDiscount) ;
-			earlyBirdsDiscountHtml.innerHTML = '<strong>Early Bird:</strong> -$'+this.numberWithCommas(earlyBirdsDiscount.toFixed(2));
+			earlyBirdsDiscountHtml.innerHTML = '<strong>Early Bird:</strong> ($'+this.numberWithCommas(earlyBirdsDiscount.toFixed(2))+")";
 			details.appendChild(earlyBirdsDiscountHtml);
 		}
 		
@@ -755,14 +755,14 @@ class InvoiceList {
 		if(siblingDisc){
 			var siblingDiscHtml = document.createElement('p');
 			siblingDisc =  parseFloat(siblingDisc) ;
-			siblingDiscHtml.innerHTML = '<strong>Sibling Discount:</strong> $'+this.numberWithCommas(siblingDisc.toFixed(2));
+			siblingDiscHtml.innerHTML = '<strong>Sibling Discount:</strong> ($'+this.numberWithCommas(siblingDisc.toFixed(2))+")";
 			details.appendChild(siblingDiscHtml);
 		}
 
 		if(credit_amount){
 			var credit_amountHtml = document.createElement('p');
 			credit_amount =  parseFloat(credit_amount) ;
-			credit_amountHtml.innerHTML = '<strong>BCDC Credit:</strong> $'+this.numberWithCommas(credit_amount.toFixed(2));
+			credit_amountHtml.innerHTML = '<strong>BCDC Credit:</strong> ($'+this.numberWithCommas(Math.abs(credit_amount.toFixed(2)))+")";
 			details.appendChild(credit_amountHtml);
 		}
 		
