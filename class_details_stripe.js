@@ -391,9 +391,14 @@ class classDetailsStripe {
  		})
 
  	}
+ 	// formatting price in comma based value
+	numberWithCommas(x) {
+		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+	}
  	checkUncheckOldStudentCheckBox(isPreviousStudent, $this) {
  		let prevStudentCheckBox = document.getElementsByClassName('prev_student_checkbox');
- 		for (let i = 0; i < prevStudentCheckBox.length; i++) {
+ 		var $this = this;
+		for (let i = 0; i < prevStudentCheckBox.length; i++) {
  			let total_price = document.getElementsByClassName('total_price');
  			let totalAmount = parseFloat(total_price[0].innerHTML.replace(/,/g, "").replace(/\$/g, ""))
 
@@ -402,31 +407,31 @@ class classDetailsStripe {
  				//Update total price
  				for (let i = 0; i < total_price.length; i++) {
  					if (prevStudentCheckBox[i].checked) {
- 						total_price[i].innerHTML = "$" + (totalAmount + 100);
+ 						total_price[i].innerHTML = "$" + $this.numberWithCommas(totalAmount + 100);
  					}
  				}
  			} else {
-				total_price[i].innerHTML = "$" + (totalAmount-100);
+				total_price[i].innerHTML = "$" + $this.numberWithCommas(totalAmount-100);
  				prevStudentCheckBox[i].removeAttribute("checked");
  			}
  		}
 
  	}
-	eventUpdateTotalAmountPrice(){
-		let prevStudentCheckBox = document.getElementsByClassName('prev_student_checkbox');
+ 	eventUpdateTotalAmountPrice() {
+ 		let prevStudentCheckBox = document.getElementsByClassName('prev_student_checkbox');
  		let total_price = document.getElementsByClassName('total_price');
-		let totalAmount = parseFloat(total_price[0].innerHTML.replace(/,/g, "").replace(/\$/g, ""))
-		
+ 		let totalAmount = parseFloat(total_price[0].innerHTML.replace(/,/g, "").replace(/\$/g, ""))
+		var $this = this
  		for (let i = 0; i < prevStudentCheckBox.length; i++) {
-			prevStudentCheckBox[i].addEventListener("change", function(ele){
-				if(prevStudentCheckBox[i].checked){
-					total_price[i].innerHTML = "$" + (totalAmount + 100);
-				}else{
-					total_price[i].innerHTML = "$" + (totalAmount);
-				}
-			})
-		}
-	}
+ 			prevStudentCheckBox[i].addEventListener("change", function (ele) {
+ 				if (prevStudentCheckBox[i].checked) {
+ 					total_price[i].innerHTML = "$" + $this.numberWithCommas(totalAmount + 100);
+ 				} else {
+ 					total_price[i].innerHTML = "$" + $this.numberWithCommas(totalAmount);
+ 				}
+ 			})
+ 		}
+ 	}
 	
  	// Add Custom tooltip
  	initializeToolTips() {
