@@ -34,7 +34,9 @@ class classLocationStripe {
 		var cartLocationDiv = document.getElementById('stripe-cart-location-div-' + this.currentIndex);
 		cartLocationDiv.innerHTML = "";
 		var heading = creEl('h2', 'sub-heading center');
-		heading.innerHTML = (this.responseText.locationName) ? this.responseText.locationName : '';
+		//heading.innerHTML = (this.responseText.locationName) ? this.responseText.locationName : '';
+		// Code changes for Competitive Track  added this.responseText.locationName != "None"
+ 		heading.innerHTML = (this.responseText.locationName && this.responseText.locationName != "None") ? this.responseText.locationName : '';
 
 		// get time and button html
 		var innerContainer = this.getInnerContainer();
@@ -61,8 +63,10 @@ class classLocationStripe {
 
 				var time = creEl('div', 'time-text')
 				timingText = timeData.day + " " + timeData.startTime + "-" + timeData.endTime + " ";
-				time.innerHTML = timingText;
-
+				//time.innerHTML = timingText;
+				// Code changes for Competitive Track  added this.responseText.locationName != "None" condition
+ 				time.innerHTML = (this.responseText.locationName != "None") ? timingText : '';
+				
 				registerBtn = this.getRegisterBtn(timeData, index, this.responseText, timingText, selectBox='');
 				buttonDiv.appendChild(registerBtn);
 
@@ -191,8 +195,14 @@ class classLocationStripe {
  		}
  		console.log('timingText', timingText)
  		console.log('classId', classId)
- 		var label = responseText.locationName + ' | ' + this.levelName + ' | ' + timingText;
-
+ 		//var label = responseText.locationName + ' | ' + this.levelName + ' | ' + timingText;
+		var label
+		if(this.responseText.locationName != "None"){
+			label = responseText.locationName + ' | ' + this.levelName + ' | ' + timingText;
+		}else{
+			label = "Competitive Track";
+		}
+		
  		var iBackButton = document.getElementById("backbuttonstate");
 
  		//Payment button
