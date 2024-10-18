@@ -648,7 +648,11 @@ class PortalTabs {
 				var classLevel = (formData.classDetail != null)? formData.classDetail.classLevel : '';
 				//tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+"("+formData.classLoactionDeatils.locationName+")";
 				if(Object.keys(formData.classDetail).length > 0){
-					tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+" ("+formData.classLoactionDeatils.locationName+", "+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
+					if(classLevel != "Competitive Track"){
+						tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+" ("+formData.classLoactionDeatils.locationName+", "+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
+					}else{
+						tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" ("+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
+					}
 				}else{
 					tabsE.innerHTML = formData.studentDetail.studentName+" - "+formData.summerProgramDetail.programName+" ("+formData.summerProgramDetail.location+", "+formData.summerProgramDetail.currentYear+" Summer) ";
 				}
