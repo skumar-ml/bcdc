@@ -245,9 +245,9 @@ class classLocationStripe {
  				$this.$checkoutData = responseText;
 
  				//Storing data in local storage
-				data = [...checkOutLocalData, ...data]
+				//data = [...checkOutLocalData, ...data]
  				data.checkoutData = responseText
- 				localStorage.setItem("checkOutData", JSON.stringify(data));
+ 				//localStorage.setItem("checkOutData", JSON.stringify(data));
 
  				iBackButton.value = "1";
  				window.location.href = responseText.cardUrl;
