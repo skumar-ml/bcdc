@@ -342,7 +342,8 @@ class classDetailsStripe {
 
 			if (paymentData.checkoutData) {
 				//this.$checkoutData = paymentData.checkoutData;
-				this.activateDiv('checkout_payment');
+				// Will debug latter
+				//this.activateDiv('checkout_payment');
 			}
 		} else {
 			// removed local storage when checkout page rendar direct without back button
