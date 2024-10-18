@@ -651,10 +651,10 @@ class PortalTabs {
 					if(classLevel != "Level competitivetrack"){
 						tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+" ("+formData.classLoactionDeatils.locationName+", "+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
 					}else{
-						tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" ("+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
+					tabsE.innerHTML = formData.studentDetail.studentName+" - Competitive Track ("+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
 					}
 				}else{
-					tabsE.innerHTML = formData.studentDetail.studentName+" - Competitive Track ("+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
+					tabsE.innerHTML = formData.studentDetail.studentName+" - "+formData.summerProgramDetail.programName+" ("+formData.summerProgramDetail.location+", "+formData.summerProgramDetail.currentYear+" Summer) ";
 				}
 				tabsE.setAttribute("data-tab-id", 'tab'+currentIndex )
 				tabs.appendChild(tabsE);
