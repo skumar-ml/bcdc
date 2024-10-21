@@ -273,12 +273,14 @@ class classDetailsStripe {
 	}
 	// Creating main dom for location
 	viewClassLocations(locationData) {
-		var classLocationContainer = document.getElementById('classLocationStripe');
-		Object.values(locationData).forEach((formData, index) => {
-			var locationContainer = creEl('div', 'cart-location-div', 'stripe-cart-location-div-' + (index + 1))
-			classLocationContainer.appendChild(locationContainer);
-		})
-	}
+ 		var classLocationContainer = document.getElementById('classLocationStripe');;
+		let LocationArray = Object.values(locationData)
+		classLocationContainer.classList.add('total_location_'+LocationArray.length)
+ 		LocationArray.forEach((formData, index) => {
+ 			var locationContainer = creEl('div', 'cart-location-div', 'stripe-cart-location-div-' + (index + 1))
+ 			classLocationContainer.appendChild(locationContainer);
+ 		})
+ 	}
 	//-------------Start new code for stripe payment integration----------------
 
 	
