@@ -121,6 +121,13 @@ class classLocationStripe {
 
 		var locationActionLink = document.createElement("a");
 		locationActionLink.className = "main-button red w-button";
+
+		// Create Option B button. it will contain credit card and bank transfer buttons.it will be available in one container
+		let optionBContainer = creEl('div', 'option_b_container hide');
+		//Credit card payment button
+		let creditCardBtn = creEl('a', 'main-button red w-button')
+		//Bank transfer payment button
+		let bankTransferBtn = creEl('a', 'main-button red w-button')
 		
 		var btnlbl = 'Register';
 		var btnlink = 'https://form.jotform.com/231868905552162?classlevel=' + this.levelName + '&classlocation=' + this.responseText.locationName + '&classday=' + timeData.day + '&classtime=' + timeData.startTime + '&classspots=' + timeData.leftSpots + '&memberId=' + this.webflowMemberId + '&classUniqueId=' + timeData.classUniqueId + '&parentEmail=' + this.accountEmail;
@@ -136,13 +143,31 @@ class classLocationStripe {
 			locationActionLink.classList.add('register_btn_card')
 			locationActionLink.addEventListener('click', function(event){
 				event.preventDefault();
-				$this.initializeStripePayment(locationActionLink, responseText, timingText, selectBox);
+				$this.initializeStripePayment(locationActionLink, responseText, timingText, selectBox, 'card');
 			})
+
+			// Add Event in credit card payment button
+			creditCardBtn.classList.add('register_btn_card', 'option_b_card')
+			creditCardBtn.addEventListener('click', function (event) {
+ 				event.preventDefault();
+ 				$this.initializeStripePayment(creditCardBtn, responseText, timingText, selectBox, 'card');
+ 			})
+			creditCardBtn.innerHTML = "Register via Card(Processing fee)"
+			// Add Event in bank-transfer payment button
+			bankTransferBtn.classList.add('register_btn_card', 'option_b_bt')
+ 			bankTransferBtn.addEventListener('click', function (event) {
+ 				event.preventDefault();
+ 				$this.initializeStripePayment(bankTransferBtn, responseText, timingText, selectBox, 'ach');
+ 			})
+			bankTransferBtn.innerHTML = "Register via Bank Transfer"
+			// append credit card and bank-transfer button to parent div
+			optionBContainer.prepend(creditCardBtn, bankTransferBtn)
+			
 		}
 		
 
 		locationActionLink.innerHTML = btnlbl;
-		locationActionDiv.appendChild(locationActionLink);
+		locationActionDiv.prepend(locationActionLink, optionBContainer);
 
 
 		return locationActionDiv;
@@ -184,7 +209,7 @@ class classLocationStripe {
 	}
 	
 	// API call for stripe checkout URL 
- 	initializeStripePayment(locationActionLink, responseText, timingText, selectBox) {
+ 	initializeStripePayment(locationActionLink, responseText, timingText, selectBox, type) {
 
  		console.log('responseText', responseText)
  		console.log('timingText', timingText)
@@ -250,7 +275,12 @@ class classLocationStripe {
  				//localStorage.setItem("checkOutData", JSON.stringify(data));
 
  				iBackButton.value = "1";
- 				window.location.href = responseText.cardUrl;
+ 				//window.location.href = responseText.cardUrl;
+				if(type == 'card'){
+					window.location.href = responseText.cardUrl;
+				}else{
+					window.location.href = responseText.achUrl;
+				}
  			}
 
  		}
@@ -627,6 +657,13 @@ class classDetailsStripe {
 				localStorage.setItem("checkOutData", JSON.stringify(data));
 				register_btn_card.forEach(e=>{
 					e.innerHTML = 'Register';
+					if(e.classList.contains('option_b_card')){
+						e.innerHTML = 'Register via Card(Processing fee)';
+					}else if(e.classList.contains('option_b_bt')){
+						e.innerHTML = 'Register via Bank Transfer';
+					}else{
+						e.innerHTML = 'Register';
+					}
 				})
 			}
 
