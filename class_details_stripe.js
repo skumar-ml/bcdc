@@ -152,7 +152,7 @@ class classLocationStripe {
  				event.preventDefault();
  				$this.initializeStripePayment(creditCardBtn, responseText, timingText, selectBox, 'card', true);
  			})
-			creditCardBtn.innerHTML = "Register via Card(Processing fee)"
+			creditCardBtn.innerHTML = "Register via Credit Card (Has Fee)"
 			// Add Event in bank-transfer payment button
 			bankTransferBtn.classList.add('register_btn_card', 'option_b_bt')
  			bankTransferBtn.addEventListener('click', function (event) {
@@ -659,7 +659,7 @@ class classDetailsStripe {
 				register_btn_card.forEach(e=>{
 					e.innerHTML = 'Register';
 					if(e.classList.contains('option_b_card')){
-						e.innerHTML = 'Register via Card(Processing fee)';
+						e.innerHTML = 'Register via Credit Card (Has Fee)';
 					}else if(e.classList.contains('option_b_bt')){
 						e.innerHTML = 'Register via Bank Transfer';
 					}else{
