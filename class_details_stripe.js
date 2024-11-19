@@ -143,21 +143,21 @@ class classLocationStripe {
 			locationActionLink.classList.add('register_btn_card')
 			locationActionLink.addEventListener('click', function(event){
 				event.preventDefault();
-				$this.initializeStripePayment(locationActionLink, responseText, timingText, selectBox, 'card');
+				$this.initializeStripePayment(locationActionLink, responseText, timingText, selectBox, 'card', false);
 			})
 
 			// Add Event in credit card payment button
 			creditCardBtn.classList.add('register_btn_card', 'option_b_card')
 			creditCardBtn.addEventListener('click', function (event) {
  				event.preventDefault();
- 				$this.initializeStripePayment(creditCardBtn, responseText, timingText, selectBox, 'card');
+ 				$this.initializeStripePayment(creditCardBtn, responseText, timingText, selectBox, 'card', true);
  			})
 			creditCardBtn.innerHTML = "Register via Card(Processing fee)"
 			// Add Event in bank-transfer payment button
 			bankTransferBtn.classList.add('register_btn_card', 'option_b_bt')
  			bankTransferBtn.addEventListener('click', function (event) {
  				event.preventDefault();
- 				$this.initializeStripePayment(bankTransferBtn, responseText, timingText, selectBox, 'ach');
+ 				$this.initializeStripePayment(bankTransferBtn, responseText, timingText, selectBox, 'ach', false);
  			})
 			bankTransferBtn.innerHTML = "Register via Bank Transfer"
 			// append credit card and bank-transfer button to parent div
@@ -209,7 +209,7 @@ class classLocationStripe {
 	}
 	
 	// API call for stripe checkout URL 
- 	initializeStripePayment(locationActionLink, responseText, timingText, selectBox, type) {
+ 	initializeStripePayment(locationActionLink, responseText, timingText, selectBox, type, has_fee) {
 
  		console.log('responseText', responseText)
  		console.log('timingText', timingText)
@@ -250,6 +250,7 @@ class classLocationStripe {
  			"checkoutId": checkOutLocalData.checkoutData.checkoutId,
  			"label": label,
  			"classUniqueId": classId,
+			"has_fee":has_fee,
  			"successUrl": encodeURI("https://www.bergendebate.com/payment-confirmation?type=Academic&programName="+label),
 			"cancelUrl": cancelUrl.href,
  			
