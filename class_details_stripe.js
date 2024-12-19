@@ -211,15 +211,15 @@ class classLocationStripe {
 	// API call for stripe checkout URL 
  	initializeStripePayment(locationActionLink, responseText, timingText, selectBox, type, has_fee) {
 
- 		console.log('responseText', responseText)
- 		console.log('timingText', timingText)
+ 		//console.log('responseText', responseText)
+ 		//console.log('timingText', timingText)
  		let classId = responseText.timing[0].classUniqueId
  		if (selectBox) {
  			timingText = selectBox.options[selectBox.selectedIndex].text
  			classId = selectBox.options[selectBox.selectedIndex].getAttribute('classId')
  		}
- 		console.log('timingText', timingText)
- 		console.log('classId', classId)
+ 		//console.log('timingText', timingText)
+ 		//console.log('classId', classId)
  		//var label = responseText.locationName + ' | ' + this.levelName + ' | ' + timingText;
 		var label
 		if(this.responseText.locationName != "None"){
@@ -231,14 +231,14 @@ class classLocationStripe {
  		var iBackButton = document.getElementById("backbuttonstate");
 
  		//Payment button
- 		console.log('event', locationActionLink)
+ 		//console.log('event', locationActionLink)
  		locationActionLink.innerHTML = "Processing..."
  		locationActionLink.disabled = true;
 
 
  		//var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
  		var cancelUrl = new URL(window.location.href);
- 		console.log(window.location.href)
+ 		//console.log(window.location.href)
  		cancelUrl.searchParams.append('returnType', 'back')
  		//console.log(cancelUrl)
 		var checkOutLocalData = localStorage.getItem('checkOutData')
@@ -256,7 +256,7 @@ class classLocationStripe {
  			
  		}
 
- 		console.log('Data !!!!!', data)
+ 		//console.log('Data !!!!!', data)
  		//return;
  		var xhr = new XMLHttpRequest()
  		var $this = this;
@@ -265,7 +265,7 @@ class classLocationStripe {
  		xhr.send(JSON.stringify(data))
  		xhr.onload = function () {
  			let responseText = JSON.parse(xhr.responseText);
- 			console.log('responseText', responseText)
+ 			//console.log('responseText', responseText)
  			if (responseText.success) {
 
  				$this.$checkoutData = responseText;
@@ -483,7 +483,7 @@ class classDetailsStripe {
  		const elements = [...document.querySelectorAll('[tip]')]
  		var i = 0;
  		for (const el of elements) {
- 			console.log('el', el)
+ 			//console.log('el', el)
  			const tip = document.createElement('div')
  			tip.innerHTML = '';
  			tip.classList.add('tooltip')
@@ -618,7 +618,7 @@ class classDetailsStripe {
 		})
 		//var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
 		var cancelUrl = new URL(window.location.href);
-		console.log(window.location.href)
+		//console.log(window.location.href)
 		cancelUrl.searchParams.append('returnType', 'back')
 		//console.log(cancelUrl)
 		var data = {
@@ -641,7 +641,7 @@ class classDetailsStripe {
 			"amount": this.amount * 100
 		}
 
-		console.log('Data !!!!!', data)
+		//console.log('Data !!!!!', data)
 		//return;
 		var xhr = new XMLHttpRequest()
 		var $this = this;
@@ -650,7 +650,7 @@ class classDetailsStripe {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log('responseText', responseText)
+			//console.log('responseText', responseText)
 			if (responseText.success) {
 				$this.$checkoutData = responseText;
 				//Storing data in local storage
