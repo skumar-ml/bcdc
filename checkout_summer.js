@@ -289,6 +289,8 @@ class CheckOutWebflow {
 			"summerSessionId": parseInt(summerSessionId)
 		}
 
+		localStorage.setItem("checkOutData", JSON.stringify([...checkOutData, ...data]));
+		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
 		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl", true)
