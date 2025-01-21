@@ -127,8 +127,9 @@ class CheckOutWebflow {
 
 			if (findFortLee != undefined && findGlenRock != undefined && findLivingston != undefined) {
 				next_page_2.style.display = 'none';
+				document.querySelector('.cart-location-container').style.display = "none";
 			}else{
-				GlenRockContainer.closest('div').style.display = "block";
+				document.querySelector('.cart-location-container').style.display = "block";
 			}
 
 		} else {
@@ -150,8 +151,9 @@ class CheckOutWebflow {
 
 			if (findFortLee == undefined && findGlenRock == undefined && findLivingston == undefined) {
 				next_page_2.style.display = 'none';
+				document.querySelector('.cart-location-container').style.display = "none";
 			}else{
-				GlenRockContainer.closest('div').style.display = "block";
+				document.querySelector('.cart-location-container').style.display = "block";
 			}
 		}
 	}
