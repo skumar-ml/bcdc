@@ -289,7 +289,7 @@ class CheckOutWebflow {
 			"summerSessionId": parseInt(summerSessionId)
 		}
 
-		localStorage.setItem("checkOutData", JSON.stringify([...checkOutData, ...data]));
+		localStorage.setItem("checkOutData", JSON.stringify(checkOutData));
 		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
