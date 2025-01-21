@@ -268,7 +268,7 @@ class CheckOutWebflow {
 		if(checkOutData == undefined){
 			return true
 		}
-		var fort_lee_location = document.getElementById('fort_lee_location');
+		var locationId = document.querySelector('input[data-name="Radio":checked').value;
 		var summerSessionId = document.querySelector('input[name = checkbox]:checked').value;
 		
 		//Payment button
@@ -285,7 +285,7 @@ class CheckOutWebflow {
 		checkOutData = JSON.parse(checkOutData)
 		var data = {
 			"checkoutId": checkOutData.checkoutData.checkoutId,
-			"locationId": (fort_lee_location.checked) ? 2 : 1,
+			"locationId": locationId,
 			"summerSessionId": parseInt(summerSessionId)
 		}
 		checkOutData.updateData = data
