@@ -268,7 +268,7 @@ class CheckOutWebflow {
 		if(checkOutData == undefined){
 			return true
 		}
-		var locationId = document.querySelector('input[data-name="Radio":checked').value;
+		var locationId = document.querySelector('input[data-name="Radio"]:checked').value;
 		var summerSessionId = document.querySelector('input[name = checkbox]:checked').value;
 		
 		//Payment button
