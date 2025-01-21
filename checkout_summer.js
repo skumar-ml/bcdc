@@ -127,6 +127,8 @@ class CheckOutWebflow {
 
 			if (findFortLee != undefined && findGlenRock != undefined && findLivingston != undefined) {
 				next_page_2.style.display = 'none';
+			}else{
+				GlenRockContainer.closest('div').display = "block";
 			}
 
 		} else {
@@ -148,11 +150,10 @@ class CheckOutWebflow {
 
 			if (findFortLee == undefined && findGlenRock == undefined && findLivingston == undefined) {
 				next_page_2.style.display = 'none';
+			}else{
+				GlenRockContainer.closest('div').display = "block";
 			}
 		}
-
-
-
 	}
 	// API Call for validate user for program for level 2A
 	async validateUserForProgram() {
