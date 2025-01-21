@@ -105,21 +105,27 @@ class CheckOutWebflow {
 		var location = sessionData.location;
 		var fortLeeContainer = document.getElementById('fortLeeContainer');
 		var GlenRockContainer = document.getElementById('GlenRockContainer');
+		var LivingstonContainer = document.getElementById('LivingstonContainer');
 		var next_page_2 = document.getElementById('next_page_2');
-		GlenRockContainer.style.display = "none"
-		fortLeeContainer.style.display = "none"
+		GlenRockContainer.style.display = "none";
+		fortLeeContainer.style.display = "none";
+		LivingstonContainer.style.display = "none";
 		next_page_2.style.display = 'block';
 		if (this.memberData.programId == '102') {
-			var findFortLee = location.find((i) => i.locationId == 2 && i.leftSpot == 0)
-			var findGlenRock = location.find((i) => i.locationId == 1 && i.leftSpot == 0)
-			if (findFortLee == undefined) {
+			var findFortLee = location.find((i) => i.locationId == 2 && i.leftSpot > 0)
+			var findGlenRock = location.find((i) => i.locationId == 1 && i.leftSpot > 0)
+			var findLivingston = location.find((i) => i.locationId == 4 && i.leftSpot > 0)
+			if (findFortLee != undefined) {
 				fortLeeContainer.style.display = "flex"
 			}
-			if (findGlenRock == undefined) {
+			if (findGlenRock != undefined) {
 				GlenRockContainer.style.display = "flex"
 			}
+			if (findLivingston != undefined) {
+				LivingstonContainer.style.display = "flex"
+			}
 
-			if (findFortLee != undefined && findGlenRock != undefined) {
+			if (findFortLee != undefined && findGlenRock != undefined && findLivingston != undefined) {
 				next_page_2.style.display = 'none';
 			}
 
@@ -133,7 +139,14 @@ class CheckOutWebflow {
 			if (findGlenRock != undefined) {
 				GlenRockContainer.style.display = "flex"
 			}
-			if (findFortLee == undefined && findGlenRock == undefined) {
+
+			var findLivingston = location.find((i) => i.locationId == 4 && i.programId == this.memberData.programId && i.leftSpot > 0)
+
+			if (findLivingston != undefined) {
+				GlenRockContainer.style.display = "flex"
+			}
+
+			if (findFortLee == undefined && findGlenRock == undefined && findLivingston == undefined) {
 				next_page_2.style.display = 'none';
 			}
 		}
