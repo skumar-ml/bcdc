@@ -128,7 +128,7 @@ class CheckOutWebflow {
 			if (findFortLee != undefined && findGlenRock != undefined && findLivingston != undefined) {
 				next_page_2.style.display = 'none';
 			}else{
-				GlenRockContainer.closest('div').display = "block";
+				GlenRockContainer.closest('div').style.display = "block";
 			}
 
 		} else {
@@ -151,7 +151,7 @@ class CheckOutWebflow {
 			if (findFortLee == undefined && findGlenRock == undefined && findLivingston == undefined) {
 				next_page_2.style.display = 'none';
 			}else{
-				GlenRockContainer.closest('div').display = "block";
+				GlenRockContainer.closest('div').style.display = "block";
 			}
 		}
 	}
