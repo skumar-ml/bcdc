@@ -68,7 +68,7 @@ class CheckOutWebflow {
 		checkboxS.type = "radio";
 		checkboxS.name = "checkbox";
 		if (!i) {
-			this.updateLocation(sessionProData);
+			//this.updateLocation(sessionProData);
 		}
 		checkboxS.value = sessionProData.summerSessionId;
 		checkboxS.setAttribute('data-name', 'Checkbox')
