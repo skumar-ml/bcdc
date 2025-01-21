@@ -146,7 +146,7 @@ class CheckOutWebflow {
 			var findLivingston = location.find((i) => i.locationId == 4 && i.programId == this.memberData.programId && i.leftSpot > 0)
 
 			if (findLivingston != undefined) {
-				GlenRockContainer.style.display = "flex"
+				LivingstonContainer.style.display = "flex"
 			}
 
 			if (findFortLee == undefined && findGlenRock == undefined && findLivingston == undefined) {
