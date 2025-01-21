@@ -550,13 +550,14 @@ class CheckOutWebflow {
 			if (paymentData.prevStudent) {
 				prevStudent.value = paymentData.prevStudent;
 			}
-			if (paymentData.location == 1) {
+			if (paymentData.updateData.locationId == 1) {
 				fort_lee_location.checked = true;
+			} else if(paymentData.updateData.locationId == 4){
+				livingston_location.checked = true;
 			} else {
 				glen_rock_location.checked = true;
 			}
-			
-			if(paymentData.location){
+			if(paymentData.updateData.locationId){
 				document.querySelector('.cart-location-container').style.display = "block";
 			}
 			const sessionEls = document.querySelectorAll('input[data-name="Checkbox"]');
