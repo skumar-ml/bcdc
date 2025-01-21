@@ -288,7 +288,7 @@ class CheckOutWebflow {
 			"locationId": (fort_lee_location.checked) ? 2 : 1,
 			"summerSessionId": parseInt(summerSessionId)
 		}
-
+		checkOutData.updateData = data
 		localStorage.setItem("checkOutData", JSON.stringify(checkOutData));
 		
 		var xhr = new XMLHttpRequest()
@@ -555,6 +555,16 @@ class CheckOutWebflow {
 			} else {
 				glen_rock_location.checked = true;
 			}
+			
+			if(paymentData.location){
+				document.querySelector('.cart-location-container').style.display = "block";
+			}
+			const sessionEls = document.querySelectorAll('input[data-name="Checkbox"]');
+			sessionEls.forEach(el=>{
+				if(el.value == paymentData.updateData.summerSessionId){
+					el.checked = true;
+				}
+			})
 
 			if (paymentData.checkoutData) {
 				this.$checkoutData = paymentData.checkoutData;
