@@ -112,20 +112,20 @@ class CheckOutWebflow {
 		LivingstonContainer.style.display = "none";
 		next_page_2.style.display = 'block';
 		if (this.memberData.programId == '102') {
-			var findFortLee = location.find((i) => i.locationId == 2 && i.leftSpot == 0)
-			var findGlenRock = location.find((i) => i.locationId == 1 && i.leftSpot == 0)
-			var findLivingston = location.find((i) => i.locationId == 4 && i.leftSpot == 0)
-			if (findFortLee == undefined) {
+			var findFortLee = location.filter((i) => i.locationId == 2 && i.leftSpot > 0)
+			var findGlenRock = location.filter((i) => i.locationId == 1 && i.leftSpot > 0)
+			var findLivingston = location.filter((i) => i.locationId == 4 && i.leftSpot > 0)
+			if (findFortLee.length == 2) {
 				fortLeeContainer.style.display = "flex"
 			}
-			if (findGlenRock == undefined) {
+			if (findGlenRock.length == 2) {
 				GlenRockContainer.style.display = "flex"
 			}
-			if (findLivingston == undefined) {
+			if (findLivingston.length == 2) {
 				LivingstonContainer.style.display = "flex"
 			}
 
-			if (findFortLee != undefined && findGlenRock != undefined && findLivingston != undefined) {
+			if (findFortLee.length != 2 && findGlenRock.length != 2 && findLivingston.length != 2) {
 				next_page_2.style.display = 'none';
 				document.querySelector('.cart-location-container').style.display = "none";
 			}else{
