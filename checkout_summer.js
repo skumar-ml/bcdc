@@ -112,16 +112,16 @@ class CheckOutWebflow {
 		LivingstonContainer.style.display = "none";
 		next_page_2.style.display = 'block';
 		if (this.memberData.programId == '102') {
-			var findFortLee = location.find((i) => i.locationId == 2 && i.leftSpot > 0)
-			var findGlenRock = location.find((i) => i.locationId == 1 && i.leftSpot > 0)
-			var findLivingston = location.find((i) => i.locationId == 4 && i.leftSpot > 0)
-			if (findFortLee != undefined) {
+			var findFortLee = location.find((i) => i.locationId == 2 && i.leftSpot == 0)
+			var findGlenRock = location.find((i) => i.locationId == 1 && i.leftSpot == 0)
+			var findLivingston = location.find((i) => i.locationId == 4 && i.leftSpot == 0)
+			if (findFortLee == undefined) {
 				fortLeeContainer.style.display = "flex"
 			}
-			if (findGlenRock != undefined) {
+			if (findGlenRock == undefined) {
 				GlenRockContainer.style.display = "flex"
 			}
-			if (findLivingston != undefined) {
+			if (findLivingston == undefined) {
 				LivingstonContainer.style.display = "flex"
 			}
 
