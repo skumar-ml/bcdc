@@ -285,7 +285,7 @@ class CheckOutWebflow {
 		checkOutData = JSON.parse(checkOutData)
 		var data = {
 			"checkoutId": checkOutData.checkoutData.checkoutId,
-			"locationId": locationId,
+			"locationId": parseInt(locationId),
 			"summerSessionId": parseInt(summerSessionId)
 		}
 		checkOutData.updateData = data
