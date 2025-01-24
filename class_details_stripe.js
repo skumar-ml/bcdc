@@ -143,6 +143,7 @@ class classLocationStripe {
 			locationActionLink.classList.add('register_btn_card')
 			locationActionLink.addEventListener('click', function(event){
 				event.preventDefault();
+				localStorage.setItem("pType", "c");
 				$this.initializeStripePayment(locationActionLink, responseText, timingText, selectBox, 'card', false);
 			})
 
@@ -150,6 +151,7 @@ class classLocationStripe {
 			creditCardBtn.classList.add('register_btn_card', 'option_b_card')
 			creditCardBtn.addEventListener('click', function (event) {
  				event.preventDefault();
+				localStorage.setItem("pType", "cwf");
  				$this.initializeStripePayment(creditCardBtn, responseText, timingText, selectBox, 'card', true);
  			})
 			creditCardBtn.innerHTML = "Register via Credit Card (Has Fee)"
@@ -157,6 +159,7 @@ class classLocationStripe {
 			bankTransferBtn.classList.add('register_btn_card', 'option_b_bt')
  			bankTransferBtn.addEventListener('click', function (event) {
  				event.preventDefault();
+				localStorage.setItem("pType", "b");
  				$this.initializeStripePayment(bankTransferBtn, responseText, timingText, selectBox, 'ach', false);
  			})
 			bankTransferBtn.innerHTML = "Register via Bank Transfer"
