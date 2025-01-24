@@ -254,7 +254,7 @@ class classLocationStripe {
  			"label": label,
  			"classUniqueId": classId,
 			"has_fee":has_fee,
- 			"successUrl": encodeURI("https://www.bergendebate.com/payment-confirmation?type=Academic&programName="+label),
+ 			"successUrl": encodeURI("https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" + label + "&pType="+type),
 			"cancelUrl": cancelUrl.href,
  			
  		}
