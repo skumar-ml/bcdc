@@ -689,15 +689,21 @@ class classDetailsStripe {
 	noThanksEvent(){
 		var $this = this;
 		const closeLinks = document.querySelectorAll('.upsell-close-link');
+		const semesterBundleModal = document.getElementById('semester-bundle-modal');
+		
+		const addToCart = document.getElementById('add-to-cart');
     	const noThanksButton = document.getElementById('no-thanks');
 		closeLinks.forEach(function (closeLink) {
 			closeLink.addEventListener('click', function (event) {
 				event.preventDefault();
-				$this.closeModal(loginModal);
 				$this.closeModal(semesterBundleModal);
 			});
 		});
 		noThanksButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            $this.closeModal(semesterBundleModal);
+        });
+		addToCart.addEventListener('click', function(event) {
             event.preventDefault();
             $this.closeModal(semesterBundleModal);
         });
