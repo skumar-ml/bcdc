@@ -583,6 +583,8 @@ class classDetailsStripe {
 	async renderPortalData(memberId) {
 		try {
 			// -------------Start new code for stripe payment integration--------------
+			// Modal No thanks events
+			this.noThanksEvent()
 			// Handle previous and next button
 			this.addEventForPrevNaxt();
 			// New Code Added
