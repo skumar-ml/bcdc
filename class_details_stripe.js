@@ -550,6 +550,7 @@ class classDetailsStripe {
 	addEventForPrevNaxt() {
 		var next_page_1 = document.getElementById('next_page_1');
 		var prev_page_1 = document.getElementById('prev_page_1');
+		var submit_class = document.getElementById('submit-class');
 
 		var $this = this;
 		var form = $("#checkout-form");
@@ -557,17 +558,21 @@ class classDetailsStripe {
 			if (form.valid()) {
 				$this.storeBasicData();
 				$this.AddStudentData();
-				$this.activateDiv('checkout_payment');
+				$this.showSemesterBundleModal();
+				$this.activateDiv('class-selection-container');
 			}
 		})
 
 		prev_page_1.addEventListener('click', function () {
 			$this.activateDiv('checkout_student_details');
 		})
+		submit_class.addEventListener('click', function () {
+			$this.activateDiv('checkout_payment');
+		})
 	}
 	// Hide and show tab for program selection, student info and checkout payment
 	activateDiv(divId) {
-		var divIds = ['checkout_student_details', 'checkout_payment'];
+		var divIds = ['checkout_student_details', 'class-selection-container', 'checkout_payment'];
 		// Remove the active class from all div elements
 		divIds.forEach(id => document.getElementById(id).classList.remove('active_checkout_tab'));
 		// Add the active class to the div with the specified id
@@ -673,4 +678,32 @@ class classDetailsStripe {
 
 		}
 	}
+
+	showSemesterBundleModal(){
+		const semesterBundleModal = document.getElementById('semester-bundle-modal');
+		semesterBundleModal.classList.add('show');
+    	semesterBundleModal.style.display = 'flex'; 
+	}
+	noThanksEvent(){
+		var $this = this;
+		const closeLinks = document.querySelectorAll('.upsell-close-link');
+    	const noThanksButton = document.getElementById('no-thanks');
+		closeLinks.forEach(function (closeLink) {
+			closeLink.addEventListener('click', function (event) {
+				event.preventDefault();
+				$this.closeModal(loginModal);
+				$this.closeModal(semesterBundleModal);
+			});
+		});
+		noThanksButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            $this.closeModal(semesterBundleModal);
+        });
+	}
+	closeModal(modal) {
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+        }
+    }
 }
