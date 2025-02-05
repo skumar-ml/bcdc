@@ -550,6 +550,7 @@ class classDetailsStripe {
 	addEventForPrevNaxt() {
 		var next_page_1 = document.getElementById('next_page_1');
 		var prev_page_1 = document.getElementById('prev_page_1');
+		var prev_page_2 = document.getElementById('prev_page_2');
 		var submit_class = document.getElementById('submit-class');
 
 		var $this = this;
@@ -565,6 +566,9 @@ class classDetailsStripe {
 
 		prev_page_1.addEventListener('click', function () {
 			$this.activateDiv('checkout_student_details');
+		})
+		prev_page_2.addEventListener('click', function () {
+			$this.activateDiv('class-selection-container');
 		})
 		submit_class.addEventListener('click', function () {
 			$this.activateDiv('checkout_payment');
