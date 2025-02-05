@@ -560,17 +560,21 @@ class classDetailsStripe {
 				$this.storeBasicData();
 				$this.AddStudentData();
 				$this.showSemesterBundleModal();
+				$this.activeBreadCrumb("select-class")
 				$this.activateDiv('class-selection-container');
 			}
 		})
 
 		prev_page_1.addEventListener('click', function () {
+			$this.activeBreadCrumb("student-details")
 			$this.activateDiv('checkout_student_details');
 		})
 		prev_page_2.addEventListener('click', function () {
+			$this.activeBreadCrumb("select-class")
 			$this.activateDiv('class-selection-container');
 		})
 		submit_class.addEventListener('click', function () {
+			$this.activeBreadCrumb("pay-deposite")
 			$this.activateDiv('checkout_payment');
 		})
 	}
@@ -718,4 +722,10 @@ class classDetailsStripe {
             modal.style.display = 'none';
         }
     }
+	activeBreadCrumb(activeId) {
+		let breadCrumbList = document.querySelectorAll(' ul.c-stepper li');
+		breadCrumbList.forEach(element => element.classList.remove('active'))
+		document.getElementById(activeId).classList.add('active')
+
+	}
 }
