@@ -550,8 +550,6 @@ class classDetailsStripe {
 	addEventForPrevNaxt() {
 		var next_page_1 = document.getElementById('next_page_1');
 		var prev_page_1 = document.getElementById('prev_page_1');
-		var prev_page_2 = document.getElementById('prev_page_2');
-		var submit_class = document.getElementById('submit-class');
 
 		var $this = this;
 		var form = $("#checkout-form");
@@ -569,18 +567,10 @@ class classDetailsStripe {
 			$this.activeBreadCrumb("student-details")
 			$this.activateDiv('checkout_student_details');
 		})
-		prev_page_2.addEventListener('click', function () {
-			$this.activeBreadCrumb("select-class")
-			$this.activateDiv('class-selection-container');
-		})
-		submit_class.addEventListener('click', function () {
-			$this.activeBreadCrumb("pay-deposite")
-			$this.activateDiv('checkout_payment');
-		})
 	}
 	// Hide and show tab for program selection, student info and checkout payment
 	activateDiv(divId) {
-		var divIds = ['checkout_student_details', 'class-selection-container', 'checkout_payment'];
+		var divIds = ['checkout_student_details', 'class-selection-container'];
 		// Remove the active class from all div elements
 		divIds.forEach(id => document.getElementById(id).classList.remove('active_checkout_tab'));
 		// Add the active class to the div with the specified id
