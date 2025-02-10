@@ -70,12 +70,14 @@ class classDetailsStripe {
           return {
             timing_text : `${timing.day} ${timing.startTime} - ${timing.endTime}`,
             classId : timing.classUniqueId,
-            levelName: level.levelName
+            levelName: level.levelName,
+            numberOfSpots : timing.numberOfSpots,
+            leftSpots : timing.leftSpots,
+            waitListLink:'https://form.jotform.com/231870526936160?classlevel=' + level.levelName + '&classlocation=' + location.locationName + '&classday=' + timing.day + '&classtime=' + timing.startTime + '&classspots=' + timing.leftSpots + '&memberId=' + this.webflowMemberId + '&classUniqueId=' + timing.classUniqueId + '&parentEmail=' + this.accountEmail
           };
         });
       });
     });
-	
 	
 
     console.log("Class Times Data:", classTimesData);
@@ -114,6 +116,7 @@ class classDetailsStripe {
     let timingText = timingTextElement.innerHTML
     let classId = timingTextElement.getAttribute('classId')
     let levelName = timingTextElement.getAttribute('levelName')
+    
     console.log(timingText)
 
     let paymentTab = document.querySelector('.payment-cards-tabs-menu a.w--current')
@@ -313,10 +316,12 @@ class classDetailsStripe {
     if (leftSpotsPercentage <= 0) {
       message = {};
       message.type = "waitlist";
+      message.class = "yellow-info-text";
       message.message = "Seats are full you can fill the wait list forms below";
     } else if (leftSpotsPercentage <= 25) {
       message = {};
       message.type = "filling_fast";
+      message.class = "brown-info-text";
       message.message =
         "Hurry! Register now. Seats filling up fast! only <b>" +
         leftSpots +
@@ -615,6 +620,21 @@ class classDetailsStripe {
 
         label.classList.add("class-time-with-brown-white-style"); // Make selected red
         paymentMethodsDiv.classList.remove("hide"); // Show payment methods
+
+        // hide and show join wait list link  
+        let timingTextElement = document.querySelector('.class-time.class-time-with-brown-white-style');
+        let joinWaitListEl = document.getElementById('join-waitlist-class'); 
+        const submitClassPayment = document.getElementById("submit-class");
+        let actionType = timingTextElement.getAttribute('action-type')
+        let waitLink = timingTextElement.getAttribute('wait-link')
+        //wait-link
+        if(actionType == 'waitlist'){
+          joinWaitListEl.href = waitLink;
+          submitClassPayment.style.display = "none";
+        }else{
+          joinWaitListEl.style.display = "none";
+        }
+        
       });
 
       // Hover effect: Add yellow border on hover
@@ -628,8 +648,30 @@ class classDetailsStripe {
       label.addEventListener("mouseleave", function () {
         label.classList.remove("class-time-with-yellow-border");
       });
+      // info Message
 
-      classTimesContainer.appendChild(label);
+      var alertMessage = this.getAlertMessage(time);
+
+      label.setAttribute('action-type', '')
+      if(alertMessage){
+        let classTimeWrapper = creEl('div', 'class-time-flex-wrapper')
+        var alertClass = alertMessage.class;
+        let infoWrapper = creEl('div', 'class-info-text-flex-wrapper')
+        let infoDiv = creEl('div', alertClass)
+        infoDiv.innerHTML = alertMessage.message;
+        infoWrapper.appendChild(infoDiv)
+        classTimeWrapper.prepend(label,infoWrapper);
+        classTimesContainer.prepend(classTimeWrapper);
+        label.setAttribute('action-type', alertMessage.type)
+        if(alertMessage.type == 'waitlist'){
+          label.setAttribute('wait-link', alertMessage.waitListLink)
+        }
+      }else{
+        classTimesContainer.prepend(label);
+      }
+      
+
+      
     });
   }
 
