@@ -286,16 +286,18 @@ class classDetailsStripe {
       if (!isPreviousStudent) {
         prevStudentCheckBox[i].setAttribute("checked", true);
         //Update total price
-        for (let i = 0; i < total_price.length; i++) {
+        for (let j = 0; j < total_price.length; j++) {
           if (prevStudentCheckBox[i].checked) {
-            total_price[i].innerHTML =
+            total_price[j].innerHTML =
               "$" + $this.numberWithCommas(totalAmount + 100);
           }
         }
       } else {
-        total_price[i].innerHTML =
-          "$" + $this.numberWithCommas(totalAmount - 100);
-        prevStudentCheckBox[i].removeAttribute("checked");
+        for (let j = 0; j < total_price.length; j++) {
+              total_price[j].innerHTML =
+              "$" + $this.numberWithCommas(totalAmount - 100);
+         }
+         prevStudentCheckBox[i].removeAttribute("checked");
       }
     }
   }
@@ -311,10 +313,15 @@ class classDetailsStripe {
     for (let i = 0; i < prevStudentCheckBox.length; i++) {
       prevStudentCheckBox[i].addEventListener("change", function (ele) {
         if (prevStudentCheckBox[i].checked) {
-          total_price[i].innerHTML =
+          for (let j = 0; j < total_price.length; j++) {
+            total_price[j].innerHTML =
             "$" + $this.numberWithCommas(totalAmount + 100);
+          }
         } else {
-          total_price[i].innerHTML = "$" + $this.numberWithCommas(totalAmount);
+          for (let j = 0; j < total_price.length; j++) {
+            total_price[j].innerHTML = "$" + $this.numberWithCommas(totalAmount);
+          }
+          prevStudentCheckBox[i].removeAttribute("checked");
         }
       });
     }
