@@ -796,7 +796,7 @@ class classDetailsStripe {
     });
     
 
-    let closeModal = document.querySelectorAll("data-modal='close']")
+    let closeModal = document.querySelectorAll("[data-modal='close']")
     if (closeModal.length > 0) {
       closeModal.forEach(close_modal_link => {
         close_modal_link.addEventListener("click", function(event) {
