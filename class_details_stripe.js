@@ -788,17 +788,24 @@ class classDetailsStripe {
     );
 
     const learnMore = document.getElementById("learn-more");
-    const noThanksButton = document.getElementById("no-thanks");
     closeLinks.forEach(function (closeLink) {
       closeLink.addEventListener("click", function (event) {
         event.preventDefault();
         $this.closeModal(semesterBundleModal);
       });
     });
-    noThanksButton.addEventListener("click", function (event) {
-      event.preventDefault();
-      $this.closeModal(semesterBundleModal);
-    });
+    
+
+    let closeModal = document.querySelectorAll("data-modal='close']")
+    if (closeModal.length > 0) {
+      closeModal.forEach(close_modal_link => {
+        close_modal_link.addEventListener("click", function(event) {
+          event.preventDefault();
+          $this.closeModal(semesterBundleModal);
+        })
+      })
+    }
+
     learnMore.addEventListener("click", function(){
       semesterBundleModal.classList.add("show");
       semesterBundleModal.style.display = "flex";
