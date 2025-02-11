@@ -962,7 +962,7 @@ class classDetailsStripe {
 
   displaySelectedSuppProgram(selectedIds) {
 		var selectedSuppPro = document.getElementById("add-on-program-desktop");
-		var selectedSuppProMob = document.getElementById("add-on-program-desktop");
+		var selectedSuppProMob = document.getElementById("add-on-program-mobile");
 		
 		if(selectedSuppPro != null){
       selectedSuppPro.innerHTML = "";
