@@ -779,7 +779,7 @@ class classDetailsStripe {
       "semester-bundle-modal"
     );
 
-    const addToCart = document.getElementById("add-to-cart");
+    const learnMore = document.getElementById("learn-more");
     const noThanksButton = document.getElementById("no-thanks");
     closeLinks.forEach(function (closeLink) {
       closeLink.addEventListener("click", function (event) {
@@ -791,10 +791,12 @@ class classDetailsStripe {
       event.preventDefault();
       $this.closeModal(semesterBundleModal);
     });
-    addToCart.addEventListener("click", function (event) {
-      event.preventDefault();
-      $this.addToCart()
-    });
+    learnMore.addEventListener("click", function(){
+      semesterBundleModal.classList.add("show");
+      semesterBundleModal.style.display = "flex";
+    })
+
+    $this.addToCart()
   }
   closeModal(modal) {
     if (modal) {
@@ -831,6 +833,8 @@ class classDetailsStripe {
 		var $this = this;
 		addToCartButtons.forEach(button => {
 			button.addEventListener("click", function (event) {
+        // check modal or normal page add to cart, using this variable
+        let clickFrom = button.getAttribute('add-to-cart')
 				event.preventDefault(); // Prevent default link behavior
 
 				// Find the parent container with the 'btn-reserve-spot' class
@@ -861,6 +865,9 @@ class classDetailsStripe {
                 "semester-bundle-modal"
               );
 							$this.closeModal(semesterBundleModal)
+              if(clickFrom == 'modal'){
+                window.scrollTo({ top: 0, behavior: 'smooth' });  
+              }
 						}, 100);
 
 					}
@@ -917,7 +924,6 @@ class classDetailsStripe {
 			selectedIds = arrayIds;
 			suppProIdE.value = JSON.stringify(arrayIds);
       this.updateAllSameProduct(suppId, true)
-      this.updateTotalPrice(parseFloat(amount))
 		} else {
 			// calulate total amount based on supplementary program price sum and core product price
 			var amountHtml =
@@ -934,7 +940,6 @@ class classDetailsStripe {
 			selectedIds = allSupIds;
 			suppProIdE.value = JSON.stringify(allSupIds);
       this.updateAllSameProduct(suppId, false)
-      this.updateTotalPrice(parseFloat(-amount))
 		}
 		// Hide and show based on supplementary program length
 		var totalPriceDiv = document.getElementById("totalPriceDiv");
@@ -954,14 +959,6 @@ class classDetailsStripe {
 		}
 		this.displaySelectedSuppProgram(selectedIds);
 	}
-
-  updateTotalPrice(amount) {
-    let total_price = document.getElementsByClassName('total_price');
- 		let totalAmount = parseFloat(total_price[0].innerHTML.replace(/,/g, "").replace(/\$/g, ""))
-    for (let i = 0; i < total_price.length; i++) {
-        total_price[i].innerHTML = "$" + this.numberWithCommas(totalAmount + amount);
-    }
-  }
 
   displaySelectedSuppProgram(selectedIds) {
 		var selectedSuppPro = document.getElementById("add-on-program-desktop");
