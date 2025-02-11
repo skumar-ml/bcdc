@@ -813,6 +813,7 @@ class classDetailsStripe {
         close_modal_link.addEventListener("click", function(event) {
           event.preventDefault();
           $this.closeModal(semesterBundleModal);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         })
       })
     }
