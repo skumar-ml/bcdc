@@ -36,6 +36,7 @@ class classDetailsStripe {
     this.amount = amount;
     this.renderPortalData();
     this.initializeToolTips();
+    this.updatePriceForCardPayment();
     this.initiateLightbox();
   }
   // Creating main dom for location
@@ -273,31 +274,30 @@ class classDetailsStripe {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
   checkUncheckOldStudentCheckBox(isPreviousStudent, $this) {
-    let prevStudentCheckBox = document.getElementsByClassName(
+    const prevStudentCheckBox = document.getElementsByClassName(
       "prev_student_checkbox"
     );
-    var $this = this;
-    for (let i = 0; i < prevStudentCheckBox.length; i++) {
-      let total_price = document.getElementsByClassName("total_price");
-      let totalAmount = parseFloat(
+    // if(isPreviousStudent){
+    //   return;
+    // }
+    let total_price = document.getElementsByClassName("total_price");
+    const totalAmount = parseFloat(
         total_price[0].innerHTML.replace(/,/g, "").replace(/\$/g, "")
       );
 
+    var $this = this;
+    for (let i = 0; i < prevStudentCheckBox.length; i++) {
       if (!isPreviousStudent) {
-        prevStudentCheckBox[i].setAttribute("checked", true);
         //Update total price
-        for (let j = 0; j < total_price.length; j++) {
-          if (prevStudentCheckBox[i].checked) {
-            total_price[j].innerHTML =
+          if (!prevStudentCheckBox[i].checked) {
+            total_price[i].innerHTML =
               "$" + $this.numberWithCommas(totalAmount + 100);
           }
-        }
+          prevStudentCheckBox[i].setAttribute("checked", true);
       } else {
-        for (let j = 0; j < total_price.length; j++) {
-              total_price[j].innerHTML =
+          total_price[i].innerHTML =
               "$" + $this.numberWithCommas(totalAmount - 100);
-         }
-         prevStudentCheckBox[i].removeAttribute("checked");
+          prevStudentCheckBox[i].removeAttribute("checked");
       }
     }
   }
@@ -316,12 +316,13 @@ class classDetailsStripe {
           for (let j = 0; j < total_price.length; j++) {
             total_price[j].innerHTML =
             "$" + $this.numberWithCommas(totalAmount + 100);
+            prevStudentCheckBox[j].setAttribute("checked", true);
           }
         } else {
           for (let j = 0; j < total_price.length; j++) {
             total_price[j].innerHTML = "$" + $this.numberWithCommas(totalAmount);
+            prevStudentCheckBox[j].removeAttribute("checked");
           }
-          prevStudentCheckBox[i].removeAttribute("checked");
         }
       });
     }
@@ -920,9 +921,12 @@ class classDetailsStripe {
 				parseFloat(core_product_price.value.replace(/,/g, "")) +
 				parseFloat(totalAmountInput.value) +
 				parseFloat(amount);
-			totalPriceText.innerHTML = this.numberWithCommas(amountHtml.toFixed(2));
+      let formateAmount = this.numberWithCommas(amountHtml.toFixed(2))
+			totalPriceText.innerHTML = "$"+formateAmount;
+      totalPriceText.setAttribute('data-stripe-price', formateAmount)
 			if (totalPriceTextMob) {
-				totalPriceTextMob.innerHTML = this.numberWithCommas(amountHtml.toFixed(2));
+				totalPriceTextMob.innerHTML = formateAmount;
+        totalPriceTextMob.setAttribute('data-stripe-price', formateAmount)
 			}
 
 			totalAmountInput.value = parseFloat(totalAmountInput.value) + parseFloat(amount);
@@ -937,9 +941,12 @@ class classDetailsStripe {
 				parseFloat(core_product_price.value.replace(/,/g, "")) +
 				parseFloat(totalAmountInput.value) -
 				parseFloat(amount);
-			totalPriceText.innerHTML = this.numberWithCommas(amountHtml.toFixed(2));
+        let formateAmount = this.numberWithCommas(amountHtml.toFixed(2))
+			totalPriceText.innerHTML = "$"+formateAmount;
+      totalPriceText.setAttribute('data-stripe-price', formateAmount)
 			if (totalPriceTextMob) {
-				totalPriceTextMob.innerHTML = this.numberWithCommas(amountHtml.toFixed(2));
+				totalPriceTextMob.innerHTML = formateAmount;
+        totalPriceTextMob.setAttribute('data-stripe-price', formateAmount)
 			}
 			totalAmountInput.value = parseFloat(totalAmountInput.value) - parseFloat(amount);
 			var arrayIds = JSON.parse(suppProIdE.value);
@@ -1034,6 +1041,8 @@ class classDetailsStripe {
 
 			let OfferingPrice = creEl("div", "main-text small-medium-mb-0 right-justified");
 			OfferingPrice.innerHTML = "$" + parseFloat(sup.amount).toFixed(2);
+      OfferingPrice.setAttribute('data-stripe', 'addon_price')
+      OfferingPrice.setAttribute('addon-price', parseFloat((sup.amount + 0.30)/0.971).toFixed(2))
 			cartGridWrapper.prepend(suppleHeadingDiv, OfferingPrice);
 			selectedSuppPro.appendChild(cartGridWrapper);
 		});
@@ -1073,5 +1082,45 @@ class classDetailsStripe {
 			})
 		}
 	}
+
+  // Card payment update total price
+  updatePriceForCardPayment() {
+    var $this = this;
+    let paymentTab = document.querySelectorAll('.payment-cards-tab-link')
+    let totalDepositPrice = document.querySelectorAll("[data-stripe='totalDepositPrice']")
+    for(let i = 0; i < paymentTab.length; i++){
+      paymentTab[i].addEventListener('click', function() {
+        let tab = paymentTab[i].getAttribute('data-w-tab');
+        if(tab == 'Tab 2'){
+          if (totalDepositPrice.length > 0) {
+            totalDepositPrice.forEach(deposit_price => {
+              let amount = parseFloat(deposit_price.innerHTML.replace(/,/g, "").replace(/\$/g, "")).toFixed(2);
+              deposit_price.innerHTML = "$"+ $this.numberWithCommas(((parseFloat(amount) + 0.30)/0.971).toFixed(2));
+              ;
+            })
+          }
+        }else{
+          if (totalDepositPrice.length > 0) {
+            totalDepositPrice.forEach(deposit_price => {
+              let amount = deposit_price.getAttribute('data-stripe-price');
+              deposit_price.innerHTML = "$"+amount;
+              ;
+            })
+          }
+        }
+      })
+    }
+    //data-stripe="totalDepositPrice"
+    
+    
+
+    // let addonPrice = document.querySelectorAll("data-stripe='addon_price']")
+    // if (addonPrice.length > 0) {
+    //   addonPrice.forEach(deposit_price => {
+    //     //deposit_price.innerHTML = "$"+care_package_data.amount;
+    //   })
+    // }
+    
+  }
 
 }
