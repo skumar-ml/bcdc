@@ -104,6 +104,18 @@ class classDetailsStripe {
     classTimeDiv.classList.add("hide");
     paymentMethodsDiv.classList.add("hide");
 
+    if(this.levelId == 'competitivetrack'){
+      let locationForm = document.getElementById('email-form-2')
+      let label = document.querySelector('.class-time')
+      let joinWaitListEl = document.getElementById('join-waitlist-class'); 
+      let heading = document.querySelector('.node-title.margin-bottom-20.margin-top-0')
+      paymentMethodsDiv.classList.remove("hide");
+      locationForm.style.display = "none"
+      label.classList.add("class-time-with-brown-white-style"); 
+      joinWaitListEl.style.display = "none"
+      heading.style.display = "none"
+    }
+
 	// add event listener when  trying to payment
 	// submitClassPayment
 	submitClassPayment.addEventListener("click", function(event){
