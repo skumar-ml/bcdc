@@ -106,20 +106,31 @@ class classDetailsStripe {
     paymentMethodsDiv.classList.add("hide");
 
     if(this.levelId == 'competitivetrack'){
+      $this.updateClassTimes(
+        'none',
+        classTimesData,
+        classTimesContainer,
+        classTimeDiv,
+        paymentMethodsDiv
+      );
       let locationForm = document.getElementById('email-form-2')
       let label = document.querySelector('.class-time')
       let joinWaitListEl = document.getElementById('join-waitlist-class'); 
       let heading = document.querySelector('.node-title.margin-bottom-20.margin-top-0')
+      //select-class-time-div
       paymentMethodsDiv.classList.remove("hide");
       locationForm.style.display = "none"
       label.classList.add("class-time-with-brown-white-style"); 
       joinWaitListEl.style.display = "none"
       heading.style.display = "none"
+      selectField.value = "none";
+      classTimeDiv.style.display = "none"
     }
 
 	// add event listener when  trying to payment
 	// submitClassPayment
 	submitClassPayment.addEventListener("click", function(event){
+    event.preventDefault()
     let selectedOption = selectField.options[selectField.selectedIndex];
     let responseText = selectedOption.getAttribute('responseText');
     
