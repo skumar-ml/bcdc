@@ -306,9 +306,11 @@ class classDetailsStripe {
           }
           prevStudentCheckBox[i].setAttribute("checked", true);
       } else {
-          total_price[i].innerHTML =
-              "$" + $this.numberWithCommas(totalAmount - 100);
-          prevStudentCheckBox[i].removeAttribute("checked");
+        if (prevStudentCheckBox[i].checked) {
+            total_price[i].innerHTML =
+                "$" + $this.numberWithCommas(totalAmount - 100);
+            prevStudentCheckBox[i].removeAttribute("checked");
+          }
       }
     }
   }
