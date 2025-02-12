@@ -1207,6 +1207,7 @@ class classDetailsStripe {
       const price = document.querySelectorAll("[data-addon='price']")
       const discountPrice = document.querySelectorAll("[data-addon='discount-price']")
       const discount = document.querySelectorAll("[data-addon='discount']")
+      const bundleProgram  = document.querySelectorAll('.bundleProgram ')
       if (title.length > 0) {
         title.forEach(addon_title => {
           addon_title.innerHTML = addonProgram.label;
@@ -1225,6 +1226,11 @@ class classDetailsStripe {
       if (discount.length > 0) {
         discount.forEach(d => {
           d.innerHTML = "$"+(addonProgram.disc_amount-addonProgram.amount)+" OFF";
+        })
+      }
+      if (bundleProgram.length > 0) {
+        bundleProgram.forEach(bp => {
+          bp.value = addonProgram.amount;
         })
       }
       
