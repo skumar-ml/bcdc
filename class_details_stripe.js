@@ -918,7 +918,8 @@ class classDetailsStripe {
       if(programDetailId == programId){
         button.textContent = type ? "Added" : "Add to Cart";
         button.style.pointerEvents =  type ? "none" : "auto";
-        button.style.color =  type ? "gray" : "";
+        button.style.color =  type ? "#f2d385" : "";
+        button.style.textDecoration =  type ? "underline" : "";
       }
     })
   }
@@ -1118,8 +1119,18 @@ class classDetailsStripe {
         if(tab == 'Tab 2'){
           if (totalDepositPrice.length > 0) {
             totalDepositPrice.forEach(deposit_price => {
-              let amount = parseFloat(deposit_price.innerHTML.replace(/,/g, "").replace(/\$/g, "")).toFixed(2);
-              deposit_price.innerHTML = "$"+ $this.numberWithCommas(((parseFloat(amount) + 0.30)/0.971).toFixed(2));
+              
+              let addonPriceEl = document.querySelector("[data-stripe='addon_price']")
+              let addonPrice = addonPriceEl.innerHTML.replace(/,/g, "").replace(/\$/g, "");
+              addonPrice = (parseFloat(addonPrice) + 0.30)/0.971;
+
+              var core_product_price = document.getElementById("core_product_price");
+              var coreDipositePrice = parseFloat(core_product_price.value.replace(/,/g, ""))
+              coreDipositePrice = (parseFloat(coreDipositePrice) + 0.30)/0.971;
+
+              //let amount = deposit_price.innerHTML.replace(/,/g, "").replace(/\$/g, "");
+              //deposit_price.innerHTML = "$"+ $this.numberWithCommas(((parseFloat(amount) + 0.30)/0.971).toFixed(2));
+              deposit_price.innerHTML = "$"+ $this.numberWithCommas((addonPrice+coreDipositePrice).toFixed(2));
               ;
             })
           }
@@ -1166,7 +1177,7 @@ class classDetailsStripe {
 			// Add a "Please select" option
 			const defaultOption = document.createElement('option');
 			defaultOption.value = '';
-			defaultOption.textContent = 'Please select';
+			defaultOption.textContent = 'Select Student Name';
 			selectBox.appendChild(defaultOption);
 			// Add new options from the API data
 			filterData.forEach((item, index) => {
