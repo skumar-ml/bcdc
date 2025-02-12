@@ -37,6 +37,7 @@ class classDetailsStripe {
     this.renderPortalData();
     this.initializeToolTips();
     this.updatePriceForCardPayment();
+    this.updateOldStudentList();
     this.initiateLightbox();
   }
   // Creating main dom for location
@@ -440,7 +441,7 @@ class classDetailsStripe {
       studentLastName.value = paymentData.lastName;
 
       if (paymentData.grade) {
-        studentGrade.value = paymentData.grade;
+        studentGrade.value = paymentData.grade.toLowerCase();;
       }
 
       if (paymentData.school) {
@@ -450,9 +451,9 @@ class classDetailsStripe {
       if (paymentData.gender) {
         studentGender.value = paymentData.gender;
       }
-      if (paymentData.prevStudent) {
+      //if (paymentData.prevStudent) {
         prevStudent.value = paymentData.prevStudent;
-      }
+      //}
     }
   }
   // Managing next and previous button
@@ -512,6 +513,7 @@ class classDetailsStripe {
       console.log("data", data);
       this.viewClassLocations(data);
       this.$suppPro = await this.fetchData("getUpsellProgram/");
+      this.updateAddonProgram();
       // var $this = this;
       // var locationData = data[0][0].location;
       // var levelId = data[0][0].levelId;
@@ -1144,5 +1146,89 @@ class classDetailsStripe {
     // }
     
   }
+
+  //updateOldStudentList
+	async updateOldStudentList() {
+		const selectBox = document.getElementById('existing-students')
+		var $this = this;
+		try {
+			const data = await this.fetchData("getAllPreviousStudents/" + this.webflowMemberId);
+      console.log('Old Student Data', data)
+      
+			//finding unique value and sorting by firstName
+			const filterData = data.filter((item, index, self) =>
+				index === self.findIndex(obj => obj.studentEmail === item.studentEmail)
+			).sort(function (a, b) {
+				return a.studentName.trim().localeCompare(b.studentName.trim())
+			})
+			// Clear existing options
+			selectBox.innerHTML = '';
+			// Add a "Please select" option
+			const defaultOption = document.createElement('option');
+			defaultOption.value = '';
+			defaultOption.textContent = 'Please select';
+			selectBox.appendChild(defaultOption);
+			// Add new options from the API data
+			filterData.forEach((item, index) => {
+				const option = document.createElement('option');
+				option.value = index;
+				option.textContent = `${item.studentName}`;
+				selectBox.appendChild(option);
+			});
+			selectBox.addEventListener('change', function (event) {
+				var checkoutJson = localStorage.getItem("checkOutBasicData");
+        let studentName = (filterData[event.target.value].studentName).split(" ", 2)
+				var data = {
+					studentEmail: filterData[event.target.value].studentEmail,
+					firstName: studentName[0],
+					lastName: studentName[1],
+					grade: filterData[event.target.value].studentGrade,
+					school: filterData[event.target.value].school,
+					gender: filterData[event.target.value].gender,
+          prevStudent: filterData[event.target.value].prevStudent ? filterData[event.target.value].prevStudent : ""
+				};
+				localStorage.setItem("checkOutBasicData", JSON.stringify(data));
+				$this.updateBasicData();
+			})
+		} catch (error) {
+			console.error('Error fetching API data:', error);
+
+			// Handle errors (optional)
+			selectBox.innerHTML = '<option value="">Student Details not available</option>';
+		}
+	}
+  updateAddonProgram() {
+      const addonProgram = this.$suppPro.find(data => data.upsellProgramId == 104)
+      console.log('addonProgram', addonProgram, this.$suppPro)
+      if(addonProgram == undefined){
+        return;
+      }
+      const title = document.querySelectorAll("[data-addon='title']")
+      const price = document.querySelectorAll("[data-addon='price']")
+      const discountPrice = document.querySelectorAll("[data-addon='discount-price']")
+      const discount = document.querySelectorAll("[data-addon='discount']")
+      if (title.length > 0) {
+        title.forEach(addon_title => {
+          addon_title.innerHTML = addonProgram.label;
+        })
+      }
+      if (price.length > 0) {
+        price.forEach(p => {
+          p.innerHTML = "$"+addonProgram.disc_amount;
+        })
+      }
+      if (discountPrice.length > 0) {
+        discountPrice.forEach(dp => {
+          dp.innerHTML = "$"+addonProgram.amount;
+        })
+      }
+      if (discount.length > 0) {
+        discount.forEach(d => {
+          d.innerHTML = "$"+(addonProgram.disc_amount-addonProgram.amount)+" OFF";
+        })
+      }
+      
+   }
+   
 
 }
