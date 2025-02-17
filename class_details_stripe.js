@@ -1065,9 +1065,9 @@ class classDetailsStripe {
 			suppleHeadingDiv.prepend(offeringType, offeringRemove)
 
 			let OfferingPrice = creEl("div", "main-text small-medium-mb-0 right-justified");
-			OfferingPrice.innerHTML = "$" + parseFloat(sup.amount).toFixed(2);
-      OfferingPrice.setAttribute('data-stripe', 'addon_price')
-      OfferingPrice.setAttribute('addon-price', parseFloat((sup.amount + 0.30)/0.971).toFixed(2))
+			OfferingPrice.innerHTML = "$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2));
+     			OfferingPrice.setAttribute('data-stripe', 'addon_price')
+      			OfferingPrice.setAttribute('addon-price', parseFloat((sup.amount + 0.30)/0.971).toFixed(2))
 			cartGridWrapper.prepend(suppleHeadingDiv, OfferingPrice);
 			selectedSuppPro.appendChild(cartGridWrapper);
 		});
