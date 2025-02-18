@@ -1067,7 +1067,7 @@ class classDetailsStripe {
 			let OfferingPrice = creEl("div", "main-text small-medium-mb-0 right-justified");
 			OfferingPrice.innerHTML = "$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2));
      			OfferingPrice.setAttribute('data-stripe', 'addon_price')
-      			OfferingPrice.setAttribute('addon-price', parseFloat((sup.amount + 0.30)/0.971).toFixed(2))
+      			OfferingPrice.setAttribute('addon-price',  $this.numberWithCommas(parseFloat(sup.amount).toFixed(2))
 			cartGridWrapper.prepend(suppleHeadingDiv, OfferingPrice);
 			selectedSuppPro.appendChild(cartGridWrapper);
 		});
@@ -1164,7 +1164,7 @@ class classDetailsStripe {
           if (addonPrice.length > 0) {
             addonPrice.forEach((addon_deposit_price) => {
               let addonSinglePrice = addon_deposit_price.getAttribute("addon-price");
-              addon_deposit_price.innerHTML = addonSinglePrice;
+              addon_deposit_price.innerHTML = "$"+addonSinglePrice;
             });
           }
         }
