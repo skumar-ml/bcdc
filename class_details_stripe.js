@@ -1143,6 +1143,32 @@ class classDetailsStripe {
             })
           }
         }
+
+
+	// Code for addon price update based on payment method selection
+        let addonPrice = document.querySelectorAll(
+          "[data-stripe='addon_price']"
+        );
+        if (tab == "Tab 2") {
+          if (addonPrice.length > 0) {
+            addonPrice.forEach((addon_deposit_price) => {
+              let addonPrice = addon_deposit_price.innerHTML
+                .replace(/,/g, "")
+                .replace(/\$/g, "");
+              addonPrice = (parseFloat(addonPrice) + 0.3) / 0.971;
+              addon_deposit_price.innerHTML =
+                "$" + $this.numberWithCommas(addonPrice.toFixed(2));
+            });
+          }
+        } else {
+          if (addonPrice.length > 0) {
+            addonPrice.forEach((addon_deposit_price) => {
+              let addonSinglePrice = addon_deposit_price.getAttribute("addon-price");
+              addon_deposit_price.innerHTML = addonSinglePrice;
+            });
+          }
+        }
+	      
       })
     }
     //data-stripe="totalDepositPrice"
