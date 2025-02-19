@@ -1047,7 +1047,7 @@ class classDetailsStripe {
 
 
 		// Selected supplementary program list
-		let head = creEl("p", "main-text bold-with-mb-5");
+		let head = creEl("p", "main-text bold-with-mb-0");
 		head.innerHTML = "Add On Program";
 		selectedSuppPro.appendChild(head);
 
