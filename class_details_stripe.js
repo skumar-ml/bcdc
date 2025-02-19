@@ -859,55 +859,59 @@ class classDetailsStripe {
 
   // New Feature Add to Cart
 
+  // New Feature Add to Cart
+
   addToCart() {
-		// Select all 'add-to-card' buttons
-		const addToCartButtons = document.querySelectorAll(".add-to-cart");
-		var $this = this;
-		addToCartButtons.forEach(button => {
-			button.addEventListener("click", function (event) {
+    // Select all 'add-to-card' buttons
+    const addToCartButtons = document.querySelectorAll(".add-to-cart");
+    var $this = this;
+    addToCartButtons.forEach((button) => {
+      button.addEventListener("click", function (event) {
         // check modal or normal page add to cart, using this variable
-        let clickFrom = button.getAttribute('add-to-cart')
-				event.preventDefault(); // Prevent default link behavior
+        let clickFrom = button.getAttribute("add-to-cart");
+        event.preventDefault(); // Prevent default link behavior
 
-				// Find the parent container with the 'btn-reserve-spot' class
-				const parent = button.closest("div");
+        // Find the parent container with the 'btn-reserve-spot' class
+        const parent = button.closest("div");
 
-				if (parent) {
-					// Locate the child checkbox within the parent container
-					const checkbox = parent.querySelector(".bundleProgram");
+        
+        if (parent) {
+          // Locate the child checkbox within the parent container
+          const checkbox = parent.querySelector(".bundleProgram");
 
-					if (checkbox && !checkbox.checked) {
-						// Toggle the checkbox state
-						checkbox.checked = !checkbox.checked;
-						//if(checkbox.checked){
-						$this.updateAmount(checkbox, checkbox.value);
-						//}
+          if (checkbox && !checkbox.checked) {
+            // Toggle the checkbox state
+            checkbox.checked = !checkbox.checked;
+            //if(checkbox.checked){
+            $this.updateAmount(checkbox, checkbox.value);
+            //}
 
-						// Update the button text based on the checkbox state
-						button.textContent = checkbox.checked ? "Added" : "Add to Cart";
+            // Update the button text based on the checkbox state
+            button.textContent = checkbox.checked ? "Added" : "Add to Cart";
 
-						// Optional: Add or remove a disabled class (if needed)
-						button.classList.toggle("disabled", checkbox.checked);
+            // Optional: Add or remove a disabled class (if needed)
+            button.classList.toggle("disabled", checkbox.checked);
 
-						// while ($this.$suppPro.length == 0) {
-						// 	console.log("$this.$suppPro.length", $this.$suppPro.length)
-						// }
-						setTimeout(() => {
-							const semesterBundleModal = document.getElementById(
+            // while ($this.$suppPro.length == 0) {
+            // 	console.log("$this.$suppPro.length", $this.$suppPro.length)
+            // }
+            setTimeout(() => {
+              const semesterBundleModal = document.getElementById(
                 "semester-bundle-modal"
               );
-							$this.closeModal(semesterBundleModal)
-              if(clickFrom == 'modal'){
-                window.scrollTo({ top: 0, behavior: 'smooth' });  
+              $this.closeModal(semesterBundleModal);
+              if (clickFrom == "modal") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
               }
-						}, 100);
-
-					}
-
-				}
-			});
-		});
-	}
+            }, 100);
+          }
+        }
+        // Update tab
+        let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+        paymentTab[0].click();
+      });
+    });
+  }
 
   updateAllSameProduct(programId, type){
     const addToCart = document.querySelectorAll(".add-to-cart");
@@ -925,79 +929,81 @@ class classDetailsStripe {
   }
 
   // Update total price when checkbox clicked for supplementary program
-	updateAmount(checkEvent, amount) {
-		// Sum of supplementary program price
-		var totalAmountInput = document.getElementById("totalAmount");
-		// core product price for resdential, commuter and online
-		var core_product_price = document.getElementById("core_product_price");
-		// Webflow total price dom element
-		var totalPriceText = document.getElementById("totalPrice");
-		// Webflow total price dom element
-		var totalPriceTextMob = document.getElementById("totalPriceMobile");
-		// All added supplementary program id input fields
-		var suppProIdE = document.getElementById("suppProIds");
-		// selected supplementary program id
-		var suppId = checkEvent.getAttribute("programDetailId");
+  updateAmount(checkEvent, amount) {
+    // Sum of supplementary program price
+    var totalAmountInput = document.getElementById("totalAmount");
+    // core product price for resdential, commuter and online
+    var core_product_price = document.getElementById("core_product_price");
+    // Webflow total price dom element
+    var totalPriceText = document.getElementById("totalPrice");
+    // Webflow total price dom element
+    var totalPriceTextMob = document.getElementById("totalPriceMobile");
+    // All added supplementary program id input fields
+    var suppProIdE = document.getElementById("suppProIds");
+    // selected supplementary program id
+    var suppId = checkEvent.getAttribute("programDetailId");
 
-		var selectedIds = [];
-		if (checkEvent.checked) {
-			// calulate total amount based on supplementary program price sum and core product price
-			var amountHtml =
-				parseFloat(core_product_price.value.replace(/,/g, "")) +
-				parseFloat(totalAmountInput.value) +
-				parseFloat(amount);
-      let formateAmount = this.numberWithCommas(amountHtml.toFixed(2))
-			totalPriceText.innerHTML = "$"+formateAmount;
-      totalPriceText.setAttribute('data-stripe-price', formateAmount)
-			if (totalPriceTextMob) {
-				totalPriceTextMob.innerHTML = formateAmount;
-        totalPriceTextMob.setAttribute('data-stripe-price', formateAmount)
-			}
+    var selectedIds = [];
+    if (checkEvent.checked) {
+      // calulate total amount based on supplementary program price sum and core product price
+      var amountHtml =
+        parseFloat(core_product_price.value.replace(/,/g, "")) +
+        parseFloat(totalAmountInput.value.replace(/,/g, "")) +
+        parseFloat(amount.replace(/,/g, ""));
+      let formateAmount = this.numberWithCommas(amountHtml.toFixed(2));
+      totalPriceText.innerHTML = "$" + formateAmount;
+      //totalPriceText.setAttribute("data-stripe-price", formateAmount);
+      if (totalPriceTextMob) {
+        totalPriceTextMob.innerHTML = formateAmount;
+        //totalPriceTextMob.setAttribute("data-stripe-price", formateAmount);
+      }
 
-			totalAmountInput.value = parseFloat(totalAmountInput.value) + parseFloat(amount);
-			var arrayIds = JSON.parse(suppProIdE.value);
-			arrayIds.push(suppId);
-			selectedIds = arrayIds;
-			suppProIdE.value = JSON.stringify(arrayIds);
-      this.updateAllSameProduct(suppId, true)
-		} else {
-			// calulate total amount based on supplementary program price sum and core product price
-			var amountHtml =
-				parseFloat(core_product_price.value.replace(/,/g, "")) +
-				parseFloat(totalAmountInput.value) -
-				parseFloat(amount);
-        let formateAmount = this.numberWithCommas(amountHtml.toFixed(2))
-			totalPriceText.innerHTML = "$"+formateAmount;
-      totalPriceText.setAttribute('data-stripe-price', formateAmount)
-			if (totalPriceTextMob) {
-				totalPriceTextMob.innerHTML = formateAmount;
-        totalPriceTextMob.setAttribute('data-stripe-price', formateAmount)
-			}
-			totalAmountInput.value = parseFloat(totalAmountInput.value) - parseFloat(amount);
-			var arrayIds = JSON.parse(suppProIdE.value);
-			var allSupIds = arrayIds.filter((i) => i != suppId);
-			selectedIds = allSupIds;
-			suppProIdE.value = JSON.stringify(allSupIds);
-      this.updateAllSameProduct(suppId, false)
-		}
-		// Hide and show based on supplementary program length
-		var totalPriceDiv = document.getElementById("totalPriceDiv");
-		if (selectedIds.length > 0) {
-			totalPriceDiv.classList.add('show');
-		} else {
-			totalPriceDiv.classList.remove('show');
-		}
-		// Hide and show based on supplementary program length
-		var totalPriceDiv = document.getElementById("totalPriceDivMob");
-		if (totalPriceDiv != undefined) {
-			if (selectedIds.length > 0) {
-				totalPriceDiv.classList.add('show');
-			} else {
-				totalPriceDiv.classList.remove('show');
-			}
-		}
-		this.displaySelectedSuppProgram(selectedIds);
-	}
+      totalAmountInput.value =
+        parseFloat(totalAmountInput.value) + parseFloat(amount);
+      var arrayIds = JSON.parse(suppProIdE.value);
+      arrayIds.push(suppId);
+      selectedIds = arrayIds;
+      suppProIdE.value = JSON.stringify(arrayIds);
+      this.updateAllSameProduct(suppId, true);
+    } else {
+      // calulate total amount based on supplementary program price sum and core product price
+      var amountHtml =
+        parseFloat(core_product_price.value.replace(/,/g, "")) +
+        parseFloat(totalAmountInput.value.replace(/,/g, "")) -
+        parseFloat(amount);
+      let formateAmount = this.numberWithCommas(amountHtml.toFixed(2));
+      totalPriceText.innerHTML = "$" + formateAmount;
+     // totalPriceText.setAttribute("data-stripe-price", formateAmount);
+      if (totalPriceTextMob) {
+        totalPriceTextMob.innerHTML = formateAmount;
+        //totalPriceTextMob.setAttribute("data-stripe-price", formateAmount);
+      }
+      totalAmountInput.value =
+        parseFloat(totalAmountInput.value) - parseFloat(amount);
+      var arrayIds = JSON.parse(suppProIdE.value);
+      var allSupIds = arrayIds.filter((i) => i != suppId);
+      selectedIds = allSupIds;
+      suppProIdE.value = JSON.stringify(allSupIds);
+      this.updateAllSameProduct(suppId, false);
+    }
+    // Hide and show based on supplementary program length
+    var totalPriceDiv = document.getElementById("totalPriceDiv");
+    if (selectedIds.length > 0) {
+      totalPriceDiv.classList.add("show");
+    } else {
+      totalPriceDiv.classList.remove("show");
+    }
+    // Hide and show based on supplementary program length
+    var totalPriceDiv = document.getElementById("totalPriceDivMob");
+    if (totalPriceDiv != undefined) {
+      if (selectedIds.length > 0) {
+        totalPriceDiv.classList.add("show");
+      } else {
+        totalPriceDiv.classList.remove("show");
+      }
+    }
+    this.displaySelectedSuppProgram(selectedIds);
+  }
 
   displaySelectedSuppProgram(selectedIds) {
 		var selectedSuppPro = document.getElementById("add-on-program-desktop");
@@ -1073,79 +1079,101 @@ class classDetailsStripe {
 		});
 	}
 	removeSuppProgram(suppId) {
-		var suppProIdE = document.getElementById("suppProIds");
-		var arrayIds = JSON.parse(suppProIdE.value);
-		if (arrayIds.length > 0) {
-			arrayIds.push(suppId);
-			arrayIds = arrayIds.filter(i => i != suppId)
-			suppProIdE.value = JSON.stringify(arrayIds);
-			this.displaySelectedSuppProgram(arrayIds);
-			const checkboxEl = document.querySelectorAll(".bundleProgram");
-			checkboxEl.forEach(checkbox => {
-				let programDetailId = checkbox.getAttribute('programdetailid')
-				if (programDetailId == suppId) {
+    var suppProIdE = document.getElementById("suppProIds");
+    var arrayIds = JSON.parse(suppProIdE.value);
+    if (arrayIds.length > 0) {
+      arrayIds.push(suppId);
+      arrayIds = arrayIds.filter((i) => i != suppId);
+      suppProIdE.value = JSON.stringify(arrayIds);
+      this.displaySelectedSuppProgram(arrayIds);
+      const checkboxEl = document.querySelectorAll(".bundleProgram");
+      checkboxEl.forEach((checkbox) => {
+        let programDetailId = checkbox.getAttribute("programdetailid");
+        if (programDetailId == suppId) {
+          // Find the closest parent div
+          const parentDiv = checkbox.closest("div").parentElement;
+          if (checkbox.checked) {
+            checkbox.checked = !checkbox.checked;
+            this.updateAmount(checkbox, checkbox.value);
+          }
 
-					// Find the closest parent div
-					const parentDiv = checkbox.closest('div').parentElement;
-					if (checkbox.checked) {
-						checkbox.checked = !checkbox.checked
-						this.updateAmount(checkbox, checkbox.value);
-					}
-
-					// Find the corresponding "add-to-card" button inside the same parent div
-					var addToCardButton = parentDiv.querySelector('.add-to-card');
-					if (addToCardButton != undefined) {
-
-						addToCardButton.innerHTML = 'Add to Cart';
-						addToCardButton.classList.remove('disabled');
-						addToCardButton.style.pointerEvents = 'auto';
-						addToCardButton.style.color = '';
-					}
-
-				}
-
-			})
-		}
-	}
+          // Find the corresponding "add-to-card" button inside the same parent div
+          var addToCardButton = parentDiv.querySelector(".add-to-card");
+          if (addToCardButton != undefined) {
+            addToCardButton.innerHTML = "Add to Cart";
+            addToCardButton.classList.remove("disabled");
+            addToCardButton.style.pointerEvents = "auto";
+            addToCardButton.style.color = "";
+          }
+        }
+      });
+      // Update tab
+      let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+      paymentTab[0].click();
+    }
+  }
 
   // Card payment update total price
   updatePriceForCardPayment() {
     var $this = this;
-    let paymentTab = document.querySelectorAll('.payment-cards-tab-link')
-    let totalDepositPrice = document.querySelectorAll("[data-stripe='totalDepositPrice']")
-    for(let i = 0; i < paymentTab.length; i++){
-      paymentTab[i].addEventListener('click', function() {
-        let tab = paymentTab[i].getAttribute('data-w-tab');
-        if(tab == 'Tab 2'){
+    let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+    let totalDepositPrice = document.querySelectorAll(
+      "[data-stripe='totalDepositPrice']"
+    );
+    for (let i = 0; i < paymentTab.length; i++) {
+      paymentTab[i].addEventListener("click", function () {
+        let tab = paymentTab[i].getAttribute("data-w-tab");
+        if (tab == "Tab 2") {
           if (totalDepositPrice.length > 0) {
-            totalDepositPrice.forEach(deposit_price => {
-              
-              let addonPriceEl = document.querySelector("[data-stripe='addon_price']")
-              let addonPrice = addonPriceEl.innerHTML.replace(/,/g, "").replace(/\$/g, "");
-              addonPrice = (parseFloat(addonPrice) + 0.30)/0.971;
-
-              var core_product_price = document.getElementById("core_product_price");
-              var coreDipositePrice = parseFloat(core_product_price.value.replace(/,/g, ""))
-              coreDipositePrice = (parseFloat(coreDipositePrice) + 0.30)/0.971;
-
+            totalDepositPrice.forEach((deposit_price) => {
+              var core_product_price =
+                document.getElementById("core_product_price");
+              var coreDepositPrice = parseFloat(
+                core_product_price.value.replace(/,/g, "")
+              );
+              coreDepositPrice = (parseFloat(coreDepositPrice) + 0.3) / 0.971;
+              let addonPriceEl = document.querySelector(
+                "[data-stripe='addon_price']"
+              );
+              if(addonPriceEl){
+                let addonPrice = addonPriceEl.innerHTML
+                .replace(/,/g, "")
+                .replace(/\$/g, "");
+              addonPrice = (parseFloat(addonPrice) + 0.3) / 0.971;
+              coreDepositPrice = addonPrice+ coreDepositPrice
+              }
               //let amount = deposit_price.innerHTML.replace(/,/g, "").replace(/\$/g, "");
               //deposit_price.innerHTML = "$"+ $this.numberWithCommas(((parseFloat(amount) + 0.30)/0.971).toFixed(2));
-              deposit_price.innerHTML = "$"+ $this.numberWithCommas((addonPrice+coreDipositePrice).toFixed(2));
-              ;
-            })
+              deposit_price.innerHTML =
+                "$" +
+                $this.numberWithCommas(
+                  (coreDepositPrice).toFixed(2)
+                );
+            });
           }
-        }else{
+        } else {
           if (totalDepositPrice.length > 0) {
-            totalDepositPrice.forEach(deposit_price => {
-              let amount = deposit_price.getAttribute('data-stripe-price');
-              deposit_price.innerHTML = "$"+amount;
-              ;
-            })
+            totalDepositPrice.forEach((deposit_price) => {
+              let amountEl = deposit_price.getAttribute("data-stripe-price");
+              
+              let amount = parseFloat(amountEl.replace(/,/g, "").replace(/\$/g, ""));
+              console.log('amount', amount)
+              let addonPriceEl = document.querySelector(
+                "[data-stripe='addon_price']"
+              );
+              if(addonPriceEl){
+                let addonPriceElValue = addonPriceEl.getAttribute('addon-price')
+                addonPriceElValue = addonPriceElValue.replace(/,/g, "").replace(/\$/g, "");
+                amount = amount + parseFloat(addonPriceElValue)
+              }
+              
+              deposit_price.innerHTML =
+                "$" +$this.numberWithCommas(amount.toFixed(2));
+            });
           }
         }
 
-
-	// Code for addon price update based on payment method selection
+        // Code for addon price update based on payment method selection
         let addonPrice = document.querySelectorAll(
           "[data-stripe='addon_price']"
         );
@@ -1155,9 +1183,9 @@ class classDetailsStripe {
               let addonPrice = addon_deposit_price.innerHTML
                 .replace(/,/g, "")
                 .replace(/\$/g, "");
-              addonPrice = (parseFloat(addonPrice) + 0.3) / 0.971;
+              let addonPriceValue = (parseFloat(addonPrice) + 0.3) / 0.971;
               addon_deposit_price.innerHTML =
-                "$" + $this.numberWithCommas(addonPrice.toFixed(2));
+                "$" + $this.numberWithCommas(addonPriceValue.toFixed(2));
             });
           }
         } else {
@@ -1168,20 +1196,9 @@ class classDetailsStripe {
             });
           }
         }
-	      
-      })
+      });
     }
     //data-stripe="totalDepositPrice"
-    
-    
-
-    // let addonPrice = document.querySelectorAll("data-stripe='addon_price']")
-    // if (addonPrice.length > 0) {
-    //   addonPrice.forEach(deposit_price => {
-    //     //deposit_price.innerHTML = "$"+care_package_data.amount;
-    //   })
-    // }
-    
   }
 
   //updateOldStudentList
