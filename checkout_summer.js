@@ -361,6 +361,7 @@ class CheckOutWebflow {
 				$this.initializeStripePayment();
 				if (eligible) {
 					$this.activateDiv('checkout_student_details');
+					$this.activeBreadCrumb('select-class')
 				} else {
 					$this.activateDiv('pf_labs_error_message');
 				}
@@ -372,6 +373,7 @@ class CheckOutWebflow {
 			var locationSessionError = document.getElementById('locationSessionError');
 			if (summerSessionId && locationId) {
 				locationSessionError.style.display = 'none';
+				$this.activeBreadCrumb('pay-deposite')
 				$this.activateDiv('checkout_payment');
 				$this.updateStudentDataInDB();
 			} else {
@@ -382,9 +384,11 @@ class CheckOutWebflow {
 		})
 		prev_page_1.addEventListener('click', function () {
 			$this.activateDiv('checkout_program');
+			$this.activeBreadCrumb('student-details')
 		})
 		pflabs_prev_page_1.addEventListener('click', function () {
 			$this.activateDiv('checkout_program');
+			$this.activeBreadCrumb('student-details')
 		})
 		prev_page_2.addEventListener('click', function () {
 			// click on back button reinitialze payment tab
@@ -397,6 +401,7 @@ class CheckOutWebflow {
 			}, 2000);
 
 			$this.activateDiv('checkout_student_details');
+			$this.activeBreadCrumb('select-class')
 		})
 
 		//Coupon code variable
@@ -415,6 +420,7 @@ class CheckOutWebflow {
 			}else{
 				code2fErrorMsg.style.display = 'none';
 				$this.activateDiv('checkout_student_details');
+				$this.activeBreadCrumb('select-class')
 			}
 		})
 	}
@@ -602,5 +608,11 @@ class CheckOutWebflow {
 		} catch (error) {
 			console.error('Error rendering random number:', error);
 		}
+	}
+	// Progress Bar
+	activeBreadCrumb(activeId) {
+		let breadCrumbList = document.querySelectorAll(" ul.c-stepper li");
+		breadCrumbList.forEach((element) => element.classList.remove("active"));
+		document.getElementById(activeId).classList.add("active");
 	}
 }
