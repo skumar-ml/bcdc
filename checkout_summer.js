@@ -58,7 +58,7 @@ class CheckOutWebflow {
 	}
 	// Manipulating a single summer session list
 	createSessionList(sessionProData, i) {
-		var coreProductContainer = creEl('div', 'core-session-container core-product-container'+ i ? ' margin-top' : '');
+		var coreProductContainer = creEl('div', 'core-session-container core-product-container margin-top');
 		var $this = this;
 
 		// Creating checkbox for summer list
