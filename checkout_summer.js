@@ -58,7 +58,7 @@ class CheckOutWebflow {
 	}
 	// Manipulating a single summer session list
 	createSessionList(sessionProData, i) {
-		var coreProductContainer = creEl('div', 'core-session-container core-product-container margin-top');
+		var coreProductContainer = creEl('div', 'core-session-container core-product-container'+ i ? ' margin-top' : '');
 		var $this = this;
 
 		// Creating checkbox for summer list
@@ -91,7 +91,7 @@ class CheckOutWebflow {
 		const startDate = new Date(sessionProData.startDate)
 		const endDate = new Date(sessionProData.endDate)
 		const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-		div.innerHTML = startDate.getDate() + ' ' + month[startDate.getMonth()] + ' ' + startDate.getFullYear() + ' - ' + endDate.getDate() + ' ' + month[endDate.getMonth()] + ' ' + startDate.getFullYear();
+		div.innerHTML = month[startDate.getMonth()]  + ' ' + startDate.getDate() + ', ' + startDate.getFullYear() + ' - ' + endDate.getDate() + ' ' + month[endDate.getMonth()] + ' ' + startDate.getFullYear();
 
 		coreProductTitle.prepend(h1, div)
 
