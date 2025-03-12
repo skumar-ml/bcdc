@@ -131,7 +131,8 @@ class classDetailsStripe {
 	// add event listener when  trying to payment
 	// submitClassPayment
 	submitClassPayment.addEventListener("click", function(event){
-    event.preventDefault()
+    		event.preventDefault()
+		submitClassPayment.style.pointerEvents = "none";
     let selectedOption = selectField.options[selectField.selectedIndex];
     let responseText = selectedOption.getAttribute('responseText');
     
