@@ -468,7 +468,7 @@ class classDetailsStripe {
       if (form.valid()) {
         $this.storeBasicData();
         $this.AddStudentData();
-        // $this.showSemesterBundleModal();
+        $this.showSemesterBundleModal();
         $this.activeBreadCrumb("select-class");
         $this.activateDiv("class-selection-container");
       }
