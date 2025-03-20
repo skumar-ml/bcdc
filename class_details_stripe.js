@@ -300,19 +300,28 @@ class classDetailsStripe {
 
     var $this = this;
     for (let i = 0; i < prevStudentCheckBox.length; i++) {
-      if (!isPreviousStudent) {
-        //Update total price
-          if (!prevStudentCheckBox[i].checked) {
-            total_price[i].innerHTML =
-              "$" + $this.numberWithCommas(totalAmount + 100);
-          }
-          prevStudentCheckBox[i].setAttribute("checked", true);
-      } else {
+      // if (!isPreviousStudent) {
+      //   //Update total price
+      //     if (!prevStudentCheckBox[i].checked) {
+      //       total_price[i].innerHTML =
+      //         "$" + $this.numberWithCommas(totalAmount + 100);
+      //     }
+      //     prevStudentCheckBox[i].setAttribute("checked", true);
+      // } else {
+      //   if (prevStudentCheckBox[i].checked) {
+      //       total_price[i].innerHTML =
+      //           "$" + $this.numberWithCommas(totalAmount - 100);
+      //       prevStudentCheckBox[i].removeAttribute("checked");
+      //     }
+      // }
+	if(!isPreviousStudent) {
+        if (!prevStudentCheckBox[i].checked) {
+          prevStudentCheckBox[i].click();
+        }
+      }else{
         if (prevStudentCheckBox[i].checked) {
-            total_price[i].innerHTML =
-                "$" + $this.numberWithCommas(totalAmount - 100);
-            prevStudentCheckBox[i].removeAttribute("checked");
-          }
+          prevStudentCheckBox[i].click();
+        }
       }
     }
   }
@@ -468,7 +477,7 @@ class classDetailsStripe {
       if (form.valid()) {
         $this.storeBasicData();
         $this.AddStudentData();
-        $this.showSemesterBundleModal();
+        //$this.showSemesterBundleModal();
         $this.activeBreadCrumb("select-class");
         $this.activateDiv("class-selection-container");
       }
