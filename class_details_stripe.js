@@ -919,10 +919,29 @@ class classDetailsStripe {
         // Update tab
         let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
         paymentTab[0].click();
+	$this.hideShowNewStudentFee("none");
       });
     });
   }
 
+
+ hideShowNewStudentFee(type) {
+    const prev_student_row = document.querySelectorAll(
+      "[data-row='new-student-fee']"
+    );
+    prev_student_row.forEach((el) => (el.style.display = type));
+    if (type == "none") {
+      this.checkUncheckOldStudentCheckBox(true, "");
+    } else {
+      const prev_student_checkbox = document.querySelector(
+        ".prev_student_checkbox"
+      );
+      if (prev_student_checkbox[i].checked) {
+        this.checkUncheckOldStudentCheckBox(false, "");
+      }
+    }
+  }
+	
   updateAllSameProduct(programId, type){
     const addToCart = document.querySelectorAll(".add-to-cart");
     addToCart.forEach(button => {
@@ -1120,6 +1139,7 @@ class classDetailsStripe {
       // Update tab
       let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
       paymentTab[0].click();
+      this.hideShowNewStudentFee("block");
     }
   }
 
@@ -1281,28 +1301,33 @@ class classDetailsStripe {
         addon_title.innerHTML = addonProgram.label;
       });
     }
+
+    let disc_amount = addonProgram.disc_amount + this.$discount_amount;
+    let amount = addonProgram.amount + this.$discount_amount;
+
     if (price.length > 0) {
       price.forEach((p) => {
-        p.innerHTML = "$" + this.numberWithCommas(addonProgram.disc_amount);
+        p.innerHTML = "$" + this.numberWithCommas(disc_amount);
       });
     }
     if (discountPrice.length > 0) {
       discountPrice.forEach((dp) => {
-        dp.innerHTML = "$" + this.numberWithCommas(addonProgram.amount);
+        dp.innerHTML = "$" + this.numberWithCommas(amount);
       });
     }
     if (discount.length > 0) {
       discount.forEach((d) => {
         d.innerHTML =
-          "$" + this.numberWithCommas((addonProgram.disc_amount - addonProgram.amount)) + " OFF";
+          "$" + this.numberWithCommas(disc_amount - amount) + " OFF";
       });
     }
     if (bundleProgram.length > 0) {
       bundleProgram.forEach((bp) => {
-        bp.value = this.numberWithCommas(addonProgram.amount);
+        bp.value = this.numberWithCommas(amount);
       });
     }
   }
+}
    
 
 }
