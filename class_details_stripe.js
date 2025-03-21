@@ -20,6 +20,7 @@ function creEl(name, className, idName) {
  */
 class classDetailsStripe {
   $suppPro = [];
+  $discount_amount = 300;
   constructor(
     baseUrl,
     webflowMemberId,
