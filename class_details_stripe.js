@@ -1140,7 +1140,7 @@ class classDetailsStripe {
       // Update tab
       let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
       paymentTab[0].click();
-      this.hideShowNewStudentFee("block");
+      this.hideShowNewStudentFee("grid");
     }
   }
 
