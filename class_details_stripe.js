@@ -1319,7 +1319,7 @@ class classDetailsStripe {
     if (discount.length > 0) {
       discount.forEach((d) => {
         d.innerHTML =
-          "$" + this.numberWithCommas(disc_amount - amount) + " OFF";
+          "$" + this.numberWithCommas(disc_amount - amount);
       });
     }
     if (bundleProgram.length > 0) {
