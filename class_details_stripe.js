@@ -20,7 +20,6 @@ function creEl(name, className, idName) {
  */
 class classDetailsStripe {
   $suppPro = [];
-  $discount_amount = 300;
   $isPrevStudent = false;
   constructor(
     baseUrl,
@@ -36,6 +35,7 @@ class classDetailsStripe {
     this.levelId = levelId;
     this.parentName = parentName;
     this.amount = amount;
+    this.discount_amount = amount
     this.renderPortalData();
     this.initializeToolTips();
     this.updatePriceForCardPayment();
@@ -1303,8 +1303,8 @@ class classDetailsStripe {
       });
     }
 
-    let disc_amount = addonProgram.disc_amount + this.$discount_amount;
-    let amount = addonProgram.amount + this.$discount_amount;
+    let disc_amount = addonProgram.disc_amount + this.discount_amount;
+    let amount = addonProgram.amount + this.discount_amount;
 
     if (price.length > 0) {
       price.forEach((p) => {
