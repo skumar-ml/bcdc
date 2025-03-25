@@ -35,7 +35,7 @@ class classDetailsStripe {
     this.levelId = levelId;
     this.parentName = parentName;
     this.amount = amount;
-    this.discount_amount = amount
+    this.discount_amount = parseInt(amount);
     this.renderPortalData();
     this.initializeToolTips();
     this.updatePriceForCardPayment();
