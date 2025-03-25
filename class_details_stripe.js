@@ -21,6 +21,7 @@ function creEl(name, className, idName) {
 class classDetailsStripe {
   $suppPro = [];
   $discount_amount = 300;
+  $isPrevStudent = false;
   constructor(
     baseUrl,
     webflowMemberId,
@@ -275,6 +276,7 @@ class classDetailsStripe {
         if (xhr.status == 200) {
           let responseText = JSON.parse(xhr.responseText);
           let isPreviousStudent = responseText.isPreviousStudent;
+	  $this.$isPrevStudent = responseText.isPreviousStudent
           $this.checkUncheckOldStudentCheckBox(isPreviousStudent, $this);
           resolve(isPreviousStudent);
         } else {
@@ -930,16 +932,14 @@ class classDetailsStripe {
     const prev_student_row = document.querySelectorAll(
       "[data-row='new-student-fee']"
     );
+    const prev_student_checkbox = document.querySelector(
+      ".prev_student_checkbox"
+    );
     prev_student_row.forEach((el) => (el.style.display = type));
     if (type == "none") {
       this.checkUncheckOldStudentCheckBox(true, "");
     } else {
-      const prev_student_checkbox = document.querySelector(
-        ".prev_student_checkbox"
-      );
-      if (prev_student_checkbox[i].checked) {
-        this.checkUncheckOldStudentCheckBox(false, "");
-      }
+      this.checkUncheckOldStudentCheckBox(this.$isPrevStudent, "")
     }
   }
 	
