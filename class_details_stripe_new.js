@@ -1114,46 +1114,46 @@ function creEl(name, className, idName) {
       }
     }
     // This method use to display selected supplementary program in sidebar
-    displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
-      var $this = this;
-      // Filtering selected Supplementary program id from all Supplementary program data
-      var selectedData = this.$suppPro.filter((item) =>
-        suppIds.some((d) => d == item.upsellProgramId)
-      );
-      
-      selectedData.forEach((sup) => {
-        // bundle label and remove 
-        let cartGridWrapper1 = creEl("div", "cart-grid-wrapper");
-        let offeringType = creEl("div", "main-text small-medium-mb-0");
-        offeringType.innerHTML = sup.label;
-        let offeringRemove = creEl("div", "main-text brown-red-text-small align-right");
-        offeringRemove.innerHTML = "Remove";
-        offeringRemove.addEventListener("click", function () {
-          $this.removeSuppProgram(sup.upsellProgramId);
-        });
-        cartGridWrapper1.prepend(offeringType, offeringRemove);
-  
-        // Deposit price considered as single program
-        let cartGridWrapper2 = creEl("div", "cart-grid-wrapper");
-        let depositLabel = creEl("p", "main-text order-details-no-strike");
-        depositLabel.innerHTML = "Deposit (Due Now)";
-        let depositPrice = creEl("p", "main-text order-details-no-strike");
-        depositPrice.innerHTML = "$"+$this.amount;
-        cartGridWrapper2.prepend(depositLabel, depositPrice);
-        // bundle amount considered as single program
-        let cartGridWrapper3 = creEl("div", "cart-grid-wrapper");
-        let bundleLabel = creEl("p", "main-text order-details-no-strike");
-        bundleLabel.innerHTML = "Bundle Price";
-        let bundlePrice = creEl("div","main-text order-details-no-strike");
-        bundlePrice.innerHTML = "$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2));
-        bundlePrice.setAttribute("data-stripe", "addon_price");
-        bundlePrice.setAttribute("addon-price",$this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
-        cartGridWrapper3.prepend(bundleLabel, );
-        cartGridWrapper3.prepend(bundleLabel, bundlePrice);
-        // append all grid wrapper
-        selectedSuppPro.prepend(cartGridWrapper1, cartGridWrapper2, cartGridWrapper3);
+  displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
+    var $this = this;
+    // Filtering selected Supplementary program id from all Supplementary program data
+    var selectedData = this.$suppPro.filter((item) =>
+      suppIds.some((d) => d == item.upsellProgramId)
+    );
+    
+    selectedData.forEach((sup) => {
+      // bundle label and remove 
+      let cartGridWrapper1 = creEl("div", "cart-grid-wrapper");
+      let offeringType = creEl("div", "main-text small-medium-mb-0");
+      offeringType.innerHTML = sup.label;
+      let offeringRemove = creEl("div", "main-text brown-red-text-small align-right");
+      offeringRemove.innerHTML = "Remove";
+      offeringRemove.addEventListener("click", function () {
+        $this.removeSuppProgram(sup.upsellProgramId);
       });
-    }
+      cartGridWrapper1.prepend(offeringType, offeringRemove);
+
+      // Deposit price considered as single program
+      let cartGridWrapper2 = creEl("div", "cart-grid-wrapper");
+      let depositLabel = creEl("p", "main-text order-details-no-strike");
+      depositLabel.innerHTML = "Deposit (Due Now)";
+      let depositPrice = creEl("p", "main-text order-details-price-no-strike");
+      depositPrice.innerHTML = "$"+$this.amount;
+      cartGridWrapper2.prepend(depositLabel, depositPrice);
+      // bundle amount considered as single program
+      let cartGridWrapper3 = creEl("div", "cart-grid-wrapper");
+      let bundleLabel = creEl("p", "main-text order-details-no-strike");
+      bundleLabel.innerHTML = "Bundle Price";
+      let bundlePrice = creEl("div","main-text order-details-price-no-strike");
+      bundlePrice.innerHTML = "$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2));
+      bundlePrice.setAttribute("data-stripe", "addon_price");
+      bundlePrice.setAttribute("addon-price",$this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
+      cartGridWrapper3.prepend(bundleLabel, );
+      cartGridWrapper3.prepend(bundleLabel, bundlePrice);
+      // append all grid wrapper
+      selectedSuppPro.prepend(cartGridWrapper1, cartGridWrapper2, cartGridWrapper3);
+    });
+  }
     removeSuppProgram(suppId) {
       var suppProIdE = document.getElementById("suppProIds");
       var arrayIds = JSON.parse(suppProIdE.value);
