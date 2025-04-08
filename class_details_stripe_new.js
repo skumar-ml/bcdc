@@ -807,8 +807,8 @@ function creEl(name, className, idName) {
         //"cancelUrl": cancelUrl.href,
         //"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
         memberId: this.webflowMemberId,
-        //amount: this.amount * 100,
-        amount: 100,
+        amount: this.amount * 100
+        //amount: 100,
       };
   
       //console.log('Data !!!!!', data)
@@ -1380,7 +1380,7 @@ function creEl(name, className, idName) {
       if (discount.length > 0) {
         discount.forEach((d) => {
           d.innerHTML =
-            "$" + this.numberWithCommas(disc_amount - amount) + " OFF";
+            "$" + this.numberWithCommas(disc_amount - amount);
         });
       }
       if (bundleProgram.length > 0) {
