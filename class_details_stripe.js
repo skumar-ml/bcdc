@@ -1167,7 +1167,7 @@ class classDetailsStripe {
                 "[data-stripe='addon_price']"
               );
               if(addonPriceEl){
-                let addonPrice = addonPriceEl.innerHTML
+                let addonPrice = addonPriceEl.getAttribute('addon-price')
                 .replace(/,/g, "")
                 .replace(/\$/g, "");
               addonPrice = (parseFloat(addonPrice) + 0.3) / 0.971;
@@ -1211,7 +1211,7 @@ class classDetailsStripe {
         if (tab == "Tab 2") {
           if (addonPrice.length > 0) {
             addonPrice.forEach((addon_deposit_price) => {
-              let addonPrice = addon_deposit_price.innerHTML
+              let addonPrice = addon_deposit_price.getAttribute("addon-price")
                 .replace(/,/g, "")
                 .replace(/\$/g, "");
               let addonPriceValue = (parseFloat(addonPrice) + 0.3) / 0.971;
