@@ -390,7 +390,7 @@ function creEl(name, className, idName) {
             }
             prevStudentCheckBox[i].setAttribute("checked", true);
           } else {
-            $this.$isPrevStudent = true;
+            $this.$isPrevStudent = false;
             for (let j = 0; j < total_price.length; j++) {
               total_price[j].innerHTML =
                 "$" + $this.numberWithCommas(totalAmount);
