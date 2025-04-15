@@ -37,7 +37,8 @@ class classLists {
 					let timingData = locationData[0].timing
 					var timingText = '';
 					timingData.forEach((timeData,index)=>{
-						timingText = timingText+' '+timeData.day+" "+timeData.startTime+"-"+timeData.endTime+"<br>";
+						let endTime = timeData.endTime.replace(/^0/, '')
+						timingText = timingText+' '+timeData.day+" "+timeData.startTime+"-"+endTime+"<br>";
 					})
 					//console.log(levelId, location, timingText)
 					timingText = timingText.replace(/PM/g, "")
