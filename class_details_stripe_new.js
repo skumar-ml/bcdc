@@ -1209,6 +1209,17 @@ function creEl(name, className, idName) {
                   core_product_price.value.replace(/,/g, "")
                 );
                 coreDepositPrice = (parseFloat(coreDepositPrice) + 0.3) / 0.971;
+
+                // Update deposit Price for addon program
+                let addonDepositPrices = document.querySelectorAll(
+                 "[data-stripe='addon-deposit-price']"
+               );
+               if(addonDepositPrices.length > 0){
+                 addonDepositPrices.forEach(addonDepositPrice =>{
+                   addonDepositPrice.innerHTML =   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));  
+                 })
+               }
+                
                 let addonPriceEl = document.querySelector(
                   "[data-stripe='addon_price']"
                 );
@@ -1233,7 +1244,17 @@ function creEl(name, className, idName) {
                 let amount = parseFloat(
                   amountEl.replace(/,/g, "").replace(/\$/g, "")
                 );
-                console.log("amount", amount);
+
+                // Update deposit Price for addon program
+                let addonDepositPrices = document.querySelectorAll(
+                 "[data-stripe='addon-deposit-price']"
+               );
+               if(addonDepositPrices.length > 0){
+                 addonDepositPrices.forEach(addonDepositPrice =>{
+                   addonDepositPrice.innerHTML =   "$" + $this.numberWithCommas(amount.toFixed(2));
+                 })
+               }
+                  
                 let addonPriceEl = document.querySelector(
                   "[data-stripe='addon_price']"
                 );
