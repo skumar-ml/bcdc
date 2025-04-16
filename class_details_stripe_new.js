@@ -1139,6 +1139,7 @@ function creEl(name, className, idName) {
       depositLabel.innerHTML = "Deposit (Due Now)";
       let depositPrice = creEl("p", "main-text order-details-price-no-strike");
       depositPrice.innerHTML = "$"+$this.amount;
+      depositPrice.setAttribute("data-stripe", "addon-deposit-price");
       cartGridWrapper2.prepend(depositLabel, depositPrice);
       // bundle amount considered as single program
       let cartGridWrapper3 = creEl("div", "cart-grid-wrapper");
