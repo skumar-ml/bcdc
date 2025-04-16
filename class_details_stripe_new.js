@@ -1003,8 +1003,9 @@ function creEl(name, className, idName) {
         if (programDetailId == programId) {
           button.textContent = type ? "Added" : "Add to Cart";
           button.style.pointerEvents = type ? "none" : "auto";
-          button.style.color = type ? "#f2d385" : "";
-          button.style.textDecoration = type ? "underline" : "";
+          button.style.color = type ? "#ffffff" : "";
+          button.style.backgroundColor = type ? "gray" : "";
+          //button.style.textDecoration = type ? "underline" : "";
         }
       });
     }
