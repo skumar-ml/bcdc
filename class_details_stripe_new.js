@@ -710,31 +710,41 @@ function creEl(name, className, idName) {
   
         // Click event to make the selected time red and show payment methods
         label.addEventListener("click", function () {
-          document
-            .querySelectorAll(".class-times-grid-wrapper .form-label")
-            .forEach((lbl) =>
-              lbl.classList.remove("class-time-with-brown-white-style")
-            ); // Remove red from others
-  
-          label.classList.add("class-time-with-brown-white-style"); // Make selected red
-          paymentMethodsDiv.classList.remove("hide"); // Show payment methods
-  
-          // hide and show join wait list link
-          let timingTextElement = document.querySelector(
-            ".class-time.class-time-with-brown-white-style"
-          );
-          let joinWaitListEl = document.getElementById("join-waitlist-class");
-          const submitClassPayment = document.getElementById("submit-class");
-          let actionType = timingTextElement.getAttribute("action-type");
-          let waitLink = timingTextElement.getAttribute("wait-link");
-          //wait-link
-          if (actionType == "waitlist") {
-            joinWaitListEl.href = waitLink;
-            submitClassPayment.style.display = "none";
-          } else {
-            joinWaitListEl.style.display = "none";
-          }
-        });
+        document
+          .querySelectorAll(".class-times-grid-wrapper .form-label")
+          .forEach((lbl) =>
+            lbl.classList.remove("class-time-with-brown-white-style")
+          ); // Remove red from others
+
+        label.classList.add("class-time-with-brown-white-style"); // Make selected red
+        paymentMethodsDiv.classList.remove("hide");
+        
+        let timingTextElement = document.querySelector(
+          ".class-time.class-time-with-brown-white-style"
+        );
+        let actionType = timingTextElement.getAttribute("action-type");
+        let payment_option = document.querySelector('.payment_option')
+        if (actionType == "waitlist") {
+          payment_option.classList.add("hide"); // Show payment methods
+        }else{
+          payment_option.classList.remove("hide");
+        }
+        // hide and show join wait list link
+        
+        let joinWaitListEl = document.getElementById("join-waitlist-class");
+        const submitClassPayment = document.getElementById("submit-class");
+        
+        let waitLink = timingTextElement.getAttribute("wait-link");
+        //wait-link
+        if (actionType == "waitlist") {
+          joinWaitListEl.href = waitLink;
+          joinWaitListEl.style.display = "block";
+          submitClassPayment.style.display = "none";
+        } else {
+          joinWaitListEl.style.display = "none";
+          submitClassPayment.style.display = "block";
+        }
+      });
   
         // Hover effect: Add yellow border on hover
         label.addEventListener("mouseenter", function () {
@@ -763,7 +773,7 @@ function creEl(name, className, idName) {
           classTimesContainer.prepend(classTimeWrapper);
           label.setAttribute("action-type", alertMessage.type);
           if (alertMessage.type == "waitlist") {
-            label.setAttribute("wait-link", alertMessage.waitListLink);
+            label.setAttribute("wait-link", time.waitListLink);
           }
         } else {
           classTimesContainer.prepend(label);
