@@ -66,13 +66,21 @@ class ReferralProgram {
       //     (ref) => ref.referred_stage == "None"
       //   );
       // }
-      
-
+      // Sort referrals by date_referred in descending order
+      data.referrals = (data.referrals || []).sort((a, b) => {
+        const dateA = new Date(a.date_referred || 0);
+        const dateB = new Date(b.date_referred || 0);
+        return dateB - dateA;
+      });
       // Populate referrals table
       this.referralsTableBody.innerHTML = "";
       (data.referrals || []).forEach((ref) => {
+        let pendingClass =
+          ref.referred_stage == "None"
+            ? "pending-referral"
+            : "enrolled-referral";
         const wrapper = document.createElement("div");
-        wrapper.className = "my-referral-table-row-grid-wrapper-copy";
+        wrapper.className = "my-referral-table-row-grid-wrapper." + pendingClass;
 
         // Status and Name
         const statusFlex = document.createElement("div");
