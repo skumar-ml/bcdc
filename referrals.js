@@ -28,7 +28,7 @@ class ReferralProgram {
     this.referralCodeInput.select();
     this.referralCodeInput.setSelectionRange(0, 99999);
     document.execCommand("copy");
-    this.copyMsg.style.display = "inline";
+    this.copyMsg.style.display = "block";
     setTimeout(() => (this.copyMsg.style.display = "none"), 1500);
   }
 
