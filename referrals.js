@@ -86,7 +86,7 @@ class ReferralProgram {
         const nameDiv = document.createElement("div");
         nameDiv.className = "my-referral-table-row-text";
         nameDiv.textContent = ref.name || "";
-        statusFlex.appendChild(statusIcon);
+        //statusFlex.appendChild(statusIcon);
         statusFlex.appendChild(nameDiv);
         wrapper.appendChild(statusFlex);
 
