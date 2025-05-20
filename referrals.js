@@ -78,9 +78,9 @@ class ReferralProgram {
         let pendingClass =
           ref.referred_stage == "None"
             ? "pending-referral"
-            : "enrolled-referral";
+            : "";
         const wrapper = document.createElement("div");
-        wrapper.className = "my-referral-table-row-grid-wrapper." + pendingClass;
+        wrapper.className = "my-referral-table-row-grid-wrapper " + pendingClass;
 
         // Status and Name
         const statusFlex = document.createElement("div");
