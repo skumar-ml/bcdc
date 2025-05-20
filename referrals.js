@@ -6,8 +6,8 @@ class ReferralProgram {
     this.copyMsg = document.getElementById("copyMsg");
     this.referralsTableBody = document.getElementById("referralList");
     // showEnrolled and showPending is checkbox field
-    this.showEnrolled = document.getElementById("showEnrolled");
-    this.showPending = document.getElementById("showPending");
+    // this.showEnrolled = document.getElementById("showEnrolled");
+    // this.showPending = document.getElementById("showPending");
     this.referralForm = document.getElementById("referralForm");
     this.formMsg = document.getElementById("formMsg");
     this.submitBtn = document.getElementById("formSubmit");
@@ -21,8 +21,8 @@ class ReferralProgram {
     });
     // Load referral data on page load
     this.loadReferralData();
-    this.showEnrolled.addEventListener("change", () => this.loadReferralData());
-    this.showPending.addEventListener("change", () => this.loadReferralData());
+    //this.showEnrolled.addEventListener("change", () => this.loadReferralData());
+    //this.showPending.addEventListener("change", () => this.loadReferralData());
   }
   copyCode() {
     this.referralCodeInput.select();
@@ -55,17 +55,17 @@ class ReferralProgram {
 
 
       // display showEnrolled and showPending based on referred_stage None or else
-      if (this.showEnrolled.checked && this.showPending.checked) {
-        data.referrals = data.referrals;
-      } else if (this.showEnrolled.checked && !this.showPending.checked) {
-        data.referrals = data.referrals.filter(
-          (ref) => ref.referred_stage != "None"
-        );
-      } else if (this.showPending.checked && !this.showEnrolled.checked) {
-        data.referrals = data.referrals.filter(
-          (ref) => ref.referred_stage == "None"
-        );
-      }
+      // if (this.showEnrolled.checked && this.showPending.checked) {
+      //   data.referrals = data.referrals;
+      // } else if (this.showEnrolled.checked && !this.showPending.checked) {
+      //   data.referrals = data.referrals.filter(
+      //     (ref) => ref.referred_stage != "None"
+      //   );
+      // } else if (this.showPending.checked && !this.showEnrolled.checked) {
+      //   data.referrals = data.referrals.filter(
+      //     (ref) => ref.referred_stage == "None"
+      //   );
+      // }
       
 
       // Populate referrals table
