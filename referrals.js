@@ -48,11 +48,25 @@ class ReferralProgram {
       this.referralCodeInput.value = data.coupon_code || "";
 
       // data referrals count based on data-referrals="count" element
-        const countElement = document.querySelectorAll("[data-referrals='count']");
-        countElement.forEach((el) => {
-          const count = data.referrals.filter((ref) => ref.referred_stage != "None").length;
-          el.textContent = count;
-        });
+        const countElement = document.querySelectorAll(
+        "[data-referrals='count']"
+      );
+      const count = data.referrals.filter(
+          (ref) => ref.referred_stage != "None"
+        ).length;
+
+      countElement.forEach((el) => {
+        el.textContent = count;
+      });
+      
+      const activeReferrals = count; // Set how many referrals are completed
+      const totalReferrals = 7;
+      const fill = document.getElementById('progress-fill');
+      if(count < 7) {
+        fill.style.width = `${(activeReferrals / totalReferrals) * 100}%`;
+      }else{
+        fill.style.width = '100%'
+      }
 
 
       // display showEnrolled and showPending based on referred_stage None or else
