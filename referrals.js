@@ -1,7 +1,11 @@
 class ReferralProgram {
   constructor(memberId, baseUrl) {
-    this.memberId = memberId;
-    this.baseUrl = baseUrl;
+    this.referralCount = data.referralCount;
+    this.maxReferrals = data.maxReferrals;
+    this.rewards = data.rewards;
+    this.icons = data.icons;
+    this.memberId = data.memberId;
+    this.baseUrl = data.baseUrl;
     this.referralCodeInput = document.getElementById("referralCode");
     this.referralCodeInput.disabled = true;
     this.copyMsg = document.getElementById("copyMsg");
