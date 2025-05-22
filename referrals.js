@@ -114,8 +114,11 @@ class ReferralProgram {
         const nameDiv = document.createElement("div");
         nameDiv.className = "my-referral-table-row-text";
         nameDiv.textContent = ref.name || "";
-        statusFlex.appendChild(statusIcon);
-        statusFlex.appendChild(nameDiv);
+        // statusFlex.appendChild(statusIcon);
+        // statusFlex.appendChild(nameDiv);
+        // wrapper.appendChild(statusFlex);
+        wrapper.appendChild(statusIcon);
+        wrapper.appendChild(nameDiv);
         wrapper.appendChild(statusFlex);
 
         // Enrolled/Pending status
