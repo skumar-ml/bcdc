@@ -52,28 +52,28 @@ class ReferralProgram {
       this.referralCodeInput.value = data.coupon_code || "";
 
       // data referrals count based on data-referrals="count" element
-        const countElement = document.querySelectorAll(
+      const countElement = document.querySelectorAll(
         "[data-referrals='count']"
       );
       const count = data.referrals.filter(
-          (ref) => ref.referred_stage != "None"
-        ).length;
+        (ref) => ref.referred_stage != "None"
+      ).length;
 
       countElement.forEach((el) => {
         el.textContent = count;
       });
 
-      this.createTracker(count);
-      this.createMobileTracker(count)
       // const activeReferrals = count; // Set how many referrals are completed
       // const totalReferrals = 7;
-      // const fill = document.getElementById('progress-fill');
-      // if(count < 7) {
+      // const fill = document.getElementById("progress-fill");
+      // if (count < 7) {
       //   fill.style.width = `${(activeReferrals / totalReferrals) * 100}%`;
-      // }else{
-      //   fill.style.width = '100%'
+      // } else {
+      //   fill.style.width = "100%";
       // }
 
+      this.createTracker(count);
+      this.createMobileTracker(count)
 
       // display showEnrolled and showPending based on referred_stage None or else
       // if (this.showEnrolled.checked && this.showPending.checked) {
@@ -97,32 +97,31 @@ class ReferralProgram {
       this.referralsTableBody.innerHTML = "";
       (data.referrals || []).forEach((ref) => {
         let pendingClass =
-          ref.referred_stage == "None"
-            ? "pending-referral"
-            : "";
+          ref.referred_stage == "None" ? "pending-referral" : "";
         const wrapper = document.createElement("div");
-        wrapper.className = "my-referral-table-row-grid-wrapper " + pendingClass;
+        wrapper.className =
+          "my-referral-table-row-grid-wrapper " + pendingClass;
 
         // Status and Name
         const statusFlex = document.createElement("div");
         statusFlex.className = "my-referral-status-flex-wrapper";
         const statusIcon = document.createElement("img");
-       if(ref.referred_stage == "None") {
-        statusIcon.src =
-          "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682b19d6917e60cb04ec4624_Rectangle%204630.svg";
-        }else {
+        // Set the status icon based on referred_stage
+        if (ref.referred_stage == "None") {
+          statusIcon.src =
+            "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682b19d6917e60cb04ec4624_Rectangle%204630.svg";
+          statusIcon.loading = "lazy";
+        } else {
           statusIcon.src =
             "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682ecd5b8bc5ccc9aff51d85_checked-icon.svg";
+          statusIcon.loading = "lazy";
         }
-         statusIcon.loading = "lazy";
+
         statusIcon.alt = "";
         statusIcon.className = "status-uncheck-icon";
         const nameDiv = document.createElement("div");
         nameDiv.className = "my-referral-table-row-text";
         nameDiv.textContent = ref.name || "";
-        // statusFlex.appendChild(statusIcon);
-        // statusFlex.appendChild(nameDiv);
-        // wrapper.appendChild(statusFlex);
         wrapper.appendChild(statusIcon);
         wrapper.appendChild(nameDiv);
         //wrapper.appendChild(statusFlex);
@@ -170,13 +169,13 @@ class ReferralProgram {
     const formDone = document.querySelector(".w-form-done");
     const formFail = document.querySelector(".w-form-fail");
     if (!name || !email) {
-        formFail.textContent = "Please fill in all fields.";
-        formFail.style.display = "block";
-        this.spinner.style.display = "none";
-        // Hide the error message after 3 seconds
-        setTimeout(() => (formFail.style.display = "none"), 3000);
-        this.referralForm.setAttribute("data-wf-page", "false");
-        return;
+      formFail.textContent = "Please fill in all fields.";
+      formFail.style.display = "block";
+      this.spinner.style.display = "none";
+      // Hide the error message after 3 seconds
+      setTimeout(() => (formFail.style.display = "none"), 3000);
+      this.referralForm.setAttribute("data-wf-page", "false");
+      return;
     }
 
     // Disable submit button to prevent multiple submissions
