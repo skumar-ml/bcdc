@@ -119,7 +119,7 @@ class ReferralProgram {
         // wrapper.appendChild(statusFlex);
         wrapper.appendChild(statusIcon);
         wrapper.appendChild(nameDiv);
-        wrapper.appendChild(statusFlex);
+        //wrapper.appendChild(statusFlex);
 
         // Enrolled/Pending status
         const statusDiv = document.createElement("div");
