@@ -45,7 +45,11 @@ class ReferralProgram {
       );
       this.spinner.style.display = "none";
       // Check if the response is ok
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) {
+        // class no-record-div display block
+        document.querySelector(".no-record-div").style.display = "block";
+        throw new Error("Failed to fetch");
+      }
       const data = await res.json();
 
       // Set coupon code
@@ -93,6 +97,11 @@ class ReferralProgram {
         const dateB = new Date(b.date_referred || 0);
         return dateB - dateA;
       });
+      if(data.referrals.length == 0) {
+        document.querySelector(".no-record-div").style.display = "block";
+      }else {
+        document.querySelector(".no-record-div").style.display = "none";
+      }
       // Populate referrals table
       this.referralsTableBody.innerHTML = "";
       (data.referrals || []).forEach((ref) => {
