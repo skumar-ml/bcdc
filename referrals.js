@@ -54,6 +54,12 @@ class ReferralProgram {
 
       // Set coupon code
       this.referralCodeInput.value = data.coupon_code || "";
+      data.referrals = data.referrals || [];
+      if(data.referrals.length == 0) {
+        document.querySelector(".no-record-div").style.display = "block";
+      }else {
+        document.querySelector(".no-record-div").style.display = "none";
+      }
 
       // data referrals count based on data-referrals="count" element
       const countElement = document.querySelectorAll(
