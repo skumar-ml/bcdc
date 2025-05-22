@@ -7,7 +7,8 @@ class ReferralProgram {
     this.memberId = data.memberId;
     this.baseUrl = data.baseUrl;
     this.referralCodeInput = document.getElementById("referralCode");
-    this.referralCodeInput.disabled = true;
+    this.referralCodeInput.setAttribute("readonly", "true");
+    this.referralCodeInput.setAttribute("aria-readonly", "true");
     this.copyMsg = document.getElementById("copyMsg");
     this.referralsTableBody = document.getElementById("referralList");
     // showEnrolled and showPending is checkbox field
