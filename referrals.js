@@ -105,8 +105,10 @@ class ReferralProgram {
         return dateB - dateA;
       });
       if(data.referrals.length == 0) {
+        this.referralsTableBody.classList.add("no-record");
         document.querySelector(".no-record-div").style.display = "block";
       }else {
+        this.referralsTableBody.classList.remove("no-record");
         document.querySelector(".no-record-div").style.display = "none";
       }
       // Populate referrals table
