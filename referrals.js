@@ -58,15 +58,17 @@ class ReferralProgram {
       countElement.forEach((el) => {
         el.textContent = count;
       });
-      
-      const activeReferrals = count; // Set how many referrals are completed
-      const totalReferrals = 7;
-      const fill = document.getElementById('progress-fill');
-      if(count < 7) {
-        fill.style.width = `${(activeReferrals / totalReferrals) * 100}%`;
-      }else{
-        fill.style.width = '100%'
-      }
+
+      this.createTracker(count);
+      this.createMobileTracker(count)
+      // const activeReferrals = count; // Set how many referrals are completed
+      // const totalReferrals = 7;
+      // const fill = document.getElementById('progress-fill');
+      // if(count < 7) {
+      //   fill.style.width = `${(activeReferrals / totalReferrals) * 100}%`;
+      // }else{
+      //   fill.style.width = '100%'
+      // }
 
 
       // display showEnrolled and showPending based on referred_stage None or else
@@ -217,5 +219,109 @@ class ReferralProgram {
         this.submitBtn.innerHTML = "Submit";
       }
     }
+  }
+
+  createTracker(referralCount) {
+    const container = document.querySelector(".progress-tracker-rounded-div.desktop");
+    container.innerHTML = ""; // Clear existing content
+    const progressPercent =
+      (Math.min(referralCount, this.maxReferrals) / this.maxReferrals) * 100;
+
+    let html = `
+    <div class="progress-tracker-text-black start">Start</div>
+    <div class="progress-track-inner-rounded-div">
+      <div id="progress-fill" class="progress-track-fill" style="width: ${progressPercent}%;"><div class="progress-tracker-circle-container">`;
+
+    for (let i = 0; i < this.maxReferrals; i++) {
+      const isEven = i % 2 === 0;
+      const isCompleted = referralCount > i;
+      const isCurrent = referralCount + 1 === i + 1;
+
+      let textPositionClass = isEven ? "top-text" : "bottom-text";
+      let rewardText =
+        i === this.maxReferrals - 1 && referralCount > this.maxReferrals
+          ? "7+ Referral"
+          : `${i + 1} Referral`;
+      let rewardSubtext = this.rewards[i] || "Bergen Speech Stand";
+
+      let circleClass = "referral-circle-gray";
+      if (!isCompleted) circleClass += " light-gray";
+
+      let icon = isCompleted
+        ? this.icons.check
+        : isCurrent
+        ? this.icons.timer
+        : "";
+      let circleIcon = icon ? `<img src="${icon}" loading="lazy" alt="">` : "";
+
+      let connectorLine = isEven
+        ? `<img src="${this.icons.lineBottom}" class="progress-track-bottom-line" loading="lazy" alt="">`
+        : `<img src="${this.icons.lineTop}" class="progress-track-top-line" loading="lazy" alt="">`;
+      let circleDiv = isEven
+        ? `<div class="progress-track-bottom-circle ${
+            !icon ? "no-inner-icon" : ""
+          }">${circleIcon}</div>`
+        : `<div class="progress-track-top-circle ${
+            !icon ? "no-inner-icon" : ""
+          }">${circleIcon}</div>`;
+
+      html += `<div class="progress-tracker-referral-circle-div">
+      <div class="${circleClass}">
+        <div class="progress-tracker-text ${textPositionClass} ${
+        !isCompleted ? "text-400" : ""
+      }">${rewardText}<br><span class="reward-subtext">${rewardSubtext}</span></div>
+        ${connectorLine}
+        ${circleDiv}
+      </div>
+    </div>`;
+    }
+
+    html += `</div></div></div><div class="progress-tracker-text-black">End</div>`;
+    container.innerHTML = html;
+  }
+
+  createMobileTracker(referralCount) {
+  const container = document.querySelector(".progress-tracker-rounded-div.mobile");
+  container.innerHTML = ""; // Clear existing content
+
+  const progressPercent = Math.min(referralCount, this.maxReferrals) / this.maxReferrals * 100;
+
+  const progressInner = [`<div class="progress-tracker-text-black start">Start</div>`];
+  progressInner.push(`<div class="progress-track-inner-rounded-div"><div id="progress-fill-mob" class="progress-track-fill" style="height: ${progressPercent}%;"><div class="progress-tracker-circle-container">`);
+
+  for (let i = 0; i < this.maxReferrals; i++) {
+    const isLeft = i % 2 === 0;
+    const isCompleted = referralCount > i;
+    const isCurrent = referralCount === i + 1;
+
+    const rewardText = i === this.maxReferrals - 1 && referralCount > this.maxReferrals
+      ? "7+ Referral"
+      : `${i + 1} Referral`;
+    const rewardSubtext = this.rewards[i] || "Bergen Speech Stand";
+
+    const circleClass = isCompleted ? "referral-circle-gray" : "referral-circle-gray light-gray";
+    const iconSrc = isCompleted ? this.icons.check : isCurrent ? this.icons.timer : null;
+    const icon = iconSrc
+      ? `<img src="${iconSrc}" loading="lazy" alt="" class="inline-block-icon">`
+      : "";
+
+    const circle = `<div class="${isLeft ? "progress-track-left-circle" : "progress-track-right-circle"}">${icon}</div>`;
+    const line = `<img src="${this.icons.lineTop}" loading="lazy" alt="" class="${isLeft ? "progress-track-left-icon" : "progress-track-right-icon"}">`;
+    const textClass = isCompleted ? "progress-tracker-text" : "progress-tracker-text font-400";
+    const text = `<div class="${textClass} ${isLeft ? "mob-right" : "mob-left"}">${rewardText}<br /><span class="reward-subtext">${rewardSubtext}</span></div>`;
+
+    progressInner.push(`
+      <div class="progress-tracker-referral-circle-div">
+        <div class="${circleClass}">
+          ${circle}
+          ${text}
+          ${line}
+        </div>
+      </div>`);
+  }
+
+  progressInner.push(`</div></div></div><div class="progress-tracker-text-black">End</div>`);
+
+  container.innerHTML = progressInner.join("");
   }
 }
