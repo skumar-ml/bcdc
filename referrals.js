@@ -101,15 +101,20 @@ class ReferralProgram {
         const statusFlex = document.createElement("div");
         statusFlex.className = "my-referral-status-flex-wrapper";
         const statusIcon = document.createElement("img");
+       if(ref.referred_stage == "None") {
         statusIcon.src =
           "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682b19d6917e60cb04ec4624_Rectangle%204630.svg";
-        statusIcon.loading = "lazy";
+        }else {
+          statusIcon.src =
+            "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682ecd5b8bc5ccc9aff51d85_checked-icon.svg";
+        }
+         statusIcon.loading = "lazy";
         statusIcon.alt = "";
         statusIcon.className = "status-uncheck-icon";
         const nameDiv = document.createElement("div");
         nameDiv.className = "my-referral-table-row-text";
         nameDiv.textContent = ref.name || "";
-        //statusFlex.appendChild(statusIcon);
+        statusFlex.appendChild(statusIcon);
         statusFlex.appendChild(nameDiv);
         wrapper.appendChild(statusFlex);
 
