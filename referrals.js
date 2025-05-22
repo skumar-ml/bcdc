@@ -1,5 +1,5 @@
 class ReferralProgram {
-  constructor(memberId, baseUrl) {
+  constructor(data) {
     this.referralCount = data.referralCount;
     this.maxReferrals = data.maxReferrals;
     this.rewards = data.rewards;
