@@ -105,10 +105,10 @@ class ReferralProgram {
         return dateB - dateA;
       });
       if(data.referrals.length == 0) {
-        this.referralsTableBody.classList.add("no-record");
+        //this.referralsTableBody.classList.add("no-record");
         document.querySelector(".no-record-div").style.display = "block";
       }else {
-        this.referralsTableBody.classList.remove("no-record");
+        //this.referralsTableBody.classList.remove("no-record");
         document.querySelector(".no-record-div").style.display = "none";
       }
       // Populate referrals table
@@ -123,24 +123,24 @@ class ReferralProgram {
         // Status and Name
         const statusFlex = document.createElement("div");
         statusFlex.className = "my-referral-status-flex-wrapper";
-        const statusIcon = document.createElement("img");
+        const checkIcon = document.createElement("img");
         // Set the status icon based on referred_stage
         if (ref.referred_stage == "None") {
-          statusIcon.src =
+          checkIcon.src =
             "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682b19d6917e60cb04ec4624_Rectangle%204630.svg";
-          statusIcon.loading = "lazy";
+          checkIcon.loading = "lazy";
         } else {
-          statusIcon.src =
+          checkIcon.src =
             "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682ecd5b8bc5ccc9aff51d85_checked-icon.svg";
-          statusIcon.loading = "lazy";
+          checkIcon.loading = "lazy";
         }
 
-        statusIcon.alt = "";
-        statusIcon.className = "status-uncheck-icon";
+        checkIcon.alt = "";
+        checkIcon.className = "status-uncheck-icon";
         const nameDiv = document.createElement("div");
         nameDiv.className = "my-referral-table-row-text";
         nameDiv.textContent = ref.name || "";
-        wrapper.appendChild(statusIcon);
+        wrapper.appendChild(checkIcon);
         wrapper.appendChild(nameDiv);
         //wrapper.appendChild(statusFlex);
 
@@ -149,7 +149,18 @@ class ReferralProgram {
         statusDiv.className = "my-referral-table-row-text";
         statusDiv.textContent =
           ref.referred_stage !== "None" ? "Enrolled" : "Pending";
-        wrapper.appendChild(statusDiv);
+        statusFlex.appendChild(statusDiv);
+
+        const pendingStatusIcon = document.createElement("img");
+        pendingStatusIcon.classList.add("pending-icon");
+        // Set the status icon based on referred_stage
+        if (ref.referred_stage == "None") {
+          pendingStatusIcon.src =
+            "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682fffc2c9964985fed5191a_Layer_1%20(7).svg";
+          pendingStatusIcon.loading = "lazy";
+          statusFlex.appendChild(pendingStatusIcon);
+        }
+        wrapper.appendChild(statusFlex);
 
         // Date referred
         const referredDiv = document.createElement("div");
