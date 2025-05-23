@@ -175,7 +175,7 @@ class ReferralProgram {
         purchasedDiv.className = "my-referral-table-row-text";
         purchasedDiv.textContent = ref.purchased_date
           ? this.formatDate(ref.purchased_date)
-          : "-";
+          : "--";
         wrapper.appendChild(purchasedDiv);
 
         this.referralsTableBody.appendChild(wrapper);
