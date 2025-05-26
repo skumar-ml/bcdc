@@ -191,7 +191,7 @@ class ReferralProgram {
   }
   async handleFormSubmit(e) {
     e.preventDefault();
-    //this.spinner.style.display = "block";
+    this.spinner.style.display = "block";
     const name = document.getElementById("name").value.trim();
     const email = document.getElementById("email").value.trim();
     // select w-form-done and w-form-fail
@@ -200,7 +200,7 @@ class ReferralProgram {
     if (!name || !email) {
       formFail.textContent = "Please fill in all fields.";
       formFail.style.display = "block";
-      //this.spinner.style.display = "none";
+      this.spinner.style.display = "none";
       // Hide the error message after 3 seconds
       setTimeout(() => (formFail.style.display = "none"), 3000);
       this.referralForm.setAttribute("data-wf-page", "false");
@@ -239,9 +239,10 @@ class ReferralProgram {
       }
       // Reset the form
       this.referralForm.reset();
-     // this.spinner.style.display = "none";
+      this.spinner.style.display = "none";
       return;
     } catch (err) {
+      this.spinner.style.display = "none";
       this.formMsg.textContent = "Submission failed!";
       setTimeout(() => (this.formMsg.textContent = ""), 2000);
     } finally {
@@ -249,6 +250,7 @@ class ReferralProgram {
       if (this.submitBtn) {
         this.submitBtn.style.pointerEvents = "auto";
         this.submitBtn.innerHTML = "Submit";
+        this.spinner.style.display = "none";
       }
     }
   }
