@@ -210,6 +210,9 @@ class CheckOutWebflow {
 		// var glen_rock_location = document.getElementById('glen_rock_location');
 		// var summerSessionId = document.querySelector('input[name = checkbox]:checked').value;
 
+		//Utm Source
+		let localUtmSource = localStorage.getItem("utm_source");
+		
 		//Payment button
 		var next_page_2 = document.getElementById('next_page_2');
 		next_page_2.innerHTML ="Processing..."
@@ -237,7 +240,8 @@ class CheckOutWebflow {
 			"cancelUrl": cancelUrl.href,
 			"memberId": this.memberData.memberId,
 			"achAmount": parseFloat(this.memberData.achAmount.replace(/,/g, '')),
-			"cardAmount": parseFloat(this.memberData.cardAmount.replace(/,/g, ''))
+			"cardAmount": parseFloat(this.memberData.cardAmount.replace(/,/g, '')),
+			"utm_source": (localUtmSource != null) ? localUtmSource : "null"
 		}
 
 
