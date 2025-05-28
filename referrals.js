@@ -271,8 +271,12 @@ class ReferralProgram {
       const isCurrent = referralCount + 1 === i + 1;
 
       let textPositionClass = isEven ? "top-text" : "bottom-text";
+      // let rewardText =
+      //   i === this.maxReferrals - 1 && referralCount > this.maxReferrals
+      //     ? "7+ Referrals"
+      //     : `${i + 1} ${i==0 ? 'Referral': 'Referrals'}`;
       let rewardText =
-        i === this.maxReferrals - 1 && referralCount > this.maxReferrals
+        i >= this.maxReferrals - 1
           ? "7+ Referrals"
           : `${i + 1} ${i==0 ? 'Referral': 'Referrals'}`;
       let rewardSubtext = this.rewards[i] || "Bergen Speech Stand";
@@ -327,7 +331,10 @@ class ReferralProgram {
     const isCompleted = referralCount > i;
     const isCurrent = referralCount === i + 1;
 
-    const rewardText = i === this.maxReferrals - 1 && referralCount > this.maxReferrals
+    // const rewardText = i === this.maxReferrals - 1 && referralCount > this.maxReferrals
+    //   ? "7+ Referrals"
+    //   : `${i + 1} ${i==0 ? 'Referral': 'Referrals'}`;
+    const rewardText = i >= this.maxReferrals - 1
       ? "7+ Referrals"
       : `${i + 1} ${i==0 ? 'Referral': 'Referrals'}`;
     const rewardSubtext = this.rewards[i] || "Bergen Speech Stand";
