@@ -262,7 +262,6 @@ class ReferralProgram {
       (Math.min(referralCount, this.maxReferrals) / this.maxReferrals) * 100;
 
     let html = `
-    <div class="progress-tracker-text-black start">Start</div>
     <div class="progress-track-inner-rounded-div">
       <div id="progress-fill" class="progress-track-fill" style="width: ${progressPercent}%;"><div class="progress-tracker-circle-container">`;
 
@@ -310,7 +309,7 @@ class ReferralProgram {
     </div>`;
     }
 
-    html += `</div></div></div><div class="progress-tracker-text-black">End</div>`;
+    html += `</div></div></div>`;
     container.innerHTML = html;
   }
 
@@ -320,7 +319,7 @@ class ReferralProgram {
 
   const progressPercent = Math.min(referralCount, this.maxReferrals) / this.maxReferrals * 100;
 
-  const progressInner = [`<div class="progress-tracker-text-black start">Start</div>`];
+  const progressInner = [];
   progressInner.push(`<div class="progress-track-inner-rounded-div"><div id="progress-fill-mob" class="progress-track-fill" style="height: ${progressPercent}%;"><div class="progress-tracker-circle-container">`);
 
   for (let i = 0; i < this.maxReferrals; i++) {
@@ -354,7 +353,7 @@ class ReferralProgram {
       </div>`);
   }
 
-  progressInner.push(`</div></div></div><div class="progress-tracker-text-black">End</div>`);
+  progressInner.push(`</div></div></div>`);
 
   container.innerHTML = progressInner.join("");
   }
