@@ -790,7 +790,10 @@ function creEl(name, className, idName) {
       var studentSchool = document.getElementById("Student-School");
       var studentGender = document.getElementById("Student-Gender");
       var prevStudent = document.getElementById("prevStudent");
-  
+
+      //Utm Source
+	  let localUtmSource = localStorage.getItem("utm_source");
+        
       var register_btn_card = document.querySelectorAll(".register_btn_card");
       register_btn_card.forEach((e) => {
         e.innerHTML = "Processing...";
@@ -817,8 +820,9 @@ function creEl(name, className, idName) {
         //"cancelUrl": cancelUrl.href,
         //"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
         memberId: this.webflowMemberId,
-        amount: this.amount * 100
-        //amount: 100,
+        amount: this.amount * 100,
+        utm_source: (localUtmSource != null) ? localUtmSource : "null"
+        
       };
   
       //console.log('Data !!!!!', data)
