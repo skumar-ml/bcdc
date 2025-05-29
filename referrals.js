@@ -52,7 +52,13 @@ class ReferralProgram {
         throw new Error("Failed to fetch");
       }
       const data = await res.json();
-
+      if (!data.coupon_code) {
+        // display prompt and redirect to homepage
+        alert(
+          "You are not enrolled in the referral program. Please contact Bergen Academy for more information."
+        );
+        window.location.href = "https://www.bergendebate.com";
+      } 
       // Set coupon code
       this.referralCodeInput.value = data.coupon_code || "";
       data.referrals = data.referrals || [];
@@ -329,7 +335,7 @@ class ReferralProgram {
   for (let i = 0; i < this.maxReferrals; i++) {
     const isLeft = i % 2 === 0;
     const isCompleted = referralCount > i;
-    const isCurrent = referralCount === i + 1;
+    const isCurrent = referralCount + 1 === i + 1;
 
     // const rewardText = i === this.maxReferrals - 1 && referralCount > this.maxReferrals
     //   ? "7+ Referrals"
