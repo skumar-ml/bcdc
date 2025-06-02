@@ -958,7 +958,7 @@ function creEl(name, className, idName) {
         const currentTime = new Date();
         const oneHour = 60 * 60 * 1000;
         if (currentTime - closedTime < oneHour) {
-          isOpen = false;
+          isOpen = true;
         }
       }
 
