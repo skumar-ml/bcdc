@@ -263,6 +263,13 @@ function creEl(name, className, idName) {
           //this.$checkoutData = paymentData.checkoutData;
           // Will debug latter
           this.activateDiv('class-selection-container');
+        } 
+        if(paymentData.upsellProgramIds.length > 0){
+          // click add-to-cart button
+          let addToCartBtn = document.getElementById("add-to-cart");
+          if(addToCartBtn){
+            addToCartBtn.click();
+          }
         }
       } else {
         // removed local storage when checkout page rendar direct without back button
@@ -678,7 +685,9 @@ function creEl(name, className, idName) {
           //data = [...checkOutLocalData, ...data]
           data.checkoutId = responseText;
           //localStorage.setItem("checkOutData", JSON.stringify(data));
-  
+
+          $this.updateCheckOutData(data)
+
           iBackButton.value = "1";
           //window.location.href = responseText.cardUrl;
           if (type == "card") {
@@ -915,6 +924,7 @@ function creEl(name, className, idName) {
     }
     closeModal(modal) {
       if (modal) {
+        document.cookie = "bundleModalClosed=" + encodeURIComponent(new Date().toISOString()) + "; path=/";
         modal.classList.remove("show");
         modal.style.display = "none";
       }
@@ -937,6 +947,21 @@ function creEl(name, className, idName) {
           }
         }
       });
+      // check bundleModalClosed cookie date time for 1 hour. no need to show if less then 1 hour
+      const bundleModalClosed = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("bundleModalClosed="));
+      if (bundleModalClosed) {
+        const closedTime = new Date(
+          decodeURIComponent(bundleModalClosed.split("=")[1])
+        );
+        const currentTime = new Date();
+        const oneHour = 60 * 60 * 1000;
+        if (currentTime - closedTime < oneHour) {
+          isOpen = false;
+        }
+      }
+
       return isOpen;
     }
   
@@ -1116,6 +1141,7 @@ function creEl(name, className, idName) {
       //   }
       // }
       this.displaySelectedSuppProgram(selectedIds);
+      this.updateCheckOutData({upsellProgramIds: selectedIds});
     }
   
     displaySelectedSuppProgram(selectedIds) {
@@ -1508,5 +1534,15 @@ function creEl(name, className, idName) {
 
         
       }
+    }
+    updateCheckOutData(checkoutData) {	
+      var localCheckoutData = localStorage.getItem('checkOutData');
+      if(checkoutData != null && localCheckoutData != null){
+        checkoutData = {
+          ...JSON.parse(localCheckoutData),
+          ...checkoutData
+        }
+      }
+      localStorage.setItem("checkOutData", JSON.stringify(checkoutData));
     }
   }
