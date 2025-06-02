@@ -574,8 +574,7 @@ function creEl(name, className, idName) {
         this.activateDiv("checkout_student_details");
         // Update basic data
         this.updateBasicData();
-        // Setup back button for browser and stripe checkout page
-        this.setUpBackButtonTab();
+        
         // -------------End new code for stripe payment integration---------------
         const data = await this.fetchData(
           "getClassDetailByMemberIdAndLevelId?levelId=" +
@@ -587,6 +586,8 @@ function creEl(name, className, idName) {
         this.viewClassLocations(data);
         this.$suppPro = await this.fetchData("getUpsellProgram/");
         this.updateAddonProgram();
+        // Setup back button for browser and stripe checkout page
+        this.setUpBackButtonTab();
         // var $this = this;
         // var locationData = data[0][0].location;
         // var levelId = data[0][0].levelId;
