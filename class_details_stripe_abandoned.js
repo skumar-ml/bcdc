@@ -1,9 +1,3 @@
-/**
- *
- * @param name - HTML element name
- * @param className - HTML element class attribute
- * @param idName - HTML element id attribute
- */
 function creEl(name, className, idName) {
     var el = document.createElement(name);
     if (className) {
@@ -258,7 +252,9 @@ function creEl(name, className, idName) {
         if (paymentData.prevStudent) {
           prevStudent.value = paymentData.prevStudent;
         }
-  
+        
+        this.displayStudentInfo("block");
+        
         if (paymentData.checkoutData) {
           //this.$checkoutData = paymentData.checkoutData;
           // Will debug latter
