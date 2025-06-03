@@ -163,7 +163,7 @@ function creEl(name, className, idName) {
         let responseText = selectedOption.getAttribute("responseText");
   
         responseText = JSON.parse(atob(responseText));
-        console.log(responseText);
+        console.log("responseText A", responseText);
         let timingTextElement = document.querySelector(
           ".class-time.class-time-with-brown-white-style"
         );
@@ -263,11 +263,25 @@ function creEl(name, className, idName) {
           //this.$checkoutData = paymentData.checkoutData;
           // Will debug latter
           this.activateDiv('class-selection-container');
-        } 
-        if(paymentData.upsellProgramIds.length > 0){
+          const selectField = document.getElementById("location-select-field");
+          // Set the selected location in the dropdown
+          if (paymentData.location) {
+            // check select field values is present in the select field
+            if (Array.from(selectField.options).some(option => option.value === paymentData.location)) {
+              selectField.value = paymentData.location;
+              // trigger change event to update class times
+              selectField.dispatchEvent(new Event("change"));
+            }
+          }
+        }
+        if (!paymentData.isPreviousStudent) {
+          this.$isPrevStudent = paymentData.isPreviousStudent;
+          this.checkUncheckOldStudentCheckBox(paymentData.isPreviousStudent, this);
+        }
+        if (paymentData.upsellProgramIds.length > 0) {
           // click add-to-cart button
           let addToCartBtn = document.getElementById("add-to-cart");
-          if(addToCartBtn){
+          if (addToCartBtn) {
             addToCartBtn.click();
           }
         }
@@ -493,7 +507,7 @@ function creEl(name, className, idName) {
       this.eventUpdateTotalAmountPrice();
     }
     // update basic student form data from local storage
-    updateBasicData() {
+    updateBasicData(old_student = false) {
       var checkoutJson = localStorage.getItem("checkOutBasicData");
       if (checkoutJson != undefined) {
         var paymentData = JSON.parse(checkoutJson);
@@ -522,9 +536,11 @@ function creEl(name, className, idName) {
         if (paymentData.gender) {
           studentGender.value = paymentData.gender;
         }
-        //if (paymentData.prevStudent) {
-        prevStudent.value = paymentData.prevStudent;
-        //}
+        if (old_student) {
+          prevStudent.value = "Yes";
+        } else {
+          prevStudent.value = paymentData.prevStudent;
+        }
       }
     }
     // Managing next and previous button
@@ -651,6 +667,7 @@ function creEl(name, className, idName) {
         checkoutId: checkOutLocalData.checkoutData.checkoutId,
         label: label,
         classUniqueId: classId,
+        location: selectBox.value,
         //added id for up-sell program
         upsellProgramIds: upsellProgramIds,
         has_fee: has_fee,
@@ -839,7 +856,8 @@ function creEl(name, className, idName) {
         memberId: this.webflowMemberId,
         amount: this.amount * 100,
         utm_source: (localUtmSource != null) ? localUtmSource : "null",
-        createdOn: new Date().toISOString()
+        createdOn: new Date().toISOString(),
+        isPreviousStudent: this.$isPrevStudent
         
       };
   
@@ -861,7 +879,8 @@ function creEl(name, className, idName) {
           $this.$checkoutData = responseText;
           //Storing data in local storage
           data.checkoutData = responseText;
-          localStorage.setItem("checkOutData", JSON.stringify(data));
+          $this.updateCheckOutData(data);
+          //localStorage.setItem("checkOutData", JSON.stringify(data));
           register_btn_card.forEach((e) => {
             e.innerHTML = "Register";
             if (e.classList.contains("option_b_card")) {
@@ -1405,7 +1424,7 @@ function creEl(name, className, idName) {
               : "",
           };
           localStorage.setItem("checkOutBasicData", JSON.stringify(data));
-          $this.updateBasicData();
+          $this.updateBasicData('old_student');
         });
       } catch (error) {
         console.error("Error fetching API data:", error);
