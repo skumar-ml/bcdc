@@ -221,7 +221,8 @@ class AbandonedCartModal {
       // Check if parsedCartData is not empty or null before using it
       if (parsedCartData && parsedCartData.slug) {
         const baseUrl = window.location.origin;
-        var cart_url = `${baseUrl}/programs-copy/level-${parsedCartData.level.toISOString()}?returnType=back`;
+        const levelId = parsedCartData.levelId.toLowerCase().replace(/\s+/g, '-');
+        var cart_url = `${baseUrl}/programs-copy/level-${levelId}?returnType=back`;
         viewCartBtn.href = cart_url;
       }
     }
