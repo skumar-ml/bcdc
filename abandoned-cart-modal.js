@@ -303,7 +303,9 @@ class AbandonedCartModal {
     }
 
     const baseUrl = window.location.origin;
-    var cart_url = `${baseUrl}/programs-copy/level-${checkOutData.levelId.toISOString()}?returnType=back`;
+    // convert levelId in lover case and remove spaces
+    const levelId = checkOutData.levelId.toLowerCase().replace(/\s+/g, '-');
+    var cart_url = `${baseUrl}/programs-copy/level-${levelId}?returnType=back`;
 
     const checkoutLinkElements = document.querySelectorAll("[data-cart-menu='checkoutLink']")
     if(checkoutLinkElements.length > 0){
