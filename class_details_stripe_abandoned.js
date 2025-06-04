@@ -568,8 +568,9 @@ function creEl(name, className, idName) {
         editStudentEl.forEach(editBtn => {
           editBtn.addEventListener("click", function () {
             // click on edit button reinitialize payment tab
-            $this.reinitializePaymentTab();
+            $this.activeBreadCrumb("student-details");
             $this.activateDiv("checkout_student_details");
+            $this.displayStudentInfo("none");
           })
         })
       }
