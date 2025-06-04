@@ -6,7 +6,7 @@ class AbandonedCartModal {
     this.modalId = data.modalId;
     this.modal = document.getElementById(this.modalId);
     this.locations = [{"locationId":1,"locationName":"Glen Rock", "slug": "glen-rock"},{"locationId":3,"locationName":"Online", "slug": "online"},{"locationId":2,"locationName":"Fort Lee", "slug": "fort-lee"},{"locationId":4,"locationName":"Livingston", "slug": "livingston"},{"locationId":5,"locationName":"Other", "slug": "other"}];
-    this.closeButtons = this.modal?.querySelectorAll(".close-abandoned-modal");
+    this.closeButtons = this.modal?.querySelectorAll(".continue-browse, .close-abandoned");
     this.init();
   }
 
