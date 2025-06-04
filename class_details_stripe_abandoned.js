@@ -562,6 +562,17 @@ function creEl(name, className, idName) {
         $this.activateDiv("checkout_student_details");
         $this.displayStudentInfo("none");
       });
+
+      let editStudentEl = document.querySelectorAll("[data-student-info='edit']")
+      if (editStudentEl.length > 0) {
+        editStudentEl.forEach(editBtn => {
+          editBtn.addEventListener("click", function () {
+            // click on edit button reinitialize payment tab
+            $this.reinitializePaymentTab();
+            $this.activateDiv("checkout_student_details");
+          })
+        })
+      }
     }
     // Hide and show tab for program selection, student info and checkout payment
     activateDiv(divId) {
