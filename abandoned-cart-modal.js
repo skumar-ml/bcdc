@@ -219,7 +219,8 @@ class AbandonedCartModal {
     if (cartData) {
       const parsedCartData = JSON.parse(cartData);
       // Check if parsedCartData is not empty or null before using it
-      if (parsedCartData && parsedCartData.slug) {
+      if (parsedCartData && parsedCartData.levelId) {
+        // Convert levelId to lower case and replace spaces with hyphens
         const baseUrl = window.location.origin;
         const levelId = parsedCartData.levelId.toLowerCase().replace(/\s+/g, '-');
         var cart_url = `${baseUrl}/programs-copy/level-${levelId}?returnType=back`;
