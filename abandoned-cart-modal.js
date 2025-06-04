@@ -303,7 +303,7 @@ class AbandonedCartModal {
     }
 
     const baseUrl = window.location.origin;
-    var cart_url = `${baseUrl}/programs-copy/level-${checkOutData.levelId}.toISOString()}?returnType=back`;
+    var cart_url = `${baseUrl}/programs-copy/level-${checkOutData.levelId.toISOString()}?returnType=back`;
 
     const checkoutLinkElements = document.querySelectorAll("[data-cart-menu='checkoutLink']")
     if(checkoutLinkElements.length > 0){
