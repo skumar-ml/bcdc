@@ -235,8 +235,17 @@ class classDetailsStripe {
         if (paymentData.prevStudent) {
           prevStudent.value = paymentData.prevStudent;
         }
+
+        if (paymentData.checkoutData.checkoutId) {
+          // click next_page_1 id element
+          var next_page_1 = document.getElementById("next_page_1");
+          if (next_page_1) {
+            next_page_1.click();
+          }
+        } else {
+          this.displayStudentInfo("block");
+        }
         
-        this.displayStudentInfo("block");
         
         if (paymentData.checkoutData) {
           //this.$checkoutData = paymentData.checkoutData;
