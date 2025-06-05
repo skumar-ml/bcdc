@@ -180,7 +180,7 @@ class AbandonedCartModal {
   async fetchCartDataFromAPI() {
     try {
       const response = await fetch(
-        `${this.baseUrl}` + "getCheckoutURLByMemberId/" + this.memberId
+        `${this.baseUrl}` + "getCheckoutUrlByMemberId/" + this.memberId
       );
       if (!response.ok) {
         throw new Error("Network response was not ok");
