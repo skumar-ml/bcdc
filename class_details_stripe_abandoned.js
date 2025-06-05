@@ -1,3 +1,9 @@
+/**
+ *
+ * @param name - HTML element name
+ * @param className - HTML element class attribute
+ * @param idName - HTML element id attribute
+ */
 function creEl(name, className, idName) {
     var el = document.createElement(name);
     if (className) {
@@ -112,7 +118,7 @@ function creEl(name, className, idName) {
   
       // When the user selects a location, update the class times
       selectField.addEventListener("change", function () {
-	$this.updateCheckOutData({location: this.value})
+        $this.updateCheckOutData({location: this.value})
         $this.updateClassTimes(
           this.value,
           classTimesData,
@@ -205,7 +211,6 @@ function creEl(name, className, idName) {
       }
     }
     // Setup back button for stripe back button and browser back button
-    // Setup back button for stripe back button and browser back button
     setUpBackButtonTab() {
       this.spinner.style.display = "block";
       var query = window.location.search;
@@ -239,15 +244,27 @@ function creEl(name, className, idName) {
         var glen_rock_location = document.getElementById("glen_rock_location");
         // Update all local storage data
         studentEmail.value = paymentData.studentEmail;
-  
-        studentFirstName.value = paymentData.firstName;
-  
-        studentLastName.value = paymentData.lastName;
-  
+
+        // id paymentData available fullname with key studentName then split first and last name
+
+        if (paymentData.studentName) {
+          const [firstName, lastName] = paymentData.studentName.split(" ");
+          if (firstName && lastName) {
+            studentFirstName.value = firstName;
+            studentLastName.value = lastName;
+          }
+        }
+        if (paymentData.firstName) {
+          studentFirstName.value = paymentData.firstName;
+        }
+        if (paymentData.lastName) {
+          studentLastName.value = paymentData.lastName;
+        }
+
         if (paymentData.grade) {
           studentGrade.value = paymentData.grade;
         }
-  
+
         if (paymentData.school) {
           studentSchool.value = paymentData.school;
         }
@@ -258,8 +275,17 @@ function creEl(name, className, idName) {
         if (paymentData.prevStudent) {
           prevStudent.value = paymentData.prevStudent;
         }
+
+        if (paymentData.checkoutData.checkoutId) {
+          // click next_page_1 id element
+          var next_page_1 = document.getElementById("next_page_1");
+          if (next_page_1) {
+            next_page_1.click();
+          }
+        } else {
+          this.displayStudentInfo("block");
+        }
         
-        this.displayStudentInfo("block");
         
         if (paymentData.checkoutData) {
           //this.$checkoutData = paymentData.checkoutData;
@@ -523,11 +549,23 @@ function creEl(name, className, idName) {
         var prevStudent = document.getElementById("prevStudent");
   
         studentEmail.value = paymentData.studentEmail;
-  
-        studentFirstName.value = paymentData.firstName;
-  
-        studentLastName.value = paymentData.lastName;
-  
+        
+        if (paymentData.studentName) {
+          const [firstName, lastName] = paymentData.studentName.split(" ");
+          if (firstName && lastName) {
+            studentFirstName.value = firstName;
+            studentLastName.value = lastName;
+          }
+        }
+
+        if (paymentData.firstName) {
+          studentFirstName.value = paymentData.firstName;
+        }
+
+        if (paymentData.lastName) {
+          studentLastName.value = paymentData.lastName;
+        }
+
         if (paymentData.grade) {
           studentGrade.value = paymentData.grade.toLowerCase();
         }
@@ -596,7 +634,7 @@ function creEl(name, className, idName) {
     // get data from api and pass the data to classLocation class
     async renderPortalData(memberId) {
       try {
-	this.spinner.style.display = "block";
+        this.spinner.style.display = "block";
         // -------------Start new code for stripe payment integration--------------
         // Modal No thanks events
         this.noThanksEvent();
@@ -620,6 +658,7 @@ function creEl(name, className, idName) {
         this.updateAddonProgram();
         // Setup back button for browser and stripe checkout page
         this.setUpBackButtonTab();
+        this.spinner.style.display = "none";
         // var $this = this;
         // var locationData = data[0][0].location;
         // var levelId = data[0][0].levelId;
@@ -631,9 +670,8 @@ function creEl(name, className, idName) {
         // 		new classLocationStripe($this.webflowMemberId, formData, currentIndex, $this.accountEmail, levelId, levelName, $this.parentName,  $this.amount);
         // 	}, 30)
         // })
-	this.spinner.style.display = "none";
       } catch (error) {
-	this.spinner.style.display = "none"; 
+        this.spinner.style.display = "none";
         console.error("Error rendering random number:", error);
       }
     }
