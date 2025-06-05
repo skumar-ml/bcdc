@@ -274,6 +274,8 @@ function creEl(name, className, idName) {
         }
         if (paymentData.prevStudent) {
           prevStudent.value = paymentData.prevStudent;
+        } else {
+          prevStudent.value = "No";
         }
 
         if (paymentData.checkoutData && paymentData.checkoutData.checkoutId) {
