@@ -278,12 +278,11 @@ function creEl(name, className, idName) {
           prevStudent.value = "No";
         }
 
-        if (!paymentData.checkoutData && !paymentData.checkoutData.checkoutId) {
-          // click next_page_1 id element
-          var next_page_1 = document.getElementById("next_page_1");
-          if (next_page_1) {
-            next_page_1.click();
-          }
+        if (!paymentData.checkoutData) {
+            var next_page_1 = document.getElementById("next_page_1");
+            if (next_page_1) {
+              next_page_1.click();
+            }
         } else {
           this.displayStudentInfo("block");
         }
