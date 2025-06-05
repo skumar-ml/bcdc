@@ -112,6 +112,7 @@ function creEl(name, className, idName) {
   
       // When the user selects a location, update the class times
       selectField.addEventListener("change", function () {
+	$this.updateCheckOutData({location: this.value})
         $this.updateClassTimes(
           this.value,
           classTimesData,
