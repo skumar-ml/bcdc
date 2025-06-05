@@ -229,7 +229,7 @@ class AbandonedCartModal {
     }
     // Add event listener to viewCartBtn
   }
-  displayCartMenuData() {
+   displayCartMenuData() {
     // get checkOutData from local storage
     const noRecordsDivs = document.querySelectorAll("[data-cart-menu='no-records-div']");
     const cartDataDivs = document.querySelectorAll("[data-cart-menu='cart-data-div']");
@@ -249,7 +249,7 @@ class AbandonedCartModal {
         cartDataDivs.forEach(div => div.style.display = "none");
         return;
     }
-    if (!checkOutData.firstName || !checkOutData.levelId) {
+    if (!(checkOutData.firstName || checkOutData.studentName) || !checkOutData.levelId) {
         noRecordsDivs.forEach(div => div.style.display = "block");
         cartDataDivs.forEach(div => div.style.display = "none");
         return;
@@ -297,6 +297,8 @@ class AbandonedCartModal {
         studentNameElements.forEach((element) => {
             if(checkOutData.lastName){
                 element.innerHTML = checkOutData.firstName + " " + checkOutData.lastName;
+            }else if(checkOutData.studentName){
+                element.innerHTML = checkOutData.studentName;
             }else {
                 element.innerHTML = checkOutData.firstName;
             }
