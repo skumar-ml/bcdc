@@ -284,7 +284,6 @@ function creEl(name, className, idName) {
             this.activeBreadCrumb("select-class");
             this.activateDiv("class-selection-container");
             this.displayStudentInfo("block");
-          }
         } else {
           this.displayStudentInfo("block");
         }
