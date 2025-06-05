@@ -172,60 +172,104 @@ class classDetailsStripe {
   }
   // Setup back button for stripe back button and browser back button
   setUpBackButtonTab() {
-    var query = window.location.search;
-    var urlPar = new URLSearchParams(query);
-    var returnType = urlPar.get("returnType");
-    // Get local storage data for back button
-    var checkoutJson = localStorage.getItem("checkOutData");
-    // Browser back button event hidden fields
-    var ibackbutton = document.getElementById("backbuttonstate");
-    if (
-      (returnType == "back" || ibackbutton.value == 1) &&
-      checkoutJson != undefined
-    ) {
-      var paymentData = JSON.parse(checkoutJson);
-
-      var studentFirstName = document.getElementById("Student-First-Name");
-      var studentLastName = document.getElementById("Student-Last-Name");
-      var studentEmail = document.getElementById("Student-Email");
-      var studentGrade = document.getElementById("Student-Grade");
-      var studentSchool = document.getElementById("Student-School");
-      var studentGender = document.getElementById("Student-Gender");
-      var prevStudent = document.getElementById("prevStudent");
-      var fort_lee_location = document.getElementById("fort_lee_location");
-      var glen_rock_location = document.getElementById("glen_rock_location");
-      // Update all local storage data
-      studentEmail.value = paymentData.studentEmail;
-
-      studentFirstName.value = paymentData.firstName;
-
-      studentLastName.value = paymentData.lastName;
-
-      if (paymentData.grade) {
-        studentGrade.value = paymentData.grade;
+      this.spinner.style.display = "block";
+      var query = window.location.search;
+      var urlPar = new URLSearchParams(query);
+      var returnType = urlPar.get("returnType");
+      // Get local storage data for back button
+      var checkoutJson = localStorage.getItem("checkOutData");
+      
+      if (checkoutJson != undefined) {
+        var paymentData = JSON.parse(checkoutJson);
+      }else{
+         setTimeout(() => {this.spinner.style.display = "none";}, 500);
+        return;
       }
+      // check createdOn date for back button
+      if(paymentData.createdOn == undefined){
+       setTimeout(() => {this.spinner.style.display = "none";}, 500);
+        return;
+      }
+      if ( this.checkBackButtonEvent() && checkoutJson != undefined)  {
+        var paymentData = JSON.parse(checkoutJson);
+  
+        var studentFirstName = document.getElementById("Student-First-Name");
+        var studentLastName = document.getElementById("Student-Last-Name");
+        var studentEmail = document.getElementById("Student-Email");
+        var studentGrade = document.getElementById("Student-Grade");
+        var studentSchool = document.getElementById("Student-School");
+        var studentGender = document.getElementById("Student-Gender");
+        var prevStudent = document.getElementById("prevStudent");
+        var fort_lee_location = document.getElementById("fort_lee_location");
+        var glen_rock_location = document.getElementById("glen_rock_location");
+        // Update all local storage data
+        studentEmail.value = paymentData.studentEmail;
 
-      if (paymentData.school) {
-        studentSchool.value = paymentData.school;
-      }
+        // id paymentData available fullname with key studentName then split first and last name
 
-      if (paymentData.gender) {
-        studentGender.value = paymentData.gender;
-      }
-      if (paymentData.prevStudent) {
-        prevStudent.value = paymentData.prevStudent;
-      }
+        if (paymentData.studentName) {
+          const [firstName, lastName] = paymentData.studentName.split(" ");
+          if (firstName && lastName) {
+            studentFirstName.value = firstName;
+            studentLastName.value = lastName;
+          }
+        }
+        if (paymentData.firstName) {
+          studentFirstName.value = paymentData.firstName;
+        }
+        if (paymentData.lastName) {
+          studentLastName.value = paymentData.lastName;
+        }
 
-      if (paymentData.checkoutData) {
-        //this.$checkoutData = paymentData.checkoutData;
-        // Will debug latter
-        //this.activateDiv('checkout_payment');
+        if (paymentData.grade) {
+          studentGrade.value = paymentData.grade;
+        }
+
+        if (paymentData.school) {
+          studentSchool.value = paymentData.school;
+        }
+  
+        if (paymentData.gender) {
+          studentGender.value = paymentData.gender;
+        }
+        if (paymentData.prevStudent) {
+          prevStudent.value = paymentData.prevStudent;
+        }
+        
+        this.displayStudentInfo("block");
+        
+        if (paymentData.checkoutData) {
+          //this.$checkoutData = paymentData.checkoutData;
+          // Will debug latter
+          this.activateDiv('class-selection-container');
+          const selectField = document.getElementById("location-select-field");
+          // Set the selected location in the dropdown
+          if (paymentData.location) {
+            // check select field values is present in the select field
+            if (Array.from(selectField.options).some(option => option.value === paymentData.location)) {
+              selectField.value = paymentData.location;
+              // trigger change event to update class times
+              selectField.dispatchEvent(new Event("change"));
+            }
+          }
+        }
+        if (!paymentData.isPreviousStudent) {
+          this.$isPrevStudent = paymentData.isPreviousStudent;
+          this.checkUncheckOldStudentCheckBox(paymentData.isPreviousStudent, this);
+        }
+        if (paymentData.upsellProgramIds && paymentData.upsellProgramIds.length > 0) {
+          // click add-to-cart button
+          let addToCartBtn = document.getElementById("add-to-cart");
+          if (addToCartBtn) {
+            addToCartBtn.click();
+          }
+        }
+      } else {
+        // removed local storage when checkout page rendar direct without back button
+        localStorage.removeItem("checkOutData");
       }
-    } else {
-      // removed local storage when checkout page rendar direct without back button
-      localStorage.removeItem("checkOutData");
+      setTimeout(() => {this.spinner.style.display = "none";}, 500);
     }
-  }
   // store basic student form data in local storage
   storeBasicData() {
     var studentFirstName = document.getElementById("Student-First-Name");
@@ -435,40 +479,54 @@ class classDetailsStripe {
     this.eventUpdateTotalAmountPrice();
   }
   // update basic student form data from local storage
-  updateBasicData() {
-    var checkoutJson = localStorage.getItem("checkOutBasicData");
-    if (checkoutJson != undefined) {
-      var paymentData = JSON.parse(checkoutJson);
-      var studentFirstName = document.getElementById("Student-First-Name");
-      var studentLastName = document.getElementById("Student-Last-Name");
-      var studentEmail = document.getElementById("Student-Email");
-      var studentGrade = document.getElementById("Student-Grade");
-      var studentSchool = document.getElementById("Student-School");
-      var studentGender = document.getElementById("Student-Gender");
-      var prevStudent = document.getElementById("prevStudent");
+   updateBasicData(old_student = false) {
+      var checkoutJson = localStorage.getItem("checkOutBasicData");
+      if (checkoutJson != undefined) {
+        var paymentData = JSON.parse(checkoutJson);
+        var studentFirstName = document.getElementById("Student-First-Name");
+        var studentLastName = document.getElementById("Student-Last-Name");
+        var studentEmail = document.getElementById("Student-Email");
+        var studentGrade = document.getElementById("Student-Grade");
+        var studentSchool = document.getElementById("Student-School");
+        var studentGender = document.getElementById("Student-Gender");
+        var prevStudent = document.getElementById("prevStudent");
+  
+        studentEmail.value = paymentData.studentEmail;
+        
+        if (paymentData.studentName) {
+          const [firstName, lastName] = paymentData.studentName.split(" ");
+          if (firstName && lastName) {
+            studentFirstName.value = firstName;
+            studentLastName.value = lastName;
+          }
+        }
 
-      studentEmail.value = paymentData.studentEmail;
+        if (paymentData.firstName) {
+          studentFirstName.value = paymentData.firstName;
+        }
 
-      studentFirstName.value = paymentData.firstName;
+        if (paymentData.lastName) {
+          studentLastName.value = paymentData.lastName;
+        }
 
-      studentLastName.value = paymentData.lastName;
-
-      if (paymentData.grade) {
-        studentGrade.value = paymentData.grade.toLowerCase();;
+        if (paymentData.grade) {
+          studentGrade.value = paymentData.grade.toLowerCase();
+        }
+  
+        if (paymentData.school) {
+          studentSchool.value = paymentData.school;
+        }
+  
+        if (paymentData.gender) {
+          studentGender.value = paymentData.gender;
+        }
+        if (old_student) {
+          prevStudent.value = "Yes";
+        } else {
+          prevStudent.value = paymentData.prevStudent;
+        }
       }
-
-      if (paymentData.school) {
-        studentSchool.value = paymentData.school;
-      }
-
-      if (paymentData.gender) {
-        studentGender.value = paymentData.gender;
-      }
-      //if (paymentData.prevStudent) {
-        prevStudent.value = paymentData.prevStudent;
-      //}
     }
-  }
   // Managing next and previous button
   addEventForPrevNaxt() {
     var next_page_1 = document.getElementById("next_page_1");
