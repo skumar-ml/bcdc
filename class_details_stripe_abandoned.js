@@ -30,6 +30,7 @@ function creEl(name, className, idName) {
       this.parentName = parentName;
       this.amount = amount;
       this.discount_amount = parseInt(amount)
+      this.spinner = document.getElementById("half-circle-spinner"); 
       this.renderPortalData();
       this.initializeToolTips();
       this.updatePriceForCardPayment();
@@ -203,7 +204,9 @@ function creEl(name, className, idName) {
       }
     }
     // Setup back button for stripe back button and browser back button
+    // Setup back button for stripe back button and browser back button
     setUpBackButtonTab() {
+      this.spinner.style.display = "block";
       var query = window.location.search;
       var urlPar = new URLSearchParams(query);
       var returnType = urlPar.get("returnType");
@@ -213,10 +216,12 @@ function creEl(name, className, idName) {
       if (checkoutJson != undefined) {
         var paymentData = JSON.parse(checkoutJson);
       }else{
+         setTimeout(() => {this.spinner.style.display = "none";}, 500);
         return;
       }
       // check createdOn date for back button
       if(paymentData.createdOn == undefined){
+       setTimeout(() => {this.spinner.style.display = "none";}, 500);
         return;
       }
       if ( this.checkBackButtonEvent() && checkoutJson != undefined)  {
@@ -274,7 +279,7 @@ function creEl(name, className, idName) {
           this.$isPrevStudent = paymentData.isPreviousStudent;
           this.checkUncheckOldStudentCheckBox(paymentData.isPreviousStudent, this);
         }
-        if (paymentData.upsellProgramIds.length > 0) {
+        if (paymentData.upsellProgramIds && paymentData.upsellProgramIds.length > 0) {
           // click add-to-cart button
           let addToCartBtn = document.getElementById("add-to-cart");
           if (addToCartBtn) {
@@ -285,6 +290,7 @@ function creEl(name, className, idName) {
         // removed local storage when checkout page rendar direct without back button
         localStorage.removeItem("checkOutData");
       }
+      setTimeout(() => {this.spinner.style.display = "none";}, 500);
     }
     // store basic student form data in local storage
     storeBasicData() {
@@ -589,6 +595,7 @@ function creEl(name, className, idName) {
     // get data from api and pass the data to classLocation class
     async renderPortalData(memberId) {
       try {
+	this.spinner.style.display = "block";
         // -------------Start new code for stripe payment integration--------------
         // Modal No thanks events
         this.noThanksEvent();
@@ -623,7 +630,9 @@ function creEl(name, className, idName) {
         // 		new classLocationStripe($this.webflowMemberId, formData, currentIndex, $this.accountEmail, levelId, levelName, $this.parentName,  $this.amount);
         // 	}, 30)
         // })
+	this.spinner.style.display = "none";
       } catch (error) {
+	this.spinner.style.display = "none"; 
         console.error("Error rendering random number:", error);
       }
     }
