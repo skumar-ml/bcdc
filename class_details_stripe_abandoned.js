@@ -279,10 +279,12 @@ function creEl(name, className, idName) {
         }
 
         if (!paymentData.checkoutData) {
-            var next_page_1 = document.getElementById("next_page_1");
-            if (next_page_1) {
-              next_page_1.click();
-            }
+            this.storeBasicData();
+            this.AddStudentData();
+            this.activeBreadCrumb("select-class");
+            this.activateDiv("class-selection-container");
+            this.displayStudentInfo("block");
+          }
         } else {
           this.displayStudentInfo("block");
         }
