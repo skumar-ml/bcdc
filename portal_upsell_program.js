@@ -248,13 +248,12 @@ class DisplaySuppProgram {
     }
   }
 
-  initSupplementaryPayment(paymentId, programId, programName, amount) {
-    return false;
+  initSupplementaryPayment(paymentId, upsellProgramId, programName, amount) {
     // Define the data to be sent in the POST request
     const data = {
       sessionId: "",
       paymentId: paymentId,
-      programId: parseInt(programId),
+      upsellProgramId: parseInt(upsellProgramId),
       successUrl:
         this.memberData.site_url + "members/" + this.memberData.memberId,
       cancelUrl:
@@ -262,9 +261,11 @@ class DisplaySuppProgram {
       label: programName,
       amount: parseFloat(amount * 100),
       source: "portal_page",
+      hasFee: false,
+      memberId: this.memberData.memberId
     };
     // Create the POST request
-    fetch(this.memberData.baseUrl + "createCheckoutUrlForSupplementary", {
+    fetch(this.memberData.baseUrl + "checkoutUrlForUpsellProgram", {
       method: "POST", // Specify the method
       headers: {
         "Content-Type": "application/json", // Specify the content type
@@ -300,13 +301,14 @@ class DisplaySuppProgram {
         payBtn.value = "Processing...";
         payBtn.style.pointerEvents = "none";
         let programName = $this.$selectedProgram.label;
-        let programId = $this.$selectedProgram.programDetailId;
-        let amount = $this.$selectedProgram.portal_amount;
+        let upsellProgramId = $this.$selectedProgram.upsellProgramId;
+        let amount = ($this.$selectedProgram.portal_amount + $this.discount_amount).toFixed(2);
+        // Check if the program name, upsellProgramId, amount, and paymentId are defined
         let paymentId = studentEl.value;
-        if (programName && programId && amount && paymentId) {
+        if (programName && upsellProgramId && amount && paymentId) {
           $this.initSupplementaryPayment(
             paymentId,
-            programId,
+            upsellProgramId,
             programName,
             amount
           );
