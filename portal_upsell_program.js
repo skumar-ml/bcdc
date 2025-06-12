@@ -254,8 +254,8 @@ class DisplaySuppProgram {
       sessionId: "",
       paymentId: paymentId,
       upsellProgramId: parseInt(upsellProgramId),
-      successUrl:
-        this.memberData.site_url + "members/" + this.memberData.memberId,
+       successUrl:
+        this.memberData.site_url + "members/" + this.memberData.memberId+"?success=true",
       cancelUrl:
         this.memberData.site_url + "members/" + this.memberData.memberId,
       label: programName,
