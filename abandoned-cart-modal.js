@@ -309,7 +309,7 @@ class AbandonedCartModal {
     const baseUrl = window.location.origin;
     // convert levelId in lover case and remove spaces
     const levelId = checkOutData.levelId.toLowerCase().replace(/\s+/g, '-');
-    var cart_url = `${baseUrl}/programs-copy/level-${levelId}?returnType=back`;
+    var cart_url = `${baseUrl}/programs/level-${levelId}?returnType=back`;
 
     const checkoutLinkElements = document.querySelectorAll("[data-cart-menu='checkoutLink']")
     if(checkoutLinkElements.length > 0){
@@ -329,7 +329,7 @@ class AbandonedCartModal {
       setTimeout(() => cartDiv.classList.remove('wiggle'), 700);
       // Clear the interval after 3 seconds
       //clearInterval(intervalId);
-    }, 3000);
+    }, 45000);
   }
 }
 
