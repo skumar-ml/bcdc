@@ -45,7 +45,6 @@ function creEl(name, className, idName) {
     }
     // Creating main dom for location
     viewClassLocations(data) {
-      console.log("data", data);
       const selectField = document.getElementById("location-select-field");
       //submit-class
       const submitClassPayment = document.getElementById("submit-class");
@@ -108,8 +107,6 @@ function creEl(name, className, idName) {
         });
       });
   
-      console.log("Class Times Data:", classTimesData);
-  
       const classTimesContainer = document.querySelector(
         ".class-times-grid-wrapper"
       );
@@ -165,7 +162,6 @@ function creEl(name, className, idName) {
         let responseText = selectedOption.getAttribute("responseText");
   
         responseText = JSON.parse(atob(responseText));
-        console.log("responseText A", responseText);
         let timingTextElement = document.querySelector(
           ".class-time.class-time-with-brown-white-style"
         );
@@ -173,7 +169,6 @@ function creEl(name, className, idName) {
         let classId = timingTextElement.getAttribute("classId");
         let levelName = timingTextElement.getAttribute("levelName");
   
-        console.log(timingText);
   
         let paymentTab = document.querySelector(
           ".payment-cards-tabs-menu a.w--current"
@@ -654,7 +649,6 @@ function creEl(name, className, idName) {
             "&memberId=" +
             this.webflowMemberId
         );
-        console.log("data", data);
         this.viewClassLocations(data);
         this.$suppPro = await this.fetchData("getUpsellProgram/");
         this.updateAddonProgram();
@@ -955,7 +949,6 @@ function creEl(name, className, idName) {
   
     showSemesterBundleModal() {
       const check_semester_bundle = this.checkSemesterBundleModalOpen();
-      console.log("check_semester_bundle", check_semester_bundle);
       if (check_semester_bundle) {
         return;
       }
@@ -1438,7 +1431,6 @@ function creEl(name, className, idName) {
         const data = await this.fetchData(
           "getAllPreviousStudents/" + this.webflowMemberId+"/all"
         );
-        console.log("Old Student Data", data);
   
         //finding unique value and sorting by firstName
         const filterData = data
@@ -1496,7 +1488,6 @@ function creEl(name, className, idName) {
       const addonProgram = this.$suppPro.find(
         (data) => data.upsellProgramId == 104
       );
-      console.log("addonProgram", addonProgram, this.$suppPro);
       if (addonProgram == undefined) {
         return;
       }
