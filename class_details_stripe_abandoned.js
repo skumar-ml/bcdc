@@ -1436,7 +1436,7 @@ function creEl(name, className, idName) {
       var $this = this;
       try {
         const data = await this.fetchData(
-          "getAllPreviousStudents/" + this.webflowMemberId
+          "getAllPreviousStudents/" + this.webflowMemberId+"/all"
         );
         console.log("Old Student Data", data);
   
