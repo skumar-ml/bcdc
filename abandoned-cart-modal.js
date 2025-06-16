@@ -223,7 +223,7 @@ class AbandonedCartModal {
         // Convert levelId to lower case and replace spaces with hyphens
         const baseUrl = window.location.origin;
         const levelId = parsedCartData.levelId.toLowerCase().replace(/\s+/g, '-');
-        var cart_url = `${baseUrl}/programs-copy/level-${levelId}?returnType=back`;
+        var cart_url = `${baseUrl}/programs/level-${levelId}?returnType=back`;
         viewCartBtn.href = cart_url;
       }
     }
