@@ -104,7 +104,7 @@ class DisplaySuppProgram {
       "[data-cart-total='cart-total-price']"
     );
     // Create the label with required classes
-    const label = this.creEl("label", "bundle-sem-content-block border-brown-red");
+    const label = this.creEl("label", "bundle-sem-content-block");
     // Checkbox container
     const checkboxDiv = this.creEl("div");
     const input = this.creEl("input", "bundle-sem-checkbox");
@@ -147,6 +147,7 @@ class DisplaySuppProgram {
           singleBundleData.upsellProgramId
         ) {
           checkbox.checked = event.target.checked;
+          checkbox.parentElement.parentElement.classList.toggle("border-brown-red", event.target.checked);
         }
       });
       $this.disableEnableBuyNowButton();
@@ -188,6 +189,20 @@ class DisplaySuppProgram {
     label.appendChild(checkboxDiv);
     label.appendChild(contentDiv);
 
+     // Checkbox event: toggle border-brown-red
+     input.addEventListener("change", (event) => {
+      if (input.checked) {
+        label.classList.add("border-brown-red");
+      } else {
+        label.classList.remove("border-brown-red");
+      }
+      // ... your selection logic ...
+    });
+    // Optionally, set initial state if checked
+    if (input.checked) {
+      label.classList.add("border-brown-red");
+    }
+
     return label;
   }
 
@@ -197,7 +212,7 @@ class DisplaySuppProgram {
       "[data-cart-total='cart-total-price']"
     );
     // Outer grid div
-    const grid = this.creEl("div", "bundle-sem-content-grid border-brown-red");
+    const grid = this.creEl("div", "bundle-sem-content-grid");
     // Checkbox
     const checkboxDiv = this.creEl("div", "w-embed");
     const input = this.creEl("input", "bundle-sem-checkbox");
@@ -238,6 +253,7 @@ class DisplaySuppProgram {
           singleBundleData.upsellProgramId
         ) {
           checkbox.checked = event.target.checked;
+          checkbox.parentElement.parentElement.classList.toggle("border-brown-red", event.target.checked);
         }
       });
       $this.disableEnableBuyNowButton();
@@ -270,10 +286,19 @@ class DisplaySuppProgram {
     grid.appendChild(title);
     grid.appendChild(priceWrapper);
 
-    // Add event listeners as needed (similar to your previous logic)
-    input.addEventListener("change", (event) => {
+     // Checkbox event: toggle border-brown-red
+     input.addEventListener("change", (event) => {
+      if (input.checked) {
+        grid.classList.add("border-brown-red");
+      } else {
+        grid.classList.remove("border-brown-red");
+      }
       // ... your selection logic ...
     });
+    // Optionally, set initial state if checked
+    if (input.checked) {
+      grid.classList.add("border-brown-red");
+    }
 
     return grid;
   }
@@ -544,6 +569,9 @@ class DisplaySuppProgram {
   // Generate a card for payNow-modal-card-container
   createPayNowModalCard(singleBundleData) {
     var $this = this;
+    const upSellAmount = document.querySelectorAll(
+      "[data-cart-total='cart-total-price']"
+    );
     // Outer grid wrapper (initially without border-brown-red)
     const grid = this.creEl("div", "bundle-sem-content-grid-wrapper");
     // Checkbox
@@ -553,6 +581,44 @@ class DisplaySuppProgram {
     input.name = "bundle-sem";
     input.value = singleBundleData.label || "";
     input.setAttribute("data-upsell-program-id", singleBundleData.upsellProgramId);
+    input.addEventListener("change", (event) => {
+      if (event.target.checked) {
+        if (!this.$selectedProgram.includes(singleBundleData)) {
+          this.$selectedProgram.push(singleBundleData);
+        }
+      } else {
+        this.$selectedProgram = this.$selectedProgram.filter(
+          (program) =>
+            program.upsellProgramId !== singleBundleData.upsellProgramId
+        );
+      }
+      // update amount in data-cart-total="cart-total-price" html element
+      if (upSellAmount.length > 0) {
+        upSellAmount.forEach((up_Sell_price) => {
+          if (this.$selectedProgram.length === 0) {
+            up_Sell_price.innerHTML = "$0";
+          } else {
+            const totalAmount = this.$selectedProgram.reduce(
+              (acc, program) => acc + program.portal_amount,
+              0
+            );
+            up_Sell_price.innerHTML = "$" + this.numberWithCommas(totalAmount);
+          }
+        });
+      }
+      // checked and unchecked all elements based on data-upsell-program-id
+      const allCheckboxes = document.querySelectorAll("[data-upsell-program-id]");
+      allCheckboxes.forEach((checkbox) => {
+        if (
+          checkbox.getAttribute("data-upsell-program-id") ==
+          singleBundleData.upsellProgramId
+        ) {
+          checkbox.checked = event.target.checked;
+          checkbox.parentElement.parentElement.classList.toggle("border-brown-red", event.target.checked);
+        }
+      });
+      $this.disableEnableBuyNowButton();
+    });
     checkboxDiv.appendChild(input);
     // Title
     const title = this.creEl("p", "bundle-sem-title-text");
@@ -577,6 +643,8 @@ class DisplaySuppProgram {
     grid.appendChild(checkboxDiv);
     grid.appendChild(title);
     grid.appendChild(priceWrapper);
+
+    
     // Checkbox event: toggle border-brown-red
     input.addEventListener("change", (event) => {
       if (input.checked) {
