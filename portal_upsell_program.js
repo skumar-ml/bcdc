@@ -544,9 +544,8 @@ class DisplaySuppProgram {
   // Generate a card for payNow-modal-card-container
   createPayNowModalCard(singleBundleData) {
     var $this = this;
-    const upSellAmount = this.creEl('div'); // Placeholder, not used in this modal
-    // Outer grid wrapper
-    const grid = this.creEl("div", "bundle-sem-content-grid-wrapper border-brown-red");
+    // Outer grid wrapper (initially without border-brown-red)
+    const grid = this.creEl("div", "bundle-sem-content-grid-wrapper");
     // Checkbox
     const checkboxDiv = this.creEl("div", "w-embed");
     const input = this.creEl("input", "bundle-sem-checkbox");
@@ -578,10 +577,19 @@ class DisplaySuppProgram {
     grid.appendChild(checkboxDiv);
     grid.appendChild(title);
     grid.appendChild(priceWrapper);
-    // Add event listeners as needed (similar to your previous logic)
+    // Checkbox event: toggle border-brown-red
     input.addEventListener("change", (event) => {
+      if (input.checked) {
+        grid.classList.add("border-brown-red");
+      } else {
+        grid.classList.remove("border-brown-red");
+      }
       // ... your selection logic ...
     });
+    // Optionally, set initial state if checked
+    if (input.checked) {
+      grid.classList.add("border-brown-red");
+    }
     return grid;
   }
   // Render a list of cards in the payNow-modal-card-container
