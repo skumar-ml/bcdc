@@ -162,13 +162,13 @@ class DisplaySuppProgram {
     const priceFlexDiv = this.creEl("div", "bundle-sem-price-flex-div");
     const discountPriceDiv = this.creEl("div", "bundle-sem-price-text-large");
     discountPriceDiv.setAttribute("data-addon", "discount-price");
-    discountPriceDiv.textContent = singleBundleData.portal_disc_amount
-      ? `$${this.numberWithCommas(singleBundleData.portal_disc_amount)}`
+    discountPriceDiv.textContent = singleBundleData.portal_amount
+      ? `$${this.numberWithCommas(singleBundleData.portal_amount)}`
       : "$3,350";
     const priceDiv = this.creEl("div", "bundle-sem-price-gray");
     priceDiv.setAttribute("data-addon", "price");
-    priceDiv.textContent = singleBundleData.portal_amount
-      ? `$${this.numberWithCommas(singleBundleData.portal_amount)}`
+    priceDiv.textContent = singleBundleData.portal_disc_amount
+      ? `$${this.numberWithCommas(singleBundleData.portal_disc_amount)}`
       : "$3,770";
     priceFlexDiv.appendChild(discountPriceDiv);
     priceFlexDiv.appendChild(priceDiv);
@@ -269,13 +269,13 @@ class DisplaySuppProgram {
     const priceFlex = this.creEl("div", "bundle-sem-popup-price-flex-wrapper");
     const price = this.creEl("div", "bundle-sem-popup-price-gray");
     price.setAttribute("data-addon", "price");
-    price.textContent = singleBundleData.portal_amount
-      ? `$${this.numberWithCommas(singleBundleData.portal_amount)}`
+    price.textContent = singleBundleData.portal_disc_amount
+      ? `$${this.numberWithCommas(singleBundleData.portal_disc_amount)}`
       : "$3,770";
     const discountPrice = this.creEl("div", "bundle-sem-pop-up-price-text");
     discountPrice.setAttribute("data-addon", "discount-price");
-    discountPrice.textContent = singleBundleData.portal_disc_amount
-      ? `$${this.numberWithCommas(singleBundleData.portal_disc_amount)}`
+    discountPrice.textContent = singleBundleData.portal_amount
+      ? `$${this.numberWithCommas(singleBundleData.portal_amount)}`
       : "$3,350";
     priceFlex.appendChild(price);
     priceFlex.appendChild(discountPrice);
@@ -628,13 +628,13 @@ class DisplaySuppProgram {
     const priceFlex = this.creEl("div", "bundle-sem-popup-price-flex-wrapper");
     const price = this.creEl("div", "bundle-sem-popup-price-gray small");
     price.setAttribute("data-addon", "price");
-    price.textContent = singleBundleData.portal_amount
-      ? `$${this.numberWithCommas(singleBundleData.portal_amount)}`
+    price.textContent = singleBundleData.portal_disc_amount
+      ? `$${this.numberWithCommas(singleBundleData.portal_disc_amount)}`
       : "$3,770";
     const discountPrice = this.creEl("div", "bundle-sem-price-text");
     discountPrice.setAttribute("data-addon", "discount-price");
-    discountPrice.textContent = singleBundleData.portal_disc_amount
-      ? `$${this.numberWithCommas(singleBundleData.portal_disc_amount)}`
+    discountPrice.textContent = singleBundleData.portal_amount
+      ? `$${this.numberWithCommas(singleBundleData.portal_amount)}`
       : "$3,350";
     priceFlex.appendChild(price);
     priceFlex.appendChild(discountPrice);
