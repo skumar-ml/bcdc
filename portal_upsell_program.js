@@ -507,7 +507,7 @@ class DisplaySuppProgram {
 
       const studentEl = document.getElementById("portal-students");
       if (studentEl.value) {
-        payBtn.value = "Processing...";
+        payBtn.innerHTML = "Processing...";
         payBtn.style.pointerEvents = "none";
         let programName = $this.$selectedProgram.map(
           (program) => program.label 
