@@ -177,7 +177,7 @@ class DisplaySuppProgram {
     priceFlexDiv.appendChild(priceDiv);
 
     // Subtext
-    const subtextDiv = this.creEl("div", "dm-sans bundle-sem-text-black");
+    const subtextDiv = this.creEl("div", "dm-sans bundle-sem-text-block");
     subtextDiv.innerHTML =
       (singleBundleData.desc
         ? singleBundleData.desc
