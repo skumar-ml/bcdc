@@ -218,7 +218,7 @@ class DisplaySuppProgram {
     const grid = this.creEl("div", "bundle-sem-content-flex-container");
     // Checkbox
     const textWithCheckbox = this.creEl("div", "bundle-sem-text-with-checkbox")
-    const checkboxDiv = this.creEl("div", "bundle-sem-checkbox-div w-embed");
+    const checkboxDiv = this.creEl("div", "w-embed");
     const input = this.creEl("input", "bundle-sem-checkbox");
     input.type = "checkbox";
     input.name = "bundle-sem";
