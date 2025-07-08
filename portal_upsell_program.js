@@ -209,7 +209,7 @@ class DisplaySuppProgram {
     return label;
   }
 
-  createModelBundleCard(singleBundleData) {
+   createModelBundleCard(singleBundleData) {
     var $this = this;
     const upSellAmount = document.querySelectorAll(
       "[data-cart-total='cart-total-price']"
@@ -265,15 +265,18 @@ class DisplaySuppProgram {
       $this.disableEnableBuyNowButton();
     });
     checkboxDiv.appendChild(input);
-
+    const headingWrapper = this.creEl("div")
     // Title
     const title = this.creEl("p", "bundle-sem-title");
     title.textContent = `${singleBundleData.label || "Winter/Spring"} (${singleBundleData.yearId || "2026"})`;
-
+    const desc = this.creEl("p", "bundle-sem-info");
+    desc.textContent = singleBundleData.desc;
+    headingWrapper.appendChild(title)
+    headingWrapper.appendChild(desc)
     // Price wrapper
     const priceWrapper = this.creEl("div");
     const priceFlex = this.creEl("div", "bundle-sem-popup-price-flex-wrapper");
-    const price = this.creEl("div", "bundle-sem-popup-price-gray");
+    const price = this.creEl("div", "bundle-sem-popup-price-gray small");
     price.setAttribute("data-addon", "price");
     price.textContent = singleBundleData.portal_disc_amount
       ? `$${this.numberWithCommas(singleBundleData.portal_disc_amount)}`
@@ -289,7 +292,7 @@ class DisplaySuppProgram {
 
     // Assemble
     textWithCheckbox.appendChild(checkboxDiv);
-    textWithCheckbox.appendChild(title);
+    textWithCheckbox.appendChild(headingWrapper);
     grid.appendChild(textWithCheckbox);
     grid.appendChild(priceWrapper);
 
