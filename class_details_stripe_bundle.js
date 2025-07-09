@@ -1232,12 +1232,16 @@ function creEl(name, className, idName) {
       let cartGridWrapper1 = creEl("div", "cart-grid-wrapper");
       let offeringType = creEl("div", "main-text small-medium-mb-0");
       offeringType.innerHTML = sup.label;
-      let offeringRemove = creEl("div", "main-text brown-red-text-small align-right");
-      offeringRemove.innerHTML = "Remove";
-      offeringRemove.addEventListener("click", function () {
-        $this.removeSuppProgram(sup.upsellProgramId);
-      });
-      cartGridWrapper1.prepend(offeringType, offeringRemove);
+      if(this.$coreData.upsellProgramId !== sup.upsellProgramId){
+        let offeringRemove = creEl("div", "main-text brown-red-text-small align-right");
+        offeringRemove.innerHTML = "Remove";
+        offeringRemove.addEventListener("click", function () {
+          $this.removeSuppProgram(sup.upsellProgramId);
+        });
+        cartGridWrapper1.prepend(offeringType, offeringRemove);
+     }else{
+        cartGridWrapper1.prepend(offeringType);
+     }
 
       
       // bundle amount considered as single program
