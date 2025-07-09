@@ -1322,19 +1322,22 @@ function creEl(name, className, idName) {
                    addonDepositPrice.innerHTML =   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));  
                  })
                }
-                
-                let addonPriceEl = document.querySelectorAll(
-                  "[data-stripe='addon_price']"
-                );
-                if (addonPriceEl) {
-                  addonPriceEl.forEach(addonPrice => {
-                    let addonPriceValue = addonPrice.getAttribute('addon-price')
-                      .replace(/,/g, "")
-                      .replace(/\$/g, "");
-                    addonPriceValue = (parseFloat(addonPriceValue) + 0.3) / 0.971;
-                    coreDepositPrice = addonPriceValue + coreDepositPrice;
-                  });
-                }
+                let sumOfSelectedPrograms = (
+                  $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
+                ).toFixed(2);
+                coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice;
+                // let addonPriceEl = document.querySelectorAll(
+                //   "[data-stripe='addon_price']"
+                // );
+                // if (addonPriceEl) {
+                //   addonPriceEl.forEach(addonPrice => {
+                //     let addonPriceValue = addonPrice.getAttribute('addon-price')
+                //       .replace(/,/g, "")
+                //       .replace(/\$/g, "");
+                //     addonPriceValue = (parseFloat(addonPriceValue) + 0.3) / 0.971;
+                //     coreDepositPrice = addonPriceValue + coreDepositPrice;
+                //   });
+                // }
                 //let amount = deposit_price.innerHTML.replace(/,/g, "").replace(/\$/g, "");
                 //deposit_price.innerHTML = "$"+ $this.numberWithCommas(((parseFloat(amount) + 0.30)/0.971).toFixed(2));
                 deposit_price.innerHTML =
@@ -1360,22 +1363,24 @@ function creEl(name, className, idName) {
                  })
                }
                   
-                let addonPriceEl = document.querySelectorAll(
-                  "[data-stripe='addon_price']"
-                );
-                if (addonPriceEl) {
-                  addonPriceEl.forEach(addonPrice => {
-                    let addonPriceElValue =
-                      addonPrice.getAttribute("addon-price");
-                  addonPriceElValue = addonPriceElValue
-                    .replace(/,/g, "")
-                    .replace(/\$/g, "");
-                  amount = amount + parseFloat(addonPriceElValue);
-                });
-              }
-
+              //   let addonPriceEl = document.querySelectorAll(
+              //     "[data-stripe='addon_price']"
+              //   );
+              //   if (addonPriceEl) {
+              //     addonPriceEl.forEach(addonPrice => {
+              //       let addonPriceElValue =
+              //         addonPrice.getAttribute("addon-price");
+              //     addonPriceElValue = addonPriceElValue
+              //       .replace(/,/g, "")
+              //       .replace(/\$/g, "");
+              //     amount = amount + parseFloat(addonPriceElValue);
+              //   });
+              // }
+              var sumOfSelectedPrograms = (
+          $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
+        ).toFixed(2);
               deposit_price.innerHTML =
-                "$" + $this.numberWithCommas(amount.toFixed(2));
+                "$" + $this.numberWithCommas(parseFloat(sumOfSelectedPrograms)+ parseFloat(amount));
             });
           }
           }
@@ -1838,6 +1843,9 @@ function creEl(name, className, idName) {
       if (type=="upsell" && coreData && coreData.upsellProgramId) {
           const isBundleSelected = this.$selectedProgram.some(
             (program) => program.upsellProgramId !== coreData.upsellProgramId
+          );
+          const isCoreSelected = this.$selectedProgram.some(
+            (program) => program.upsellProgramId === coreData.upsellProgramId
           );
           if (isBundleSelected ) {
             if (!this.$selectedProgram.includes(coreData)) {
