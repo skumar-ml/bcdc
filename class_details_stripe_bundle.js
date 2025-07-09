@@ -1230,7 +1230,7 @@ function creEl(name, className, idName) {
       selectedData.forEach((sup) => {
       // bundle label and remove 
       let cartGridWrapper1 = creEl("div", "cart-grid-wrapper");
-      let offeringType = creEl("div", "main-text small-medium-mb-0");
+      let offeringType = creEl("div", "main-text bundle-sem");
       offeringType.innerHTML = sup.label;
       if(this.$coreData.upsellProgramId !== sup.upsellProgramId){
         let offeringRemove = creEl("div", "main-text brown-red-text-small align-right");
