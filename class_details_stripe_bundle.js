@@ -1851,9 +1851,14 @@ function creEl(name, className, idName) {
           const isCoreSelected = this.$selectedProgram.some(
             (program) => program.upsellProgramId === coreData.upsellProgramId
           );
+	  const isCoreSelected = this.$selectedProgram.some(
+            (program) => program.upsellProgramId === coreData.upsellProgramId
+          );
           if (isBundleSelected ) {
             if (!this.$selectedProgram.includes(coreData)) {
-              this.$selectedProgram.push(coreData);
+              if(!isCoreSelected){
+                  this.$selectedProgram.push(coreData);
+              } 
             }
           } else {
             this.$selectedProgram = this.$selectedProgram.filter(
