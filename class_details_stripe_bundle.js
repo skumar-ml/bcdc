@@ -1824,7 +1824,7 @@ function creEl(name, className, idName) {
           }
         });
         // If this is a bundle (upsell), manage coreData in $selectedProgram
-        $this.updateCoreData();
+        $this.updateCoreData(type);
       });
       if (input.checked) {
         flexContainer.classList.add("border-brown-red");
@@ -1833,9 +1833,9 @@ function creEl(name, className, idName) {
       return flexContainer;
     }
 
-    updateCoreData(){
+    updateCoreData( type="upsell"){
       var coreData = this.$coreData;
-      if (coreData && coreData.upsellProgramId) {
+      if (type=="upsell" && coreData && coreData.upsellProgramId) {
           const isBundleSelected = this.$selectedProgram.some(
             (program) => program.upsellProgramId !== coreData.upsellProgramId
           );
