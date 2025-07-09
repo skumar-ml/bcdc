@@ -1782,8 +1782,8 @@ function creEl(name, className, idName) {
         ? `${singleBundleData.label} (${singleBundleData.yearId})`
         : "Fall (2025)";
       const infoP = creEl("p", "bundle-sem-info");
-      infoP.textContent = type === "upsell"
-        ? (singleBundleData.info || "")
+      infoP.textContent = (singleBundleData.desc )
+        ? (singleBundleData.desc || "")
         : "Fall Tuition + Early Bird (With Deposit)";
       titleInfoDiv.appendChild(titleP);
       titleInfoDiv.appendChild(infoP);
