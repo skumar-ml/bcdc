@@ -1848,9 +1848,6 @@ function creEl(name, className, idName) {
           const isBundleSelected = this.$selectedProgram.some(
             (program) => program.upsellProgramId !== coreData.upsellProgramId
           );
-          const isCoreSelected = this.$selectedProgram.some(
-            (program) => program.upsellProgramId === coreData.upsellProgramId
-          );
 	  const isCoreSelected = this.$selectedProgram.some(
             (program) => program.upsellProgramId === coreData.upsellProgramId
           );
