@@ -22,6 +22,7 @@ function creEl(name, className, idName) {
     $suppPro = [];
     $isPrevStudent = false;
     $selectedProgram = [];
+    $oldSelectedProgram = [];
     $coreData = [];
     constructor(
       baseUrl,
@@ -1123,6 +1124,7 @@ function creEl(name, className, idName) {
           $this.disableEnableBuyNowButton();
           window.scrollTo({ top: 0, behavior: "smooth" });
           $this.updateCheckOutData({upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram});
+          $this.$oldSelectedProgram = $this.$selectedProgram;
         });
       });
     }
@@ -1293,7 +1295,7 @@ function creEl(name, className, idName) {
           this.hideShowNewStudentFee("grid");
         }
       }
-      
+      this.$oldSelectedProgram = this.$selectedProgram;
       this.disableEnableBuyNowButton()
     }
   
@@ -1761,7 +1763,7 @@ function creEl(name, className, idName) {
     //   return label;
     // }
 
-     createBundleCard(singleBundleData, type="upsell", position="", coreData) {
+    createBundleCard(singleBundleData, type="upsell", position="", coreData) {
       var $this = this;
       var flexContainer = creEl("div", "bundle-sem-content-flex-container");
       // Container
@@ -1846,9 +1848,9 @@ function creEl(name, className, idName) {
             checkbox.closest(".bundle-sem-content-flex-container")?.classList.toggle("border-brown-red", event.target.checked);
           }
         });
-	$this.disableEnableBuyNowButton()
         // If this is a bundle (upsell), manage coreData in $selectedProgram
         $this.updateCoreData(type);
+        $this.disableEnableBuyNowButton(false)
       });
       if (input.checked) {
         flexContainer.classList.add("border-brown-red");
@@ -1879,20 +1881,25 @@ function creEl(name, className, idName) {
           }
         }
     }
-    disableEnableBuyNowButton() {
+    disableEnableBuyNowButton(isUpdateText = true) {
       // is selected program is empty then disable the buy now button
       const buyNowButton = document.querySelectorAll(".add-to-cart, .bundle-add-to-cart");
       if (this.$selectedProgram.length === 0) {
         buyNowButton.forEach((button) => {
-          button.innerHTML = "Add to Cart";
-          button.classList.add("disabled");
+          if(isUpdateText){
+            button.innerHTML = "Add to Cart";
+          }
+          if(this.$oldSelectedProgram.length == 0 && isUpdateText){
+            button.classList.add("disabled");
+          }
         });
       } else {
         buyNowButton.forEach((button) => {
           button.innerHTML = "Update Cart";
           button.classList.remove("disabled");
         });
-      } 
+      }
+
     }
 
   }
