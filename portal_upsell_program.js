@@ -94,10 +94,22 @@ class DisplaySuppProgram {
         var modelCard = this.createModelBundleCard(singleBundleData);
         modalCardContainer.appendChild(modelCard);
       });
+      this.displayTotalDiscount(bundleData)
       this.$bundleData = bundleData;
       this.renderPayNowModalCards();
     });
     this.disableEnableBuyNowButton();
+  }
+  displayTotalDiscount(bundleData){
+    const totalDiscount = bundleData.reduce((acc, bundle) => {
+        const amount = Number(bundle.portal_amount) || 0;
+        const discAmount = Number(bundle.portal_disc_amount) || 0;
+        return acc + (discAmount - amount);
+      }, 0);
+    const discountEl = document.querySelectorAll('[data-addon="discount"]')
+    discountEl.forEach(el=>{
+      el.innerHTML = "$"+this.numberWithCommas(totalDiscount);
+    })
   }
   createBundleCard(singleBundleData) {
     var $this = this;
