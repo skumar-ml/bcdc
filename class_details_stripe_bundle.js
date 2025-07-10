@@ -1884,12 +1884,12 @@ function creEl(name, className, idName) {
       if (this.$selectedProgram.length === 0) {
         buyNowButton.forEach((button) => {
           button.innerHTML = "Add to Cart";
-          button.disabled = true; // Disable each button
+          button.classList.add("disabled");
         });
       } else {
         buyNowButton.forEach((button) => {
           button.innerHTML = "Update Cart";
-          button.disabled = false; // Enable each button
+          button.classList.remove("disabled");
         });
       } 
     }
