@@ -1761,7 +1761,7 @@ function creEl(name, className, idName) {
     //   return label;
     // }
 
-    createBundleCard(singleBundleData, type="upsell", position="", coreData) {
+     createBundleCard(singleBundleData, type="upsell", position="", coreData) {
       var $this = this;
       var flexContainer = creEl("div", "bundle-sem-content-flex-container");
       // Container
@@ -1808,13 +1808,12 @@ function creEl(name, className, idName) {
       const priceFlex = creEl("div", "bundle-sem-popup-price-flex-wrapper");
       const originalPrice = creEl("div", "bundle-sem-popup-price-gray");
       originalPrice.setAttribute("data-addon", "price");
-      let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
-      discountPrice.textContent = singleBundleData.amount
-        ? `$${this.numberWithCommas(amount)}`
-        : "$3,350";
+      originalPrice.textContent = singleBundleData.disc_amount
+        ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
+        : "$3,770";
       const discountPrice = creEl("div", "bundle-sem-pop-up-price-text");
       discountPrice.setAttribute("data-addon", "discount-price");
-      let amount = (type !== "upsell") ? singleBundleData.amount + this.amount : singleBundleData.amount;
+      let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
       discountPrice.textContent = singleBundleData.amount
         ? `$${this.numberWithCommas(amount)}`
         : "$3,350";
