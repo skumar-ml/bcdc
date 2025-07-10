@@ -1901,7 +1901,7 @@ function creEl(name, className, idName) {
       } else {
         if (this.$selectedProgram.length === 0) {
               buyNowButton.forEach((button) => {
-                if(this.$oldSelectedProgram.length == 0 && isUpdateText){
+                if(this.$oldSelectedProgram.length == 0 && !isUpdateText){
                   button.classList.add("disabled");
                 }
               });
