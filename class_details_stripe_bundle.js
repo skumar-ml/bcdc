@@ -1684,8 +1684,21 @@ function creEl(name, className, idName) {
           var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
           modalCardContainer.appendChild(modelCard);
         });
+        this.displayTotalDiscount(item.upsellPrograms);
       });
       this.disableEnableBuyNowButton();
+    }
+    
+    displayTotalDiscount(bundleData){
+      const totalDiscount = bundleData.reduce((acc, bundle) => {
+          const amount = Number(bundle.portal_amount) || 0;
+          const discAmount = Number(bundle.portal_disc_amount) || 0;
+          return acc + (discAmount - amount);
+        }, 0);
+      const discountEl = document.querySelectorAll('[data-addon="discount"]')
+      discountEl.forEach(el=>{
+        el.innerHTML = "$"+this.numberWithCommas(totalDiscount);
+      })
     }
     // createModelBundleCard(singleBundleData) {
     //   var $this = this;
@@ -1800,8 +1813,9 @@ function creEl(name, className, idName) {
         : "$3,770";
       const discountPrice = creEl("div", "bundle-sem-pop-up-price-text");
       discountPrice.setAttribute("data-addon", "discount-price");
+      let amount = (type !== "upsell") ? singleBundleData.amount + this.amount : singleBundleData.amount;
       discountPrice.textContent = singleBundleData.amount
-        ? `$${this.numberWithCommas(singleBundleData.amount)}`
+        ? `$${this.numberWithCommas(amount)}`
         : "$3,350";
       priceFlex.appendChild(originalPrice);
       priceFlex.appendChild(discountPrice);
@@ -1848,7 +1862,7 @@ function creEl(name, className, idName) {
           const isBundleSelected = this.$selectedProgram.some(
             (program) => program.upsellProgramId !== coreData.upsellProgramId
           );
-	  const isCoreSelected = this.$selectedProgram.some(
+          const isCoreSelected = this.$selectedProgram.some(
             (program) => program.upsellProgramId === coreData.upsellProgramId
           );
           if (isBundleSelected ) {
