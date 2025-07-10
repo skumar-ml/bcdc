@@ -1884,22 +1884,33 @@ function creEl(name, className, idName) {
     disableEnableBuyNowButton(isUpdateText = true) {
       // is selected program is empty then disable the buy now button
       const buyNowButton = document.querySelectorAll(".add-to-cart, .bundle-add-to-cart");
-      if (this.$selectedProgram.length === 0) {
-        buyNowButton.forEach((button) => {
-          if(isUpdateText){
-            button.innerHTML = "Add to Cart";
-          }
-          if(this.$oldSelectedProgram.length == 0 && isUpdateText){
-            button.classList.add("disabled");
-          }
-        });
+      if(isUpdateText){
+          if (this.$selectedProgram.length === 0) {
+              buyNowButton.forEach((button) => {
+                button.innerHTML = "Add to Cart";
+                if(this.$oldSelectedProgram.length == 0 && isUpdateText){
+                  button.classList.add("disabled");
+                }
+              });
+            } else {
+              buyNowButton.forEach((button) => {
+                button.innerHTML = "Update Cart";
+                button.classList.remove("disabled");
+              });
+            }
       } else {
-        buyNowButton.forEach((button) => {
-          button.innerHTML = "Update Cart";
-          button.classList.remove("disabled");
-        });
+        if (this.$selectedProgram.length === 0) {
+              buyNowButton.forEach((button) => {
+                if(this.$oldSelectedProgram.length == 0 && isUpdateText){
+                  button.classList.add("disabled");
+                }
+              });
+            } else {
+              buyNowButton.forEach((button) => {
+                button.classList.remove("disabled");
+              });
+            }
       }
-
     }
 
   }
