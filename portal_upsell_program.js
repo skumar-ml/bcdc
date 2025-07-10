@@ -582,10 +582,12 @@ class DisplaySuppProgram {
     if (this.$selectedProgram.length === 0) {
       buyNowButton.forEach((button) => {
         button.disabled = true; // Disable each button
+        button.classList.add("disabled");
       });
     } else {
       buyNowButton.forEach((button) => {
         button.disabled = false; // Enable each button
+        button.classList.remove("disabled");
       });
     } 
   }
