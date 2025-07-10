@@ -1883,11 +1883,13 @@ function creEl(name, className, idName) {
       const buyNowButton = document.querySelectorAll(".add-to-cart, .bundle-add-to-cart");
       if (this.$selectedProgram.length === 0) {
         buyNowButton.forEach((button) => {
-          button.innerHTML = "Add to Cart"; // Disable each button
+          button.innerHTML = "Add to Cart";
+          button.disabled = true; // Disable each button
         });
       } else {
         buyNowButton.forEach((button) => {
-          button.innerHTML = "Update Cart"; // Enable each button
+          button.innerHTML = "Update Cart";
+          button.disabled = false; // Enable each button
         });
       } 
     }
