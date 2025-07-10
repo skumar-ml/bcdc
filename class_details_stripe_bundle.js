@@ -1846,6 +1846,7 @@ function creEl(name, className, idName) {
             checkbox.closest(".bundle-sem-content-flex-container")?.classList.toggle("border-brown-red", event.target.checked);
           }
         });
+	$this.disableEnableBuyNowButton()
         // If this is a bundle (upsell), manage coreData in $selectedProgram
         $this.updateCoreData(type);
       });
