@@ -1181,7 +1181,12 @@ function creEl(name, className, idName) {
           this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
         ).toFixed(2);
         var dataStripePrice = parseFloat(totalPriceText.getAttribute("data-stripe-price"));
-        sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice);
+        if(this.$selectedProgram.length > 0){
+          sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms);
+        } else {
+          sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice);
+        
+        }
         totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
         
       });
@@ -1226,14 +1231,14 @@ function creEl(name, className, idName) {
     
     
     // Deposit price considered as single program
-      let cartGridWrapper2 = creEl("div", "cart-grid-wrapper");
-      let depositLabel = creEl("p", "main-text order-details-no-strike");
-      depositLabel.innerHTML = "Deposit (Due Now)";
-      let depositPrice = creEl("p", "main-text order-details-price-no-strike");
-      depositPrice.innerHTML = "$300";
-      depositPrice.setAttribute("data-stripe", "addon-deposit-price");
-      cartGridWrapper2.prepend(depositLabel, depositPrice);
-      selectedSuppPro.append( cartGridWrapper2);
+      // let cartGridWrapper2 = creEl("div", "cart-grid-wrapper");
+      // let depositLabel = creEl("p", "main-text order-details-no-strike");
+      // depositLabel.innerHTML = "Deposit (Due Now)";
+      // let depositPrice = creEl("p", "main-text order-details-price-no-strike");
+      // depositPrice.innerHTML = "$300";
+      // depositPrice.setAttribute("data-stripe", "addon-deposit-price");
+      // cartGridWrapper2.prepend(depositLabel, depositPrice);
+      // selectedSuppPro.append( cartGridWrapper2);
 
 
       selectedData.forEach((sup) => {
@@ -1341,7 +1346,12 @@ function creEl(name, className, idName) {
                 let sumOfSelectedPrograms = (
                   $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
                 ).toFixed(2);
-                coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice;
+                if($this.$selectedProgram.length > 0){
+                    coreDepositPrice = parseFloat(sumOfSelectedPrograms);
+                } else {
+                    coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice;
+                }
+                
                 // let addonPriceEl = document.querySelectorAll(
                 //   "[data-stripe='addon_price']"
                 // );
@@ -1393,10 +1403,14 @@ function creEl(name, className, idName) {
               //   });
               // }
               var sumOfSelectedPrograms = (
-          $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
+              $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
         ).toFixed(2);
+              var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms)+ parseFloat(amount))      
+              if($this.$selectedProgram.length > 0){
+                  finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms))
+              }      
               deposit_price.innerHTML =
-                "$" + $this.numberWithCommas(parseFloat(sumOfSelectedPrograms)+ parseFloat(amount));
+                "$" + finalPrice;
             });
           }
           }
@@ -1668,7 +1682,8 @@ function creEl(name, className, idName) {
         if (totalDepositPriceEl) {
           var dataStripePrice = parseFloat(totalDepositPriceEl.getAttribute("data-stripe-price") || "0");
           var coreAmount = parseFloat(coreData.amount || "0");
-          coreData.amount = coreAmount - dataStripePrice;
+          // removed deposit amount
+          //coreData.amount = coreAmount - dataStripePrice;
         }
         this.$coreData = coreData;
         var bundlePopUpText = creEl("p", "bundle-pop-up-text");
@@ -1765,7 +1780,9 @@ function creEl(name, className, idName) {
         : "$3,770";
       const discountPrice = creEl("div", "bundle-sem-pop-up-price-text");
       discountPrice.setAttribute("data-addon", "discount-price");
-      let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
+      //let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
+      // removed deposit amount
+      let amount = singleBundleData.amount;
       discountPrice.textContent = singleBundleData.amount
         ? `$${this.numberWithCommas(amount)}`
         : "$3,350";
