@@ -1895,7 +1895,7 @@ function creEl(name, className, idName) {
       programs.forEach(program => {
         const grid = creEl("div", "cart-grid-wrapper");
         const label = creEl("p", "main-text order-details");
-        label.textContent = program.label || "Tuition";
+        label.textContent = "Tuition "+program.label || "Tuition";
         const priceWrap = creEl("div", "w-embed");
         const price = creEl("p", "main-text order-details-price");
         price.textContent = "$" + this.numberWithCommas(Number(program.disc_amount).toFixed(2));
