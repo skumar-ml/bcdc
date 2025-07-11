@@ -1219,8 +1219,9 @@ function creEl(name, className, idName) {
       suppIds.some((d) => d == item.upsellProgramId)
     );
     
+    
     // Deposit price considered as single program
-      let cartGridWrapper2 = creEl("div", "cart-grid-wrapper order-detail");
+      let cartGridWrapper2 = creEl("div", "cart-grid-wrapper");
       let depositLabel = creEl("p", "main-text order-details-no-strike");
       depositLabel.innerHTML = "Deposit (Due Now)";
       let depositPrice = creEl("p", "main-text order-details-price-no-strike");
@@ -1231,9 +1232,10 @@ function creEl(name, className, idName) {
 
 
       selectedData.forEach((sup) => {
+        let mainGridWrapper = creEl("div", "cart-grid-wrapper");
       // bundle label and remove 
       let cartGridWrapper1 = creEl("div", "cart-grid-wrapper order-detail");
-      let offeringType = creEl("p", "main-text order-details-no-strike");
+      let offeringType = creEl("p", "main-text bundle-semester");
       offeringType.innerHTML = sup.label;
       if(this.$coreData.upsellProgramId !== sup.upsellProgramId){
         let offeringRemove = creEl("p", "main-text brown-red-text-small");
@@ -1245,7 +1247,7 @@ function creEl(name, className, idName) {
      }else{
         cartGridWrapper1.appendChild(offeringType);
      }
-
+     mainGridWrapper.appendChild(cartGridWrapper1)
       
       // bundle amount considered as single program
       //let cartGridWrapper3 = creEl("div", "cart-grid-wrapper");
@@ -1256,9 +1258,10 @@ function creEl(name, className, idName) {
       bundlePrice.setAttribute("data-stripe", "addon_price");
       bundlePrice.setAttribute("addon-price",$this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
       //cartGridWrapper3.prepend(bundleLabel);
-      cartGridWrapper1.appendChild(bundlePrice);
+      mainGridWrapper.appendChild(bundlePrice);
+      
       // append all grid wrapper
-      selectedSuppPro.append(cartGridWrapper1);
+      selectedSuppPro.appendChild(mainGridWrapper);
     });
   }
     removeSuppProgram(suppId) {
