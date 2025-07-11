@@ -182,10 +182,10 @@ class MillionsRenderer {
     this.spinner.style.display = "block";
     const portalTab = document.querySelector(".portal-tab");
     if (portalTab) portalTab.style.display = "none";
-    this.spinner.style.display = "none";
     const apiData = await this.fetchData();
     if (!apiData || !apiData.millions_transactions) return;
     if (portalTab) portalTab.style.display = "block";
+    this.spinner.style.display = "none";
     this.renderTabMenu(apiData.millions_transactions);
     this.renderTabContent(apiData.millions_transactions);
     apiData.millions_transactions.forEach((student, idx) =>
