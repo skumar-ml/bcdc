@@ -757,6 +757,10 @@ function creEl(name, className, idName) {
         return;
       }
       checkOutLocalData = JSON.parse(checkOutLocalData);
+      var finalPrice = this.amount * 100;
+      if(this.$selectedProgram.length > 0){
+         finalPrice = this.$coreData.amount*100;
+      }
       var data = {
         checkoutId: checkOutLocalData.checkoutData.checkoutId,
         label: label,
@@ -765,6 +769,7 @@ function creEl(name, className, idName) {
         //added id for up-sell program
         upsellProgramIds: upsellProgramIds,
         has_fee: has_fee,
+        amount: finalPrice,
         successUrl: encodeURI(
           "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
             label +
@@ -931,10 +936,6 @@ function creEl(name, className, idName) {
       //console.log(window.location.href)
       cancelUrl.searchParams.append("returnType", "back");
       //console.log(cancelUrl)
-      var finalPrice = this.amount * 100 + this.$coreData.amount*100;
-      if(this.$selectedProgram.length > 0){
-         finalPrice = this.$coreData.amount*100;
-      }
       var data = {
         email: this.accountEmail,
         studentEmail: studentEmail.value,
@@ -952,7 +953,7 @@ function creEl(name, className, idName) {
         //"cancelUrl": cancelUrl.href,
         //"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
         memberId: this.webflowMemberId,
-        amount: finalPrice,
+        amount: this.amount * 100,
         utm_source: (localUtmSource != null) ? localUtmSource : "null",
         createdOn: new Date().toISOString(),
         isPreviousStudent: this.$isPrevStudent
