@@ -1028,7 +1028,7 @@ function creEl(name, className, idName) {
         semesterBundleModal.style.display = "flex";
       });
   
-      $this.addToCart();
+      //$this.addToCart();
       //$this.handleUpSellSelection();
     }
     closeModal(modal) {
@@ -1189,6 +1189,7 @@ function creEl(name, className, idName) {
       // Update selected supplementary program ids
       this.displaySelectedSuppProgram(allSupIds);
       this.updateCheckOutData({upsellProgramIds: allSupIds});
+      this.updateOriginPrice()
     }
     
   
@@ -1219,7 +1220,7 @@ function creEl(name, className, idName) {
     );
     
     // Deposit price considered as single program
-      let cartGridWrapper2 = creEl("div", "cart-grid-wrapper");
+      let cartGridWrapper2 = creEl("div", "cart-grid-wrapper order-detail");
       let depositLabel = creEl("p", "main-text order-details-no-strike");
       depositLabel.innerHTML = "Deposit (Due Now)";
       let depositPrice = creEl("p", "main-text order-details-price-no-strike");
@@ -1231,33 +1232,33 @@ function creEl(name, className, idName) {
 
       selectedData.forEach((sup) => {
       // bundle label and remove 
-      let cartGridWrapper1 = creEl("div", "cart-grid-wrapper");
-      let offeringType = creEl("div", "main-text bundle-sem");
+      let cartGridWrapper1 = creEl("div", "cart-grid-wrapper order-detail");
+      let offeringType = creEl("p", "main-text order-details-no-strike");
       offeringType.innerHTML = sup.label;
       if(this.$coreData.upsellProgramId !== sup.upsellProgramId){
-        let offeringRemove = creEl("div", "main-text brown-red-text-small align-right");
+        let offeringRemove = creEl("p", "main-text brown-red-text-small");
         offeringRemove.innerHTML = "Remove";
         offeringRemove.addEventListener("click", function () {
           $this.removeSuppProgram(sup.upsellProgramId);
         });
         cartGridWrapper1.prepend(offeringType, offeringRemove);
      }else{
-        cartGridWrapper1.prepend(offeringType);
+        cartGridWrapper1.appendChild(offeringType);
      }
 
       
       // bundle amount considered as single program
-      let cartGridWrapper3 = creEl("div", "cart-grid-wrapper");
-      let bundleLabel = creEl("p", "main-text order-details-no-strike");
-      bundleLabel.innerHTML = "Bundle Price";
+      //let cartGridWrapper3 = creEl("div", "cart-grid-wrapper");
+      // let bundleLabel = creEl("p", "main-text order-details-no-strike");
+      // bundleLabel.innerHTML = "Bundle Price";
       let bundlePrice = creEl("div","main-text order-details-price-no-strike");
       bundlePrice.innerHTML = "$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2));
       bundlePrice.setAttribute("data-stripe", "addon_price");
       bundlePrice.setAttribute("addon-price",$this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
-      cartGridWrapper3.prepend(bundleLabel, );
-      cartGridWrapper3.prepend(bundleLabel, bundlePrice);
+      //cartGridWrapper3.prepend(bundleLabel);
+      cartGridWrapper1.appendChild(bundlePrice);
       // append all grid wrapper
-      selectedSuppPro.append(cartGridWrapper1, cartGridWrapper3);
+      selectedSuppPro.append(cartGridWrapper1);
     });
   }
     removeSuppProgram(suppId) {
@@ -1307,7 +1308,8 @@ function creEl(name, className, idName) {
         "[data-stripe='totalDepositPrice']"
       );
       for (let i = 0; i < paymentTab.length; i++) {
-        paymentTab[i].addEventListener("click", function () {
+        paymentTab[i].addEventListener("click", function (e) {
+          e.preventDefault()
           let tab = paymentTab[i].getAttribute("data-w-tab");
           if (tab == "Tab 2") {
             if (totalDepositPrice.length > 0) {
@@ -1702,66 +1704,6 @@ function creEl(name, className, idName) {
         el.innerHTML = "$"+this.numberWithCommas(totalDiscount);
       })
     }
-    // createModelBundleCard(singleBundleData) {
-    //   var $this = this;
-    //   const label = creEl("label", "option");
-    //   const input = creEl("input", "bundleProgram");
-    //   input.type = "checkbox";
-    //   input.setAttribute("programDetailId", singleBundleData.upsellProgramId);
-    //   input.value = singleBundleData.amount
-    //     ? singleBundleData.amount
-    //     : "3350";
-    //   input.addEventListener("change", (event) => {
-    //     console.log("Checkbox changed:", event.target.checked);
-    //     if (event.target.checked) {
-    //       // push in array if not already present
-    //       if (!this.$selectedProgram.includes(singleBundleData)) {
-    //         this.$selectedProgram.push(singleBundleData);
-    //       }
-    //     } else {
-    //       // remove singleBundleData from $selectedProgram
-    //       this.$selectedProgram = this.$selectedProgram.filter(
-    //         (program) =>
-    //           program.upsellProgramId !== singleBundleData.upsellProgramId
-    //       );
-    //     }
-        
-    //     // checked and unchecked all elements based on data-upsell-program-id
-    //     const allCheckboxes = document.querySelectorAll("[programDetailId]");
-    //     allCheckboxes.forEach((checkbox) => {
-    //       if(checkbox.getAttribute("programDetailId") ==
-    //       singleBundleData.upsellProgramId){
-    //         checkbox.checked = event.target.checked;
-    //       }
-    //     });
-    //     //$this.disableEnableBuyNowButton();
-    //   });
-    //   // check if $selectedProgram already contains singleBundleData
-    //   const cardContent = creEl("div", "option-content");
-
-    //   const seasonTitle = creEl("div", "term-title");
-    //   seasonTitle.textContent = `${singleBundleData.label + "("+ singleBundleData.yearId+ ")" || "Winter/Spring"}`;
-
-    //   const priceDiv = creEl("div", "price");
-    //   const price = creEl("span", "original");
-    //   price.textContent = singleBundleData.disc_amount
-    //     ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
-    //     : "$3,350";
-    //   const originalPrice = creEl("span", "discounted-price");
-    //   originalPrice.textContent = singleBundleData.amount
-    //     ? `$${this.numberWithCommas(singleBundleData.amount)}`
-    //     : "$3,770";
-    //   priceDiv.appendChild(price);
-    //   priceDiv.appendChild(originalPrice);
-
-
-    //   cardContent.appendChild(seasonTitle);
-    //   cardContent.appendChild(priceDiv);
-
-    //   label.appendChild(input);
-    //   label.appendChild(cardContent);
-    //   return label;
-    // }
 
     createBundleCard(singleBundleData, type="upsell", position="", coreData) {
       var $this = this;
@@ -1828,19 +1770,21 @@ function creEl(name, className, idName) {
 
       // Checkbox logic
       input.addEventListener("change", (event) => {
+        event.preventDefault();
         if (event.target.checked) {
           if (!this.$selectedProgram.includes(singleBundleData)) {
             this.$selectedProgram.push(singleBundleData);
-            console.log("push selected program", this.$selectedProgram)
+            // console.log("push selected program", this.$selectedProgram)
           }
           flexContainer.classList.add("border-brown-red");
         } else {
           this.$selectedProgram = this.$selectedProgram.filter(
             (program) => program.upsellProgramId !== singleBundleData.upsellProgramId
           );
-          console.log("pop selected program", this.$selectedProgram)
+         // console.log("single pop selected program", this.$selectedProgram)
           flexContainer.classList.remove("border-brown-red");
         }
+
         const allCheckboxes = document.querySelectorAll("[programDetailId]");
         allCheckboxes.forEach((checkbox) => {
           if (checkbox.getAttribute("programDetailId") == singleBundleData.upsellProgramId) {
@@ -1848,9 +1792,20 @@ function creEl(name, className, idName) {
             checkbox.closest(".bundle-sem-content-flex-container")?.classList.toggle("border-brown-red", event.target.checked);
           }
         });
+
+        
         // If this is a bundle (upsell), manage coreData in $selectedProgram
         $this.updateCoreData(type);
         $this.disableEnableBuyNowButton(false)
+        //console.log("Final pop selected program", this.$selectedProgram)
+        // Update the cart
+        $this.updateAmount(event.target.value);
+        let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+        paymentTab[0].click(); 
+        $this.hideShowNewStudentFee("none");
+        //window.scrollTo({ top: 0, behavior: "smooth" });
+        $this.updateCheckOutData({upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram});
+        $this.$oldSelectedProgram = $this.$selectedProgram;
       });
       if (input.checked) {
         flexContainer.classList.add("border-brown-red");
@@ -1912,5 +1867,66 @@ function creEl(name, className, idName) {
             }
       }
     }
+    // display Original Price 
+    updateOriginPrice(){
+      const container = document.querySelector('[data-upsell="original-tution-fee"]');
+      if (!container) return;
 
+      // Clear existing content
+      container.innerHTML = "";
+
+      // Always show core program first if selected
+      const selected = [...this.$selectedProgram];
+      const core = this.$coreData;
+      let programs = [];
+
+      if (core && selected.some(p => p.upsellProgramId === core.upsellProgramId)) {
+        programs.push(core);
+        programs = programs.concat(selected.filter(p => p.upsellProgramId !== core.upsellProgramId));
+      } else {
+        programs = selected;
+      }
+
+      let tuitionTotal = 0;
+
+      programs.forEach(program => {
+        const grid = creEl("div", "cart-grid-wrapper");
+        const label = creEl("p", "main-text order-details");
+        label.textContent = program.label || "Tuition";
+        const priceWrap = creEl("div", "w-embed");
+        const price = creEl("p", "main-text order-details-price");
+        price.textContent = "$" + this.numberWithCommas(Number(program.disc_amount).toFixed(2));
+        priceWrap.appendChild(price);
+        grid.appendChild(label);
+        grid.appendChild(priceWrap);
+        container.appendChild(grid);
+        tuitionTotal += Number(program.disc_amount) || 0;
+      });
+
+      // Tuition Total
+      const totalGrid = creEl("div", "cart-grid-wrapper");
+      const totalLabel = creEl("p", "main-text order-details");
+      totalLabel.textContent = "Tuition Total";
+      const totalWrap = creEl("div", "w-embed");
+      const totalPrice = creEl("p", "main-text order-details-price");
+      totalPrice.textContent = "$" + this.numberWithCommas(tuitionTotal.toFixed(2));
+      totalWrap.appendChild(totalPrice);
+      totalGrid.appendChild(totalLabel);
+      totalGrid.appendChild(totalWrap);
+      container.appendChild(totalGrid);
+
+      // New Student Fee (if not previous student)
+      if (!this.$isPrevStudent) {
+        const feeGrid = creEl("div", "cart-grid-wrapper");
+        const feeLabel = creEl("p", "main-text order-details");
+        feeLabel.textContent = "New Student Fee";
+        const feeWrap = creEl("div", "w-embed");
+        const feePrice = creEl("p", "main-text order-details-price");
+        feePrice.textContent = "$100";
+        feeWrap.appendChild(feePrice);
+        feeGrid.appendChild(feeLabel);
+        feeGrid.appendChild(feeWrap);
+        container.appendChild(feeGrid);
+      }
+    }
   }
