@@ -722,6 +722,7 @@ function creEl(name, className, idName) {
         location: selectBox.value,
         //added id for up-sell program
         upsellProgramIds: upsellProgramIds,
+        amount: this.amount * 100,
         has_fee: has_fee,
         successUrl: encodeURI(
           "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
