@@ -747,6 +747,7 @@ function creEl(name, className, idName) {
           id => id !== this.$coreData.upsellProgramId
         );
       }
+      upsellProgramIds = [...new Set(upsellProgramIds)];
       //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
       var cancelUrl = new URL(window.location.href);
       //console.log(window.location.href)
