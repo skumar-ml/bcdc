@@ -741,7 +741,12 @@ function creEl(name, className, idName) {
         JSON.parse(suppProIdE.value).length > 0
           ? JSON.parse(suppProIdE.value).map(Number)
           : [];
-  
+      // Remove core program id from upsellProgramIds if present
+      if (this.$coreData && this.$coreData.upsellProgramId) {
+        upsellProgramIds = upsellProgramIds.filter(
+          id => id !== this.$coreData.upsellProgramId
+        );
+      }
       //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
       var cancelUrl = new URL(window.location.href);
       //console.log(window.location.href)
@@ -943,7 +948,7 @@ function creEl(name, className, idName) {
         //"cancelUrl": cancelUrl.href,
         //"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
         memberId: this.webflowMemberId,
-        amount: this.amount * 100,
+        amount: this.amount * 100 + this.$coreData.amount*100,
         utm_source: (localUtmSource != null) ? localUtmSource : "null",
         createdOn: new Date().toISOString(),
         isPreviousStudent: this.$isPrevStudent
