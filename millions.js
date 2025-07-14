@@ -148,7 +148,7 @@ class MillionsRenderer {
                                 <div class="million-price-text">${student.earnAmount} <span class="million-text-gray">millions</span></div>
                             </div>
                         </div>
-                        <a href="#" data-upsell="buy-now" add-to-cart="normal" class="main-button white-bold-rounded w-button">View Store</a>
+                        <a href="https://www.bergendebate.com/reward-store" data-upsell="buy-now" add-to-cart="normal" class="main-button white-bold-rounded w-button">View Store</a>
                     `;
       tabPane.appendChild(balanceBanner);
 
