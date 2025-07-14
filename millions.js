@@ -11,6 +11,7 @@ class MillionsRenderer {
         `${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`
       );
       if (!response.ok) throw new Error("Network response was not ok");
+
       const apiData = await response.json();
       return apiData;
     } catch (error) {
@@ -24,13 +25,30 @@ class MillionsRenderer {
     return d.toLocaleDateString("en-US", options);
   }
 
-  renderTab(tabIndex, student) {
+  updateSideBarAmount(earnAmount) {
+    const sidebarCountDiv = document.querySelectorAll(
+      '[data-millions="sidebarCount"]'
+    );
+    sidebarCountDiv.forEach((div) => {
+      div.parentElement.classList.remove("hide");
+      div.textContent = earnAmount + "M";
+    });
+  }
+
+  renderTab(tabIndex, student, link = "") {
     // Current Balance
     const balanceDiv = document.querySelectorAll(".million-price-text")[
       tabIndex
     ];
     if (balanceDiv) {
       balanceDiv.innerHTML = `${student.earnAmount} <span class="million-text-gray">millions</span>`;
+    }
+    if (link) {
+      link.setAttribute("data-millions-amount", student.earnAmount);
+      this.updateSideBarAmount(student.earnAmount);
+    }
+    if (tabIndex == 0) {
+      this.updateSideBarAmount(student.earnAmount);
     }
 
     // Transactions
@@ -173,7 +191,7 @@ class MillionsRenderer {
           pane.style.opacity = i === idx ? "1" : "";
           pane.style.transition = i === idx ? "all, opacity 300ms" : "";
         });
-        this.renderTab(idx, students[idx]);
+        this.renderTab(idx, students[idx], link);
       });
     });
   }
@@ -184,6 +202,12 @@ class MillionsRenderer {
     if (portalTab) portalTab.style.display = "none";
     const apiData = await this.fetchData();
     if (!apiData || !apiData.millions_transactions) return;
+    if (apiData.millions_transactions.length == 0) {
+      const noRecordDiv = document.querySelector(
+        '[data-millions="no-record-div"]'
+      );
+      if (noRecordDiv) noRecordDiv.style.display = "block";
+    }
     if (portalTab) portalTab.style.display = "block";
     this.spinner.style.display = "none";
     this.renderTabMenu(apiData.millions_transactions);
