@@ -27,7 +27,7 @@ class MillionsRenderer {
                 const sidebarCountDiv = document.querySelectorAll('[data-millions="sidebarCount"]');
                 sidebarCountDiv.forEach(div => {
                     div.parentElement.classList.remove('hide');
-                    div.textContent = earnAmount + 'M';
+                    div.textContent = this.numberWithCommas(earnAmount) + 'M';
                 });
             }
 
@@ -35,14 +35,14 @@ class MillionsRenderer {
                 // Current Balance
                 const balanceDiv = document.querySelectorAll('.million-price-text')[tabIndex];
                 if (balanceDiv) {
-                    balanceDiv.innerHTML = `${student.earnAmount} <span class="million-text-gray">millions</span>`;
+                    balanceDiv.innerHTML = `${this.numberWithCommas(student.earnAmount)} <span class="million-text-gray">millions</span>`;
                 }
                 if(link){
                     link.setAttribute("data-millions-amount", student.earnAmount);
-                    this.updateSideBarAmount(student.earnAmount)
+                    this.updateSideBarAmount(this.numberWithCommas(student.earnAmount))
                 }
                 if (tabIndex == 0) {
-                    this.updateSideBarAmount(student.earnAmount)
+                    this.updateSideBarAmount(this.numberWithCommas(student.earnAmount))
                 }
 
                 // Transactions
@@ -51,7 +51,7 @@ class MillionsRenderer {
                 const transactionsDiv = tabPane.querySelector('.transactions-table-div > div:last-child');
                 if (!transactionsDiv) return;
                 transactionsDiv.innerHTML = '';
-                
+                student.transactions.sort((a, b) => new Date(b.lastEarnDate) - new Date(a.lastEarnDate));
                 student.transactions.forEach(tx => {
                     const row = document.createElement('div');
                     row.className = 'transactions-table-row-grid-wrapper';
@@ -83,7 +83,7 @@ class MillionsRenderer {
                     // Amount
                     const amtDiv = document.createElement('div');
                     amtDiv.className = 'transactions-table-row-text ' + (tx.amount >= 0 ? 'green-semi-bold' : 'red-semi-bold');
-                    amtDiv.textContent = (tx.amount >= 0 ? '+' : '-') + Math.abs(tx.amount);
+                    amtDiv.textContent = (tx.amount >= 0 ? '+' : '-') + this.numberWithCommas(Math.abs(tx.amount));
                     row.appendChild(amtDiv);
 
                     transactionsDiv.appendChild(row);
@@ -133,7 +133,7 @@ class MillionsRenderer {
                         <div>
                             <p class="portal-node-title">Current Balance</p>
                             <div class="portal-flex-wrapper">
-                                <div class="million-price-text">${student.earnAmount} <span class="million-text-gray">millions</span></div>
+                                <div class="million-price-text">${this.numberWithCommas(student.earnAmount)} <span class="million-text-gray">millions</span></div>
                             </div>
                         </div>
                         <a href="https://www.bergendebate.com/reward-store" data-upsell="buy-now" add-to-cart="normal" class="main-button white-bold-rounded w-button">View Store</a>
@@ -200,6 +200,9 @@ class MillionsRenderer {
                 this.renderTabContent(apiData.millions_transactions);
                 apiData.millions_transactions.forEach((student, idx) => this.renderTab(idx, student));
                 this.setupTabSwitching(apiData.millions_transactions);
+            }
+            numberWithCommas(x) {
+                return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
         }
         
