@@ -1,4 +1,4 @@
-class AnnouncementUI {
+ class AnnouncementUI {
         $announcements = [];
         $selectedOid = null;
         $searchTerm = '';
@@ -7,6 +7,7 @@ class AnnouncementUI {
         $readUnreadFilter = 'all status';
         constructor(data) {
             this.data = data;
+            this.spinner = document.getElementById("half-circle-spinner");
             this.listDiv = document.querySelector('[data-announcements="list"]');
             this.detailsDiv = document.querySelector('[data-announcements="details"]');
             this.searchInput = document.getElementById('search');
@@ -52,7 +53,14 @@ class AnnouncementUI {
             }
         }
         async render() {
+            this.spinner.style.display = "block";
+            // hide before API call data-announcements="list" and data-announcements="details"
+            const announcementsList = document.querySelector('[data-announcements="list"]');
+            const announcementsDetails = document.querySelector('[data-announcements="details"]');
+            announcementsList.style.display = "none";
+            announcementsDetails.style.display = "none";
             const apiData = await this.fetchData();
+            this.spinner.style.display = "none";
             this.$announcements = apiData.announcement;
             this.$selectedOid = this.$announcements.length > 0 ? this.$announcements[0].oid : null;
             // Populate student and tags select boxes
@@ -82,6 +90,8 @@ class AnnouncementUI {
             console.log(this.$announcements);
             this.renderAnnouncements();
             this.renderDetails();
+            announcementsList.style.display = "block";
+            announcementsDetails.style.display = "block";
         }
 
         renderAnnouncements() {
