@@ -73,7 +73,7 @@
                     }
                 });
                 this.studentSelect.innerHTML = '<option value="All Students">All Students</option>' +
-                    Array.from(studentMap.entries()).map(([email, name]) => `<option value="${email}">${name} (${email})</option>`).join('');
+                    Array.from(studentMap.entries()).map(([email, name]) => `<option value="${email}">${name}</option>`).join('');
             }
             if (this.tagsSelect) {
                 // Get unique tags
