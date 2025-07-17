@@ -143,7 +143,7 @@
                         </p>
                     </div>
                     <div class="announcement-feed-flex-wrapper margin-0">
-                        <p class="poppins-para announcement-text">${a.name ? a.name + ' (' + a.emailId + ')' : a.emailId}</p>
+                        <p class="poppins-para announcement-text">${a.emailId}</p>
                     </div>
                 </div>
             </div>
