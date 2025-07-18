@@ -51,7 +51,7 @@ class AnnouncementUI {
             }
             showDetailsAndHideList() {
                 if (this.listDiv) this.listDiv.style.display = "none";
-                if (this.detailsDiv) this.detailsDiv.style.display = "block";
+                if (this.detailsDiv) this.detailsDiv.style.display = "flex";
             }
             handleMobileView() {
                 if (AnnouncementUI.isMobile()) {
@@ -61,7 +61,7 @@ class AnnouncementUI {
                     this.renderDetails();
                 } else {
                     if (this.listDiv) this.listDiv.style.display = "block";
-                    if (this.detailsDiv) this.detailsDiv.style.display = "block";
+                    if (this.detailsDiv) this.detailsDiv.style.display = "flex";
                 }
             }
             setupMobileHandlers() {
@@ -120,7 +120,7 @@ class AnnouncementUI {
                     this.showListAndHideDetails();
                 } else {
                     announcementsList.style.display = "block";
-                    announcementsDetails.style.display = "block";
+                    announcementsDetails.style.display = "flex";
                 }
             }
 
@@ -306,4 +306,3 @@ class AnnouncementUI {
                 return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
             }
         }
-        
