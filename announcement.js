@@ -1,6 +1,6 @@
 class AnnouncementUI {
             static isMobile() {
-                return window.innerWidth <= 768;
+                return window.innerWidth <= 766;
             }
             $announcements = [];
             $selectedOid = null;
