@@ -188,7 +188,10 @@
             }
             this.detailsDiv.innerHTML = `
             <div class="announcement-feed-flex-wrapper assignment">
-                <p class="portal-node-title announcement">${a.title}</p>
+                <div class="announcement-feed-flex-wrapper no-margin-top">
+                        <img sec="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/687725db35ce7096b740e632_chevron_forward%20(1).svg" alt="announcement-feed-icon" class="announcement-feed-icon" />
+                        <p class="portal-node-title announcement">${a.title}</p>
+                    </div>
                 <div class="announcement-feed-flex-wrapper tags">
                     ${a.tagNames.map(tag => `
                         <div class="announcement-feed-tags">
