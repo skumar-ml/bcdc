@@ -1,6 +1,7 @@
 class CreditBalance {
   $creditData = {};
   constructor(data) {
+    this.spinner = document.getElementById("half-circle-spinner");
     this.data = data;
     this.balance = 1250.0; // Initial balance
     this.transactions = [];
@@ -21,7 +22,16 @@ class CreditBalance {
     }
   }
   async init() {
+    // [data-credit="balance"] and [data-credit="table"]' hide and show
+    const balanceElement = document.querySelector('[data-credit="balance"]');
+    const tableElement = document.querySelector('[data-credit="table"]');
+    if (balanceElement) balanceElement.style.display = "none";
+    if (tableElement) tableElement.style.display = "none";
+    this.spinner.style.display = "block";
     const apiData = await this.fetchCreditData();
+    this.spinner.style.display = "none";
+    if (balanceElement) balanceElement.style.display = "block";
+    if (tableElement) tableElement.style.display = "grid";
     this.$creditData = apiData.creditBalance;
     if (apiData) {
       this.balance = this.$creditData.creditBalance;
