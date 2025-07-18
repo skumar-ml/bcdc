@@ -153,14 +153,23 @@ class AnnouncementUI {
                     this.listDiv.innerHTML = '<div data-millions="no-record-div" class="no-record-div test"><p class="dm-sans no-record">No Record Found</p></div>';
                     return;
                 }
-                this.listDiv.innerHTML = filtered.map(a => `
+                this.listDiv.innerHTML = filtered.map(a => {
+                    // Remove HTML tags from message
+                    const plainMessage = a.message ? a.message.replace(/<[^>]*>/g, '') : '';
+                    // Truncate to 2 lines (approximate by character count, e.g., 160 chars)
+                    let shortMessage = plainMessage;
+                    const maxLen = 160;
+                    if (plainMessage.length > maxLen) {
+                        shortMessage = plainMessage.slice(0, maxLen).trim() + '...';
+                    }
+                    return `
             <div class="announcement-feed-info ${a.is_read === false ? ' white-bluish-bg' : ''} ${this.$selectedOid === a.oid ? ' pink-bg' : ''} " data-oid="${a.oid}" style="cursor:pointer;">  
                 <div class="announcement-feed-flex-wrapper no-margin-top">
                     <div class="announcement-feed-rounded-circle${a.is_read ? ' gray' : ''}"></div>
                     <p class="announcement-feed-title">${a.title}</p>
                     <p class="dm-sans announcement-feed-date">${this.formatDate(a.created_on)}</p>
                 </div>
-                <p class="dm-sans announcement-feed">${a.message}</p>
+                <p class="dm-sans announcement-feed">${shortMessage}</p>
                 <div>
                     <div class="announcement-feed-flex-wrapper">
                         ${a.tagNames.map(tag => `
@@ -177,7 +186,8 @@ class AnnouncementUI {
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
+                }).join('');
 
                 // Add click event for selecting announcement (details)
                 this.listDiv.querySelectorAll('.announcement-feed-info').forEach(div => {
@@ -306,3 +316,4 @@ class AnnouncementUI {
                 return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
             }
         }
+        
