@@ -226,7 +226,7 @@ class AnnouncementUI {
             renderDetails() {
                 const a = this.$announcements.find(x => x.oid === this.$selectedOid);
                 if (!a) {
-                    this.detailsDiv.innerHTML = '<div class="announcement-feed-assignment-info">Select an announcement to see details.</div>';
+                    this.detailsDiv.innerHTML = '<div class="announcement-feed-assignment-info"><p class="select-announcement-text">Select an announcement to see details.</p></div>';
                     if (AnnouncementUI.isMobile()) {
                         this.showListAndHideDetails();
                     }
