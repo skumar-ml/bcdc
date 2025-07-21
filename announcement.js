@@ -13,6 +13,7 @@ class AnnouncementUI {
                 this.spinner = document.getElementById("half-circle-spinner");
                 this.listDiv = document.querySelector('[data-announcements="list"]');
                 this.detailsDiv = document.querySelector('[data-announcements="details"]');
+                this.countsDiv = document.querySelector('[data-announcements="counts"]');
                 this.searchInput = document.getElementById('search');
                 this.studentSelect = document.getElementById('student');
                 this.tagsSelect = document.getElementById('tags');
@@ -125,6 +126,7 @@ class AnnouncementUI {
             }
 
             renderAnnouncements() {
+                this.updateUnreadCount();
                 // Filter announcements by search term, student, tags, and read/unread
                 let filtered = this.$announcements;
                 if (this.$searchTerm && this.$searchTerm.trim() !== '') {
@@ -267,6 +269,16 @@ class AnnouncementUI {
                             this.showListAndHideDetails();
                         });
                     }
+                }
+            }
+
+            updateUnreadCount() {
+                if (!this.countsDiv) return;
+                const unreadCount = this.$announcements.filter(a => !a.is_read).length;
+                if (unreadCount > 0) {
+                    this.countsDiv.textContent = `(${unreadCount})`;
+                } else {
+                    this.countsDiv.textContent = '';
                 }
             }
 
