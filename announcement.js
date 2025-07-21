@@ -277,7 +277,7 @@ class AnnouncementUI {
                 const unreadCount = this.$announcements.filter(a => !a.is_read).length;
                 this.countsDivs.forEach(el => {
                     if (unreadCount > 0) {
-                        el.textContent = `(${unreadCount})`;
+                        el.textContent = `${unreadCount}`;
                     } else {
                         el.textContent = '';
                     }
