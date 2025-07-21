@@ -83,7 +83,7 @@ class CreditBalance {
                           transaction.description
                         }</div>
                         <div class="transactions-table-row-text ${
-                          transaction.type === "credit" ? "green-semi-bold" : ""
+                          transaction.type === "credit" ? "green-semi-bold" : "red-semi-bold"
                         }">${
         transaction.type === "credit"
           ? `+${transaction.amount}`
