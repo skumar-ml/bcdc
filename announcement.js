@@ -13,7 +13,7 @@ class AnnouncementUI {
                 this.spinner = document.getElementById("half-circle-spinner");
                 this.listDiv = document.querySelector('[data-announcements="list"]');
                 this.detailsDiv = document.querySelector('[data-announcements="details"]');
-                this.countsDiv = document.querySelector('[data-announcements="counts"]');
+                this.countsDivs = document.querySelectorAll('[data-announcements="counts"]');
                 this.searchInput = document.getElementById('search');
                 this.studentSelect = document.getElementById('student');
                 this.tagsSelect = document.getElementById('tags');
@@ -273,13 +273,15 @@ class AnnouncementUI {
             }
 
             updateUnreadCount() {
-                if (!this.countsDiv) return;
+                if (!this.countsDivs || this.countsDivs.length === 0) return;
                 const unreadCount = this.$announcements.filter(a => !a.is_read).length;
-                if (unreadCount > 0) {
-                    this.countsDiv.textContent = `(${unreadCount})`;
-                } else {
-                    this.countsDiv.textContent = '';
-                }
+                this.countsDivs.forEach(el => {
+                    if (unreadCount > 0) {
+                        el.textContent = `(${unreadCount})`;
+                    } else {
+                        el.textContent = '';
+                    }
+                });
             }
 
             async markAsRead(oid, isRead) {
