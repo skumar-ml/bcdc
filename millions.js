@@ -57,10 +57,10 @@ class MillionsRenderer {
                     row.className = 'transactions-table-row-grid-wrapper';
 
                     // Name
-                    const nameDiv = document.createElement('div');
-                    nameDiv.className = 'transactions-table-row-text';
-                    nameDiv.textContent = student.studentName;
-                    row.appendChild(nameDiv);
+                    // const nameDiv = document.createElement('div');
+                    // nameDiv.className = 'transactions-table-row-text';
+                    // nameDiv.textContent = student.studentName;
+                    // row.appendChild(nameDiv);
 
                     // Date
                     const dateDiv = document.createElement('div');
