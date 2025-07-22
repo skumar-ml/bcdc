@@ -279,7 +279,7 @@ class AnnouncementUI {
                     if (unreadCount > 0) {
                         el.textContent = `${unreadCount}`;
                     } else {
-                        el.textContent = '';
+                        el.textContent = '0';
                     }
                 });
             }
