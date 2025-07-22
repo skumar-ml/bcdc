@@ -12,7 +12,9 @@ class AnnouncementUI {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
                 this.listDiv = document.querySelector('[data-announcements="list"]');
-                this.detailsDiv = document.querySelector('[data-announcements="details"]');
+                this.listDiv.innerHTML = "";
+                this.detailsDiv = document.querySelector('[data-announcements="details"]');\
+                this.detailsDiv.innerHTML = "";
                 this.countsDivs = document.querySelectorAll('[data-announcements="counts"]');
                 this.searchInput = document.getElementById('search');
                 this.studentSelect = document.getElementById('student');
