@@ -147,7 +147,6 @@ class MillionsRenderer {
                         <p class="portal-node-title transactions">Transactions</p>
                         <div class="transactions-table-div">
                             <div class="transactions-header-grid-wrapper">
-                                <div class="transaction-header-text">Name</div>
                                 <div class="transaction-header-text">Date</div>
                                 <div class="transaction-header-text">Description</div>
                                 <div class="transaction-header-text">Amount</div>
