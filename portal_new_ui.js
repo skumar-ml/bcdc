@@ -51,10 +51,10 @@ class Portal {
             }
 
             hideRegistrationFormAccordion() {
-                const tabPane = document.querySelector('.portal-tab-pane');
-                tabPane.querySelectorAll('.registration-form-accordian').forEach(el => {
-                    if (el) el.style.display = 'none';
-                });
+                // const tabPane = document.querySelector('.portal-tab-pane');
+                // tabPane.querySelectorAll('.registration-form-accordian').forEach(el => {
+                //     if (el) el.style.display = 'none';
+                // });
             }
             setupTabs(data, millionsData, announcements) {
                 // 1. Get references to tab menu and tab panes
@@ -262,8 +262,11 @@ class Portal {
                     }
                     if (itemsPendingWrapper) {
                         if (hasPendingForm || hasPendingInvoice) {
-                            itemsPendingWrapper.style.display = '';
+                            console.log('hasPendingForm', hasPendingForm);
+                            console.log('hasPendingInvoice', hasPendingInvoice);
+                            itemsPendingWrapper.style.display = 'block';
                         } else {
+                            console.log('no pending');
                             itemsPendingWrapper.style.display = 'none';
                         }
                     }
@@ -919,7 +922,7 @@ class Portal {
                                 regFormBody.appendChild(noFormDiv);
                             } else {
                                 if (progressDiv) progressDiv.style.display = '';
-                                requiredFormsDiv.style.display = '';
+                                requiredFormsDiv.style.display = 'block';
                                 if (needsToBeCompleted) needsToBeCompleted.style.display = '';
                                 const header = document.createElement('div');
                                 header.className = 'required-forms-flex-wrapper';
