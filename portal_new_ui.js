@@ -44,7 +44,9 @@ class Portal {
                 this.initializeInvoiceAccordion();
                 this.hideRegistrationFormAccordion();
                 paidResource.style.display = "block";
-                this.spinner.style.display = "none";
+                setTimeout(() => {
+                    this.spinner.style.display = "none";
+                }, 500);
             }
 
             hideRegistrationFormAccordion() {
@@ -236,6 +238,33 @@ class Portal {
                             classInfoEl.textContent = '';
                         }
                     }
+                    // Show/hide Items Pending section based on registration form or invoice status
+                    const itemsPendingWrapper = currentClassDiv.querySelector('.items-pending-flex-wrapper');
+                    let hasPendingForm = false;
+                    let hasPendingInvoice = false;
+                    // Check registration forms
+                    if (student.formList && Array.isArray(student.formList) && student.formList.length > 0) {
+                        let forms = [];
+                        student.formList.forEach(formGroup => {
+                            if (formGroup.forms && formGroup.forms.length > 0) {
+                                forms = forms.concat(formGroup.forms);
+                            }
+                        });
+                        if (forms.length > 0 && Array.isArray(student.formCompletedList)) {
+                            hasPendingForm = forms.some(f => !student.formCompletedList.some(c => c.formId == f.formId));
+                        }
+                    }
+                    // Check invoices
+                    if (student.invoiceList && Array.isArray(student.invoiceList) && student.invoiceList.length > 0) {
+                        hasPendingInvoice = student.invoiceList.some(inv => !inv.is_completed);
+                    }
+                    if (itemsPendingWrapper) {
+                        if (hasPendingForm || hasPendingInvoice) {
+                            itemsPendingWrapper.style.display = '';
+                        } else {
+                            itemsPendingWrapper.style.display = 'none';
+                        }
+                    }
                 }
                 // Update millions count for this student
                 let millionsCount = 0;
@@ -282,7 +311,7 @@ class Portal {
                         calendarLink = googleCalendar.upload_content[0].link;
                     }
                     if (calendarLink) {
-                        calendarDiv.innerHTML = '<p class="portal-node-title">Calendar Graph</p>';
+                        calendarDiv.innerHTML = '';
                         const iframe = document.createElement('iframe');
                         iframe.src = calendarLink;
                         iframe.width = '100%';
@@ -405,6 +434,7 @@ class Portal {
                         zoomLinks.upload_content.forEach(item => {
                             const wrapper = document.createElement('div');
                             wrapper.className = 'zoom-links-info-div';
+                            const titleDescWrapper = document.createElement('div');
                             // Title row with copy icon
                             const titleDiv = document.createElement('div');
                             titleDiv.className = 'dm-sans title';
@@ -454,7 +484,7 @@ class Portal {
                                     setTimeout(hideTooltip, 1200);
                                 });
                             });
-                            titleDiv.appendChild(img);
+                            //titleDiv.appendChild(img);
                             // Subtitle
                             const subtitleDiv = document.createElement('div');
                             subtitleDiv.className = 'poppins-para class-tools-quick-links';
@@ -462,8 +492,10 @@ class Portal {
                             subtitleSpan.textContent = item.resourceDesc || '';
                             subtitleDiv.appendChild(subtitleSpan);
                             // Compose
-                            wrapper.appendChild(titleDiv);
-                            wrapper.appendChild(subtitleDiv);
+                            titleDescWrapper.appendChild(titleDiv);
+                            titleDescWrapper.appendChild(subtitleDiv);
+                            wrapper.appendChild(titleDescWrapper);
+                            wrapper.appendChild(img);
                             zoomDiv.appendChild(wrapper);
                         });
                     } else {
