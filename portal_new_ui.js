@@ -658,7 +658,7 @@ class Portal {
                 const homeworkImg = homeworkDiv ? homeworkDiv.querySelector('[data-portal="homework-link-image"]') : null;
                 if (homeworkDiv) {
                     if (student.studentDetail.home_work_link) {
-                        homeworkDiv.style.display = 'block  ';
+                        homeworkDiv.style.display = 'flex';
                         if (homeworkImg && !homeworkImg._copyHandlerAttached) {
                             // ... existing copy/tooltip logic ...
                             let tooltip;
