@@ -1,4 +1,4 @@
-class Portal {
+ class Portal {
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -133,8 +133,8 @@ class Portal {
                         tabLink.querySelector('.portal-tab-text-semibold').textContent = studentName;
                     }
                     // Render content inside tab based on available data
+                    this.renderStudentTab(tabPane, studentData, millionsData, announcements);
                     if (currentSession) {
-                        this.renderStudentTab(tabPane, currentSession, millionsData, announcements);
                         // Show all main sections
                         tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .class-tools-quick-links-div, .millions-balance-flex-wrapper').forEach(el => {
                             if (el) el.style.display = '';
@@ -174,466 +174,404 @@ class Portal {
                 });
             }
 
-            renderStudentTab(tabPane, student, millionsData, announcements) {
-                // Update Current Class details dynamically
+            // Main Function
+            renderStudentTab(tabPane, studentData, millionsData, announcements) {
+                const student = studentData.currentSession[0];
+                if(student){
+                    this.renderCurrentClassSection(tabPane, student);
+                    this.renderPendingItems(tabPane, student);
+                    this.renderMillions(tabPane, student, millionsData);
+                    this.renderUploadedContent(tabPane, student);
+                }
+                this.renderRecentAnnouncements(tabPane, announcements);
+                this.renderFutureClasses(tabPane, studentData);
+                this.renderPastClasses(tabPane, studentData);
+            }
+            renderRecentAnnouncements(tabPane, announcements) {
+                const announcementDiv = tabPane.querySelector('.recent-announcement-info-div');
+                if (!announcementDiv || !Array.isArray(announcements.announcement)) return;
+
+                const countDiv = tabPane.querySelector('.recent-announcement-number');
+                if (countDiv) countDiv.textContent = announcements.announcement.length;
+
+                const recent = announcements.announcement.slice(0, 2);
+                announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
+
+                recent.forEach(ann => {
+                    const container = document.createElement('div');
+                    container.className = 'recent-announcement-info-inner-div';
+
+                    const flex = document.createElement('div');
+                    flex.className = 'recent-announcement-info-flex';
+
+                    const title = document.createElement('p');
+                    title.className = 'dm-sans recent-announcement-sub-title';
+                    const titleText = ann.title || ann.subject || 'Announcement';
+                    const type = ann.type || '';
+                    title.textContent = type ? `${titleText}: ${type}` : titleText;
+
+                    const date = document.createElement('p');
+                    date.className = 'dm-sans medium';
+                    date.textContent = ann.date || ann.createdAt || '';
+
+                    flex.appendChild(title);
+                    flex.appendChild(date);
+
+                    const message = document.createElement('p');
+                    message.className = 'dm-sans recent-announcement-info';
+                    const plainText = ann.message ? ann.message.replace(/<[^>]*>/g, '') : '';
+                    message.textContent = plainText;
+                    message.style.display = '-webkit-box';
+                    message.style.webkitBoxOrient = 'vertical';
+                    message.style.webkitLineClamp = '2';
+                    message.style.overflow = 'hidden';
+                    message.style.textOverflow = 'ellipsis';
+
+                    container.appendChild(flex);
+                    container.appendChild(message);
+                    announcementDiv.appendChild(container);
+                });
+            }
+            renderFutureClasses(tabPane, studentData) {
+                const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
+                if (!futureClassesDiv) return;
+
+                const futureList = Array.isArray(studentData.futureSession) ? studentData.futureSession : [];
+                const container = futureClassesDiv.querySelector('[data-portal="future-classe-list"]');
+                if (container) container.innerHTML = '';
+
+                if (futureList.length > 0) {
+                    futureClassesDiv.style.display = '';
+                    futureList.forEach(session => {
+                        let text = session.sessionName || session.classDetail?.sessionName || session.summerProgramDetail?.programName || 'No details available';
+                        const div = document.createElement('div');
+                        div.className = 'announcement-flex-wrapper';
+                        div.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg" alt="" />\n<p class="poppins-para no-margin-bottom">${text}</p>`;
+                        container?.appendChild(div);
+                    });
+                } else {
+                    futureClassesDiv.style.display = 'none';
+                    container.innerHTML = '<div>No future classes available</div>';
+                }
+            }
+
+            renderPastClasses(tabPane, studentData) {
+                const pastClassesDiv = tabPane.querySelectorAll('.sem-classes-info-div')[1];
+                if (!pastClassesDiv) return;
+
+                const pastList = Array.isArray(studentData.pastSession) ? studentData.pastSession : [];
+                const container = pastClassesDiv.querySelector('[data-portal="past-classe-list"]');
+                if (container) container.innerHTML = '';
+
+                if (pastList.length > 0) {
+                    pastClassesDiv.style.display = '';
+                    pastList.forEach(session => {
+                        let text = 'No details available';
+                        if (session.classDetail && Object.keys(session.classDetail).length > 0) {
+                            const { sessionName = '', currentYear = '', classLevel = '', location = '' } = session.classDetail;
+                            text = `${sessionName} ${currentYear} | ${classLevel} | ${location}`.replace(/\s+\|/g, '').trim();
+                        } else if (session.summerProgramDetail && Object.keys(session.summerProgramDetail).length > 0) {
+                            const { programName = 'Summer Program', currentYear = '', location = '' } = session.summerProgramDetail;
+                            text = `Summer ${currentYear ? ' | ' + currentYear : ''} ${programName} ${location ? ' | ' + location : ''}`;
+                        }
+                        const div = document.createElement('div');
+                        div.className = 'announcement-flex-wrapper';
+                        div.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6875275c255155b046e482da_history.svg" alt="" />\n<p class="poppins-para no-margin-bottom">${text}</p>`;
+                        container?.appendChild(div);
+                    });
+                } else {
+                    pastClassesDiv.style.display = 'none';
+                    container.innerHTML = '<div>No past classes available</div>';
+                }
+            }
+
+            renderCurrentClassSection(tabPane, student) {
                 const currentClassDiv = tabPane.querySelector('.recent-announcement-div.current-class');
-                if (currentClassDiv) {
-                    let hasClassDetail = student.classDetail && Object.keys(student.classDetail).length > 0;
-                    if (hasClassDetail) {
-                        // Build class info string
-                        const classLevel = student.classDetail.classLevel || '';
-                        const day = student.classDetail.day || '';
-                        const startTime = student.classDetail.startTime || '';
-                        const location = student.classDetail.location || '';
-                        const sessionName = student.classDetail.sessionName || '';
-                        const currentYear = student.classDetail.currentYear || '';
-                        // Update title
-                        const titleEl = currentClassDiv.querySelector('.recent-announcement-title');
-                        if (titleEl) {
-                            titleEl.innerHTML = `Current Class <span class=\"dm-sans regular\">(${sessionName} ${currentYear})</span>`;
-                        }
-                        // Update class info
-                        const classInfoEl = currentClassDiv.querySelector('.poppins-para.current-class');
-                        if (classInfoEl) {
-                            classInfoEl.textContent = `${classLevel} | ${day} ${startTime} | ${location}`;
-                        }
-                    } else if (student.summerProgramDetail && Object.keys(student.summerProgramDetail).length > 0) {
-                        // Show summer program data if classDetail is empty
-                        const summer = student.summerProgramDetail;
-                        const programName = summer.programName || 'Summer Program';
-                        let location = summer.location || '';
-                        let year = summer.year || '';
-                        // Try to infer year if missing
-                        if (!year) {
-                            if (student.classDetail && student.classDetail.currentYear) {
-                                year = student.classDetail.currentYear + ' Summer';
-                            } else {
-                                // fallback to current year
-                                const d = new Date();
-                                year = d.getFullYear() + ' Summer';
-                            }
-                        }
-                        const titleEl = currentClassDiv.querySelector('.recent-announcement-title');
-                        let paren = '';
-                        if (location && year) {
-                            paren = `(${location}, ${year})`;
-                        } else if (location) {
-                            paren = `(${location})`;
-                        } else if (year) {
-                            paren = `(${year})`;
-                        }
-                        if (titleEl) {
-                            titleEl.innerHTML = `Current Program <span class=\"dm-sans regular\">${paren}</span>`;
-                        }
-                        const classInfoEl = currentClassDiv.querySelector('.poppins-para.current-class');
-                        if (classInfoEl) {
-                            classInfoEl.textContent = programName;
-                        }
-                    } else {
-                        // Fallback if neither classDetail nor summerProgramDetail
-                        const titleEl = currentClassDiv.querySelector('.recent-announcement-title');
-                        if (titleEl) {
-                            titleEl.innerHTML = `Current Class <span class=\"dm-sans regular\">(No class or summer program data available)</span>`;
-                        }
-                        const classInfoEl = currentClassDiv.querySelector('.poppins-para.current-class');
-                        if (classInfoEl) {
-                            classInfoEl.textContent = '';
-                        }
-                    }
-                    // Show/hide Items Pending section based on registration form or invoice status
-                    const itemsPendingWrapper = currentClassDiv.querySelector('.items-pending-flex-wrapper');
-                    let hasPendingForm = false;
-                    let hasPendingInvoice = false;
-                    // Check registration forms
-                    if (student.formList && Array.isArray(student.formList) && student.formList.length > 0) {
-                        let forms = [];
-                        student.formList.forEach(formGroup => {
-                            if (formGroup.forms && formGroup.forms.length > 0) {
-                                forms = forms.concat(formGroup.forms);
-                            }
-                        });
-                        if (forms.length > 0 && Array.isArray(student.formCompletedList)) {
-                            hasPendingForm = forms.some(f => !student.formCompletedList.some(c => c.formId == f.formId));
-                        }
-                    }
-                    // Check invoices
-                    if (student.invoiceList && Array.isArray(student.invoiceList) && student.invoiceList.length > 0) {
-                        hasPendingInvoice = student.invoiceList.some(inv => !inv.is_completed);
-                    }
-                    if (itemsPendingWrapper) {
-                        if (hasPendingForm || hasPendingInvoice) {
-                            console.log('hasPendingForm', hasPendingForm);
-                            console.log('hasPendingInvoice', hasPendingInvoice);
-                            itemsPendingWrapper.style.display = 'block';
-                        } else {
-                            console.log('no pending');
-                            itemsPendingWrapper.style.display = 'none';
-                        }
-                    }
+                if (!currentClassDiv) return;
+
+                const hasClassDetail = student.classDetail && Object.keys(student.classDetail).length > 0;
+                const hasSummerProgram = student.summerProgramDetail && Object.keys(student.summerProgramDetail).length > 0;
+
+                const titleEl = currentClassDiv.querySelector('.recent-announcement-title');
+                const classInfoEl = currentClassDiv.querySelector('.poppins-para.current-class');
+
+                if (hasClassDetail) {
+                    const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = student.classDetail;
+                    if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(${sessionName} ${currentYear})</span>`;
+                    if (classInfoEl) classInfoEl.textContent = `${classLevel} | ${day} ${startTime} | ${location}`;
+                } else if (hasSummerProgram) {
+                    const { programName = 'Summer Program', location = '', year } = student.summerProgramDetail;
+                    let inferredYear = year || (student.classDetail?.currentYear + ' Summer') || (new Date().getFullYear() + ' Summer');
+                    const paren = [location, inferredYear].filter(Boolean).join(', ');
+                    if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
+                    if (classInfoEl) classInfoEl.textContent = programName;
+                } else {
+                    if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(No class or summer program data available)</span>`;
+                    if (classInfoEl) classInfoEl.textContent = '';
                 }
-                // Update millions count for this student
-                let millionsCount = 0;
-                if (Array.isArray(millionsData)) {
-                    const millionsEntry = millionsData.find(entry => entry.studentName === student.studentDetail.studentName);
-                    if (millionsEntry) {
-                        millionsCount = millionsEntry.earnAmount || 0;
-                    }
+            }
+
+            renderPendingItems(tabPane, student) {
+                const wrapper = tabPane.querySelector('.items-pending-flex-wrapper');
+                if (!wrapper) return;
+
+                let hasPendingForm = false;
+                let hasPendingInvoice = false;
+
+                if (Array.isArray(student.formList)) {
+                    let allForms = student.formList.flatMap(group => group.forms || []);
+                    hasPendingForm = allForms.some(form => !student.formCompletedList?.some(c => c.formId === form.formId));
                 }
+
+                if (Array.isArray(student.invoiceList)) {
+                    hasPendingInvoice = student.invoiceList.some(inv => !inv.is_completed);
+                }
+
+                wrapper.style.display = (hasPendingForm || hasPendingInvoice) ? 'flex' : 'none';
+            }
+
+            renderMillions(tabPane, student, millionsData) {
                 const millionsText = tabPane.querySelector('.million-price-text');
-                if (millionsText) {
-                    millionsText.innerHTML = `${millionsCount} <span class=\"million-text-gray\">millions</span>`;
-                }
+                if (!millionsText) return;
+
+                const entry = millionsData.find(e => e.studentName === student.studentDetail.studentName);
+                const millionsCount = entry?.earnAmount || 0;
+                millionsText.innerHTML = `${millionsCount} <span class="million-text-gray">millions</span>`;
+            }
+
+            renderUploadedContent(tabPane, student) {
                 this.renderHomeworkLink(tabPane, student);
                 this.renderInvoiceAccordionStyled(tabPane, student);
                 this.renderFailedInvoiceNotification(tabPane, student);
                 this.renderRegistrationForms(tabPane, student);
                 Webflow.require('tabs').redraw();
                 this.renderGoogleCalendar(tabPane, student);
-                // Future Classes and Past Class History
-                // Find the future and past class containers
-                const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
-                const pastClassesDiv = tabPane.querySelectorAll('.sem-classes-info-div')[1]; // assuming second div is for past classes
-                // Show/hide Future Classes
-                if (student.futureSession && Array.isArray(student.futureSession) && student.futureSession.length > 0) {
-                    if (futureClassesDiv) futureClassesDiv.style.display = '';
-                    // Optionally, update the content if needed
-                } else {
-                    if (futureClassesDiv) futureClassesDiv.style.display = 'none';
-                }
-                // Show/hide Past Class History
-                if (student.pastSession && Array.isArray(student.pastSession) && student.pastSession.length > 0) {
-                    if (pastClassesDiv) pastClassesDiv.style.display = '';
-                    // Optionally, update the content if needed
-                } else {
-                    if (pastClassesDiv) pastClassesDiv.style.display = 'none';
-                }
-                // Calendar Graph (Google Calendar)
+                this.renderCalendarIframe(tabPane, student);
+                this.renderMakeupLinks(tabPane, student);
+                this.renderZoomLinks(tabPane, student);
+                this.renderGeneralResources(tabPane, student);
+            }
+
+            renderCalendarIframe(tabPane, student) {
                 const calendarDiv = tabPane.querySelector('.calendar-white-rounded-div');
-                if (calendarDiv) {
-                    const googleCalendar = (student.uploadedContent || []).find(u => u.label === 'Google Calendar');
-                    let calendarLink = '';
-                    if (googleCalendar && googleCalendar.upload_content && googleCalendar.upload_content.length > 0) {
-                        calendarLink = googleCalendar.upload_content[0].link;
-                    }
-                    if (calendarLink) {
-                        calendarDiv.innerHTML = '';
-                        const iframe = document.createElement('iframe');
-                        iframe.src = calendarLink;
-                        iframe.width = '100%';
-                        iframe.height = '600';
-                        iframe.style.border = '0';
-                        iframe.setAttribute('frameborder', '0');
-                        iframe.setAttribute('scrolling', 'no');
-                        calendarDiv.appendChild(iframe);
-                    } else {
-                        calendarDiv.innerHTML = '<p class="portal-node-title">Calendar Graph</p><div>No records available</div>';
-                    }
-                }
-                // Schedule a Makeup (Make-up Acuity Link)
-                const makeupDiv = tabPane.querySelector('.class-tools-quick-links-div');
-                if (makeupDiv) {
-                    const makeupLink = (student.uploadedContent || []).find(u => u.label === 'Make-up Acuity Link');
-                    const makeupSection = makeupDiv.querySelector('.class-tools-quick-links-flex-wrapper');
-                    if (makeupSection) {
-                        makeupSection.innerHTML = '';
-                    }
-                    if (makeupLink && makeupLink.upload_content && makeupLink.upload_content.length > 0) {
-                        if (makeupSection) {
-                            makeupLink.upload_content.forEach(item => {
-                                // Provided HTML structure
-                                const wrapper = document.createElement('div');
-                                wrapper.className = 'class-tools-quick-links-flex-wrapper';
-                                // Icon
-                                const icon = document.createElement('img');
-                                icon.loading = 'lazy';
-                                icon.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg';
-                                icon.alt = '';
-                                icon.className = 'inline-block-icon';
-                                // Text container
-                                const textDiv = document.createElement('div');
-                                // Title
-                                const titleDiv = document.createElement('div');
-                                titleDiv.className = 'dm-sans title';
-                                const titleSpan = document.createElement('span');
-                                titleSpan.textContent = 'Schedule a Makeup';
-                                titleDiv.appendChild(titleSpan);
-                                // Subtitle
-                                const subtitleDiv = document.createElement('div');
-                                subtitleDiv.className = 'poppins-para class-tools-quick-links';
-                                const subtitleSpan = document.createElement('span');
-                                subtitleSpan.textContent = 'One-click redirect to Acuity';
-                                subtitleDiv.appendChild(subtitleSpan);
-                                // Link row
-                                const linkDiv = document.createElement('div');
-                                linkDiv.className = 'poppins-para scheduling';
-                                // Link
-                                const a = document.createElement('a');
-                                a.href = item.link;
-                                a.classList.add('any-link', 'underline');
-                                a.textContent = 'Go to scheduling';
-                                a.target = '_blank';
-                                a.style.marginRight = '8px';
-                                // Copy icon
-                                const img = document.createElement('img');
-                                img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
-                                img.alt = 'Copy link';
-                                img.style.cursor = 'pointer';
-                                img.style.width = '18px';
-                                img.style.height = '18px';
-                                // Tooltip
-                                let tooltip;
-                                const showTooltip = (text) => {
-                                    if (!tooltip) {
-                                        tooltip = document.createElement('div');
-                                        tooltip.className = 'copy-tooltip';
-                                        tooltip.style.position = 'absolute';
-                                        tooltip.style.background = '#222';
-                                        tooltip.style.color = '#fff';
-                                        tooltip.style.padding = '4px 10px';
-                                        tooltip.style.borderRadius = '4px';
-                                        tooltip.style.fontSize = '12px';
-                                        tooltip.style.zIndex = 10000;
-                                        document.body.appendChild(tooltip);
-                                    }
-                                    tooltip.textContent = text;
-                                    const rect = img.getBoundingClientRect();
-                                    tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-                                    tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
-                                    tooltip.style.display = 'block';
-                                };
-                                const hideTooltip = () => {
-                                    if (tooltip) tooltip.style.display = 'none';
-                                };
-                                img.addEventListener('mouseenter', () => showTooltip('Copy link'));
-                                img.addEventListener('mouseleave', hideTooltip);
-                                img.addEventListener('focus', () => showTooltip('Copy link'));
-                                img.addEventListener('blur', hideTooltip);
-                                img.addEventListener('click', () => {
-                                    navigator.clipboard.writeText(item.link).then(() => {
-                                        showTooltip('Copied!');
-                                        setTimeout(hideTooltip, 1200);
-                                    });
-                                });
-                                linkDiv.appendChild(a);
-                                linkDiv.appendChild(img);
-                                // Compose
-                                textDiv.appendChild(titleDiv);
-                                textDiv.appendChild(subtitleDiv);
-                                textDiv.appendChild(linkDiv);
-                                makeupSection.appendChild(icon);
-                                makeupSection.appendChild(textDiv);
-                                //makeupSection.appendChild(wrapper);
-                            });
-                        }
-                    } else {
-                        if (makeupSection) makeupSection.innerHTML += '<div>No records available</div>';
-                    }
-                }
-                // Zoom Links
-                const zoomDiv = tabPane.querySelector('.zoom-links-info-wrapper');
-                if (zoomDiv) {
-                    const zoomLinks = (student.uploadedContent || []).find(u => u.label === 'Zoom links');
-                    const zoomSection = zoomDiv.querySelector('.zoom-links-info-div');
-                    if (zoomLinks && zoomLinks.upload_content && zoomLinks.upload_content.length > 0) {
-                        // Remove all previous .zoom-links-info-div children
-                        zoomDiv.querySelectorAll('.zoom-links-info-div').forEach(el => el.remove());
-                        zoomLinks.upload_content.forEach(item => {
-                            const wrapper = document.createElement('div');
-                            wrapper.className = 'zoom-links-info-div';
-                            const titleDescWrapper = document.createElement('div');
-                            // Title row with copy icon
-                            const titleDiv = document.createElement('div');
-                            titleDiv.className = 'dm-sans title';
-                            // Title text
-                            const titleSpan = document.createElement('span');
-                            titleSpan.textContent = item.name || 'Zoom Link';
-                            titleDiv.appendChild(titleSpan);
-                            // Copy icon
-                            const img = document.createElement('img');
-                            img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
-                            img.alt = 'Copy link';
-                            img.style.cursor = 'pointer';
-                            img.style.width = '18px';
-                            img.style.height = '18px';
-                            img.style.marginLeft = '8px';
-                            // Tooltip
-                            let tooltip;
-                            const showTooltip = (text) => {
-                                if (!tooltip) {
-                                    tooltip = document.createElement('div');
-                                    tooltip.className = 'copy-tooltip';
-                                    tooltip.style.position = 'absolute';
-                                    tooltip.style.background = '#222';
-                                    tooltip.style.color = '#fff';
-                                    tooltip.style.padding = '4px 10px';
-                                    tooltip.style.borderRadius = '4px';
-                                    tooltip.style.fontSize = '12px';
-                                    tooltip.style.zIndex = 10000;
-                                    document.body.appendChild(tooltip);
-                                }
-                                tooltip.textContent = text;
-                                const rect = img.getBoundingClientRect();
-                                tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-                                tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
-                                tooltip.style.display = 'block';
-                            };
-                            const hideTooltip = () => {
-                                if (tooltip) tooltip.style.display = 'none';
-                            };
-                            img.addEventListener('mouseenter', () => showTooltip('Copy link'));
-                            img.addEventListener('mouseleave', hideTooltip);
-                            img.addEventListener('focus', () => showTooltip('Copy link'));
-                            img.addEventListener('blur', hideTooltip);
-                            img.addEventListener('click', () => {
-                                navigator.clipboard.writeText(item.link).then(() => {
-                                    showTooltip('Copied!');
-                                    setTimeout(hideTooltip, 1200);
-                                });
-                            });
-                            //titleDiv.appendChild(img);
-                            // Subtitle
-                            const subtitleDiv = document.createElement('div');
-                            subtitleDiv.className = 'poppins-para class-tools-quick-links';
-                            const subtitleSpan = document.createElement('span');
-                            subtitleSpan.textContent = item.resourceDesc || '';
-                            subtitleDiv.appendChild(subtitleSpan);
-                            // Compose
-                            titleDescWrapper.appendChild(titleDiv);
-                            titleDescWrapper.appendChild(subtitleDiv);
-                            wrapper.appendChild(titleDescWrapper);
-                            wrapper.appendChild(img);
-                            zoomDiv.appendChild(wrapper);
-                        });
-                    } else {
-                        if (zoomSection) zoomSection.innerHTML = '<div>No records available</div>';
-                    }
-                }
-                // General Resources
-                const generalDiv = tabPane.querySelector('.general-resources-info-wrapper');
-                if (generalDiv) {
-                    const generalResources = (student.uploadedContent || []).find(u => u.label === 'General resources');
-                    // Remove all previous .general-resources-flex-wrapper children
-                    generalDiv.querySelectorAll('.general-resources-flex-wrapper').forEach(el => el.remove());
-                    if (generalResources && generalResources.upload_content && generalResources.upload_content.length > 0) {
-                        generalResources.upload_content.forEach(item => {
-                            const wrapper = document.createElement('div');
-                            wrapper.className = 'general-resources-flex-wrapper';
-                            // Left div
-                            const leftDiv = document.createElement('div');
-                            // Title
-                            const titleDiv = document.createElement('div');
-                            titleDiv.className = 'dm-sans title';
-                            const titleSpan = document.createElement('span');
-                            titleSpan.textContent = item.name || 'Resource';
-                            titleDiv.appendChild(titleSpan);
-                            // Subtitle
-                            const subtitleDiv = document.createElement('div');
-                            subtitleDiv.className = 'poppins-para class-tools-quick-links';
-                            const subtitleSpan = document.createElement('span');
-                            subtitleSpan.textContent = item.resourceDesc || '';
-                            subtitleDiv.appendChild(subtitleSpan);
-                            leftDiv.appendChild(titleDiv);
-                            leftDiv.appendChild(subtitleDiv);
-                            // Copy icon
-                            const img = document.createElement('img');
-                            img.loading = 'lazy';
-                            img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
-                            img.alt = 'Copy link';
-                            img.className = 'inline-block-icon';
-                            img.style.cursor = 'pointer';
-                            img.style.width = '18px';
-                            img.style.height = '18px';
-                            // Tooltip
-                            let tooltip;
-                            const showTooltip = (text) => {
-                                if (!tooltip) {
-                                    tooltip = document.createElement('div');
-                                    tooltip.className = 'copy-tooltip';
-                                    tooltip.style.position = 'absolute';
-                                    tooltip.style.background = '#222';
-                                    tooltip.style.color = '#fff';
-                                    tooltip.style.padding = '4px 10px';
-                                    tooltip.style.borderRadius = '4px';
-                                    tooltip.style.fontSize = '12px';
-                                    tooltip.style.zIndex = 10000;
-                                    document.body.appendChild(tooltip);
-                                }
-                                tooltip.textContent = text;
-                                const rect = img.getBoundingClientRect();
-                                tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-                                tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
-                                tooltip.style.display = 'block';
-                            };
-                            const hideTooltip = () => {
-                                if (tooltip) tooltip.style.display = 'none';
-                            };
-                            img.addEventListener('mouseenter', () => showTooltip('Copy link'));
-                            img.addEventListener('mouseleave', hideTooltip);
-                            img.addEventListener('focus', () => showTooltip('Copy link'));
-                            img.addEventListener('blur', hideTooltip);
-                            img.addEventListener('click', () => {
-                                navigator.clipboard.writeText(item.link).then(() => {
-                                    showTooltip('Copied!');
-                                    setTimeout(hideTooltip, 1200);
-                                });
-                            });
-                            // Compose
-                            wrapper.appendChild(leftDiv);
-                            wrapper.appendChild(img);
-                            generalDiv.appendChild(wrapper);
-                        });
-                    } else {
-                        // If no resources, show message
-                        const noDiv = document.createElement('div');
-                        noDiv.className = 'general-resources-flex-wrapper';
-                        noDiv.innerHTML = '<div><div class="dm-sans title"><span>No records available</span></div></div>';
-                        generalDiv.appendChild(noDiv);
-                    }
-                }
-                // Recent Announcements
-                const announcementDiv = tabPane.querySelector('.recent-announcement-info-div');
-                if (announcementDiv && Array.isArray(announcements.announcement) && announcements.announcement.length > 0) {
-                    // Show count
-                    const countDiv = tabPane.querySelector('.recent-announcement-number');
-                    if (countDiv) countDiv.textContent = announcements.announcement.length;
-                    // Show two most recent
-                    const recent = announcements.announcement.slice(0, 2);
-                    // Remove previous announcement blocks
-                    announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
-                    recent.forEach(ann => {
-                        const container = document.createElement('div');
-                        container.className = 'recent-announcement-info-inner-div';
-                        // Flex row for title/type and date
-                        const flex = document.createElement('div');
-                        flex.className = 'recent-announcement-info-flex';
-                        const title = document.createElement('p');
-                        title.className = 'dm-sans recent-announcement-sub-title';
-                        const titleText = ann.title || ann.subject || 'Announcement';
-                        const type = ann.type ? ann.type : '';
-                        title.textContent = type ? `${titleText}: ${type}` : titleText;
-                        const date = document.createElement('p');
-                        date.className = 'dm-sans medium';
-                        date.textContent = ann.date || ann.createdAt || '';
-                        flex.appendChild(title);
-                        flex.appendChild(date);
-                        // Message
-                        const message = document.createElement('p');
-                        message.className = 'dm-sans recent-announcement-info';
-                        // Remove HTML tags and limit to 2 lines
-                        let plainText = ann.message ? ann.message.replace(/<[^>]*>/g, '') : '';
-                        message.textContent = plainText;
-                        // CSS for 2-line clamp with ellipsis
-                        message.style.display = '-webkit-box';
-                        message.style.webkitBoxOrient = 'vertical';
-                        message.style.webkitLineClamp = '2';
-                        message.style.overflow = 'hidden';
-                        message.style.textOverflow = 'ellipsis';
-                        container.appendChild(flex);
-                        container.appendChild(message);
-                        announcementDiv.appendChild(container);
-                    });
+                if (!calendarDiv) return;
+
+                const googleCalendar = student.uploadedContent?.find(u => u.label === 'Google Calendar');
+                const calendarLink = googleCalendar?.upload_content?.[0]?.link;
+
+                if (calendarLink) {
+                    calendarDiv.innerHTML = '';
+                    const iframe = document.createElement('iframe');
+                    iframe.src = calendarLink;
+                    iframe.width = '100%';
+                    iframe.height = '600';
+                    iframe.style.border = '0';
+                    iframe.setAttribute('frameborder', '0');
+                    iframe.setAttribute('scrolling', 'no');
+                    calendarDiv.appendChild(iframe);
+                } else {
+                    calendarDiv.innerHTML = '<p class="portal-node-title">Calendar Graph</p><div>No records available</div>';
                 }
             }
+
+            renderMakeupLinks(tabPane, student) {
+                const makeupDiv = tabPane.querySelector('.class-tools-quick-links-div');
+                if (!makeupDiv) return;
+                const makeupSection = makeupDiv.querySelector('.class-tools-quick-links-flex-wrapper');
+                if (!makeupSection) return;
+                makeupSection.innerHTML = '';
+
+                const makeupLink = student.uploadedContent?.find(u => u.label === 'Make-up Acuity Link');
+                if (makeupLink?.upload_content?.length > 0) {
+                    makeupLink.upload_content.forEach(item => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'class-tools-quick-links-flex-wrapper';
+
+                        const icon = document.createElement('img');
+                        icon.loading = 'lazy';
+                        icon.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg';
+                        icon.alt = '';
+                        icon.className = 'inline-block-icon';
+
+                        const textDiv = document.createElement('div');
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'dm-sans title';
+                        const titleSpan = document.createElement('span');
+                        titleSpan.textContent = 'Schedule a Makeup';
+                        titleDiv.appendChild(titleSpan);
+
+                        const subtitleDiv = document.createElement('div');
+                        subtitleDiv.className = 'poppins-para class-tools-quick-links';
+                        const subtitleSpan = document.createElement('span');
+                        subtitleSpan.textContent = 'One-click redirect to Acuity';
+                        subtitleDiv.appendChild(subtitleSpan);
+
+                        const linkDiv = document.createElement('div');
+                        linkDiv.className = 'poppins-para scheduling';
+                        const a = document.createElement('a');
+                        a.href = item.link;
+                        a.classList.add('any-link', 'underline');
+                        a.textContent = 'Go to scheduling';
+                        a.target = '_blank';
+                        a.style.marginRight = '8px';
+
+                        const img = document.createElement('img');
+                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
+                        img.alt = 'Copy link';
+                        img.style.cursor = 'pointer';
+                        img.style.width = '18px';
+                        img.style.height = '18px';
+
+                        this.addTooltipCopyBehavior(img, item.link);
+
+                        linkDiv.appendChild(a);
+                        linkDiv.appendChild(img);
+                        textDiv.appendChild(titleDiv);
+                        textDiv.appendChild(subtitleDiv);
+                        textDiv.appendChild(linkDiv);
+
+                        makeupSection.appendChild(icon);
+                        makeupSection.appendChild(textDiv);
+                    });
+                } else {
+                    makeupSection.innerHTML = '<div>No records available</div>';
+                }
+            }
+
+            renderZoomLinks(tabPane, student) {
+                const zoomDiv = tabPane.querySelector('.zoom-links-info-wrapper');
+                if (!zoomDiv) return;
+                zoomDiv.querySelectorAll('.zoom-links-info-div').forEach(el => el.remove());
+
+                const zoomLinks = student.uploadedContent?.find(u => u.label === 'Zoom links');
+                if (zoomLinks?.upload_content?.length > 0) {
+                    zoomLinks.upload_content.forEach(item => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'zoom-links-info-div';
+
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'dm-sans title';
+                        const titleSpan = document.createElement('span');
+                        titleSpan.textContent = item.name || 'Zoom Link';
+                        titleDiv.appendChild(titleSpan);
+
+                        const img = document.createElement('img');
+                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
+                        img.alt = 'Copy link';
+                        img.style.cursor = 'pointer';
+                        img.style.width = '18px';
+                        img.style.height = '18px';
+                        img.style.marginLeft = '8px';
+
+                        const subtitleDiv = document.createElement('div');
+                        subtitleDiv.className = 'poppins-para class-tools-quick-links';
+                        const subtitleSpan = document.createElement('span');
+                        subtitleSpan.textContent = item.resourceDesc || '';
+                        subtitleDiv.appendChild(subtitleSpan);
+
+                        this.addTooltipCopyBehavior(img, item.link);
+
+                        const titleDescWrapper = document.createElement('div');
+                        titleDescWrapper.appendChild(titleDiv);
+                        titleDescWrapper.appendChild(subtitleDiv);
+
+                        wrapper.appendChild(titleDescWrapper);
+                        wrapper.appendChild(img);
+                        zoomDiv.appendChild(wrapper);
+                    });
+                } else {
+                    const zoomSection = zoomDiv.querySelector('.zoom-links-info-div');
+                    if (zoomSection) zoomSection.innerHTML = '<div>No records available</div>';
+                }
+            }
+
+            renderGeneralResources(tabPane, student) {
+                const generalDiv = tabPane.querySelector('.general-resources-info-wrapper');
+                if (!generalDiv) return;
+                generalDiv.querySelectorAll('.general-resources-flex-wrapper').forEach(el => el.remove());
+
+                const generalResources = student.uploadedContent?.find(u => u.label === 'General resources');
+                if (generalResources?.upload_content?.length > 0) {
+                    generalResources.upload_content.forEach(item => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'general-resources-flex-wrapper';
+
+                        const leftDiv = document.createElement('div');
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'dm-sans title';
+                        const titleSpan = document.createElement('span');
+                        titleSpan.textContent = item.name || 'Resource';
+                        titleDiv.appendChild(titleSpan);
+
+                        const subtitleDiv = document.createElement('div');
+                        subtitleDiv.className = 'poppins-para class-tools-quick-links';
+                        const subtitleSpan = document.createElement('span');
+                        subtitleSpan.textContent = item.resourceDesc || '';
+                        subtitleDiv.appendChild(subtitleSpan);
+
+                        leftDiv.appendChild(titleDiv);
+                        leftDiv.appendChild(subtitleDiv);
+
+                        const img = document.createElement('img');
+                        img.loading = 'lazy';
+                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
+                        img.alt = 'Copy link';
+                        img.className = 'inline-block-icon';
+                        img.style.cursor = 'pointer';
+                        img.style.width = '18px';
+                        img.style.height = '18px';
+
+                        this.addTooltipCopyBehavior(img, item.link);
+
+                        wrapper.appendChild(leftDiv);
+                        wrapper.appendChild(img);
+                        generalDiv.appendChild(wrapper);
+                    });
+                } else {
+                    const noDiv = document.createElement('div');
+                    noDiv.className = 'general-resources-flex-wrapper';
+                    noDiv.innerHTML = '<div><div class="dm-sans title"><span>No records available</span></div></div>';
+                    generalDiv.appendChild(noDiv);
+                }
+            }
+
+            addTooltipCopyBehavior(img, link) {
+                let tooltip;
+                const showTooltip = (text) => {
+                    if (!tooltip) {
+                        tooltip = document.createElement('div');
+                        tooltip.className = 'copy-tooltip';
+                        tooltip.style.position = 'absolute';
+                        tooltip.style.background = '#222';
+                        tooltip.style.color = '#fff';
+                        tooltip.style.padding = '4px 10px';
+                        tooltip.style.borderRadius = '4px';
+                        tooltip.style.fontSize = '12px';
+                        tooltip.style.zIndex = 10000;
+                        document.body.appendChild(tooltip);
+                    }
+                    tooltip.textContent = text;
+                    const rect = img.getBoundingClientRect();
+                    tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                    tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
+                    tooltip.style.display = 'block';
+                };
+                const hideTooltip = () => {
+                    if (tooltip) tooltip.style.display = 'none';
+                };
+                img.addEventListener('mouseenter', () => showTooltip('Copy link'));
+                img.addEventListener('mouseleave', hideTooltip);
+                img.addEventListener('focus', () => showTooltip('Copy link'));
+                img.addEventListener('blur', hideTooltip);
+                img.addEventListener('click', () => {
+                    navigator.clipboard.writeText(link).then(() => {
+                        showTooltip('Copied!');
+                        setTimeout(hideTooltip, 1200);
+                    });
+                });
+            }
+
+
 
             renderGoogleCalendar(tabPane, student) {
                 const calendarDiv = tabPane.querySelector('.calendar-white-rounded-div');
