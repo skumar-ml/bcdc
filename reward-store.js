@@ -19,7 +19,7 @@ class RewardStore {
                 this.spinner.style.display = "none";
                 if (millionsTab) millionsTab.style.display = 'block';
                 if (itemsContainer) itemsContainer.style.display = 'grid';
-                this.renderTabs()
+                //this.renderTabs()
                 this.renderItems()
             }
             async fetchData() {
