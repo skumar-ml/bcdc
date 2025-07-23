@@ -360,7 +360,7 @@
                                 subtitleDiv.appendChild(subtitleSpan);
                                 // Link row
                                 const linkDiv = document.createElement('div');
-                                linkDiv.className = 'poppins-para';
+                                linkDiv.className = 'poppins-para scheduling';
                                 // Link
                                 const a = document.createElement('a');
                                 a.href = item.link;
