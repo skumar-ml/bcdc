@@ -142,7 +142,7 @@ class Portal {
                         // Show/hide registration-form-accordian based on formList in currentSession
                         const regFormAccordian = tabPane.querySelector('.registration-form-accordian');
                         if (currentSession.formList && Array.isArray(currentSession.formList) && currentSession.formList.length > 0) {
-                            if (regFormAccordian) regFormAccordian.style.display = '';
+                            if (regFormAccordian) regFormAccordian.style.display = 'block';
                         } else {
                             if (regFormAccordian) regFormAccordian.style.display = 'none';
                         }
@@ -901,7 +901,7 @@ class Portal {
                                     regFormAccordian.style.display = 'none';
                                     return;
                                 } else {
-                                    regFormAccordian.style.display = '';
+                                    regFormAccordian.style.display = 'block';
                                 }
                             }
                             // Helper: checkform (returns true if formId is in completed list)
