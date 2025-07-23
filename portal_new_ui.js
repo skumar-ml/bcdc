@@ -910,7 +910,7 @@ class Portal {
                                             let dbData = (student.formCompletedList || []).find(o => o.formId == form.formId);
                                             if (form.is_editable) {
                                                 formLinkHref = (form.formId && dbData && dbData.submissionId) ?
-                                                    `https://www.jotform.com/edit/${dbData.submissionId}?memberId=${student.studentDetail.uniqueIdentification || ''}&classId=${student.classDetail ? student.classDetail.classId : ''}&studentName=${encodeURIComponent(student.studentDetail.studentName)}&accountEmail=${encodeURIComponent(student.studentDetail.parentEmail)}&paymentId=${student.studentDetail.uniqueIdentification}` :
+                                                    `https://www.jotform.com/edit/${dbData.submissionId}?memberId=${this.data.memberId || ''}&classId=${student.classDetail ? student.classDetail.classId : ''}&studentName=${encodeURIComponent(student.studentDetail.studentName)}&accountEmail=${encodeURIComponent(student.studentDetail.parentEmail)}&paymentId=${student.studentDetail.uniqueIdentification}` :
                                                     '';
                                                 actionText = 'Edit form';
                                             } else {
@@ -920,7 +920,7 @@ class Portal {
                                             }
                                         } else {
                                             formLinkHref = (form.formId) ?
-                                                `https://form.jotform.com/${form.formId}?memberId=${student.studentDetail.uniqueIdentification || ''}&classId=${student.classDetail ? student.classDetail.classId : ''}&studentName=${encodeURIComponent(student.studentDetail.studentName)}&accountEmail=${encodeURIComponent(student.studentDetail.parentEmail)}&paymentId=${student.studentDetail.uniqueIdentification}` :
+                                                `https://form.jotform.com/${form.formId}?memberId=${this.data.memberId || ''}&classId=${student.classDetail ? student.classDetail.classId : ''}&studentName=${encodeURIComponent(student.studentDetail.studentName)}&accountEmail=${encodeURIComponent(student.studentDetail.parentEmail)}&paymentId=${student.studentDetail.uniqueIdentification}` :
                                                 '';
                                             actionText = 'Go to form';
                                         }
