@@ -38,7 +38,7 @@ class Portal {
                 const millions_transactions = millionsData.millions_transactions;
                 this.setupTabs(data, millions_transactions, announcements);
                 this.initTooltips();
-                this.initStripePaymentLinks();
+                //this.initStripePaymentLinks();
                 this.initiateLightbox();
                 Webflow.require('tabs').redraw();
                 this.initializeFAQAccordion();
@@ -98,7 +98,8 @@ class Portal {
                     // get Object key from the student object
                     const studentName = Object.keys(student)[0];
                     const studentData = Object.values(student)[0];
-                    const currentSession = studentData.currentSession && studentData.currentSession.length > 0 ? studentData.currentSession[studentData.currentSession.length - 1] : null;
+                    const currentSession = studentData.currentSession && studentData.currentSession.length > 0 ? studentData.currentSession[0] : null;
+                    // comment for future change: studentData.currentSession.length - 1
                     let tabLink, tabPane;
                     if (idx === 0) {
                         tabLink = firstTabLink;
@@ -705,6 +706,7 @@ class Portal {
             }
 
             renderInvoiceAccordionStyled(tabPane, student) {
+                var $this = this;
                 // Find the placeholder for the invoice accordion
                 const invoiceAccordion = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
                 if (!invoiceAccordion) return;
@@ -771,36 +773,78 @@ class Portal {
                     const div = document.createElement('div');
                     div.className = 'required-forms-flex-wrapper bluish-gray-rounded-with-mt-10';
                     const isCompleted = inv.is_completed;
-                    let actionLinks = '';
+                    // Action links container
+                    const actionLinksContainer = document.createElement('span');
+                    actionLinksContainer.style.textDecoration = 'underline';
                     if (!isCompleted && Array.isArray(inv.jotFormUrlLink)) {
-                        actionLinks = inv.jotFormUrlLink.map(link => {
+                        inv.jotFormUrlLink.forEach((link, idx) => {
+                            let a;
                             if (link.paymentType === 'card' || link.paymentType === 'us_bank_account') {
-                                return `<a href=\"#\" class=\"pay-link\" data-invoice-id=\"${inv.invoice_id}\" data-amount=\"${link.amount}\" data-payment-link-id=\"${link.paymentLinkId}\" data-title=\"${link.title}\" data-payment-type=\"${link.paymentType}\">${link.title}</a>`;
+                                a = document.createElement('a');
+                                a.href = '#';
+                                a.className = 'pay-link';
+                                a.setAttribute('data-invoice-id', inv.invoice_id);
+                                a.setAttribute('data-amount', link.amount);
+                                a.setAttribute('data-payment-link-id', link.paymentLinkId);
+                                a.setAttribute('data-title', link.title);
+                                a.setAttribute('data-payment-type', link.paymentType);
+                                a.textContent = link.title;
+                                // Add event listener for Stripe payment
+                                a.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    a.textContent = 'Processing...';
+                                    if (typeof $this.initializeStripePayment === 'function') {
+                                        $this.initializeStripePayment(
+                                            inv.invoice_id,
+                                            inv.invoiceName,
+                                            link.amount,
+                                            link.paymentLinkId,
+                                            a, // pass the link element
+                                            link.title,
+                                            link.paymentType,
+                                            student
+                                        );
+                                    }
+                                });
                             } else {
-                                return `<a href=\"${link.jotFormUrl}\" target=\"_blank\" class=\"pay-link\">${link.title}</a>`;
+                                a = document.createElement('a');
+                                a.href = link.jotFormUrl;
+                                a.target = '_blank';
+                                a.className = 'pay-link';
+                                a.textContent = link.title;
                             }
-                        }).join(' | ');
+                            actionLinksContainer.appendChild(a);
+                            // Add separator if not last
+                            if (idx < inv.jotFormUrlLink.length - 1) {
+                                actionLinksContainer.appendChild(document.createTextNode(' | '));
+                            }
+                        });
                     } else if (isCompleted) {
-                        actionLinks = '<span class=\"invoice-paid\">Paid</span>';
+                        actionLinksContainer.innerHTML = '<span class="invoice-paid">Paid</span>';
                     }
                     div.innerHTML = `
-                        <div class=\"required-forms-inner-flex-wrapper\">
-                            <img loading=\"lazy\" src=\"https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777aa573ccf80dbcfca9a0_svg1053.svg\" alt=\"\" class=\"inline-block-icon\">
+                        <div class="required-forms-inner-flex-wrapper">
+                            <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777aa573ccf80dbcfca9a0_svg1053.svg" alt="" class="inline-block-icon">
                             <div>
-                                <div class=\"poppins-para medium\"><span>${inv.invoiceName}</span></div>
-                                <div class=\"poppins-para dark-gray\"><span>${inv.status === 'Complete' || isCompleted ? 'Paid' : 'Pending'}</span></div>
+                                <div class="poppins-para medium"><span>${inv.invoiceName}</span></div>
+                                <div class="poppins-para dark-gray"><span>${inv.status === 'Complete' || isCompleted ? 'Paid' : 'Pending'}</span></div>
                             </div>
                         </div>
-                        <div class=\"required-forms-tags-wrapper\">
-                            <div class=\"${isCompleted ? 'required-form-completed-tag' : 'required-form-in-completed-tag'}\">
-                                <p class=\"${isCompleted ? 'completed-tag-text' : 'incompleted-tag-text'}\">${isCompleted ? 'Completed' : 'Incompleted'}</p>
+                        <div class="required-forms-tags-wrapper">
+                            <div class="${isCompleted ? 'required-form-completed-tag' : 'required-form-in-completed-tag'}">
+                                <p class="${isCompleted ? 'completed-tag-text' : 'incompleted-tag-text'}">${isCompleted ? 'Completed' : 'Incompleted'}</p>
                             </div>
-                            <div class=\"edit-form-flex-wrapper\">
-                                <img loading=\"lazy\" src=\"https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777c5d76467e79b4430b3c_border_color.svg\" alt=\"\" class=\"inline-block-icon\">
-                                <span style=\"text-decoration:underline;\">${actionLinks}</span>
+                            <div class="edit-form-flex-wrapper">
+                                <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777c5d76467e79b4430b3c_border_color.svg" alt="" class="inline-block-icon">
+                                <span class="action-links-placeholder"></span>
                             </div>
                         </div>
                     `;
+                    // Replace placeholder with actionLinksContainer
+                    const placeholder = div.querySelector('.action-links-placeholder');
+                    if (placeholder) {
+                        placeholder.replaceWith(actionLinksContainer);
+                    }
                     requiredDiv.appendChild(div);
                 });
 
@@ -982,7 +1026,36 @@ class Portal {
                     });
                 }, 0);
             }
+            initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType, student) {
+                var centAmount = (amount * 100).toFixed(2);
+                var data = {
+                    "email": student.studentDetail.parentEmail,
+                    "name": student.studentDetail.studentName,
+                    "label": title,
+                    "paymentType": paymentType,
+                    "amount": parseFloat(centAmount),
+                    "invoiceId": invoice_id,
+                    "paymentId": student.studentDetail.uniqueIdentification,
+                    "paymentLinkId": paymentLinkId,
+                    "memberId": this.data.memberId,
+                    "successUrl": encodeURI("https://www.bergendebate.com/members/" + this.data.memberId + "?programName=" + title),
+                    "cancelUrl": "https://www.bergendebate.com/members/" + this.data.memberId,
+                }
+                var xhr = new XMLHttpRequest()
+                var $this = this;
+                xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl", true)
+                xhr.withCredentials = false
+                xhr.send(JSON.stringify(data))
+                xhr.onload = function () {
+                    let responseText = JSON.parse(xhr.responseText);
+                    console.log('responseText', responseText)
+                    if (responseText.success) {
+                        span.innerHTML = link_title;
+                        window.location.href = responseText.stripe_url;
+                    }
 
+                }
+            }
             initStripePaymentLinks() {
                 setTimeout(() => {
                     document.querySelectorAll('.pay-link[data-invoice-id]').forEach(link => {
@@ -1005,7 +1078,7 @@ class Portal {
                                     invoiceId: invoiceId,
                                     paymentId: '',
                                     paymentLinkId: paymentLinkId,
-                                    memberId: '',
+                                    memberId: this.data.memberId,
                                     successUrl: window.location.href,
                                     cancelUrl: window.location.href
                                 })
@@ -1102,4 +1175,3 @@ class Portal {
                 });
             }
         }
-        
