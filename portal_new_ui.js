@@ -43,8 +43,8 @@ class Portal {
                 this.initializeFAQAccordion();
                 this.initializeInvoiceAccordion();
                 this.hideRegistrationFormAccordion();
-                this.spinner.style.display = "none";
                 paidResource.style.display = "block";
+                this.spinner.style.display = "none";
             }
 
             hideRegistrationFormAccordion() {
