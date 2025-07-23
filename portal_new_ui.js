@@ -35,7 +35,8 @@
                     this.fetchMillionsData(),
                     this.fetchAnnouncements()
                 ]);
-                this.setupTabs(data, millionsData, announcements);
+                const millions_transactions = millionsData.millions_transactions;
+                this.setupTabs(data, millions_transactions, announcements);
                 this.initTooltips();
                 this.initStripePaymentLinks();
                 this.initiateLightbox();
@@ -271,7 +272,7 @@
                 if (Array.isArray(millionsData)) {
                     const millionsEntry = millionsData.find(entry => entry.studentName === student.studentDetail.studentName);
                     if (millionsEntry) {
-                        millionsCount = millionsEntry.millions || 0;
+                        millionsCount = millionsEntry.earnAmount || 0;
                     }
                 }
                 const millionsText = tabPane.querySelector('.million-price-text');
