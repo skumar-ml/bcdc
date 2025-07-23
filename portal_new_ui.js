@@ -1,4 +1,4 @@
-class Portal {
+ class Portal {
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -364,6 +364,7 @@ class Portal {
                                 // Link
                                 const a = document.createElement('a');
                                 a.href = item.link;
+                                a.classList.add('any-link', 'underline');
                                 a.textContent = 'Go to scheduling';
                                 a.target = '_blank';
                                 a.style.marginRight = '8px';
@@ -414,9 +415,9 @@ class Portal {
                                 textDiv.appendChild(titleDiv);
                                 textDiv.appendChild(subtitleDiv);
                                 textDiv.appendChild(linkDiv);
-                                wrapper.appendChild(icon);
-                                wrapper.appendChild(textDiv);
-                                makeupSection.appendChild(wrapper);
+                                makeupSection.appendChild(icon);
+                                makeupSection.appendChild(textDiv);
+                                //makeupSection.appendChild(wrapper);
                             });
                         }
                     } else {
