@@ -1,8 +1,9 @@
-class MillionsRenderer {
+ class MillionsRenderer {
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
                 this.init();
+                this.fetchAnnouncementData();
             }
 
             async fetchData() {
@@ -11,6 +12,18 @@ class MillionsRenderer {
                     if (!response.ok) throw new Error('Network response was not ok');
                     
                     const apiData = await response.json();
+                    return apiData;
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                }
+            }
+            async fetchAnnouncementData() {
+                try {
+                    const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
+                    if (!response.ok) throw new Error('Network response was not ok');
+
+                    const apiData = await response.json();
+                    this.updateAnnouncement(apiData);
                     return apiData;
                 } catch (error) {
                     console.error('Fetch error:', error);
@@ -28,7 +41,19 @@ class MillionsRenderer {
                 sidebarCountDiv.forEach(div => {
                     div.parentElement.classList.remove('hide');
                     div.textContent = this.numberWithCommas(earnAmount) + 'M';
+                    div.parentElement.style.display = 'block';
                 });
+            }
+
+            updateAnnouncement(announcementData) {
+                const announcementLength = announcementData.announcement.filter(ann => !ann.is_read).length;
+                const announcementDiv = document.querySelectorAll('[data-announcements="counts"]');
+                if (announcementDiv) {
+                    announcementDiv.forEach(div => {
+                        div.textContent = announcementLength;
+                        div.parentElement.style.display = 'block';
+                    });
+                }
             }
 
             renderTab(tabIndex, student, link="") {
@@ -57,10 +82,10 @@ class MillionsRenderer {
                     row.className = 'transactions-table-row-grid-wrapper';
 
                     // Name
-                    // const nameDiv = document.createElement('div');
-                    // nameDiv.className = 'transactions-table-row-text';
-                    // nameDiv.textContent = student.studentName;
-                    // row.appendChild(nameDiv);
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'transactions-table-row-text';
+                    nameDiv.textContent = student.studentName;
+                    row.appendChild(nameDiv);
 
                     // Date
                     const dateDiv = document.createElement('div');
@@ -147,6 +172,7 @@ class MillionsRenderer {
                         <p class="portal-node-title transactions">Transactions</p>
                         <div class="transactions-table-div">
                             <div class="transactions-header-grid-wrapper">
+                                <div class="transaction-header-text">Name</div>
                                 <div class="transaction-header-text">Date</div>
                                 <div class="transaction-header-text">Description</div>
                                 <div class="transaction-header-text">Amount</div>
