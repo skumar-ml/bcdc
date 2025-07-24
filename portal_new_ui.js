@@ -1,4 +1,4 @@
-class Portal {
+ class Portal {
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -204,16 +204,22 @@ class Portal {
                 this.renderPastClasses(tabPane, studentData);
             }
             renderRecentAnnouncements(tabPane, announcements) {
+                
+                // update sidebar data count data-announcements of is_read is false 
+                const sidebarAnnouncementsCount = document.querySelectorAll('[data-announcements="counts"]');
+                sidebarAnnouncementsCount.forEach(el => {
+                    el.textContent = announcements.announcement.filter(ann => !ann.is_read).length;
+                    el.parentElement.style.display = 'block';
+                });
+                
+                
                 const announcementDiv = tabPane.querySelector('.recent-announcement-info-div');
+                
                 if (!announcementDiv || !Array.isArray(announcements.announcement)) return;
 
                 const countDiv = tabPane.querySelector('.recent-announcement-number');
                 if (countDiv) countDiv.textContent = announcements.announcement.length;
-
-                // update sidebar data count data-announcements of is_read is false 
-                const sidebarAnnouncementsCount = tabPane.querySelector('[data-announcements="announcements-count"]');
-                if (sidebarAnnouncementsCount) sidebarAnnouncementsCount.textContent = announcements.announcement.filter(ann => !ann.is_read).length;
-
+                
                 const recent = announcements.announcement.slice(0, 2);
                 announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
 
@@ -1153,12 +1159,16 @@ class Portal {
             }
 
             updateSidebarMillionsCount(millionsData, studentName) {
-                const sidebarCountEl = document.querySelector('[data-millions="sidebarCount"]');
-                if (!sidebarCountEl) return;
+                const sidebarCountEls = document.querySelectorAll('[data-millions="sidebarCount"]');
+                if (!sidebarCountEls) return;
+                sidebarCountEls.forEach(el => {
                 // Find the entry for the current student
                 const entry = millionsData.find(e => e.studentName === studentName);
                 const millionsCount = entry?.earnAmount || 0;
-                sidebarCountEl.innerText = `${millionsCount}M`;
+                    el.innerText = `${millionsCount}M`;
+                    // display block parent element of sidebarCountEl
+                    el.parentElement.style.display = 'block';
+                });
             }
 
         }
