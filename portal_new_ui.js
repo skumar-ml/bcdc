@@ -1,4 +1,4 @@
- class Portal {
+class Portal {
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -177,7 +177,7 @@
             // Main Function
             renderStudentTab(tabPane, studentData, millionsData, announcements) {
                 const student = studentData.currentSession[0];
-                if(student){
+                if (student) {
                     this.renderCurrentClassSection(tabPane, student);
                     this.renderPendingItems(tabPane, student);
                     this.renderMillions(tabPane, student, millionsData);
@@ -597,10 +597,11 @@
             renderHomeworkLink(tabPane, student) {
                 const homeworkDiv = tabPane.querySelector('[data-portal="homework-link"]');
                 const homeworkImg = homeworkDiv ? homeworkDiv.querySelector('[data-portal="homework-link-image"]') : null;
+                const homeworkNewTabIcon = homeworkDiv ? homeworkDiv.querySelector('[data-portal="homework-new-tab-icon"]') : null;
                 if (homeworkDiv) {
                     if (student.studentDetail.home_work_link) {
                         homeworkDiv.style.display = 'flex';
-                        if (homeworkImg && !homeworkImg._copyHandlerAttached) {
+                            if (homeworkImg && !homeworkImg._copyHandlerAttached) {
                             // ... existing copy/tooltip logic ...
                             let tooltip;
                             const showTooltip = (text) => {
@@ -625,20 +626,28 @@
                             const hideTooltip = () => {
                                 if (tooltip) tooltip.style.display = 'none';
                             };
+                            //homeworkImg.classList.add('iframe-lightbox-link');
                             homeworkImg.style.cursor = 'pointer';
                             homeworkImg.setAttribute('tabindex', '0');
                             homeworkImg.setAttribute('aria-label', 'Copy homework link');
-                            homeworkImg.addEventListener('mouseenter', () => showTooltip('Copy homework link'));
-                            homeworkImg.addEventListener('mouseleave', hideTooltip);
-                            homeworkImg.addEventListener('focus', () => showTooltip('Copy homework link'));
-                            homeworkImg.addEventListener('blur', hideTooltip);
+                            //homeworkImg.addEventListener('mouseenter', () => showTooltip('Copy homework link'));
+                            //homeworkImg.addEventListener('mouseleave', hideTooltip);
+                            //ho    workImg.addEventListener('focus', () => showTooltip('Copy homework link'));
+                            //homeworkImg.addEventListener('blur', hideTooltip);
                             homeworkImg.addEventListener('click', () => {
-                                navigator.clipboard.writeText(student.studentDetail.home_work_link).then(() => {
-                                    showTooltip('Copied!');
-                                    setTimeout(hideTooltip, 1200);
-                                });
+                                // navigator.clipboard.writeText(student.studentDetail.home_work_link).then(() => {
+                                //     showTooltip('Copied!');
+                                //     setTimeout(hideTooltip, 1200);
+                                // });
+                                var lightbox = document.getElementById('lightbox');
+                                var iframe = lightbox.querySelector('iframe');
+                                iframe.src = student.studentDetail.home_work_link;
+                                lightbox.style.display = 'block';
                             });
                             homeworkImg._copyHandlerAttached = true;
+                            homeworkNewTabIcon.addEventListener('click', () => {
+                                window.open(student.studentDetail.home_work_link, '_blank');
+                            });
                         }
                     } else {
                         homeworkDiv.style.display = 'none';
@@ -1114,5 +1123,13 @@
                         }
                     });
                 });
+
+                // close event lightbox
+                var closeLink = document.getElementById('closeLightbox');
+                closeLink.addEventListener('click', function () {
+                    var lightbox = document.getElementById('lightbox');
+                    lightbox.style.display = 'none';
+                });
             }
+
         }
