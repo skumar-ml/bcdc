@@ -195,9 +195,11 @@
                 const student = studentData.currentSession[0];
                 if (student) {
                     this.renderCurrentClassSection(tabPane, student);
-                    this.renderPendingItems(tabPane, student);
                     this.renderMillions(tabPane, student, millionsData);
                     this.renderUploadedContent(tabPane, student);
+                    setTimeout(() => {
+                        this.renderPendingItems(tabPane, student);
+                    }, 500);
                 }
                 this.renderRecentAnnouncements(tabPane, announcements);
                 this.renderFutureClasses(tabPane, studentData);
@@ -354,6 +356,21 @@
                 }
 
                 wrapper.style.display = (hasPendingForm || hasPendingInvoice) ? 'flex' : 'none';
+
+               if(!hasPendingForm){
+                    // hide registartion form
+                    const registrationFormDiv = tabPane.querySelector('.registration-form-accordian');
+                    if(registrationFormDiv){
+                        registrationFormDiv.style.display = 'none';
+                    }
+                }
+                if(!hasPendingInvoice){
+                    // hide invoice accordion
+                    const invoiceAccordion = tabPane.querySelector('.invoice-form-accordian');
+                    if(invoiceAccordion){
+                        invoiceAccordion.style.display = 'none';
+                    }
+                }  
             }
 
             renderMillions(tabPane, student, millionsData) {
