@@ -16,6 +16,23 @@ class InvoiceHistory {
     console.log(data);
     this.renderTabs(data);
     Webflow.require("tabs").redraw();
+
+    // Update sidebar millions count for the initially active tab
+	const getCurrentStudentName = () => {
+	    const currentTab = document.querySelector('.portal-tab-link.w--current');
+	    return currentTab ? currentTab.querySelector('.portal-tab-text-semibold').textContent : '';
+	};
+	this.updateSidebarMillionsCount(getCurrentStudentName());
+	
+	// Update sidebar millions count on tab change
+	document.querySelectorAll('.portal-tab-link').forEach(tab => {
+	    tab.addEventListener('click', () => {
+		setTimeout(() => {
+		    this.updateSidebarMillionsCount(getCurrentStudentName());
+		}, 0);
+	    });
+	});
+	this.updateSidebarAnnouncementsCount()
   }
 
   async fetchData() {
@@ -1105,4 +1122,42 @@ class InvoiceHistory {
       detailsContainer.appendChild(detailsDiv);
     }
   }
+
+  async fetchMillionsData() {
+	const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
+	if (!response.ok) throw new Error('Network response was not ok');
+	const millionsData = await response.json();
+	return millionsData;
+    }
+
+    async fetchAnnouncements() {
+	const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
+	if (!response.ok) throw new Error('Failed to fetch announcements');
+	const data = await response.json();
+	return data;
+    }
+
+    async updateSidebarMillionsCount(studentName) {
+	var millionsData = await this.fetchMillionsData();
+	const sidebarCountEls = document.querySelectorAll('[data-millions="sidebarCount"]');
+	if (!sidebarCountEls) return;
+	sidebarCountEls.forEach(el => {
+	// Find the entry for the current student
+	const entry = millionsData.millions_transactions.find(e => e.studentName === studentName);
+	const millionsCount = entry?.earnAmount || 0;
+	    el.innerText = `${millionsCount}M`;
+	    // display block parent element of sidebarCountEl
+	    el.parentElement.style.display = 'block';
+	});
+    }
+
+    async updateSidebarAnnouncementsCount() {
+	var announcements = await this.fetchAnnouncements();
+	const sidebarCountEls = document.querySelectorAll('[data-announcements="counts"]');
+	if (!sidebarCountEls) return;
+	sidebarCountEls.forEach(el => {
+	    el.textContent = announcements.announcement.filter(ann => !ann.is_read).length;
+	    el.parentElement.style.display = 'block';
+	});
+    }
 }
