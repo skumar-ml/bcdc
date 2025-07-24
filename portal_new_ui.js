@@ -48,6 +48,22 @@ class Portal {
                 setTimeout(() => {
                     this.spinner.style.display = "none";
                 }, 500);
+
+                // Update sidebar millions count for the initially active tab
+                const getCurrentStudentName = () => {
+                    const currentTab = document.querySelector('.portal-tab-link.w--current');
+                    return currentTab ? currentTab.querySelector('.portal-tab-text-semibold').textContent : '';
+                };
+                this.updateSidebarMillionsCount(millions_transactions, getCurrentStudentName());
+
+                // Update sidebar millions count on tab change
+                document.querySelectorAll('.portal-tab-link').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        setTimeout(() => {
+                            this.updateSidebarMillionsCount(millions_transactions, getCurrentStudentName());
+                        }, 0);
+                    });
+                });
             }
 
             hideRegistrationFormAccordion() {
@@ -193,6 +209,10 @@ class Portal {
 
                 const countDiv = tabPane.querySelector('.recent-announcement-number');
                 if (countDiv) countDiv.textContent = announcements.announcement.length;
+
+                // update sidebar data count data-announcements of is_read is false 
+                const sidebarAnnouncementsCount = tabPane.querySelector('[data-announcements="announcements-count"]');
+                if (sidebarAnnouncementsCount) sidebarAnnouncementsCount.textContent = announcements.announcement.filter(ann => !ann.is_read).length;
 
                 const recent = announcements.announcement.slice(0, 2);
                 announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
@@ -1130,6 +1150,15 @@ class Portal {
                     var lightbox = document.getElementById('lightbox');
                     lightbox.style.display = 'none';
                 });
+            }
+
+            updateSidebarMillionsCount(millionsData, studentName) {
+                const sidebarCountEl = document.querySelector('[data-millions="sidebarCount"]');
+                if (!sidebarCountEl) return;
+                // Find the entry for the current student
+                const entry = millionsData.find(e => e.studentName === studentName);
+                const millionsCount = entry?.earnAmount || 0;
+                sidebarCountEl.innerText = `${millionsCount}M`;
             }
 
         }
