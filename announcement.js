@@ -284,6 +284,7 @@ class AnnouncementUI {
                         el.textContent = '0';
                     }
                 });
+            this.countsDivs.parentElement.style.display = "block";
             }
 
             async markAsRead(oid, isRead) {
