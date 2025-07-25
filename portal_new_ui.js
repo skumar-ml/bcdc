@@ -1,7 +1,8 @@
- class Portal {
-            constructor(data) {
+class Portal {
+            constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
+                this.onReady = onReady;
                 this.render();
             }
 
@@ -27,7 +28,7 @@
             }
 
             async render() {
-                const paidResource = document.querySelector('.portal-info-container')
+                const paidResource = document.querySelector('.portal-info-wrapper')
                 paidResource.style.display = "none";
                 this.spinner.style.display = "block";
                 const [data, millionsData, announcements] = await Promise.all([
@@ -64,6 +65,9 @@
                         }, 0);
                     });
                 });
+                if (typeof this.onReady === 'function') {
+                    this.onReady();
+                }
             }
 
             hideRegistrationFormAccordion() {
@@ -206,22 +210,22 @@
                 this.renderPastClasses(tabPane, studentData);
             }
             renderRecentAnnouncements(tabPane, announcements) {
-                
+
                 // update sidebar data count data-announcements of is_read is false 
                 const sidebarAnnouncementsCount = document.querySelectorAll('[data-announcements="counts"]');
                 sidebarAnnouncementsCount.forEach(el => {
                     el.textContent = announcements.announcement.filter(ann => !ann.is_read).length;
                     el.parentElement.style.display = 'block';
                 });
-                
-                
+
+
                 const announcementDiv = tabPane.querySelector('.recent-announcement-info-div');
-                
+
                 if (!announcementDiv || !Array.isArray(announcements.announcement)) return;
 
                 const countDiv = tabPane.querySelector('.recent-announcement-number');
                 if (countDiv) countDiv.textContent = announcements.announcement.length;
-                
+
                 const recent = announcements.announcement.slice(0, 2);
                 announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
 
@@ -356,21 +360,20 @@
                 }
 
                 wrapper.style.display = (hasPendingForm || hasPendingInvoice) ? 'flex' : 'none';
-
-               if(!hasPendingForm){
+                if (!hasPendingForm) {
                     // hide registartion form
                     const registrationFormDiv = tabPane.querySelector('.registration-form-accordian');
-                    if(registrationFormDiv){
+                    if (registrationFormDiv) {
                         registrationFormDiv.style.display = 'none';
                     }
                 }
-                if(!hasPendingInvoice){
+                if (!hasPendingInvoice) {
                     // hide invoice accordion
                     const invoiceAccordion = tabPane.querySelector('.invoice-form-accordian');
-                    if(invoiceAccordion){
+                    if (invoiceAccordion) {
                         invoiceAccordion.style.display = 'none';
                     }
-                }  
+                }
             }
 
             renderMillions(tabPane, student, millionsData) {
@@ -644,7 +647,7 @@
                 if (homeworkDiv) {
                     if (student.studentDetail.home_work_link) {
                         homeworkDiv.style.display = 'flex';
-                            if (homeworkImg && !homeworkImg._copyHandlerAttached) {
+                        if (homeworkImg && !homeworkImg._copyHandlerAttached) {
                             // ... existing copy/tooltip logic ...
                             let tooltip;
                             const showTooltip = (text) => {
@@ -1109,7 +1112,25 @@
                 [].forEach.call(document.getElementsByClassName("iframe-lightbox-link"), function (el) {
                     el.lightbox = new IframeLightbox(el, {
                         onClosed: function () {
-                            console.log("Lightbox closed");
+                            let activeTab = document.querySelector('.portal-tab-link.w--current');
+                            let activeTabName = activeTab ? activeTab.querySelector('.portal-tab-text-semibold').textContent : null;
+
+                            $this.spinner.style.display = 'block';
+                            setTimeout(function () {
+                                // Pass a callback to Portal that restores the tab
+                                let portal = new Portal($this.data, function () {
+                                    if (activeTabName) {
+                                        let tabs = document.querySelectorAll('.portal-tab-link');
+                                        tabs.forEach(tab => {
+                                            let name = tab.querySelector('.portal-tab-text-semibold');
+                                            if (name && name.textContent === activeTabName) {
+                                                tab.click();
+                                            }
+                                        });
+                                    }
+                                    $this.spinner.style.display = 'none';
+                                });
+                            }, 500);
                         },
                         scrolling: true,
                     });
@@ -1179,9 +1200,9 @@
                 const sidebarCountEls = document.querySelectorAll('[data-millions="sidebarCount"]');
                 if (!sidebarCountEls) return;
                 sidebarCountEls.forEach(el => {
-                // Find the entry for the current student
-                const entry = millionsData.find(e => e.studentName === studentName);
-                const millionsCount = entry?.earnAmount || 0;
+                    // Find the entry for the current student
+                    const entry = millionsData.find(e => e.studentName === studentName);
+                    const millionsCount = entry?.earnAmount || 0;
                     el.innerText = `${millionsCount}M`;
                     // display block parent element of sidebarCountEl
                     el.parentElement.style.display = 'block';
