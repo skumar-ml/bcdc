@@ -462,8 +462,8 @@ class Portal {
                         a.style.marginRight = '8px';
 
                         const img = document.createElement('img');
-                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
-                        img.alt = 'Copy link';
+                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68835aaecba0da532a6b3d19_Group%20(2).svg';
+                        img.alt = 'click to open link';
                         img.style.cursor = 'pointer';
                         img.style.width = '18px';
                         img.style.height = '18px';
@@ -502,7 +502,7 @@ class Portal {
                         titleDiv.appendChild(titleSpan);
 
                         const img = document.createElement('img');
-                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
+                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68835aaecba0da532a6b3d19_Group%20(2).svg';
                         img.alt = 'Copy link';
                         img.style.cursor = 'pointer';
                         img.style.width = '18px';
@@ -560,7 +560,7 @@ class Portal {
 
                         const img = document.createElement('img');
                         img.loading = 'lazy';
-                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
+                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68835aaecba0da532a6b3d19_Group%20(2).svg';
                         img.alt = 'Copy link';
                         img.className = 'inline-block-icon';
                         img.style.cursor = 'pointer';
@@ -582,39 +582,44 @@ class Portal {
             }
 
             addTooltipCopyBehavior(img, link) {
-                let tooltip;
-                const showTooltip = (text) => {
-                    if (!tooltip) {
-                        tooltip = document.createElement('div');
-                        tooltip.className = 'copy-tooltip';
-                        tooltip.style.position = 'absolute';
-                        tooltip.style.background = '#222';
-                        tooltip.style.color = '#fff';
-                        tooltip.style.padding = '4px 10px';
-                        tooltip.style.borderRadius = '4px';
-                        tooltip.style.fontSize = '12px';
-                        tooltip.style.zIndex = 10000;
-                        document.body.appendChild(tooltip);
-                    }
-                    tooltip.textContent = text;
-                    const rect = img.getBoundingClientRect();
-                    tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-                    tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
-                    tooltip.style.display = 'block';
-                };
-                const hideTooltip = () => {
-                    if (tooltip) tooltip.style.display = 'none';
-                };
-                img.addEventListener('mouseenter', () => showTooltip('Copy link'));
-                img.addEventListener('mouseleave', hideTooltip);
-                img.addEventListener('focus', () => showTooltip('Copy link'));
-                img.addEventListener('blur', hideTooltip);
+                // open a new tab with the link
                 img.addEventListener('click', () => {
-                    navigator.clipboard.writeText(link).then(() => {
-                        showTooltip('Copied!');
-                        setTimeout(hideTooltip, 1200);
-                    });
+                    window.open(link, '_blank');
                 });
+                
+                // let tooltip;
+                // const showTooltip = (text) => {
+                //     if (!tooltip) {
+                //         tooltip = document.createElement('div');
+                //         tooltip.className = 'copy-tooltip';
+                //         tooltip.style.position = 'absolute';
+                //         tooltip.style.background = '#222';
+                //         tooltip.style.color = '#fff';
+                //         tooltip.style.padding = '4px 10px';
+                //         tooltip.style.borderRadius = '4px';
+                //         tooltip.style.fontSize = '12px';
+                //         tooltip.style.zIndex = 10000;
+                //         document.body.appendChild(tooltip);
+                //     }
+                //     tooltip.textContent = text;
+                //     const rect = img.getBoundingClientRect();
+                //     tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                //     tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
+                //     tooltip.style.display = 'block';
+                // };
+                // const hideTooltip = () => {
+                //     if (tooltip) tooltip.style.display = 'none';
+                // };
+                // img.addEventListener('mouseenter', () => showTooltip('Copy link'));
+                // img.addEventListener('mouseleave', hideTooltip);
+                // img.addEventListener('focus', () => showTooltip('Copy link'));
+                // img.addEventListener('blur', hideTooltip);
+                // img.addEventListener('click', () => {
+                //     navigator.clipboard.writeText(link).then(() => {
+                //         showTooltip('Copied!');
+                //         setTimeout(hideTooltip, 1200);
+                //     });
+                // });
             }
 
 
@@ -1128,7 +1133,7 @@ class Portal {
                                             }
                                         });
                                     }
-                                    $this.spinner.style.display = 'none';
+                                $this.spinner.style.display = 'none';
                                 });
                             }, 500);
                         },
