@@ -1,861 +1,1212 @@
-/**
- * 	
- * @param name - HTML element name
- * @param className - HTML element class attribute
- * @param idName - HTML element id attribute
- */
-function creEl(name,className,idName){
-  var el = document.createElement(name);
-	if(className){
-	  el.className = className;
-	}
-	if(idName){
-	  el.setAttribute("id", idName)
-	}
-	return el;
-}
-/*
-* Created a new class to call API
-*/
-class ApiClient {
-	constructor(baseUrl) {
-		this.baseUrl = baseUrl;
-	}
-	// Calling API with the help of base URL and end URL
-	async fetchData(endpoint) {
-		try {
-			const response = await fetch(`${this.baseUrl}${endpoint}`);
-			if (!response.ok) {
-			throw new Error('Network response was not ok');
-			}
-			const data = await response.json();
-			return data;
-		} catch (error) {
-			console.error('Error fetching data:', error);
-			throw error;
-		}
-	}
-}
-/*
-* With the help of this class we are managing student's forms and invoice
-*/
+class Portal {
+            constructor(data, onReady) {
+                this.data = data;
+                this.spinner = document.getElementById("half-circle-spinner");
+                this.onReady = onReady;
+                this.render();
+            }
 
-class portalForm {
-	$completedForm = [];
-	$formslist = [];
-	$invoiceList = [];
-	$classDeatils = {};
-	$classLoactionDeatils = {};
-	$studentDetail = {};
-	$formCompletedList = [];
-	$totalForm = 0;
-	$totalInvoice = 0;
-	$isLiveProgram = true;
-	$completetdInvoice = 0;
-	constructor(webflowMemberId,responseText,currentIndex, accountEmail, creditPoints){
-		this.webflowMemberId = webflowMemberId;
-		this.currentIndex = currentIndex;
-		this.accountEmail = accountEmail;
-		this.creditPoints = creditPoints;
-		this.$completedForm = [];
-		this.renderFormData(responseText) // gets mongoDB data from responseText object for specific registrations
-		
-	}
-	/**
-	 * Render single json form data
-	 * @param responseText - single form object provided by API
-	 */
-	// responseText is an object corresponding to MongoDB collection
-	renderFormData(responseText){
-		var $this = this;
-		  $this.$completedForm = (responseText.formCompletedList) ? responseText.formCompletedList : [];
-		  $this.$invoiceList = responseText.invoiceList;
-		  $this.$formList = responseText.formList;
-		  $this.$classDeatils = responseText.classDetail;
-		  $this.$studentDetail = responseText.studentDetail;
-		  $this.$summerProgramDetail = responseText.summerProgramDetail;
-		  $this.$classLoactionDeatils = responseText.classLoactionDeatils;
-		  //$this.$formCompletedList = [];
-		  //$this.checkProgramDeadline();
-		  // unhide when form is live
-		  $this.viewForms();
-		  $this.viewService();
-		  $this.viewInvoice();
-		  if(responseText.formList.length > 0){
-		  // unhide when form is live
-		  $this.renderAccordionFormsHeader();
-		  
-		  ;
-		  // unhide when form is live
-		  $this.setPercentage();
-		 }
-		  if(responseText.invoiceList){
-				$this.renderAccordionInvoiceHeader()
-				$this.setInvoicePercentage();
-		  }
-		  
-		  $this.initiateAccordion();
-		  $this.initiateLightbox();
-		  //$this.initializeToolTips();
-		  var spinner = document.getElementById('half-circle-spinner');
-		  spinner.style.display = 'none';
-	}
-	/**
-	 * Display class name for single students
-	 */
-	viewService(){
-		var service = document.getElementById('service');
-		var serviceTitle = document.getElementById('singlePurchaseTitle');
-		//console.log('this.$classDeatils.classLevel', this.$classDeatils)
-		var classLevel = (this.$classDeatils != null) ? this.$classDeatils.classLevel : '';
-		//service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+")";
-		if(Object.keys(this.$classDeatils).length > 0){
-			service.innerHTML = this.$studentDetail.studentName+" - "+classLevel+" - "+this.$classDeatils.day+" "+this.$classDeatils.startTime+"("+this.$classLoactionDeatils.locationName+", "+this.$classDeatils.sessionName+" "+this.$classDeatils.currentYear +")";
-			serviceTitle.innerHTML = 'Class';
-		}else{
-			service.innerHTML = this.$studentDetail.studentName+" - "+this.$summerProgramDetail.programName+" ("+this.$summerProgramDetail.location+", "+this.$summerProgramDetail.currentYear+" Summer) ";
-			serviceTitle.innerHTML = 'Program';
-		}
-	}
-	
-	/**
-	 * Display accordion and forms data
-	 */
-	viewForms(){
-		var $this = this;
-		if($this.$formList){
-			let parentFormList = this.$formList;
-			var accordionDiv = document.getElementById("accordionforms-"+$this.currentIndex);
-			if($this.$formList.length <= 0){
-				accordionDiv.innerHTML = "No forms required. Registration complete from previous enrollment";
-			}else{
-				accordionDiv.innerHTML = "";
-			}
-			var $tabNo = 1;
-			$this.$totalForm = 0;
-			parentFormList.sort(function(r,a){return r.sequence-a.sequence}); // order invoice categories via order specified in MongoDB
-			parentFormList.forEach((form) => {
-				//console.log('forms', form)
-				var accordionContainerDiv = creEl("div", "accordion-container", "accordion-container-"+$tabNo+$this.currentIndex)
-				var labelDiv = creEl("div", "label label-"+$this.currentIndex);
-				// check forms for completion and put corresponding icon & text
-				var checkAllForms = $this.checkAllForms(form.forms);
-				var imgUncheck = creEl("img",'all-img-status');
-				imgUncheck.src = $this.getCheckedIcon(checkAllForms);
-				var textUncheck = $this.getCheckedText(checkAllForms);
-				labelDiv.innerHTML = form.name;
-				labelDiv.prepend(imgUncheck, textUncheck)
-				var accordionContentDiv = document.createElement("div");
-				accordionContentDiv.className="accordion-content";
-				var ul= creEl('ul');
-				
-				// for every form category in parentInvoiceForm, start building accordion
-				form.forms.forEach((cForm, i) => {
-					//check it's editable
-					let editable = $this.checkform(cForm.formId);
-					let is_live = cForm.is_live;
-					var li=creEl('li');;
-					// Added cross line for completed forms
-					var li_text=creEl('span', 'invoice_name'+((editable)? ' completed_form': ''));
-					var imgCheck = creEl("img");
-					imgCheck.src = $this.getCheckedIcon(editable);
-					li_text.innerHTML = cForm.name;
-					li.prepend(imgCheck, li_text);
+            async fetchData() {
+                const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const apiData = await response.json();
+                return apiData;
+            }
 
-				   
-					var linkContainer = creEl('div', 'link-container');   
-					var formLink=creEl('a');
-					
-					// display link/text depending on if form is live/editable
-					if(is_live){
-					if(editable){
-					   let dbData = $this.getformData(cForm.formId)
-						if(this.$isLiveProgram  && cForm.is_editable){
-							formLink.href = (cForm.formId) ? "https://www.jotform.com/edit/"+dbData.submissionId+"?memberId="+$this.webflowMemberId+"&classId="+$this.$classDeatils.classId+"&studentName="+$this.$studentDetail.studentName+"&accountEmail="+$this.accountEmail+"&paymentId="+$this.$studentDetail.uniqueIdentification+"&locationId="+$this.$classLoactionDeatils.locationId : "";
-						}else{
-						   formLink.href = "https://www.jotform.com/submission/"+dbData.submissionId;
-					   }
-					}else{
-						formLink.href = (cForm.formId) ? "https://form.jotform.com/"+cForm.formId+"?memberId="+$this.webflowMemberId+"&classId="+$this.$classDeatils.classId+"&studentName="+$this.$studentDetail.studentName+"&accountEmail="+$this.accountEmail+"&paymentId="+$this.$studentDetail.uniqueIdentification+"&locationId="+$this.$classLoactionDeatils.locationId: "";
-				    }
-					}
-					//Add iframe when it's live and above certain screenwidth
-					formLink.className = (is_live && window.innerWidth > 1200) ? "iframe-lightbox-link" : "";
-					var span=creEl('span', 'action_text');
-				    if(is_live){
-						span.innerHTML = (editable) ? ((this.$isLiveProgram && cForm.is_editable) ? "Edit form" : "View Form" ): "Go to form";
-					}else{
-						span.innerHTML = "Coming Soon";
-					}	
-						
-						
-						
-					formLink.append(span)
-					linkContainer.append(formLink);
-					
-					
-					
-					li.append(linkContainer);
-					ul.appendChild(li);
-					$this.$totalForm++;
-				})
-				accordionContentDiv.appendChild(ul)
-				accordionContainerDiv.prepend(labelDiv, accordionContentDiv);
-				accordionDiv.appendChild(accordionContainerDiv);
-				$tabNo++;
-			})
-		}
-       let percentageAmount = (this.$completedForm.length) ? (100 * this.$completedForm.length) / this.$totalForm : 0;
-		if(percentageAmount == '100'){
-			accordionDiv.classList.add("all_completed_form")
-		}
-	}
-	
-	/**
-	 * Display single accordion and invoice data
-	 */
-	viewInvoice(){
-		var $this = this;
-       if(this.$invoiceList){
-			
-		   let parentInvoiceForm = this.$invoiceList;
-		   var accordionDiv = document.getElementById("accordion-"+$this.currentIndex);
-		   accordionDiv.innerHTML = "";
-		   var $tabNo = 1;
-		   $this.$totalInvoice = 0;
-		   parentInvoiceForm.sort(function(r,a){return r.sequence-a.sequence}); // order invoice categories via order specified in MongoDB
-		   var accordionContainerDiv = creEl("div", "accordion-container", "accordion-container-invoice-"+$tabNo+$this.currentIndex)
-			var labelDiv = creEl("div", "label label-"+$this.currentIndex);
-			// check forms for completion and put corresponding icon & text
-			var checkAllInvoices = $this.checkAllInvoices(parentInvoiceForm);
-			var imgUncheck = creEl("img",'all-img-status');
-			imgUncheck.src = $this.getCheckedIcon(checkAllInvoices);
-			var textUncheck = $this.getCheckedText(checkAllInvoices);
-			labelDiv.innerHTML = 'Invoice';
-			labelDiv.prepend(imgUncheck, textUncheck)
-			var accordionContentDiv = document.createElement("div");
-			accordionContentDiv.className="accordion-content";
-			var ul= creEl('ul');
-			// for every form category in parentInvoiceForm, start building accordion
-		   parentInvoiceForm.forEach((invoice) => {
-			   //check it's editable
-			   let editable = (invoice.is_completed || invoice.status == 'Processing') ? true : false;
-			   
-			   let completed = (editable && (invoice.status =='Complete' || !invoice.status));
-			   let failed = (invoice.status == 'Failed');
-			   let processing = (invoice.status == 'Processing');
-			   let paymentProcessMsg = (invoice.paymentProcessMsg != '');
-			   let info_text = creEl('span', 'info_text')
-			   info_text.innerHTML = 'i';
-			   
-			   var li=creEl('li');;
-			   // Added cross line for completed forms
-			   var li_text=creEl('span', 'invoice_name'+((completed)? ' completed_form': ((failed) ? ' failed_form' : '')));
-			   var imgCheck = creEl("img");
-			   
-			   imgCheck.src = $this.getCheckedIcon(completed, failed, processing);
-			   if(failed){
-				   imgCheck.title = "Last transaction failed!";
-				   
-			   }
-			   
-			   li_text.innerHTML = invoice.invoiceName;
+            async fetchMillionsData() {
+                const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const millionsData = await response.json();
+                return millionsData;
+            }
 
-			   if(failed){
-				li_text.append(info_text)
-				info_text.setAttribute('tip', 'Last transaction failed, Pay again!')
-				 
-				info_text.setAttribute('tip-top','')
-				info_text.setAttribute('tip-left','')
-			   }
-			   
-			   li.prepend(imgCheck, li_text);
+            async fetchAnnouncements() {
+                const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
+                if (!response.ok) throw new Error('Failed to fetch announcements');
+                const data = await response.json();
+                return data;
+            }
 
-			   var jotFormUrlLink = invoice.jotFormUrlLink;	
-			   jotFormUrlLink.sort((a,b) => (a.title > b.title) ? 1 : ((b.title > a.title) ? -1 : 0));
-			   var linkContainer = creEl('div', 'link-container'); 
-			   if(!editable || failed){
-				   if(jotFormUrlLink.length > 0){
-					jotFormUrlLink.forEach(link => {
-						var formLink=creEl('a');
-						var span=creEl('span', 'invoice_text');
-							span.innerHTML = link.title;
-						if(link.paymentType == 'jotform'){
-						formLink.href = (link.formid) ? "https://form.jotform.com/"+link.formid+"?memberId="+$this.webflowMemberId+"&invoiceId="+invoice.invoice_id+"&paymentLinkId="+link.paymentLinkId+"&paymentId="+$this.$studentDetail.uniqueIdentification : "";
-						//Add iframe when it's live and above certain screenwidth
-						formLink.className = (window.innerWidth > 1200) ? "iframe-lightbox-link" : "";
-						}else{
-							formLink.addEventListener('click', function () {
-								span.innerHTML = "Processing..."
-								$this.initializeStripePayment(invoice.invoice_id, invoice.invoiceName, link.amount, link.paymentLinkId, span, link.title, link.paymentType)
-							})
-						}
-						
-							
-						formLink.append(span)
-						linkContainer.append(formLink);
-					})
-					if(paymentProcessMsg){
-						linkContainer.prepend(info_text)
-						info_text.setAttribute('tip', invoice.paymentProcessMsg)
-							
-						info_text.setAttribute('tip-top','')
-						info_text.setAttribute('tip-left','')
-					}
-					li.append(linkContainer);
-				   }
-				   
-			   }else{
-					var formLink=creEl('a', (completed)? 'completed_form_link': '');
-					//formLink.href = "https://www.jotform.com/submission/"+invoice.submissionId;
-					//Add iframe when it's live and above certain screenwidth
-					//formLink.className = (window.innerWidth > 1200) ? "iframe-lightbox-link" : "";
-					var span=creEl('span', 'invoice_text');
-						if(processing){
-							span.innerHTML = 'Processing...';
-						}else{
-							span.innerHTML = 'Completed';	
-						}
-					formLink.append(span)
-					linkContainer.append(formLink);
-					li.append(linkContainer);
-					$this.$completetdInvoice++;
-			   }
-			   
-			   
-			   ul.appendChild(li);
-			   $this.$totalInvoice++;
-		   })
-		   accordionContentDiv.appendChild(ul)
-	       	   this.creditPoints.then(data=>{
-				if(data.credit_data.credit_balance != undefined && data.credit_data.credit_balance != 0){
-					var creditText = creEl("p", "credit_text")
-			   		creditText.innerHTML = `Your credit of $${parseFloat(data.credit_data.credit_balance).toFixed(2)} will be applied to your outstanding invoices`
-			   		accordionContentDiv.prepend(creditText)
-				}
-		   })
-		   accordionContainerDiv.prepend(labelDiv, accordionContentDiv);
-		   accordionDiv.appendChild(accordionContainerDiv);
-		   $tabNo++;
-	   }
-	
-		let percentageAmount = (this.$completedForm.length) ? (100 * this.$completedForm.length) / this.$totalInvoice : 0;
-		if(percentageAmount == '100'){
-			accordionDiv.classList.add("all_completed_form")
-		}
-	}
-	/**
- 	*
-  	*Initilize stripe payment
-   	*/
-	initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType){
-		var centAmount = (amount*100).toFixed(2);
-		var data = {
-			"email":this.$studentDetail.parentEmail,
-			"name":this.$studentDetail.studentName,
-			"label": title,
-			"paymentType": paymentType,
-			"amount": parseFloat(centAmount),
-			"invoiceId": invoice_id,
-			"paymentId": this.$studentDetail.uniqueIdentification,
-			"paymentLinkId": paymentLinkId,
-			"memberId": this.webflowMemberId,
-			"successUrl":encodeURI("https://www.bergendebate.com/members/"+this.webflowMemberId+"?programName="+title),
-			"cancelUrl": "https://www.bergendebate.com/members/"+this.webflowMemberId,
-		}
-		var xhr = new XMLHttpRequest()
-		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl", true)
-		xhr.withCredentials = false
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function() {
-			let responseText = JSON.parse(xhr.responseText);
-			//console.log('responseText', responseText)
-			span.innerHTML = link_title;
-			if(responseText.success){
-				window.location.href = responseText.stripe_url;
-			}
+            async render() {
+                const paidResource = document.querySelector('.portal-info-wrapper')
+                paidResource.style.display = "none";
+                this.spinner.style.display = "block";
+                const [data, millionsData, announcements] = await Promise.all([
+                    this.fetchData(),
+                    this.fetchMillionsData(),
+                    this.fetchAnnouncements()
+                ]);
+                const millions_transactions = millionsData.millions_transactions;
+                this.setupTabs(data, millions_transactions, announcements);
+                this.initTooltips();
+                //this.initStripePaymentLinks();
+                this.initiateLightbox();
+                Webflow.require('tabs').redraw();
+                this.initializeFAQAccordion();
+                this.initializeInvoiceAccordion();
+                this.hideRegistrationFormAccordion();
+                paidResource.style.display = "block";
+                setTimeout(() => {
+                    this.spinner.style.display = "none";
+                }, 500);
 
-		}
-	}
-	/**
-	 * Check form's id in completedForm list (from MongoDB) and use to determine if form is editable
-	 * @param formId - Jotform Id
-	 */
-	checkform($formId){
-		if($formId){
-			const found = this.$completedForm.some(el => el.formId == $formId);
-			return found;
-		}
-		return false;
-	}
-	/**
-	 * Check Program Deadline
-	 */
-	checkProgramDeadline(){
-		var deadlineDate = this.$programDetail.deadlineDate.replace(/\\/g, '');
-		deadlineDate = deadlineDate.replace(/"/g, '')
-		var formatedDeadlineDate = new Date(deadlineDate);
-		var currentDate = new Date(); 
-		this.$isLiveProgram = (currentDate < formatedDeadlineDate) ? true : false;
-	}
-	/**
-	 * Check all form status
-	 * @param forms - forms Array Object
-	 */
-	checkAllForms(forms){
-		if(forms){
-			// showing status only for live forms
-			var form = forms.filter((item => item.is_live));
-			var formsId = form.map((formItem) => formItem.formId.toString());
-			//var formsId = forms.map((formItem) => formItem.formId.toString());
-			var completedFormsId = this.$completedForm.map((formItem) => formItem.formId.toString());
-			const compareForm = completedFormsId.filter((obj) => formsId.indexOf(obj) !== -1);
-			//console.log('compareForm', compareForm)
-			const uniqueform = compareForm.filter((value, index, self) => self.indexOf(value) === index)
-			return ((formsId.length === uniqueform.length) && (formsId.every(val => uniqueform.includes(val))));
-		}
-	}
-	/**
-	 * Check all invoice status
-	 * @param invoices - invoices Array Object
-	 */
-	checkAllInvoices(invoices){
-		if(invoices.length > 0){
-		 var submittedInvoice =	invoices.filter(item => item.is_completed);
-		  return (submittedInvoice.length == invoices.length)
-		}else{
-			return false;
-		}
-	}
-	/**
-	 * Get Completed Form data by form id
-	 * @param formId - Jotform Id
-	 */
-	getformData($formId){
-		let data = this.$completedForm.find(o => o.formId == $formId);
-		return data;
-	}
-	/**
-	 * Get Checkbox icon for form complete or complete
-	 */
-	getCheckedIcon(status, failed, processing){
-		
-		if(processing){
-			return "https://uploads-ssl.webflow.com/64091ce7166e6d5fb836545e/653a046b720f1634ea7288cc_loading-circles.gif";
-		}
-		else if(failed){
-			return "https://uploads-ssl.webflow.com/64091ce7166e6d5fb836545e/6539ec996a84c0196f6009bc_circle-xmark-regular.png";
-		}
-		else if(status){
-			return "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/639c495f35742c15354b2e0d_circle-check-regular.png";
-		}else{
-			return "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/639c495fdc487955887ade5b_circle-regular.png";
-		}
-	}
-	/**
-	 * Get category all form status as a text like it's complete or not
-	 */
-	getCheckedText(status){
-		var imgCheck = "";
-		if(status){
-			imgCheck = creEl("span", 'forms_complete_status');
-			imgCheck.innerHTML = '&#10003;  Done';
-		}else{
-			imgCheck = creEl("span", 'forms_incomplete_status');
-			imgCheck.innerHTML = 'Needs to be Completed';
-		}
-		return imgCheck;
-	}
-	/**
-	 * Render Accordion Header like form completion and deadline
-	 */
-	renderAccordionFormsHeader(){
-		// Define months
-		const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-		
-		
-		// create and set progress bar & percentage
-		let percentageAmount = (this.$completedForm.length) ? (100 * this.$completedForm.length) / this.$totalForm : 0;
-		let accordionFormsHeader = document.getElementById("accordion-forms-header-"+this.currentIndex);
-		if(percentageAmount == '100'){
-			accordionFormsHeader.classList.add("all_completed_form")
-		}
-		accordionFormsHeader.innerHTML ="";
-		let progressbar = document.createElement("div");
-		progressbar.className = "form-progressbar";
-		let protext = document.createElement("p");
-		protext.innerHTML = "<span class='percentage-value-"+this.currentIndex+"'>0%</span> / "+this.$completedForm.length+" of "+this.$totalForm+" forms complete &nbsp;";
-		let progressContainer = document.createElement("div");
-		progressContainer.className = "progress-container progress-container-"+this.currentIndex;
-		progressContainer.setAttribute("data-percentage", (Math.round(percentageAmount)) ? Math.round(percentageAmount) : 0);
-		let progress = document.createElement("div");
-		progress.className = "progress progress-"+this.currentIndex;
-		let percentage = document.createElement("div");
-		percentage.className = "percentage percentage-"+this.currentIndex;
-		progressContainer.prepend(progress, percentage);
-		progressbar.prepend(progressContainer, protext)
-				
-		
-		accordionFormsHeader.prepend(progressbar)
-	}
-	/**
-	 * Render Accordion Header like form completion and deadline
-	 */
-	renderAccordionInvoiceHeader(){
-		
-		// Define months
-		const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-		
-		
-		// create and set progress bar & percentage
-		let percentageAmount = (this.$completetdInvoice) ? (100 * this.$completetdInvoice) / this.$totalInvoice : 0;
-		let accordionInvoiceHeader = document.getElementById("accordion-invoice-header-"+this.currentIndex);
-		if(percentageAmount == '100'){
-			accordionInvoiceHeader.classList.add("all_completed_form")
-		}
-		accordionInvoiceHeader.innerHTML ="";
-		let progressbar = document.createElement("div");
-		progressbar.className = "form-progressbar";
-		let protext = document.createElement("p");
-		protext.innerHTML = "<span class='percentage-value-invoice-"+this.currentIndex+"'>0%</span> / "+this.$completetdInvoice+" of "+this.$totalInvoice+" invoices complete &nbsp;";
-		let progressContainer = document.createElement("div");
-		progressContainer.className = "progress-container progress-container-invoice-"+this.currentIndex;
-		progressContainer.setAttribute("data-percentage-invoice", (Math.round(percentageAmount)) ? Math.round(percentageAmount) : 0);
-		let progress = document.createElement("div");
-		progress.className = "progress progress-invoice-"+this.currentIndex;
-		let percentage = document.createElement("div");
-		percentage.className = "percentage percentage-invoice-"+this.currentIndex;
-		progressContainer.prepend(progress, percentage);
-		progressbar.prepend(progressContainer, protext)
-				
-		
-		accordionInvoiceHeader.prepend(progressbar)
-	}
-	/**
-	 * Set Percentage value on accordion header
-	 */
-	setPercentage() {
-	  const progressContainer = document.querySelector('.progress-container-'+this.currentIndex);
-	  const percentage = progressContainer.getAttribute('data-percentage') + '%';
-	  const progressEl = progressContainer.querySelector('.progress-'+this.currentIndex);
-	  progressEl.style.width = percentage;
-	  const percentageValue = document.querySelector('.percentage-value-'+this.currentIndex);
-	  percentageValue.innerText = percentage;
-	}
-	/**
-	 * Set Percentage value on accordion header
-	 */
-	setInvoicePercentage() {
-	  const progressContainer = document.querySelector('.progress-container-invoice-'+this.currentIndex);
-	  const percentage = progressContainer.getAttribute('data-percentage-invoice') + '%';
-	  const progressEl = progressContainer.querySelector('.progress-invoice-'+this.currentIndex);
-	  progressEl.style.width = percentage;
-	  const percentageValue = document.querySelector('.percentage-value-invoice-'+this.currentIndex);
-	  percentageValue.innerText = percentage;
-	}
-	
-	/**
-	 * Script for accordion feature
-	 */
-	initiateAccordion(){
-		const accordion = document.getElementsByClassName('label-'+this.currentIndex);
+                // Update sidebar millions count for the initially active tab
+                const getCurrentStudentName = () => {
+                    const currentTab = document.querySelector('.portal-tab-link.w--current');
+                    return currentTab ? currentTab.querySelector('.portal-tab-text-semibold').textContent : '';
+                };
+                this.updateSidebarMillionsCount(millions_transactions, getCurrentStudentName());
 
-			function removeActiveItem(cEl){
-				for (let x=0; x<accordion.length; x++) {
-					if(cEl !==accordion[x]){
-						accordion[x].parentNode.classList.remove('active')
-					}
-				}
-			}
-		for (let i=0; i<accordion.length; i++) {
-			accordion[i].addEventListener('click', function () {
-			  removeActiveItem(this)
-			  this.parentNode.classList.toggle('active')
-		  })
-		}
-	}
-	/**
-	 * initialize Lightbox and rerender accordion after close the lightbox
-	 */
-	initiateLightbox(){
-		var $this = this;
-		[].forEach.call(document.getElementsByClassName("iframe-lightbox-link"), function (el) {
-		  el.lightbox = new IframeLightbox(el, {
-			onClosed: function() {
-				var spinner = document.getElementById('half-circle-spinner');
-				spinner.style.display = 'block';				
-				setTimeout(function() {
-					new PortalTabs(api, $this.webflowMemberId, $this.accountEmail)
-				}, 500);
-			},
-			scrolling: true,
-		  });
-		});
-	}
-	// initializeToolTips(){
-	// 	const elements = [...document.querySelectorAll('[tip]')]
-	// 	for (const el of elements) {
-	// 	  const tip = document.createElement('div')
-	// 	  tip.classList.add('tooltip')
-	// 	  tip.textContent = el.getAttribute('tip')
-	// 	  const x = el.hasAttribute('tip-left') ? 'calc(-100% - 5px)' : '16px'
-	// 	  const y = el.hasAttribute('tip-top') ? '-100%' : '0'
-	// 	  tip.style.transform = `translate(${x}, ${y})`
-	// 	  el.appendChild(tip)
-	// 	  el.onpointermove = e => {
-	// 		if (e.target !== e.currentTarget) return
+                // Update sidebar millions count on tab change
+                document.querySelectorAll('.portal-tab-link').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        setTimeout(() => {
+                            this.updateSidebarMillionsCount(millions_transactions, getCurrentStudentName());
+                        }, 0);
+                    });
+                });
+                if (typeof this.onReady === 'function') {
+                    this.onReady();
+                }
+            }
 
-	// 		const rect = tip.getBoundingClientRect()
-	// 		const rectWidth = rect.width + 16
-	// 		const vWidth = window.innerWidth - rectWidth
-	// 		const rectX = el.hasAttribute('tip-left') ? e.clientX - rectWidth : e.clientX + rectWidth
-	// 		const minX = el.hasAttribute('tip-left') ? 0 : rectX
-	// 		const maxX = el.hasAttribute('tip-left') ? vWidth : window.innerWidth
-	// 		const x = rectX < minX ? rectWidth : rectX > maxX ? vWidth : e.clientX
-	// 		tip.style.left = `${x}px`
-	// 		tip.style.top = `${e.clientY}px`
-	// 	  }
-	// 	}
-	// }
-}
-class PortalTabs {
-	$activeTabID = "";
-	$activeMainTabID = "";
-	constructor(apiClient, webflowMemberId,accountEmail) {
-		this.apiClient = apiClient;
-		this.webflowMemberId = webflowMemberId;
-		this.accountEmail = accountEmail;
-		this.renderPortalData();
-	}
-	/**
-	* Render tabs for multiple forms
-	* @param responseText - forms object provided by API
-	*/
-	viewtabs(responseText){
-		var tabsContainer = document.getElementById("tabs-container");
-		tabsContainer.innerHTML = "";
-		var tabs = creEl("ul", "tabs")
-		var contentSection = creEl("div", "content-section");
-		
-		var is_single = (responseText.length > 1) ? false : true;
-		responseText.forEach((formData, index) => {
-			let currentIndex = index+1;
-			var activeliClass = (currentIndex == 1 && is_single) ? "tab_li active_tab" : "tab_li";
-			if(!is_single){
-				document.getElementById("service-para").style.display = "none";
-				var tabsE = creEl("li", activeliClass, 'li-tab'+currentIndex);
-				var classLevel = (formData.classDetail != null)? formData.classDetail.classLevel : '';
-				//tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+"("+formData.classLoactionDeatils.locationName+")";
-				if(Object.keys(formData.classDetail).length > 0){
-					if(classLevel != "Level competitivetrack"){
-						tabsE.innerHTML = formData.studentDetail.studentName+" - "+classLevel+" - "+formData.classDetail.day+" "+formData.classDetail.startTime+" ("+formData.classLoactionDeatils.locationName+", "+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
-					}else{
-					tabsE.innerHTML = formData.studentDetail.studentName+" - Competitive Track ("+formData.classDetail.sessionName+" "+formData.classDetail.currentYear+")";
-					}
-				}else{
-					tabsE.innerHTML = formData.studentDetail.studentName+" - "+formData.summerProgramDetail.programName+" ("+formData.summerProgramDetail.location+", "+formData.summerProgramDetail.currentYear+" Summer) ";
-				}
-				tabsE.setAttribute("data-tab-id", 'tab'+currentIndex )
-				tabs.appendChild(tabsE);
-				
-			}
-			
-			var activeClass = (currentIndex == 1 && is_single) ? "active_tab" : "";
-			var tabContent = creEl("div", "content "+activeClass, "tab"+currentIndex);
-			var accordionHeading = creEl('h3', 'totolist-text');
-			//accordionHeading.innerHTML = "To Do List";
-			var accordion = creEl("div","accordion","accordion-"+currentIndex)
-			
-			var program_dates = creEl("h4","program_dates","program_dates-"+currentIndex)
-			var accordionFormsHeader = creEl("div","accordion-forms-header","accordion-forms-header-"+currentIndex)
-			var accordionInvoiceHeader = creEl("div","accordion-invoice-header","accordion-forms-header-"+currentIndex)
-			var accordionforms = creEl("div","accordion","accordionforms-"+currentIndex)
-			var accordionInvoiceHeader = creEl("div","accordion-forms-header","accordion-invoice-header-"+currentIndex)
-			
-			tabContent.prepend(program_dates, accordionHeading, accordionFormsHeader,accordionforms, accordionInvoiceHeader, accordion)
-			if(formData.studentDetail.home_work_link){
-				var home_work_link_row = creEl("div", "accordion", "home_work_link")
-				home_work_link_row.innerHTML = `<div class="accordion-container">
-				<div class="label label-1">Homework</div>
-					<div class="accordion-content">
-						<ul><li>
-							<span class="invoice_name">Homework Link</span>
-							<div class="link-container">
-								<a target="_blank" href="${formData.studentDetail.home_work_link}">
-									<span class="invoice_text">View</span>
-								</a>
-							</div>
-						</li></ul>
-					</div>
-				</div>`
-				tabContent.appendChild(home_work_link_row)
-			}
-			contentSection.appendChild(tabContent);
-		});
-		
-		// failed message display
-		var failedData = this.getFaildData(responseText);
-		if(failedData.length > 0){
-			var notificationDiv = creEl('div', 'notification_container');
-			failedData.forEach(item => {
-				let noText = creEl('span', 'noti_text');
-				noText.innerHTML = item;
-				notificationDiv.appendChild(noText);
-			})
-			tabsContainer.prepend(notificationDiv, tabs,contentSection)
-		}else{
-			tabsContainer.prepend(tabs,contentSection)
-		}
-	}
-	/**
-	 * initialize  Tabs feature - adds toggle function for folders in accordion 
-	 */
-	initiateTabs(){
-	  var d = document,
-      tabs = d.querySelector('.tabs'),
-      tab = d.querySelectorAll('.tab_li'),
-      contents = d.querySelectorAll('.content');
-	  if(!tabs){
-		 return false; 
-	  }
-	  tabs.addEventListener('click', function(e) {
-		  if (e.target && e.target.nodeName === 'LI') {
-			for (var i = 0; i < tab.length; i++) {
-			  tab[i].classList.remove('active_tab');
-			}
-			e.target.classList.toggle('active_tab');
-			for (i = 0; i < contents.length; i++) {
-			  contents[i].classList.remove('active_tab');
-			}
-			var tabId = '#' + e.target.dataset.tabId;
-	 d.querySelector(tabId).classList.toggle('active_tab'); 
-		  }  
-	  });
-	}
-	/**
-	 * Get current active tab before initiate new accordion
-	 */
-	getCurrentActiveTag(){
-		const accordion = document.getElementsByClassName('active');
-		//console.log('accordion', accordion.length)
-		var $this = this;
-		for (let i=0; i<accordion.length; i++) {
-			//console.log('accordion[i].id', accordion[i].id)
-			$this.$activeTabID = accordion[i].id;
-		}
-		const tabs = document.getElementsByClassName('active_tab');
-		var $this = this; // makes global
-		for (let i=0; i<tabs.length; i++) {
-			$this.$activeMainTabID = tabs[i].id;
-		}
-	}
-	/**
-   If form is submitted/closed, set active tab to know which accordion folder to display as open
-	 */
-	setCurrentActiveTag(){
-		var $this = this;
-		//console.log('?????', $this.$activeTabID)
-		const accordion = document.getElementById($this.$activeTabID);
-		//console.log('accordion>>>>', accordion)
-		if(accordion){
-			accordion.classList.add("active");
-		}
-		const activeMainTabID = document.getElementById($this.$activeMainTabID);
-		if(activeMainTabID){
-			activeMainTabID.classList.add("active_tab");
-		}
-		const activeMainTabLi = document.getElementById('li-'+$this.$activeMainTabID);
-		if(activeMainTabLi){
-			activeMainTabLi.classList.add("active_tab");
-		}
-	}
-	getFaildData(data){
-		//console.log('failed data', data)
-		if(data.length <= 0){
-			return false;
-		}
-		var failedData = data.filter(item=>{
-			if(item.invoiceList != null && item.invoiceList.length > 0 ){
-				let failedSingleData = item.invoiceList.filter(invoice => invoice.status == "Failed" );
-				if(failedSingleData.length > 0){
-					return true;
-				}else{
-					return false;
-				}
-			}else{
-				return false;
-			}
-		})
-		
-		var FailedInvoiceData = [];
-		failedData.forEach(i =>{
-			let fInvoice = i.invoiceList.filter(invoice => invoice.status == "Failed");
-			fInvoice.forEach(iData=>{
-				let invoiceText = iData.invoiceName+' Invoice is failed for '+i.studentDetail.studentName
-				FailedInvoiceData.push(invoiceText);
-			})
-		})
-		return FailedInvoiceData;
-	}
-	async renderPortalData(memberId) {
-		var spinner = document.getElementById('half-circle-spinner');
-		spinner.style.display = 'block';
-		try {
-		  var $this = this;	
-		  this.getCurrentActiveTag();
-		  //const data = await this.apiClient.fetchData('getInvoiceDetail/'+this.webflowMemberId);
-		  const data = await this.apiClient.fetchData('getAllStudentDetails/'+this.webflowMemberId);
-		  const creditPoints = this.fetchCreditPoints()
-		  this.viewtabs(data);
-		  this.initiateTabs();
-		  var $this = this;
-		  data.forEach((formData,index) => {
-			  //setTimeout(function(){
-				  let currentIndex = index+1;
-				  new portalForm($this.webflowMemberId, formData,currentIndex, $this.accountEmail, creditPoints);
-			  //},30)
-		  })
-		  this.initializeToolTips()
-		  document.getElementById("paid-resources").style.display = "block";
-		  setTimeout(function(){
-			$this.setCurrentActiveTag();
-			spinner.style.display = 'none';
-		  },30)
-		} catch (error) {
-			document.getElementById("free-resources").style.display = "block";
-			console.error('Error rendering random number:', error);
-			spinner.style.display = 'none';
-		}
-	}
-	initializeToolTips(){
-		const elements = [...document.querySelectorAll('[tip]')]
-		for (const el of elements) {
-		  const tip = document.createElement('div')
-		  tip.classList.add('tooltip')
-		  tip.textContent = el.getAttribute('tip')
-		  const x = el.hasAttribute('tip-left') ? 'calc(-100% - 5px)' : '16px'
-		  const y = el.hasAttribute('tip-top') ? '-100%' : '0'
-		  tip.style.transform = `translate(${x}, ${y})`
-		  el.appendChild(tip)
-		  el.onpointermove = e => {
-			if (e.target !== e.currentTarget) return
+            hideRegistrationFormAccordion() {
+                // const tabPane = document.querySelector('.portal-tab-pane');
+                // tabPane.querySelectorAll('.registration-form-accordian').forEach(el => {
+                //     if (el) el.style.display = 'none';
+                // });
+            }
+            setupTabs(data, millionsData, announcements) {
+                // 1. Get references to tab menu and tab panes
+                const tabMenu = document.querySelector('.portal-tab-menus');
+                const tabLinks = tabMenu.querySelectorAll('.portal-tab-link');
+                const tabContent = document.querySelector('.portal-tab-content');
+                const tabPanes = tabContent.querySelectorAll('.portal-tab-pane');
 
-			const rect = tip.getBoundingClientRect()
-			const rectWidth = rect.width + 16
-			const vWidth = window.innerWidth - rectWidth
-			const rectX = el.hasAttribute('tip-left') ? e.clientX - rectWidth : e.clientX + rectWidth
-			const minX = el.hasAttribute('tip-left') ? 0 : rectX
-			const maxX = el.hasAttribute('tip-left') ? vWidth : window.innerWidth
-			const x = rectX < minX ? rectWidth : rectX > maxX ? vWidth : e.clientX
-			tip.style.left = `${x}px`
-			tip.style.top = `${e.clientY}px`
-		  }
-		}
-	}
+                // 2. Filter students from data (studentDetail.studentName must exist)
+                //const students = data.filter(item => item.studentDetail && item.studentDetail.studentName);
+                const students = data;
+                // 3. Use the first tab and pane as templates
+                const tabLinkTemplate = tabLinks[0].cloneNode(true);
+                const tabPaneTemplate = tabPanes[0].cloneNode(true);
 
-	async fetchCreditPoints(){
-		const data = await this.apiClient.fetchData('getCreditPoint/'+this.webflowMemberId);
-		return data;
-	}
-}
+                // 4. Remove all existing tab links and panes
+                tabLinks.forEach((link, idx) => { if (idx > 0) link.remove(); });
+                tabPanes.forEach((pane, idx) => { if (idx > 0) pane.remove(); });
+
+                // 5. Clear the first tab link and pane
+                const firstTabLink = tabMenu.querySelector('.portal-tab-link');
+                const firstTabPane = tabContent.querySelector('.portal-tab-pane');
+
+                // Remove active classes
+                firstTabLink.classList.remove('w--current');
+                firstTabLink.setAttribute('aria-selected', 'false');
+                firstTabPane.classList.remove('w--tab-active');
+                // Sort students by currentSession[0].createdOn (most recent first)
+                students.sort((a, b) => {
+                    const aData = Object.values(a)[0];
+                    const bData = Object.values(b)[0];
+                    const aSession = aData.currentSession && aData.currentSession[0] ? aData.currentSession[0] : null;
+                    const bSession = bData.currentSession && bData.currentSession[0] ? bData.currentSession[0] : null;
+                    const aDate = aSession && aSession.createdOn ? new Date(aSession.createdOn) : new Date(0);
+                    const bDate = bSession && bSession.createdOn ? new Date(bSession.createdOn) : new Date(0);
+                    // Most recent first
+                    return bDate - aDate;
+                });
+                // 6. For each student, create tab link and pane
+                students.forEach((student, idx) => {
+                    // get Object key from the student object
+                    const studentName = Object.keys(student)[0];
+                    const studentData = Object.values(student)[0];
+                    const currentSession = studentData.currentSession && studentData.currentSession.length > 0 ? studentData.currentSession[0] : null;
+                    // comment for future change: studentData.currentSession.length - 1
+                    let tabLink, tabPane;
+                    if (idx === 0) {
+                        tabLink = firstTabLink;
+                        tabPane = firstTabPane;
+                    } else {
+                        tabLink = tabLinkTemplate.cloneNode(true);
+                        tabPane = tabPaneTemplate.cloneNode(true);
+                        tabMenu.appendChild(tabLink);
+                        tabContent.appendChild(tabPane);
+                    }
+                    // Set tab attributes
+                    tabLink.setAttribute('data-w-tab', 'Tab-' + idx);
+                    tabLink.setAttribute('id', 'w-tabs-0-data-w-tab-' + idx);
+                    tabLink.setAttribute('href', '#w-tabs-0-data-w-pane-' + idx);
+                    tabLink.setAttribute('aria-controls', 'w-tabs-0-data-w-pane-' + idx);
+                    tabPane.setAttribute('data-w-tab', 'Tab-' + idx);
+                    tabPane.setAttribute('id', 'w-tabs-0-data-w-pane-' + idx);
+                    tabPane.setAttribute('aria-labelledby', 'w-tabs-0-data-w-tab-' + idx);
+                    // Set active class for first tab
+                    if (idx === 0) {
+                        tabLink.classList.add('w--current');
+                        tabLink.setAttribute('aria-selected', 'true');
+                        tabPane.classList.add('w--tab-active');
+                    } else {
+                        tabLink.classList.remove('w--current');
+                        tabLink.setAttribute('aria-selected', 'false');
+                        tabPane.classList.remove('w--tab-active');
+                    }
+                    // Set label
+                    if (tabLink.querySelector('.portal-tab-text-semibold')) {
+                        tabLink.querySelector('.portal-tab-text-semibold').textContent = studentName;
+                    }
+                    // Render content inside tab based on available data
+                    this.renderStudentTab(tabPane, studentData, millionsData, announcements);
+                    if (currentSession) {
+                        // Show all main sections
+                        tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .class-tools-quick-links-div, .millions-balance-flex-wrapper').forEach(el => {
+                            if (el) el.style.display = '';
+                        });
+                        // Show/hide registration-form-accordian based on formList in currentSession
+                        const regFormAccordian = tabPane.querySelector('.registration-form-accordian');
+                        if (currentSession.formList && Array.isArray(currentSession.formList) && currentSession.formList.length > 0) {
+                            if (regFormAccordian) regFormAccordian.style.display = 'block';
+                        } else {
+                            if (regFormAccordian) regFormAccordian.style.display = 'none';
+                        }
+                    } else {
+                        // Hide all main sections if no currentSession
+                        tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .class-tools-quick-links-div, .millions-balance-flex-wrapper').forEach(el => {
+                            if (el) el.style.display = 'none';
+                        });
+                        // Hide registration-form-accordian if no currentSession
+                        tabPane.querySelectorAll('.registration-form-accordian').forEach(el => {
+                            if (el) el.style.display = 'none';
+                        });
+                    }
+                    // Always handle Future Classes and Past Class History
+                    // Future Classes
+                    const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
+                    if (studentData.futureSession && Array.isArray(studentData.futureSession) && studentData.futureSession.length > 0) {
+                        if (futureClassesDiv) futureClassesDiv.style.display = '';
+                    } else {
+                        if (futureClassesDiv) futureClassesDiv.style.display = 'none';
+                    }
+                    // Past Class History
+                    const pastClassesDiv = tabPane.querySelectorAll('.sem-classes-info-div')[1]; // assuming second div is for past classes
+                    if (studentData.pastSession && Array.isArray(studentData.pastSession) && studentData.pastSession.length > 0) {
+                        if (pastClassesDiv) pastClassesDiv.style.display = '';
+                    } else {
+                        if (pastClassesDiv) pastClassesDiv.style.display = 'none';
+                    }
+                });
+            }
+
+            // Main Function
+            renderStudentTab(tabPane, studentData, millionsData, announcements) {
+                const student = studentData.currentSession[0];
+                if (student) {
+                    this.renderCurrentClassSection(tabPane, student);
+                    this.renderMillions(tabPane, student, millionsData);
+                    this.renderUploadedContent(tabPane, student);
+                    setTimeout(() => {
+                        this.renderPendingItems(tabPane, student);
+                    }, 500);
+                }
+                this.renderRecentAnnouncements(tabPane, announcements);
+                this.renderFutureClasses(tabPane, studentData);
+                this.renderPastClasses(tabPane, studentData);
+            }
+            renderRecentAnnouncements(tabPane, announcements) {
+
+                // update sidebar data count data-announcements of is_read is false 
+                const sidebarAnnouncementsCount = document.querySelectorAll('[data-announcements="counts"]');
+                sidebarAnnouncementsCount.forEach(el => {
+                    el.textContent = announcements.announcement.filter(ann => !ann.is_read).length;
+                    el.parentElement.style.display = 'block';
+                });
+
+
+                const announcementDiv = tabPane.querySelector('.recent-announcement-info-div');
+
+                if (!announcementDiv || !Array.isArray(announcements.announcement)) return;
+
+                const countDiv = tabPane.querySelector('.recent-announcement-number');
+                if (countDiv) countDiv.textContent = announcements.announcement.length;
+
+                const recent = announcements.announcement.slice(0, 2);
+                announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
+
+                recent.forEach(ann => {
+                    const container = document.createElement('div');
+                    container.className = 'recent-announcement-info-inner-div';
+
+                    const flex = document.createElement('div');
+                    flex.className = 'recent-announcement-info-flex';
+
+                    const title = document.createElement('p');
+                    title.className = 'dm-sans recent-announcement-sub-title';
+                    const titleText = ann.title || ann.subject || 'Announcement';
+                    const type = ann.type || '';
+                    title.textContent = type ? `${titleText}: ${type}` : titleText;
+
+                    const date = document.createElement('p');
+                    date.className = 'dm-sans medium';
+                    date.textContent = ann.date || ann.createdAt || '';
+
+                    flex.appendChild(title);
+                    flex.appendChild(date);
+
+                    const message = document.createElement('p');
+                    message.className = 'dm-sans recent-announcement-info';
+                    const plainText = ann.message ? ann.message.replace(/<[^>]*>/g, '') : '';
+                    message.textContent = plainText;
+                    message.style.display = '-webkit-box';
+                    message.style.webkitBoxOrient = 'vertical';
+                    message.style.webkitLineClamp = '2';
+                    message.style.overflow = 'hidden';
+                    message.style.textOverflow = 'ellipsis';
+
+                    container.appendChild(flex);
+                    container.appendChild(message);
+                    announcementDiv.appendChild(container);
+                });
+            }
+            renderFutureClasses(tabPane, studentData) {
+                const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
+                if (!futureClassesDiv) return;
+
+                const futureList = Array.isArray(studentData.futureSession) ? studentData.futureSession : [];
+                const container = futureClassesDiv.querySelector('[data-portal="future-classe-list"]');
+                if (container) container.innerHTML = '';
+
+                if (futureList.length > 0) {
+                    futureClassesDiv.style.display = '';
+                    futureList.forEach(session => {
+                        let text = session.sessionName || session.classDetail?.sessionName || session.summerProgramDetail?.programName || 'No details available';
+                        const div = document.createElement('div');
+                        div.className = 'announcement-flex-wrapper';
+                        div.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg" alt="" />\n<p class="poppins-para no-margin-bottom">${text}</p>`;
+                        container?.appendChild(div);
+                    });
+                } else {
+                    futureClassesDiv.style.display = 'none';
+                    container.innerHTML = '<div>No future classes available</div>';
+                }
+            }
+
+            renderPastClasses(tabPane, studentData) {
+                const pastClassesDiv = tabPane.querySelectorAll('.sem-classes-info-div')[1];
+                if (!pastClassesDiv) return;
+
+                const pastList = Array.isArray(studentData.pastSession) ? studentData.pastSession : [];
+                const container = pastClassesDiv.querySelector('[data-portal="past-classe-list"]');
+                if (container) container.innerHTML = '';
+
+                if (pastList.length > 0) {
+                    pastClassesDiv.style.display = '';
+                    pastList.forEach(session => {
+                        let text = 'No details available';
+                        if (session.classDetail && Object.keys(session.classDetail).length > 0) {
+                            const { sessionName = '', currentYear = '', classLevel = '', location = '' } = session.classDetail;
+                            text = `${sessionName} ${currentYear} | ${classLevel} | ${location}`.replace(/\s+\|/g, '').trim();
+                        } else if (session.summerProgramDetail && Object.keys(session.summerProgramDetail).length > 0) {
+                            const { programName = 'Summer Program', currentYear = '', location = '' } = session.summerProgramDetail;
+                            text = `Summer ${currentYear ? ' | ' + currentYear : ''} ${programName} ${location ? ' | ' + location : ''}`;
+                        }
+                        const div = document.createElement('div');
+                        div.className = 'announcement-flex-wrapper';
+                        div.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6875275c255155b046e482da_history.svg" alt="" />\n<p class="poppins-para no-margin-bottom">${text}</p>`;
+                        container?.appendChild(div);
+                    });
+                } else {
+                    pastClassesDiv.style.display = 'none';
+                    container.innerHTML = '<div>No past classes available</div>';
+                }
+            }
+
+            renderCurrentClassSection(tabPane, student) {
+                const currentClassDiv = tabPane.querySelector('.recent-announcement-div.current-class');
+                if (!currentClassDiv) return;
+
+                const hasClassDetail = student.classDetail && Object.keys(student.classDetail).length > 0;
+                const hasSummerProgram = student.summerProgramDetail && Object.keys(student.summerProgramDetail).length > 0;
+
+                const titleEl = currentClassDiv.querySelector('.recent-announcement-title');
+                const classInfoEl = currentClassDiv.querySelector('.poppins-para.current-class');
+
+                if (hasClassDetail) {
+                    const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = student.classDetail;
+                    if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(${sessionName} ${currentYear})</span>`;
+                    if (classInfoEl) classInfoEl.textContent = `${classLevel} | ${day} ${startTime} | ${location}`;
+                } else if (hasSummerProgram) {
+                    const { programName = 'Summer Program', location = '', year } = student.summerProgramDetail;
+                    let inferredYear = year || (student.classDetail?.currentYear + ' Summer') || (new Date().getFullYear() + ' Summer');
+                    const paren = [location, inferredYear].filter(Boolean).join(', ');
+                    if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
+                    if (classInfoEl) classInfoEl.textContent = programName;
+                } else {
+                    if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(No class or summer program data available)</span>`;
+                    if (classInfoEl) classInfoEl.textContent = '';
+                }
+            }
+
+            renderPendingItems(tabPane, student) {
+                const wrapper = tabPane.querySelector('.items-pending-flex-wrapper');
+                if (!wrapper) return;
+
+                let hasPendingForm = false;
+                let hasPendingInvoice = false;
+
+                if (Array.isArray(student.formList)) {
+                    let allForms = student.formList.flatMap(group => group.forms || []);
+                    hasPendingForm = allForms.some(form => !student.formCompletedList?.some(c => c.formId === form.formId));
+                }
+
+                if (Array.isArray(student.invoiceList)) {
+                    hasPendingInvoice = student.invoiceList.some(inv => !inv.is_completed);
+                }
+
+                wrapper.style.display = (hasPendingForm || hasPendingInvoice) ? 'flex' : 'none';
+                if (!hasPendingForm) {
+                    // hide registartion form
+                    const registrationFormDiv = tabPane.querySelector('.registration-form-accordian');
+                    if (registrationFormDiv) {
+                        registrationFormDiv.style.display = 'none';
+                    }
+                }
+                if (!hasPendingInvoice) {
+                    // hide invoice accordion
+                    const invoiceAccordion = tabPane.querySelector('.invoice-form-accordian');
+                    if (invoiceAccordion) {
+                        invoiceAccordion.style.display = 'none';
+                    }
+                }
+            }
+
+            renderMillions(tabPane, student, millionsData) {
+                const millionsText = tabPane.querySelector('.million-price-text');
+                if (!millionsText) return;
+
+                const entry = millionsData.find(e => e.studentName === student.studentDetail.studentName);
+                const millionsCount = entry?.earnAmount || 0;
+                millionsText.innerHTML = `${millionsCount} <span class="million-text-gray">millions</span>`;
+            }
+
+            renderUploadedContent(tabPane, student) {
+                this.renderHomeworkLink(tabPane, student);
+                this.renderInvoiceAccordionStyled(tabPane, student);
+                this.renderFailedInvoiceNotification(tabPane, student);
+                this.renderRegistrationForms(tabPane, student);
+                Webflow.require('tabs').redraw();
+                this.renderGoogleCalendar(tabPane, student);
+                this.renderCalendarIframe(tabPane, student);
+                this.renderMakeupLinks(tabPane, student);
+                this.renderZoomLinks(tabPane, student);
+                this.renderGeneralResources(tabPane, student);
+            }
+
+            renderCalendarIframe(tabPane, student) {
+                const calendarDiv = tabPane.querySelector('.calendar-white-rounded-div');
+                if (!calendarDiv) return;
+
+                const googleCalendar = student.uploadedContent?.find(u => u.label === 'Google Calendar');
+                const calendarLink = googleCalendar?.upload_content?.[0]?.link;
+
+                if (calendarLink) {
+                    calendarDiv.innerHTML = '';
+                    const iframe = document.createElement('iframe');
+                    iframe.src = calendarLink;
+                    iframe.width = '100%';
+                    iframe.height = '600';
+                    iframe.style.border = '0';
+                    iframe.setAttribute('frameborder', '0');
+                    iframe.setAttribute('scrolling', 'no');
+                    calendarDiv.appendChild(iframe);
+                } else {
+                    calendarDiv.innerHTML = '<p class="portal-node-title">Calendar Graph</p><div>No records available</div>';
+                }
+            }
+
+            renderMakeupLinks(tabPane, student) {
+                const makeupDiv = tabPane.querySelector('.class-tools-quick-links-div');
+                if (!makeupDiv) return;
+                const makeupSection = makeupDiv.querySelector('.class-tools-quick-links-flex-wrapper');
+                if (!makeupSection) return;
+                makeupSection.innerHTML = '';
+
+                const makeupLink = student.uploadedContent?.find(u => u.label === 'Make-up Acuity Link');
+                if (makeupLink?.upload_content?.length > 0) {
+                    makeupLink.upload_content.forEach(item => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'class-tools-quick-links-flex-wrapper';
+
+                        const icon = document.createElement('img');
+                        icon.loading = 'lazy';
+                        icon.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg';
+                        icon.alt = '';
+                        icon.className = 'inline-block-icon';
+
+                        const textDiv = document.createElement('div');
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'dm-sans title';
+                        const titleSpan = document.createElement('span');
+                        titleSpan.textContent = 'Schedule a Makeup';
+                        titleDiv.appendChild(titleSpan);
+
+                        const subtitleDiv = document.createElement('div');
+                        subtitleDiv.className = 'poppins-para class-tools-quick-links';
+                        const subtitleSpan = document.createElement('span');
+                        subtitleSpan.textContent = 'One-click redirect to Acuity';
+                        subtitleDiv.appendChild(subtitleSpan);
+
+                        const linkDiv = document.createElement('div');
+                        linkDiv.className = 'poppins-para scheduling';
+                        const a = document.createElement('a');
+                        a.href = item.link;
+                        a.classList.add('any-link', 'underline');
+                        a.textContent = 'Go to scheduling';
+                        a.target = '_blank';
+                        a.style.marginRight = '8px';
+
+                        const img = document.createElement('img');
+                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
+                        img.alt = 'Copy link';
+                        img.style.cursor = 'pointer';
+                        img.style.width = '18px';
+                        img.style.height = '18px';
+
+                        this.addTooltipCopyBehavior(img, item.link);
+
+                        linkDiv.appendChild(a);
+                        linkDiv.appendChild(img);
+                        textDiv.appendChild(titleDiv);
+                        textDiv.appendChild(subtitleDiv);
+                        textDiv.appendChild(linkDiv);
+
+                        makeupSection.appendChild(icon);
+                        makeupSection.appendChild(textDiv);
+                    });
+                } else {
+                    makeupSection.innerHTML = '<div>No records available</div>';
+                }
+            }
+
+            renderZoomLinks(tabPane, student) {
+                const zoomDiv = tabPane.querySelector('.zoom-links-info-wrapper');
+                if (!zoomDiv) return;
+                zoomDiv.querySelectorAll('.zoom-links-info-div').forEach(el => el.remove());
+
+                const zoomLinks = student.uploadedContent?.find(u => u.label === 'Zoom links');
+                if (zoomLinks?.upload_content?.length > 0) {
+                    zoomLinks.upload_content.forEach(item => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'zoom-links-info-div';
+
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'dm-sans title';
+                        const titleSpan = document.createElement('span');
+                        titleSpan.textContent = item.name || 'Zoom Link';
+                        titleDiv.appendChild(titleSpan);
+
+                        const img = document.createElement('img');
+                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
+                        img.alt = 'Copy link';
+                        img.style.cursor = 'pointer';
+                        img.style.width = '18px';
+                        img.style.height = '18px';
+                        img.style.marginLeft = '8px';
+
+                        const subtitleDiv = document.createElement('div');
+                        subtitleDiv.className = 'poppins-para class-tools-quick-links';
+                        const subtitleSpan = document.createElement('span');
+                        subtitleSpan.textContent = item.resourceDesc || '';
+                        subtitleDiv.appendChild(subtitleSpan);
+
+                        this.addTooltipCopyBehavior(img, item.link);
+
+                        const titleDescWrapper = document.createElement('div');
+                        titleDescWrapper.appendChild(titleDiv);
+                        titleDescWrapper.appendChild(subtitleDiv);
+
+                        wrapper.appendChild(titleDescWrapper);
+                        wrapper.appendChild(img);
+                        zoomDiv.appendChild(wrapper);
+                    });
+                } else {
+                    const zoomSection = zoomDiv.querySelector('.zoom-links-info-div');
+                    if (zoomSection) zoomSection.innerHTML = '<div>No records available</div>';
+                }
+            }
+
+            renderGeneralResources(tabPane, student) {
+                const generalDiv = tabPane.querySelector('.general-resources-info-wrapper');
+                if (!generalDiv) return;
+                generalDiv.querySelectorAll('.general-resources-flex-wrapper').forEach(el => el.remove());
+
+                const generalResources = student.uploadedContent?.find(u => u.label === 'General resources');
+                if (generalResources?.upload_content?.length > 0) {
+                    generalResources.upload_content.forEach(item => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'general-resources-flex-wrapper';
+
+                        const leftDiv = document.createElement('div');
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'dm-sans title';
+                        const titleSpan = document.createElement('span');
+                        titleSpan.textContent = item.name || 'Resource';
+                        titleDiv.appendChild(titleSpan);
+
+                        const subtitleDiv = document.createElement('div');
+                        subtitleDiv.className = 'poppins-para class-tools-quick-links';
+                        const subtitleSpan = document.createElement('span');
+                        subtitleSpan.textContent = item.resourceDesc || '';
+                        subtitleDiv.appendChild(subtitleSpan);
+
+                        leftDiv.appendChild(titleDiv);
+                        leftDiv.appendChild(subtitleDiv);
+
+                        const img = document.createElement('img');
+                        img.loading = 'lazy';
+                        img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877c5c978d548ccecec33bf_link.svg';
+                        img.alt = 'Copy link';
+                        img.className = 'inline-block-icon';
+                        img.style.cursor = 'pointer';
+                        img.style.width = '18px';
+                        img.style.height = '18px';
+
+                        this.addTooltipCopyBehavior(img, item.link);
+
+                        wrapper.appendChild(leftDiv);
+                        wrapper.appendChild(img);
+                        generalDiv.appendChild(wrapper);
+                    });
+                } else {
+                    const noDiv = document.createElement('div');
+                    noDiv.className = 'general-resources-flex-wrapper';
+                    noDiv.innerHTML = '<div><div class="dm-sans title"><span>No records available</span></div></div>';
+                    generalDiv.appendChild(noDiv);
+                }
+            }
+
+            addTooltipCopyBehavior(img, link) {
+                let tooltip;
+                const showTooltip = (text) => {
+                    if (!tooltip) {
+                        tooltip = document.createElement('div');
+                        tooltip.className = 'copy-tooltip';
+                        tooltip.style.position = 'absolute';
+                        tooltip.style.background = '#222';
+                        tooltip.style.color = '#fff';
+                        tooltip.style.padding = '4px 10px';
+                        tooltip.style.borderRadius = '4px';
+                        tooltip.style.fontSize = '12px';
+                        tooltip.style.zIndex = 10000;
+                        document.body.appendChild(tooltip);
+                    }
+                    tooltip.textContent = text;
+                    const rect = img.getBoundingClientRect();
+                    tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                    tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
+                    tooltip.style.display = 'block';
+                };
+                const hideTooltip = () => {
+                    if (tooltip) tooltip.style.display = 'none';
+                };
+                img.addEventListener('mouseenter', () => showTooltip('Copy link'));
+                img.addEventListener('mouseleave', hideTooltip);
+                img.addEventListener('focus', () => showTooltip('Copy link'));
+                img.addEventListener('blur', hideTooltip);
+                img.addEventListener('click', () => {
+                    navigator.clipboard.writeText(link).then(() => {
+                        showTooltip('Copied!');
+                        setTimeout(hideTooltip, 1200);
+                    });
+                });
+            }
+
+
+
+            renderGoogleCalendar(tabPane, student) {
+                const calendarDiv = tabPane.querySelector('.calendar-white-rounded-div');
+                if (calendarDiv && student.studentDetail && student.studentDetail.parentEmail) {
+                    // Remove any previous iframe
+                    let oldIframe = calendarDiv.querySelector('iframe[data-google-calendar]');
+                    if (oldIframe) oldIframe.remove();
+                    // Create new iframe
+                    const iframe = document.createElement('iframe');
+                    iframe.setAttribute('data-google-calendar', '1');
+                    iframe.style.border = '0';
+                    iframe.width = '800';
+                    iframe.height = '600';
+                    iframe.frameBorder = '0';
+                    iframe.scrolling = 'no';
+                    // Use the student's email as the calendar src (must be public!)
+                    const calendarEmail = encodeURIComponent(student.studentDetail.parentEmail);
+                    iframe.src = `https://calendar.google.com/calendar/embed?src=${calendarEmail}&ctz=America%2FChicago`;
+                    calendarDiv.appendChild(iframe);
+                }
+            }
+
+            renderHomeworkLink(tabPane, student) {
+                const homeworkDiv = tabPane.querySelector('[data-portal="homework-link"]');
+                const homeworkImg = homeworkDiv ? homeworkDiv.querySelector('[data-portal="homework-link-image"]') : null;
+                const homeworkNewTabIcon = homeworkDiv ? homeworkDiv.querySelector('[data-portal="homework-new-tab-icon"]') : null;
+                if (homeworkDiv) {
+                    if (student.studentDetail.home_work_link) {
+                        homeworkDiv.style.display = 'flex';
+                        if (homeworkImg && !homeworkImg._copyHandlerAttached) {
+                            // ... existing copy/tooltip logic ...
+                            let tooltip;
+                            const showTooltip = (text) => {
+                                if (!tooltip) {
+                                    tooltip = document.createElement('div');
+                                    tooltip.className = 'copy-tooltip';
+                                    tooltip.style.position = 'absolute';
+                                    tooltip.style.background = '#222';
+                                    tooltip.style.color = '#fff';
+                                    tooltip.style.padding = '4px 10px';
+                                    tooltip.style.borderRadius = '4px';
+                                    tooltip.style.fontSize = '12px';
+                                    tooltip.style.zIndex = 10000;
+                                    document.body.appendChild(tooltip);
+                                }
+                                tooltip.textContent = text;
+                                const rect = homeworkImg.getBoundingClientRect();
+                                tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                                tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
+                                tooltip.style.display = 'block';
+                            };
+                            const hideTooltip = () => {
+                                if (tooltip) tooltip.style.display = 'none';
+                            };
+                            //homeworkImg.classList.add('iframe-lightbox-link');
+                            homeworkImg.style.cursor = 'pointer';
+                            homeworkImg.setAttribute('tabindex', '0');
+                            homeworkImg.setAttribute('aria-label', 'Copy homework link');
+                            //homeworkImg.addEventListener('mouseenter', () => showTooltip('Copy homework link'));
+                            //homeworkImg.addEventListener('mouseleave', hideTooltip);
+                            //ho    workImg.addEventListener('focus', () => showTooltip('Copy homework link'));
+                            //homeworkImg.addEventListener('blur', hideTooltip);
+                            homeworkImg.addEventListener('click', () => {
+                                // navigator.clipboard.writeText(student.studentDetail.home_work_link).then(() => {
+                                //     showTooltip('Copied!');
+                                //     setTimeout(hideTooltip, 1200);
+                                // });
+                                var lightbox = document.getElementById('lightbox');
+                                var iframe = lightbox.querySelector('iframe');
+                                iframe.src = student.studentDetail.home_work_link;
+                                lightbox.style.display = 'block';
+                            });
+                            homeworkImg._copyHandlerAttached = true;
+                            homeworkNewTabIcon.addEventListener('click', () => {
+                                window.open(student.studentDetail.home_work_link, '_blank');
+                            });
+                        }
+                    } else {
+                        homeworkDiv.style.display = 'none';
+                    }
+                }
+            }
+
+            renderInvoiceAccordionStyled(tabPane, student) {
+                var $this = this;
+                // Find the placeholder for the invoice accordion
+                const invoiceAccordion = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
+                if (!invoiceAccordion) return;
+
+                // Remove any previous content
+                invoiceAccordion.innerHTML = '';
+
+                const invoices = student.invoiceList || [];
+                if (!Array.isArray(invoices) || invoices.length === 0) {
+                    // If no invoices, do not render the accordion, just clear
+                    return;
+                }
+
+                // Accordion header
+                invoiceAccordion.className = 'invoice-form-accordian registration-form-accordian'; // reuse styles
+                invoiceAccordion.innerHTML = `
+                    <div class="registration-form-accordion-header">
+                        <div class="registration-form-title"><span>Invoices</span></div>
+                        <div class="registration-form-flex-wrapper">
+                            <div class="registration-form-tag">
+                                <p class="dashboard-tag-text">${invoices.some(inv => !inv.is_completed) ? 'Needs to be completed' : 'All Paid'}</p>
+                            </div>
+                            <img loading="eager" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/66bc5bebffd8cf0e335b1d95_icon%20(2).svg" alt="" class="registration-form-toggle-icon-open" />
+                            <img loading="eager" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68778b4fa96c8f8c87733352_check_indeterminate_small.svg" alt="" class="registration-form-toggle-icon-close" />
+                        </div>
+                    </div>
+                    <div class="registration-form-accordion-body">
+                        <div class="completion-progress-div">
+                            <div class="completion-progress-flex-wrapper">
+                                <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877903fb840c5aea61921a4_clock_loader_40.svg" alt="" class="inline-block-icon" />
+                                <div class="dm-sans completion-progress"><span>Completion Progress</span></div>
+                                <div class="dm-sans medium-text-with-margin-auto"><span></span></div>
+                            </div>
+                            <div class="completion-progress-bar">
+                                <div class="progress-bar-red-fill"></div>
+                            </div>
+                            <div class="completion-percent-flex-wrapper">
+                                <div class="dm-sans bold-text-with-margin-auto"><span></span></div>
+                            </div>
+                        </div>
+                        <div class="required-forms-div"></div>
+                    </div>
+                `;
+
+                // Fill in invoice data
+                const body = invoiceAccordion.querySelector('.registration-form-accordion-body');
+                const requiredDiv = body.querySelector('.required-forms-div');
+                requiredDiv.innerHTML = '';
+
+                const completed = invoices.filter(inv => inv.is_completed).length;
+                const total = invoices.length;
+                const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+                // Progress text
+                const progressText = body.querySelector('.medium-text-with-margin-auto span');
+                if (progressText) progressText.textContent = `${completed} of ${total} invoices complete`;
+                const percentText = body.querySelector('.bold-text-with-margin-auto span');
+                if (percentText) percentText.textContent = `${percent}%`;
+                const progressBar = body.querySelector('.progress-bar-red-fill');
+                if (progressBar) progressBar.style.width = `${percent}%`;
+
+                // List each invoice
+                invoices.forEach(inv => {
+                    const div = document.createElement('div');
+                    div.className = 'required-forms-flex-wrapper bluish-gray-rounded-with-mt-10';
+                    const isCompleted = inv.is_completed;
+                    // Action links container
+                    const actionLinksContainer = document.createElement('span');
+                    actionLinksContainer.style.textDecoration = 'underline';
+                    if (!isCompleted && Array.isArray(inv.jotFormUrlLink)) {
+                        inv.jotFormUrlLink.forEach((link, idx) => {
+                            let a;
+                            if (link.paymentType === 'card' || link.paymentType === 'us_bank_account') {
+                                a = document.createElement('a');
+                                a.href = '#';
+                                a.className = 'pay-link';
+                                a.setAttribute('data-invoice-id', inv.invoice_id);
+                                a.setAttribute('data-amount', link.amount);
+                                a.setAttribute('data-payment-link-id', link.paymentLinkId);
+                                a.setAttribute('data-title', link.title);
+                                a.setAttribute('data-payment-type', link.paymentType);
+                                a.textContent = link.title;
+                                // Add event listener for Stripe payment
+                                a.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    a.textContent = 'Processing...';
+                                    if (typeof $this.initializeStripePayment === 'function') {
+                                        $this.initializeStripePayment(
+                                            inv.invoice_id,
+                                            inv.invoiceName,
+                                            link.amount,
+                                            link.paymentLinkId,
+                                            a, // pass the link element
+                                            link.title,
+                                            link.paymentType,
+                                            student
+                                        );
+                                    }
+                                });
+                            } else {
+                                a = document.createElement('a');
+                                a.href = link.jotFormUrl;
+                                a.target = '_blank';
+                                a.className = 'pay-link';
+                                a.textContent = link.title;
+                            }
+                            actionLinksContainer.appendChild(a);
+                            // Add separator if not last
+                            if (idx < inv.jotFormUrlLink.length - 1) {
+                                actionLinksContainer.appendChild(document.createTextNode(' | '));
+                            }
+                        });
+                    } else if (isCompleted) {
+                        actionLinksContainer.innerHTML = '<span class="invoice-paid">Paid</span>';
+                    }
+                    div.innerHTML = `
+                        <div class="required-forms-inner-flex-wrapper">
+                            <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777aa573ccf80dbcfca9a0_svg1053.svg" alt="" class="inline-block-icon">
+                            <div>
+                                <div class="poppins-para medium"><span>${inv.invoiceName}</span></div>
+                                <div class="poppins-para dark-gray"><span>${inv.status === 'Complete' || isCompleted ? 'Paid' : 'Pending'}</span></div>
+                            </div>
+                        </div>
+                        <div class="required-forms-tags-wrapper">
+                            <div class="${isCompleted ? 'required-form-completed-tag' : 'required-form-in-completed-tag'}">
+                                <p class="${isCompleted ? 'completed-tag-text' : 'incompleted-tag-text'}">${isCompleted ? 'Completed' : 'Incompleted'}</p>
+                            </div>
+                            <div class="edit-form-flex-wrapper">
+                                <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777c5d76467e79b4430b3c_border_color.svg" alt="" class="inline-block-icon">
+                                <span class="action-links-placeholder"></span>
+                            </div>
+                        </div>
+                    `;
+                    // Replace placeholder with actionLinksContainer
+                    const placeholder = div.querySelector('.action-links-placeholder');
+                    if (placeholder) {
+                        placeholder.replaceWith(actionLinksContainer);
+                    }
+                    requiredDiv.appendChild(div);
+                });
+
+                // Accordion open/close logic (reuse your FAQ/registration form logic)
+                const header = invoiceAccordion.querySelector('.registration-form-accordion-header');
+                header.addEventListener('click', function () {
+                    if (invoiceAccordion.classList.contains('open')) {
+                        invoiceAccordion.classList.remove('open');
+                        body.style.maxHeight = '0';
+                    } else {
+                        // Close other open accordions in this tab
+                        tabPane.querySelectorAll('.registration-form-accordian.open').forEach(faq => {
+                            faq.classList.remove('open');
+                            const b = faq.querySelector('.registration-form-accordion-body');
+                            if (b) b.style.maxHeight = '0';
+                        });
+                        invoiceAccordion.classList.add('open');
+                        body.style.maxHeight = body.scrollHeight + 'px';
+                    }
+                });
+            }
+
+            renderFailedInvoiceNotification(tabPane, student) {
+                if (student.invoiceList && student.invoiceList.some(inv => inv.status === 'Failed')) {
+                    const failedDiv = document.createElement('div');
+                    failedDiv.className = 'notification-failed-invoice';
+                    failedDiv.innerHTML = '<span>Some invoices have failed payments. Please pay again.</span>';
+                    tabPane.prepend(failedDiv);
+                }
+            }
+
+            renderRegistrationForms(tabPane, student) {
+                const regFormAccordian = tabPane.querySelector('.registration-form-accordian');
+                if (regFormAccordian) {
+                    const regFormBody = regFormAccordian.querySelector('.registration-form-accordion-body');
+                    if (regFormBody) {
+                        const requiredFormsDiv = regFormBody.querySelector('.required-forms-div');
+                        const progressDiv = regFormBody.querySelector('.completion-progress-div');
+                        const needsToBeCompleted = regFormAccordian.querySelector('.dashboard-tag-text');
+                        if (requiredFormsDiv) {
+                            requiredFormsDiv.innerHTML = '';
+                            let forms = [];
+                            if (student.formList && student.formList.length > 0) {
+                                student.formList.forEach(formGroup => {
+                                    if (formGroup.forms && formGroup.forms.length > 0) {
+                                        forms = forms.concat(formGroup.forms);
+                                    }
+                                });
+                            }
+                            // Hide registration form accordion if no forms
+                            const regFormTitle = regFormAccordian.querySelector('.registration-form-title span');
+                            if (regFormTitle && regFormTitle.textContent.trim() === 'Registration Forms') {
+                                if (forms.length === 0) {
+                                    regFormAccordian.style.display = 'none';
+                                    return;
+                                } else {
+                                    regFormAccordian.style.display = 'block';
+                                }
+                            }
+                            // Helper: checkform (returns true if formId is in completed list)
+                            const checkform = (formId) => {
+                                if (!formId || !Array.isArray(student.formCompletedList)) return false;
+                                return student.formCompletedList.some(el => el.formId == formId);
+                            };
+                            if (forms.length === 0) {
+                                if (progressDiv) progressDiv.style.display = 'none';
+                                requiredFormsDiv.style.display = 'none';
+                                if (needsToBeCompleted) needsToBeCompleted.style.display = 'none';
+                                const noFormDiv = document.createElement('div');
+                                noFormDiv.className = 'required-forms-flex-wrapper bluish-gray-rounded';
+                                noFormDiv.innerHTML = `<div class="required-forms-inner-flex-wrapper"><div><div class="poppins-para medium"><span>No registration forms available</span></div></div></div>`;
+                                regFormBody.appendChild(noFormDiv);
+                            } else {
+                                if (progressDiv) progressDiv.style.display = '';
+                                requiredFormsDiv.style.display = 'block';
+                                if (needsToBeCompleted) needsToBeCompleted.style.display = '';
+                                const header = document.createElement('div');
+                                header.className = 'required-forms-flex-wrapper';
+                                header.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/687776c15a20ab54ef82bb9b_receipt_long%20(1).svg" alt="" class="inline-block-icon"><div class="poppins-para no-margin-bottom"><span>Required Forms</span></div>`;
+                                requiredFormsDiv.appendChild(header);
+
+                                const completedForms = forms.filter(f => checkform(f.formId)).length;
+                                const totalForms = forms.length;
+                                const percent = totalForms === 0 ? 0 : Math.round((completedForms / totalForms) * 100);
+
+                                const progressText = regFormBody.querySelector('.medium-text-with-margin-auto span');
+                                if (progressText) {
+                                    progressText.textContent = `${completedForms} of ${totalForms} forms complete`;
+                                }
+                                const percentText = regFormBody.querySelector('.bold-text-with-margin-auto span');
+                                if (percentText) {
+                                    percentText.textContent = `${percent}%`;
+                                }
+                                const progressBar = regFormBody.querySelector('.progress-bar-red-fill');
+                                if (progressBar) {
+                                    progressBar.style.width = `${percent}%`;
+                                }
+
+                                forms.forEach(form => {
+                                    const editable = checkform(form.formId);
+                                    let actionText = '';
+                                    let formLinkHref = '';
+                                    const is_live = form.is_live;
+                                    if (is_live) {
+                                        if (editable) {
+                                            // Find completed form data for submissionId
+                                            let dbData = (student.formCompletedList || []).find(o => o.formId == form.formId);
+                                            if (form.is_editable) {
+                                                formLinkHref = (form.formId && dbData && dbData.submissionId) ?
+                                                    `https://www.jotform.com/edit/${dbData.submissionId}?memberId=${this.data.memberId || ''}&classId=${student.classDetail ? student.classDetail.classId : ''}&studentName=${encodeURIComponent(student.studentDetail.studentName)}&accountEmail=${encodeURIComponent(student.studentDetail.parentEmail)}&paymentId=${student.studentDetail.uniqueIdentification}` :
+                                                    '';
+                                                actionText = 'Edit form';
+                                            } else {
+                                                formLinkHref = (dbData && dbData.submissionId) ?
+                                                    `https://www.jotform.com/submission/${dbData.submissionId}` : '';
+                                                actionText = 'View Form';
+                                            }
+                                        } else {
+                                            formLinkHref = (form.formId) ?
+                                                `https://form.jotform.com/${form.formId}?memberId=${this.data.memberId || ''}&classId=${student.classDetail ? student.classDetail.classId : ''}&studentName=${encodeURIComponent(student.studentDetail.studentName)}&accountEmail=${encodeURIComponent(student.studentDetail.parentEmail)}&paymentId=${student.studentDetail.uniqueIdentification}` :
+                                                '';
+                                            actionText = 'Go to form';
+                                        }
+                                    } else {
+                                        actionText = 'Go to form';
+                                        formLinkHref = '';
+                                    }
+                                    // Completed/Incompleted tag based on editable
+                                    const isCompleted = editable;
+                                    const linkClass = (is_live && window.innerWidth > 1200) ? 'iframe-lightbox-link dm-sans edit-form' : 'dm-sans edit-form';
+                                    const formDiv = document.createElement('div');
+                                    formDiv.className = 'required-forms-flex-wrapper bluish-gray-rounded-with-mt-10';
+                                    formDiv.innerHTML = `
+                                        <div class="required-forms-inner-flex-wrapper">
+                                            <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777aa573ccf80dbcfca9a0_svg1053.svg" alt="" class="inline-block-icon">
+                                            <div>
+                                                <div class="poppins-para medium"><span>${form.name}</span></div>
+                                                <div class="poppins-para dark-gray"><span>Required for program enrollment</span></div>
+                                            </div>
+                                        </div>
+                                        <div class="required-forms-tags-wrapper">
+                                            <div class="${isCompleted ? 'required-form-completed-tag' : 'required-form-in-completed-tag'}">
+                                                <p class="${isCompleted ? 'completed-tag-text' : 'incompleted-tag-text'}">${isCompleted ? 'Completed' : 'Incompleted'}</p>
+                                            </div>
+                                            <div class="edit-form-flex-wrapper">
+                                                <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777c5d76467e79b4430b3c_border_color.svg" alt="" class="inline-block-icon">
+                                                <a href="${formLinkHref}" target="_blank" class="${linkClass}" style="text-decoration:underline;">${actionText}</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                    requiredFormsDiv.appendChild(formDiv);
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            initTooltips() {
+                setTimeout(() => {
+                    document.querySelectorAll('[tip]').forEach(el => {
+                        el.addEventListener('mouseenter', function (e) {
+                            let tipDiv = document.createElement('div');
+                            tipDiv.className = 'tooltip';
+                            tipDiv.textContent = el.getAttribute('tip');
+                            document.body.appendChild(tipDiv);
+                            const rect = el.getBoundingClientRect();
+                            tipDiv.style.position = 'absolute';
+                            tipDiv.style.left = (rect.left + window.scrollX + 20) + 'px';
+                            tipDiv.style.top = (rect.top + window.scrollY - 10) + 'px';
+                            el._tipDiv = tipDiv;
+                        });
+                        el.addEventListener('mouseleave', function (e) {
+                            if (el._tipDiv) {
+                                el._tipDiv.remove();
+                                el._tipDiv = null;
+                            }
+                        });
+                    });
+                }, 0);
+            }
+            initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType, student) {
+                var centAmount = (amount * 100).toFixed(2);
+                var data = {
+                    "email": student.studentDetail.parentEmail,
+                    "name": student.studentDetail.studentName,
+                    "label": title,
+                    "paymentType": paymentType,
+                    "amount": parseFloat(centAmount),
+                    "invoiceId": invoice_id,
+                    "paymentId": student.studentDetail.uniqueIdentification,
+                    "paymentLinkId": paymentLinkId,
+                    "memberId": this.data.memberId,
+                    "successUrl": encodeURI("https://www.bergendebate.com/members/" + this.data.memberId + "?programName=" + title),
+                    "cancelUrl": "https://www.bergendebate.com/members/" + this.data.memberId,
+                }
+                var xhr = new XMLHttpRequest()
+                var $this = this;
+                xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl", true)
+                xhr.withCredentials = false
+                xhr.send(JSON.stringify(data))
+                xhr.onload = function () {
+                    let responseText = JSON.parse(xhr.responseText);
+                    console.log('responseText', responseText)
+                    if (responseText.success) {
+                        span.innerHTML = link_title;
+                        window.location.href = responseText.stripe_url;
+                    }
+
+                }
+            }
+            initStripePaymentLinks() {
+                setTimeout(() => {
+                    document.querySelectorAll('.pay-link[data-invoice-id]').forEach(link => {
+                        link.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            const invoiceId = link.getAttribute('data-invoice-id');
+                            const amount = link.getAttribute('data-amount');
+                            const paymentLinkId = link.getAttribute('data-payment-link-id');
+                            const title = link.getAttribute('data-title');
+                            const paymentType = link.getAttribute('data-payment-type');
+                            fetch('https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    email: '',
+                                    name: '',
+                                    label: title,
+                                    paymentType: paymentType,
+                                    amount: parseFloat(amount),
+                                    invoiceId: invoiceId,
+                                    paymentId: '',
+                                    paymentLinkId: paymentLinkId,
+                                    memberId: this.data.memberId,
+                                    successUrl: window.location.href,
+                                    cancelUrl: window.location.href
+                                })
+                            })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.success && data.stripe_url) {
+                                        window.location.href = data.stripe_url;
+                                    } else {
+                                        alert('Payment failed to initialize.');
+                                    }
+                                })
+                                .catch(() => alert('Payment failed to initialize.'));
+                        });
+                    });
+                }, 0);
+            }
+            /**
+     * Check form's id in completedForm list (from MongoDB) and use to determine if form is editable
+     * @param formId - Jotform Id
+     */
+            checkform($formId) {
+                if ($formId) {
+                    const found = this.$completedForm.some(el => el.formId == $formId);
+                    return found;
+                }
+                return false;
+            }
+            getformData($formId) {
+                let data = this.$completedForm.find(o => o.formId == $formId);
+                return data;
+            }
+            initiateLightbox() {
+                var $this = this;
+                [].forEach.call(document.getElementsByClassName("iframe-lightbox-link"), function (el) {
+                    el.lightbox = new IframeLightbox(el, {
+                        onClosed: function () {
+                            let activeTab = document.querySelector('.portal-tab-link.w--current');
+                            let activeTabName = activeTab ? activeTab.querySelector('.portal-tab-text-semibold').textContent : null;
+
+                            $this.spinner.style.display = 'block';
+                            setTimeout(function () {
+                                // Pass a callback to Portal that restores the tab
+                                let portal = new Portal($this.data, function () {
+                                    if (activeTabName) {
+                                        let tabs = document.querySelectorAll('.portal-tab-link');
+                                        tabs.forEach(tab => {
+                                            let name = tab.querySelector('.portal-tab-text-semibold');
+                                            if (name && name.textContent === activeTabName) {
+                                                tab.click();
+                                            }
+                                        });
+                                    }
+                                    $this.spinner.style.display = 'none';
+                                });
+                            }, 500);
+                        },
+                        scrolling: true,
+                    });
+                });
+            }
+            initializeFAQAccordion() {
+                const faqItems = document.querySelectorAll('.registration-form-accordian');
+
+                faqItems.forEach((item, index) => {
+                    const header = item.querySelector('.registration-form-accordion-header');
+                    const body = item.querySelector('.registration-form-accordion-body');
+                    //console.log("Attaching click event to header", index); 
+
+                    header.addEventListener('click', function () {
+                        //console.log("Header clicked:", index); 
+                        if (item.classList.contains('open')) {
+                            item.classList.remove('open');
+                            body.style.maxHeight = '0';
+                        } else {
+                            // Close any other open FAQ items
+                            faqItems.forEach(faq => {
+                                faq.classList.remove('open');
+                                faq.querySelector('.registration-form-accordion-body').style.maxHeight = '0';
+                            });
+                            // Open the current FAQ item
+                            item.classList.add('open');
+                            body.style.maxHeight = body.scrollHeight + 'px'; // Set max-height dynamically based on content height
+                        }
+                    });
+                });
+            }
+
+            initializeInvoiceAccordion() {
+                const invoiceItems = document.querySelectorAll('.invoice-form-accordian');
+
+                invoiceItems.forEach((item, index) => {
+                    const header = item.querySelector('.registration-form-accordion-header');
+                    const body = item.querySelector('.registration-form-accordion-body');
+                    if (!header || !body) return;
+                    header.addEventListener('click', function () {
+                        if (item.classList.contains('open')) {
+                            item.classList.remove('open');
+                            body.style.maxHeight = '0';
+                        } else {
+                            // Close any other open invoice accordions
+                            invoiceItems.forEach(inv => {
+                                inv.classList.remove('open');
+                                const b = inv.querySelector('.registration-form-accordion-body');
+                                if (b) b.style.maxHeight = '0';
+                            });
+                            // Open the current invoice accordion
+                            item.classList.add('open');
+                            body.style.maxHeight = body.scrollHeight + 'px';
+                        }
+                    });
+                });
+
+                // close event lightbox
+                var closeLink = document.getElementById('closeLightbox');
+                closeLink.addEventListener('click', function () {
+                    var lightbox = document.getElementById('lightbox');
+                    lightbox.style.display = 'none';
+                });
+            }
+
+            updateSidebarMillionsCount(millionsData, studentName) {
+                const sidebarCountEls = document.querySelectorAll('[data-millions="sidebarCount"]');
+                if (!sidebarCountEls) return;
+                sidebarCountEls.forEach(el => {
+                    // Find the entry for the current student
+                    const entry = millionsData.find(e => e.studentName === studentName);
+                    const millionsCount = entry?.earnAmount || 0;
+                    el.innerText = `${millionsCount}M`;
+                    // display block parent element of sidebarCountEl
+                    el.parentElement.style.display = 'block';
+                });
+            }
+
+        }
