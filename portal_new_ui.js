@@ -1,4 +1,4 @@
-class Portal {
+ class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -471,7 +471,10 @@ class Portal {
                         this.addTooltipCopyBehavior(img, item.link);
 
                         linkDiv.appendChild(a);
-                        linkDiv.appendChild(img);
+                        var imgContainer = document.createElement('div');
+                        imgContainer.classList.add("new-tab-icon-wrapper")
+                        imgContainer.appendChild(img);
+                        linkDiv.appendChild(imgContainer);
                         textDiv.appendChild(titleDiv);
                         textDiv.appendChild(subtitleDiv);
                         textDiv.appendChild(linkDiv);
@@ -522,7 +525,10 @@ class Portal {
                         titleDescWrapper.appendChild(subtitleDiv);
 
                         wrapper.appendChild(titleDescWrapper);
-                        wrapper.appendChild(img);
+                        var imgContainer = document.createElement('div');
+                        imgContainer.classList.add("new-tab-icon-wrapper")
+                        imgContainer.appendChild(img);
+                        wrapper.appendChild(imgContainer);
                         zoomDiv.appendChild(wrapper);
                     });
                 } else {
@@ -570,6 +576,10 @@ class Portal {
                         this.addTooltipCopyBehavior(img, item.link);
 
                         wrapper.appendChild(leftDiv);
+                        var imgContainer = document.createElement('div');
+                        imgContainer.classList.add("new-tab-icon-wrapper")
+                        imgContainer.appendChild(img);
+                        wrapper.appendChild(imgContainer);
                         wrapper.appendChild(img);
                         generalDiv.appendChild(wrapper);
                     });
