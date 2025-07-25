@@ -580,7 +580,7 @@
                         imgContainer.classList.add("new-tab-icon-wrapper")
                         imgContainer.appendChild(img);
                         wrapper.appendChild(imgContainer);
-                        wrapper.appendChild(img);
+                        wrapper.appendChild(imgContainer);
                         generalDiv.appendChild(wrapper);
                     });
                 } else {
