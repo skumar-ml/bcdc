@@ -81,11 +81,7 @@
                     const row = document.createElement('div');
                     row.className = 'transactions-table-row-grid-wrapper';
 
-                    // Name
-                    const nameDiv = document.createElement('div');
-                    nameDiv.className = 'transactions-table-row-text';
-                    nameDiv.textContent = student.studentName;
-                    row.appendChild(nameDiv);
+                    
 
                     // Date
                     const dateDiv = document.createElement('div');
@@ -172,7 +168,6 @@
                         <p class="portal-node-title transactions">Transactions</p>
                         <div class="transactions-table-div">
                             <div class="transactions-header-grid-wrapper">
-                                <div class="transaction-header-text">Name</div>
                                 <div class="transaction-header-text">Date</div>
                                 <div class="transaction-header-text">Description</div>
                                 <div class="transaction-header-text">Amount</div>
