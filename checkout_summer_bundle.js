@@ -650,7 +650,7 @@ class CheckOutWebflow {
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
-			this.setUpBackButtonTab();
+			//this.setUpBackButtonTab();
 			// Update basic data
 			this.updateBasicData();
 			// Hide spinner 
