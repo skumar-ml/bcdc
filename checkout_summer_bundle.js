@@ -724,6 +724,10 @@ class CheckOutWebflow {
         selectedSuppPro.innerHTML = "";
         if (selectedIds.length > 0) {
           this.displaySelectedSuppPrograms(selectedIds, selectedSuppPro);
+          selectedSuppPro.style.display = "block";
+        }
+        else {
+          selectedSuppPro.style.display = "none";
         }
       }
   
@@ -731,6 +735,10 @@ class CheckOutWebflow {
         selectedSuppProMob.innerHTML = "";
         if (selectedIds.length > 0) {
           this.displaySelectedSuppPrograms(selectedIds, selectedSuppProMob);
+          selectedSuppProMob.style.display = "block";
+        }
+        else {
+          selectedSuppProMob.style.display = "none";
         }
       }
     }
@@ -1309,13 +1317,13 @@ class CheckOutWebflow {
       if (bundleCheckbox && bundleCheckbox.checked) {
         isOpen = true;
       }
-      // check bundleModalClosed cookie date time for 1 hour. no need to show if less then 1 hour
-      const bundleModalClosed = document.cookie
+      // check summerBundleModalClosed cookie date time for 1 hour. no need to show if less then 1 hour
+      const summerBundleModalClosed = document.cookie
         .split("; ")
-        .find((row) => row.startsWith("bundleModalClosed="));
-      if (bundleModalClosed) {
+        .find((row) => row.startsWith("summerBundleModalClosed="));
+      if (summerBundleModalClosed) {
         const closedTime = new Date(
-          decodeURIComponent(bundleModalClosed.split("=")[1])
+          decodeURIComponent(summerBundleModalClosed.split("=")[1])
         );
         const currentTime = new Date();
         const oneHour = 60 * 60 * 1000;
