@@ -321,8 +321,14 @@ class CheckOutWebflow {
 		}
 	}
 
-	updateClickEventInDB(checkOutUrl){
-		let checkOutData = localStorage.getItem('checkOutData')
+	updateClickEventInDB(checkOutUrl, paymentType) {
+		let checkOutData = localStorage.getItem('checkOutData')\
+    var ach_payment = document.getElementById('ach_payment');
+		var card_payment = document.getElementById('card_payment');
+    ach_payment.innerHTML = "Processing..."
+    ach_payment.style.pointerEvents = "none";
+    card_payment.innerHTML = "Processing..."
+    card_payment.style.pointerEvents = "none";
 		if(checkOutData == undefined){
 			return true
 		}
@@ -353,9 +359,27 @@ class CheckOutWebflow {
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
 			console.log('responseText', responseText)
-			//window.location = checkOutUrl;
-		}
+      if (responseText.success) {
+        $this.$checkoutData = responseText;
+        if (paymentType == 'ach_payment' && responseText.achUrl) {
+          ach_payment.innerHTML = "Checkout"
+          ach_payment.style.pointerEvents = "auto";
+          window.location = responseText.achUrl;
+        } else if (paymentType == 'card_payment' && responseText.cardUrl) {
+          card_payment.innerHTML = "Checkout"
+          card_payment.style.pointerEvents = "auto";
+          window.location = responseText.cardUrl;
+        } else if (paymentType == 'paylater_payment' && responseText.paylaterUrl) {
+          paylater_payment.innerHTML = "Checkout"
+          paylater_payment.style.pointerEvents = "auto";
+          window.location = responseText.paylaterUrl;
+        } else {
+          window.location = checkOutUrl;
+        }
+      }
+    }
 	}
+  
 	
 	// Hide and show tab for program selection, student info and checkout payment
 	activateDiv(divId) {
@@ -520,21 +544,21 @@ class CheckOutWebflow {
 			// ach_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('us_bank_account', ach_payment);
 			ibackbutton.value = "1";
-			$this.updateClickEventInDB($this.$checkoutData.achUrl)
+			$this.updateClickEventInDB($this.$checkoutData.achUrl, 'ach_payment');
 			//window.location.href = $this.$checkoutData.achUrl;
 		})
 		card_payment.addEventListener('click', function () {
 			// card_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('card', card_payment);
 			ibackbutton.value = "1";
-			$this.updateClickEventInDB($this.$checkoutData.cardUrl)
+			$this.updateClickEventInDB($this.$checkoutData.cardUrl, 'card_payment');
 			//window.location.href = $this.$checkoutData.cardUrl;
 		})
 		paylater_payment.addEventListener('click', function () {
 			// paylater_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('paylater', paylater_payment);
 			ibackbutton.value = "1";
-			$this.updateClickEventInDB($this.$checkoutData.payLaterUrl)
+			$this.updateClickEventInDB($this.$checkoutData.payLaterUrl, 'paylater_payment');
 			//window.location.href = $this.$checkoutData.payLaterUrl;
 		})
 	}
