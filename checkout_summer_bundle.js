@@ -322,7 +322,7 @@ class CheckOutWebflow {
 	}
 
 	updateClickEventInDB(checkOutUrl, paymentType) {
-		let checkOutData = localStorage.getItem('checkOutData')\
+		let checkOutData = localStorage.getItem('checkOutData')
     var ach_payment = document.getElementById('ach_payment');
 		var card_payment = document.getElementById('card_payment');
     ach_payment.innerHTML = "Processing..."
