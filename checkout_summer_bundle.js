@@ -376,6 +376,8 @@ class CheckOutWebflow {
         } else {
           window.location = checkOutUrl;
         }
+      }else {
+        window.location = checkOutUrl;
       }
     }
 	}
