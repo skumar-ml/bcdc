@@ -333,7 +333,7 @@
                     if (classInfoEl) classInfoEl.textContent = `${classLevel} | ${day} ${startTime} | ${location}`;
                 } else if (hasSummerProgram) {
                     const { programName = 'Summer Program', location = '', year } = student.summerProgramDetail;
-                    let inferredYear = year || (student.classDetail?.currentYear + ' Summer') || (new Date().getFullYear() + ' Summer');
+                    let inferredYear = year || (student.summerProgramDetail?.currentYear + ' Summer') || (new Date().getFullYear() + ' Summer');
                     const paren = [location, inferredYear].filter(Boolean).join(', ');
                     if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
                     if (classInfoEl) classInfoEl.textContent = programName;
