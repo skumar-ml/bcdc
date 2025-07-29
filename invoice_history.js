@@ -214,8 +214,8 @@ class InvoiceHistory {
           // Date
           const dateDiv = document.createElement("div");
           dateDiv.className = "invoices-table-row-text";
-          dateDiv.textContent = inv.paymentDate
-            ? inv.paymentDate.split(" ")[0]
+          dateDiv.textContent = inv.invoiceDateLast
+            ? inv.invoiceDateLast.split(" ")[0]
             : "";
           // Description
           const descDiv = document.createElement("div");
