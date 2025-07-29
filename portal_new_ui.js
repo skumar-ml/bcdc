@@ -317,7 +317,7 @@
                 }
             }
 
-            renderCurrentClassSection(tabPane, student) {
+             renderCurrentClassSection(tabPane, student) {
                 const currentClassDiv = tabPane.querySelector('.recent-announcement-div.current-class');
                 if (!currentClassDiv) return;
 
@@ -332,11 +332,11 @@
                     if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(${sessionName} ${currentYear})</span>`;
                     if (classInfoEl) classInfoEl.textContent = `${classLevel} | ${day} ${startTime} | ${location}`;
                 } else if (hasSummerProgram) {
-                    const { programName = 'Summer Program', location = '', year } = student.summerProgramDetail;
-                    let inferredYear = year || (student.summerProgramDetail?.currentYear + ' Summer') || (new Date().getFullYear() + ' Summer');
-                    const paren = [location, inferredYear].filter(Boolean).join(', ');
+                    const { programName = 'Summer Program', location = '', year, summerSessionId } = student.summerProgramDetail;
+                    let inferredYear = year || 'Summer '+(student.summerProgramDetail?.currentYear ) || (new Date().getFullYear() + ' Summer');
+                    const paren = [inferredYear].filter(Boolean).join(', ');
                     if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
-                    if (classInfoEl) classInfoEl.textContent = programName;
+                    if (classInfoEl) classInfoEl.textContent = programName  +' | '+summerSessionId+ ' | '+location ;
                 } else {
                     if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(No class or summer program data available)</span>`;
                     if (classInfoEl) classInfoEl.textContent = '';
