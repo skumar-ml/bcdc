@@ -3,6 +3,7 @@ class InvoiceHistory {
     this.data = data;
     this.spinner = document.getElementById("half-circle-spinner");
     this.listDiv = document.querySelector('[data-invoice="tabData"]');
+    this.noRecord = document.querySelector('[data-millions="no-record-div"]');
     this.init();
   }
 
@@ -13,6 +14,9 @@ class InvoiceHistory {
     var data = await this.fetchData();
     invoiceTab.style.display = "block";
     this.spinner.style.display = "none";
+    if(data.SummerInvoiceData.length == 0 && data.classInvoiceData.length == 0){
+	this.noRecord.style.display = 'block';
+    }
     console.log(data);
     this.renderTabs(data);
     Webflow.require("tabs").redraw();
@@ -45,6 +49,7 @@ class InvoiceHistory {
       return apiData;
     } catch (error) {
       console.error("Fetch error:", error);
+      this.noRecord.style.display = 'block';
       throw error;
     }
   }
