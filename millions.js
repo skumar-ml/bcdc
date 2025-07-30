@@ -221,6 +221,7 @@
                     return;
                 }
                 if (portalTab) portalTab.style.display = 'block';
+                this.portalInfoWrapper.style.display = 'block';
                 this.spinner.style.display = "none";
                 this.renderTabMenu(apiData.millions_transactions);
                 this.renderTabContent(apiData.millions_transactions);
