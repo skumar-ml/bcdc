@@ -13,6 +13,7 @@
                     const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
                     if (!response.ok) {
                       this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
+                      this.spinner.style.display = 'none';
                       this.noRecordDiv.style.display = 'block'; // Hide no record div initially
                      return []
                     };
@@ -21,6 +22,7 @@
                     return apiData;
                 } catch (error) {
                     this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
+                    this.spinner.style.display = 'none';
                     this.noRecordDiv.style.display = 'none'; // Hide no record div initially
                     console.error('Fetch error:', error);
                 }
