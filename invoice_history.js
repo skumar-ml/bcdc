@@ -3,7 +3,7 @@ class InvoiceHistory {
     this.data = data;
     this.spinner = document.getElementById("half-circle-spinner");
     this.listDiv = document.querySelector('[data-invoice="tabData"]');
-    this.noRecord = document.querySelector('[data-millions="no-record-div"]');
+    this.noRecord = document.querySelector('[data-container="no-record-found"]');
     this.init();
   }
 
