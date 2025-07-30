@@ -143,12 +143,12 @@ class MillionsCoach {
                     <div class="students-info-row-text ${amountClass}">${amountText}</div>
                     <div class="students-info-flex-wrapper">
                         <div class="students-info-add-icon-div" data-student-id="${student._id}" data-action="add">
-                            <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68886a717e6f4b2bd8e38a9e_add-item.svg" 
+                            <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/688a001a61f82b5217fc5b50_add_box%201.svg" 
                                  loading="lazy" alt="" class="add-icon">
                             <div class="add-tooltip-text">Add</div>
                         </div>
                         <div class="students-info-delete-icon-div" data-student-id="${student._id}" data-action="delete">
-                            <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68886a65e7af1bb7a3b651b2_delete.svg" 
+                            <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/688a0024a37a8bf30b97a453_remove_circle%201.svg" 
                                  loading="lazy" alt="" class="delete-icon">
                             <div class="delete-tooltip-text">Delete</div>
                         </div>
