@@ -8,6 +8,7 @@
 
             async fetchData() {
                 const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
+                this.hideShowFreeAndPaidResources(response);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const apiData = await response.json();
                 return apiData;
@@ -27,6 +28,19 @@
                 return data;
             }
 
+            hideShowFreeAndPaidResources(response) {
+                const freeResourcesDivs = document.querySelectorAll('[data-resources="free"]');
+                const paidResource = document.querySelectorAll('[data-resources="paid"]');
+                if (!response.ok) {
+                    if (freeResourcesDivs) freeResourcesDivs.forEach(div => div.style.display = "block");
+                    if (paidResource) paidResource.forEach(div => div.style.display = "none");
+                    this.spinner.style.display = "none";
+                    return;
+                }
+                if (freeResourcesDivs) freeResourcesDivs.forEach(div => div.style.display = "none");
+                if (paidResource) paidResource.forEach(div => div.style.display = "grid");
+            }
+            
             async render() {
                 const paidResource = document.querySelector('.portal-info-wrapper')
                 paidResource.style.display = "none";
