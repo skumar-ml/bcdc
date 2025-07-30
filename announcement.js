@@ -11,6 +11,8 @@ class AnnouncementUI {
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
+                this.portalInfoWrapper = document.querySelector('.portal-info-wrapper');
+                this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
                 this.listDiv = document.querySelector('[data-announcements="list"]');
                 this.listDiv.innerHTML = "";
                 this.detailsDiv = document.querySelector('[data-announcements="details"]');
@@ -79,6 +81,9 @@ class AnnouncementUI {
                     const apiData = await response.json();
                     return apiData;
                 } catch (error) {
+                    this.portalInfoWrapper.style.display = 'none';
+                    this.noRecordDiv.style.display = 'block';
+                    this.spinner.style.display = 'none';
                     console.error('Fetch error:', error);
                 }
             }
@@ -89,8 +94,17 @@ class AnnouncementUI {
                 const announcementsDetails = document.querySelector('[data-announcements="details"]');
                 announcementsList.style.display = "none";
                 announcementsDetails.style.display = "none";
+                this.portalInfoWrapper.style.display = "none";
                 const apiData = await this.fetchData();
                 this.spinner.style.display = "none";
+                if(apiData.announcement.length > 0){
+                    this.noRecordDiv.style.display = "none";
+                    this.portalInfoWrapper.style.display = "block";
+                }else{
+                    this.noRecordDiv.style.display = "block";
+                    this.portalInfoWrapper.style.display = "none";
+                    return;
+                }
                 this.$announcements = apiData.announcement;
                 this.$selectedOid = this.$announcements.length > 0 && !AnnouncementUI.isMobile() ? this.$announcements[0].oid : null;
                 // Populate student and tags select boxes
