@@ -11,7 +11,9 @@
             async fetchData() {
                 try {
                     const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
-                    if (!response.ok) throw new Error('Network response was not ok');
+                    if (!response.ok) {
+                     return []
+                    };
                     
                     const apiData = await response.json();
                     return apiData;
