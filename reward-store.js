@@ -4,6 +4,10 @@ class RewardStore {
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
+                // .credit-balance-rounded-div, .transactions
+                this.portalInfoWrapper = document.querySelector('.portal-info-wrapper');
+                // data-millions="no-record-div"
+                this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
                 this.init()
 
             }
@@ -25,11 +29,19 @@ class RewardStore {
             async fetchData() {
                 try {
                     const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
-                    if (!response.ok) throw new Error('Network response was not ok');
+                    if (!response.ok) {
+                      this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
+                      this.spinner.style.display = 'none';
+                      this.noRecordDiv.style.display = 'block'; // Hide no record div initially
+                     return []
+                    };
 
                     const apiData = await response.json();
                     return apiData;
                 } catch (error) {
+                     this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
+                     this.spinner.style.display = 'none';
+                     this.noRecordDiv.style.display = 'block'; // Hide no record div initially
                     console.error('Fetch error:', error);
                 }
             }
