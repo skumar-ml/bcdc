@@ -11,7 +11,7 @@ class CreditBalance {
                 this.balanceRoundedDiv = document.querySelector('.credit-balance-rounded-div');
                 this.transactionsElement = document.querySelector('.transactions');
                 // data-millions="no-record-div"
-                this.noRecordDiv = document.querySelector('[data-millions="no-record-div"]');
+                this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
                 // Check if elements are found
                 this.init();
             }
