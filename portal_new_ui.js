@@ -8,7 +8,6 @@
 
             async fetchData() {
                 const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
-                this.hideShowFreeAndPaidResources(response);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const apiData = await response.json();
                 return apiData;
@@ -31,7 +30,7 @@
             hideShowFreeAndPaidResources(response) {
                 const freeResourcesDivs = document.querySelectorAll('[data-resources="free"]');
                 const paidResource = document.querySelectorAll('[data-resources="paid"]');
-                if (!response.ok) {
+                if (!response) {
                     if (freeResourcesDivs) freeResourcesDivs.forEach(div => div.style.display = "block");
                     if (paidResource) paidResource.forEach(div => div.style.display = "none");
                     this.spinner.style.display = "none";
@@ -50,6 +49,10 @@
                     this.fetchMillionsData(),
                     this.fetchAnnouncements()
                 ]);
+                if(data == "No data Found"){
+                    this.hideShowFreeAndPaidResources(false);
+                    return false
+                }
                 const millions_transactions = millionsData.millions_transactions;
                 this.setupTabs(data, millions_transactions, announcements);
                 this.initTooltips();
