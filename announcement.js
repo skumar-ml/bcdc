@@ -168,7 +168,7 @@ class AnnouncementUI {
                     }
                 }
                 if (filtered.length === 0) {
-                    this.listDiv.innerHTML = '<div data-millions="no-record-div" class="no-record-div test"><p class="dm-sans no-record">No Record Found</p></div>';
+                    this.listDiv.innerHTML = '<div class="no-record-found-div"><p class="dm-sans no-record-found">No Record Found</p></div>';
                     return;
                 }
                 this.listDiv.innerHTML = filtered.map(a => {
