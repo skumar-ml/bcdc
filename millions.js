@@ -12,24 +12,34 @@
                 try {
                     const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
                     if (!response.ok) {
+                      this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
+                      this.noRecordDiv.style.display = 'block'; // Hide no record div initially
                      return []
                     };
                     
                     const apiData = await response.json();
                     return apiData;
                 } catch (error) {
+                    this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
+                    this.noRecordDiv.style.display = 'none'; // Hide no record div initially
                     console.error('Fetch error:', error);
                 }
             }
             async fetchAnnouncementData() {
                 try {
                     const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
-                    if (!response.ok) throw new Error('Network response was not ok');
+                    if (!response.ok) {
+                      this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
+                      this.noRecordDiv.style.display = 'block'; // Hide no record div initially
+                     return []
+                    };
 
                     const apiData = await response.json();
                     this.updateAnnouncement(apiData);
                     return apiData;
                 } catch (error) {
+                     this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
+                    this.noRecordDiv.style.display = 'none'; // Hide no record div initially
                     console.error('Fetch error:', error);
                 }
             }
