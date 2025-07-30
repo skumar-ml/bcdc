@@ -142,18 +142,34 @@ class MillionsCoach {
                     <div class="students-info-row-text">${student.emailId || 'N/A'}</div>
                     <div class="students-info-row-text ${amountClass}">${amountText}</div>
                     <div class="students-info-flex-wrapper">
-                        <div class="students-info-add-icon-div" onclick="millionsCoach.addStudentAmount('${student._id}')">
+                        <div class="students-info-add-icon-div" data-student-id="${student._id}" data-action="add">
                             <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68886a717e6f4b2bd8e38a9e_add-item.svg" 
                                  loading="lazy" alt="" class="add-icon">
                             <div class="add-tooltip-text">Add</div>
                         </div>
-                        <div class="students-info-delete-icon-div" onclick="millionsCoach.deleteStudentAmount('${student._id}')">
+                        <div class="students-info-delete-icon-div" data-student-id="${student._id}" data-action="delete">
                             <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68886a65e7af1bb7a3b651b2_delete.svg" 
                                  loading="lazy" alt="" class="delete-icon">
                             <div class="delete-tooltip-text">Delete</div>
                         </div>
                     </div>
                 `;
+
+                // Add event listeners to the action buttons
+                const addButton = row.querySelector('[data-action="add"]');
+                const deleteButton = row.querySelector('[data-action="delete"]');
+                
+                if (addButton) {
+                    addButton.addEventListener('click', () => {
+                        this.addStudentAmount(student._id);
+                    });
+                }
+                
+                if (deleteButton) {
+                    deleteButton.addEventListener('click', () => {
+                        this.deleteStudentAmount(student._id);
+                    });
+                }
 
                 return row;
             }
@@ -188,20 +204,47 @@ class MillionsCoach {
                 
                 paginationContainer.innerHTML = `
                     <div class="pagination-controls">
-                        <button class="pagination-btn" onclick="millionsCoach.goToPage(${this.currentPage - 1})" 
+                        <button class="pagination-btn" data-page="${this.currentPage - 1}" data-action="prev"
                                 ${this.currentPage === 0 ? 'disabled' : ''}>
                             Previous
                         </button>
                         <div class="page-numbers">
                             ${pageNumbers}
                         </div>
-                        <button class="pagination-btn" onclick="millionsCoach.goToPage(${this.currentPage + 1})" 
+                        <button class="pagination-btn" data-page="${this.currentPage + 1}" data-action="next"
                                 ${this.currentPage >= totalPages - 1 ? 'disabled' : ''}>
                             Next
                         </button>
                     </div>
                     <div class="pagination-info">Page ${this.currentPage + 1} of ${totalPages} (${this.totalStudents} total students)</div>
                 `;
+
+                // Add event listeners to pagination buttons
+                const prevButton = paginationContainer.querySelector('[data-action="prev"]');
+                const nextButton = paginationContainer.querySelector('[data-action="next"]');
+                const pageButtons = paginationContainer.querySelectorAll('[data-page]');
+                
+                if (prevButton && !prevButton.disabled) {
+                    prevButton.addEventListener('click', () => {
+                        this.goToPage(this.currentPage - 1);
+                    });
+                }
+                
+                if (nextButton && !nextButton.disabled) {
+                    nextButton.addEventListener('click', () => {
+                        this.goToPage(this.currentPage + 1);
+                    });
+                }
+                
+                // Add event listeners to page number buttons
+                pageButtons.forEach(button => {
+                    if (!button.disabled) {
+                        button.addEventListener('click', () => {
+                            const page = parseInt(button.getAttribute('data-page'));
+                            this.goToPage(page);
+                        });
+                    }
+                });
                 console.log('Pagination displayed');
             }
 
@@ -250,7 +293,7 @@ class MillionsCoach {
                 if (isActive) {
                     return `<button class="pagination-btn page-number active" disabled>${pageNumber}</button>`;
                 } else {
-                    return `<button class="pagination-btn page-number" onclick="millionsCoach.goToPage(${pageNumber - 1})">${pageNumber}</button>`;
+                    return `<button class="pagination-btn page-number" data-page="${pageNumber - 1}">${pageNumber}</button>`;
                 }
             }
 
