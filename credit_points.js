@@ -42,7 +42,12 @@ class CreditBalance {
                         return;
                         console.error("No credit balance data found");
                     }
-                this.$creditData = apiData.creditBalance;
+                    this.$creditData = apiData.creditBalance;
+                    if (apiData) {
+                        this.balance = this.$creditData.creditBalance;
+                        this.transactions = this.$creditData.creditHistory;
+                        this.updateCreditBalanceDisplay();
+                    }
                     } catch (error) {
                     console.error("Error during initialization:", error);
                     this.spinner.style.display = "none"; // Hide spinner on error
@@ -56,12 +61,7 @@ class CreditBalance {
                 this.portalInfoWrapper.style.display = "block"; // Show rounded div
                 this.noRecordDiv.style.display = "none"; // Hide no record div
                 
-                this.$creditData = apiData.creditBalance;
-                if (apiData) {
-                    this.balance = this.$creditData.creditBalance;
-                    this.transactions = this.$creditData.creditHistory;
-                    this.updateCreditBalanceDisplay();
-                }
+                
             }
             updateCreditBalanceDisplay() {
                 if (this.balanceElement) {
