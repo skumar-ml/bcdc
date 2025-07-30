@@ -8,8 +8,7 @@ class CreditBalance {
                 this.balanceElement = document.querySelector('[data-credit="balance"]');
                 this.tableElement = document.querySelector('[data-credit="table"]');
                 // .credit-balance-rounded-div, .transactions
-                this.balanceRoundedDiv = document.querySelector('.credit-balance-rounded-div');
-                this.transactionsElement = document.querySelector('.transactions');
+                this.portalInfoWrapper = document.querySelector('.portal-info-wrapper');
                 // data-millions="no-record-div"
                 this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
                 // Check if elements are found
@@ -33,8 +32,7 @@ class CreditBalance {
                 this.spinner.style.display = "block"; // Show spinner
                 this.balanceElement.style.display = "none"; // Hide balance element initially
                 this.tableElement.style.display = "none"; // Hide table element initially
-                this.balanceRoundedDiv.style.display = "none"; // Hide rounded div initially
-                this.transactionsElement.style.display = "none"; // Hide transactions element initially
+                this.portalInfoWrapper.style.display = "none"; // Hide rounded div initially
                 this.noRecordDiv.style.display = "none"; // Hide no record div initially
                 try {
                     const apiData = await this.fetchCreditData();
@@ -55,8 +53,7 @@ class CreditBalance {
                 this.spinner.style.display = "none"; // Hide spinner
                 this.balanceElement.style.display = "block"; // Show balance element
                 this.tableElement.style.display = "block"; // Show table element
-                this.balanceRoundedDiv.style.display = "block"; // Show rounded div
-                this.transactionsElement.style.display = "block"; // Show transactions element
+                this.portalInfoWrapper.style.display = "block"; // Show rounded div
                 this.noRecordDiv.style.display = "none"; // Hide no record div
                 
                 this.$creditData = apiData.creditBalance;
