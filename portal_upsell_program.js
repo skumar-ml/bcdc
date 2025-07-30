@@ -47,19 +47,19 @@ class DisplaySuppProgram {
   }
   async displaySupplementaryProgram() {
     try {
-      this.spinner.style.display = "block";
+      //this.spinner.style.display = "block";
       this.$suppPro = await this.fetchData("getUpsellProgramTest/");
       this.handleClickEvents();
       this.closeIconEvent();
       if (this.$suppPro.length === 0) {
-        this.spinner.style.display = "none";
+       // this.spinner.style.display = "none";
       } else {
         this.createBundleProgram();
-        this.spinner.style.display = "none";
+        //this.spinner.style.display = "none";
       }
     } catch (error) {
       console.error("Error in displaySupplementaryProgram:", error);
-      this.spinner.style.display = "none";
+      //this.spinner.style.display = "none";
     }
   }
   createBundleProgram() {
