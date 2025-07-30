@@ -1,4 +1,4 @@
- class CreditBalance {
+class CreditBalance {
             $creditData = {};
             constructor(data) {
                 this.data = data;
@@ -7,6 +7,12 @@
                 this.spinner = document.getElementById("half-circle-spinner");
                 this.balanceElement = document.querySelector('[data-credit="balance"]');
                 this.tableElement = document.querySelector('[data-credit="table"]');
+                // .credit-balance-rounded-div, .transactions
+                this.balanceRoundedDiv = document.querySelector('.credit-balance-rounded-div');
+                this.transactionsElement = document.querySelector('.transactions');
+                // data-millions="no-record-div"
+                this.noRecordDiv = document.querySelector('[data-millions="no-record-div"]');
+                // Check if elements are found
                 this.init();
             }
             async fetchCreditData() {
@@ -18,6 +24,8 @@
                     const apiData = await response.json();
                     return apiData;
                 } catch (error) {
+                    this.noRecordDiv.style.display = "block";
+                    this.spinner.style.display = "none"; // Hide spinner on error
                     console.error("Fetch error:", error);
                 }
             }
@@ -25,10 +33,32 @@
                 this.spinner.style.display = "block"; // Show spinner
                 this.balanceElement.style.display = "none"; // Hide balance element initially
                 this.tableElement.style.display = "none"; // Hide table element initially
-                const apiData = await this.fetchCreditData();
+                this.balanceRoundedDiv.style.display = "none"; // Hide rounded div initially
+                this.transactionsElement.style.display = "none"; // Hide transactions element initially
+                this.noRecordDiv.style.display = "none"; // Hide no record div initially
+                try {
+                    const apiData = await this.fetchCreditData();
+                    if (!apiData) {
+                        
+                        this.noRecordDiv.style.display = "block"; // Show no record div
+                        return;
+                        console.error("No credit balance data found");
+                    }
+                this.$creditData = apiData.creditBalance;
+                    } catch (error) {
+                    console.error("Error during initialization:", error);
+                    this.spinner.style.display = "none"; // Hide spinner on error
+                    this.noRecordDiv.style.display = "block"; // Show no record div on error
+                    return;
+                }
+                // After fetching data, hide spinner and show elements
                 this.spinner.style.display = "none"; // Hide spinner
                 this.balanceElement.style.display = "block"; // Show balance element
                 this.tableElement.style.display = "block"; // Show table element
+                this.balanceRoundedDiv.style.display = "block"; // Show rounded div
+                this.transactionsElement.style.display = "block"; // Show transactions element
+                this.noRecordDiv.style.display = "none"; // Hide no record div
+                
                 this.$creditData = apiData.creditBalance;
                 if (apiData) {
                     this.balance = this.$creditData.creditBalance;
