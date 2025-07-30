@@ -15,14 +15,18 @@
 
             async fetchMillionsData() {
                 const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) {
+                 return [];
+                };
                 const millionsData = await response.json();
                 return millionsData;
             }
 
             async fetchAnnouncements() {
                 const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
-                if (!response.ok) throw new Error('Failed to fetch announcements');
+                if (!response.ok) {
+                  return [];
+                }
                 const data = await response.json();
                 return data;
             }
