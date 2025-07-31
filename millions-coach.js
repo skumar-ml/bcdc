@@ -206,14 +206,14 @@ class MillionsCoach {
                     <div class="pagination-controls">
                         <button class="pagination-btn" data-page="${this.currentPage - 1}" data-action="prev"
                                 ${this.currentPage === 0 ? 'disabled' : ''}>
-                            Previous
+                            <
                         </button>
                         <div class="page-numbers">
                             ${pageNumbers}
                         </div>
                         <button class="pagination-btn" data-page="${this.currentPage + 1}" data-action="next"
                                 ${this.currentPage >= totalPages - 1 ? 'disabled' : ''}>
-                            Next
+                            >
                         </button>
                     </div>
                     <div class="pagination-info">Page ${this.currentPage + 1} of ${totalPages} (${this.totalStudents} total students)</div>
