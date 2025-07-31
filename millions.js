@@ -1,4 +1,4 @@
-class MillionsRenderer {
+ class MillionsRenderer {
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -181,7 +181,6 @@ class MillionsRenderer {
                     const transactionsBanner = document.createElement('div');
                     transactionsBanner.className = 'portal-white-banner transactions';
                     transactionsBanner.innerHTML = `
-                        <p class="portal-node-title transactions">Transactions</p>
                         <div class="transactions-table-div">
                             <div class="transactions-header-grid-wrapper">
                                 <div class="transaction-header-text">Date</div>
@@ -191,6 +190,11 @@ class MillionsRenderer {
                             <div class="transactions-row-wrapper"></div>
                         </div>
                     `;
+                    // create p element for title
+                    const title = document.createElement('p');
+                    title.className = 'portal-node-title transactions';
+                    title.textContent = 'Transactions';
+                    tabPane.appendChild(title);
                     tabPane.appendChild(transactionsBanner);
 
                     tabContent.appendChild(tabPane);
