@@ -245,7 +245,8 @@
                 if (!announcementDiv || !Array.isArray(announcements.announcement)) return;
 
                 const countDiv = tabPane.querySelector('.recent-announcement-number');
-                if (countDiv) countDiv.textContent = announcements.announcement.length;
+                const unreadAnnouncements = announcements.announcement.filter(ann => !ann.is_read);
+                if (countDiv) countDiv.textContent = unreadAnnouncements.length;
 
                 const recent = announcements.announcement.slice(0, 2);
                 announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
