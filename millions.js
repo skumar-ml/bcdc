@@ -1,4 +1,4 @@
- class MillionsRenderer {
+class MillionsRenderer {
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -188,7 +188,7 @@
                                 <div class="transaction-header-text">Description</div>
                                 <div class="transaction-header-text">Amount</div>
                             </div>
-                            <div></div>
+                            <div class="transactions-row-wrapper"></div>
                         </div>
                     `;
                     tabPane.appendChild(transactionsBanner);
