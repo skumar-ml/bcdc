@@ -181,7 +181,7 @@ class AnnouncementUI {
                         shortMessage = plainMessage.slice(0, maxLen).trim() + '...';
                     }
                     return `
-            <div class="announcement-feed-info ${a.is_read === false ? ' white-bluish-bg' : ''} ${this.$selectedOid === a.oid ? ' pink-bg' : ''} " data-oid="${a.oid}" style="cursor:pointer;">  
+            <div class="announcement-feed-info ${a.is_read === false ? '' : ' white-bluish-bg'} ${this.$selectedOid === a.oid ? ' pink-bg' : ''} " data-oid="${a.oid}" style="cursor:pointer;">  
                 <div class="announcement-feed-flex-wrapper no-margin-top">
                     <div class="announcement-feed-rounded-circle${a.is_read ? ' gray' : ''}"></div>
                     <p class="announcement-feed-title">${a.title}</p>
