@@ -6,7 +6,7 @@ class AnnouncementUI {
             $selectedOid = null;
             $searchTerm = '';
             $studentFilter = 'All Students';
-            $tagsFilter = 'all categories';
+            $typeFilter = 'all types';
             $readUnreadFilter = 'all status';
             constructor(data) {
                 this.data = data;
@@ -20,7 +20,7 @@ class AnnouncementUI {
                 this.countsDivs = document.querySelectorAll('[data-announcements="counts"]');
                 this.searchInput = document.getElementById('search');
                 this.studentSelect = document.getElementById('student');
-                this.tagsSelect = document.getElementById('tags');
+                this.typeSelect = document.getElementById('type');
                 this.readUnreadSelect = document.getElementById('readUnread');
                 if (this.searchInput) {
                     this.searchInput.addEventListener('input', (e) => {
@@ -34,9 +34,9 @@ class AnnouncementUI {
                         this.renderAnnouncements();
                     });
                 }
-                if (this.tagsSelect) {
-                    this.tagsSelect.addEventListener('change', (e) => {
-                        this.$tagsFilter = e.target.value;
+                if (this.typeSelect) {
+                    this.typeSelect.addEventListener('change', (e) => {
+                        this.$typeFilter = e.target.value;
                         this.renderAnnouncements();
                     });
                 }
@@ -119,17 +119,17 @@ class AnnouncementUI {
                     this.studentSelect.innerHTML = '<option value="All Students">All Students</option>' +
                         Array.from(studentMap.entries()).map(([email, name]) => `<option value="${email}">${name}</option>`).join('');
                 }
-                if (this.tagsSelect) {
-                    // Get unique tags
-                    const tagSet = new Set();
+                if (this.typeSelect) {
+                    // Get unique types
+                    const typeSet = new Set();
                     this.$announcements.forEach(a => {
-                        if (Array.isArray(a.tagNames)) {
-                            a.tagNames.forEach(tag => tagSet.add(tag));
+                        if (Array.isArray(a.type)) {
+                            a.type.forEach(type => typeSet.add(type));
                         }
                     });
-                    const tags = Array.from(tagSet);
-                    this.tagsSelect.innerHTML = '<option value="all categories">All Categories</option>' +
-                        tags.map(t => `<option value="${t}">${t}</option>`).join('');
+                    const types = Array.from(typeSet);
+                    this.typeSelect.innerHTML = '<option value="all types">All Types</option>' +
+                        types.map(t => `<option value="${t}">${t}</option>`).join('');
                 }
                 this.renderAnnouncements();
                 this.renderDetails();
@@ -157,8 +157,8 @@ class AnnouncementUI {
                         (a.name && a.name.toLowerCase().includes(this.$studentFilter.toLowerCase()))
                     );
                 }
-                if (this.$tagsFilter && this.$tagsFilter !== 'all categories') {
-                    filtered = filtered.filter(a => Array.isArray(a.tagNames) && a.tagNames.some(tag => tag.toLowerCase().includes(this.$tagsFilter.toLowerCase())));
+                if (this.$typeFilter && this.$typeFilter !== 'all types') {
+                    filtered = filtered.filter(a => Array.isArray(a.type) && a.type.some(type => type.toLowerCase().includes(this.$typeFilter.toLowerCase())));
                 }
                 if (this.$readUnreadFilter && this.$readUnreadFilter !== 'all status') {
                     if (this.$readUnreadFilter === 'true') {
@@ -190,9 +190,9 @@ class AnnouncementUI {
                 <p class="dm-sans announcement-feed">${shortMessage}</p>
                 <div>
                     <div class="announcement-feed-flex-wrapper">
-                        ${a.tagNames.map(tag => `
-                            <div class="announcement-feed-tags">
-                                <p class="announcement-feed-tag-text">${tag}</p>
+                        ${a.type.map(type => `
+                            <div class="${AnnouncementUI.getRandomTypeTagClass()}">
+                                <p class="announcement-feed-tag-text">${type}</p>
                             </div>
                         `).join('')}
                         <p class="dm-sans ${a.is_read ? 'announcement-feed-gray-text' : 'announcement-feed-blue-text'} mark-read-toggle" data-oid="${a.oid}" style="cursor:pointer; text-decoration:underline;">
@@ -257,9 +257,9 @@ class AnnouncementUI {
                         <p class="portal-node-title announcement" style="cursor:pointer;">${a.title}</p>
                     </div>
                 <div class="announcement-feed-flex-wrapper tags">
-                    ${a.tagNames.map(tag => `
-                        <div class="announcement-feed-tags">
-                            <p class="announcement-feed-tag-text">${tag}</p>
+                    ${a.type.map(type => `
+                        <div class="${AnnouncementUI.getRandomTypeTagClass()}">
+                            <p class="announcement-feed-tag-text">${type}</p>
                         </div>
                     `).join('')}
                 </div>
@@ -346,6 +346,15 @@ class AnnouncementUI {
             formatDate(dateStr) {
                 const date = new Date(dateStr);
                 return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+            }
+            static getRandomTypeTagClass() {
+                const classes = [
+                    'announcement-feed-tags',
+                    'announcement-feed-tags green',
+                    'announcement-feed-tags dark-green',
+                    'announcement-feed-tags dark-orange'
+                ];
+                return classes[Math.floor(Math.random() * classes.length)];
             }
         }
         
