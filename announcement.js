@@ -1,4 +1,4 @@
-class AnnouncementUI {
+ class AnnouncementUI {
             static isMobile() {
                 return window.innerWidth <= 766;
             }
@@ -191,7 +191,7 @@ class AnnouncementUI {
                 <div>
                     <div class="announcement-feed-flex-wrapper">
                         ${a.type.map(type => `
-                            <div class="${AnnouncementUI.getRandomTypeTagClass()}">
+                            <div class="${AnnouncementUI.getRandomTypeTagClass(type)}">
                                 <p class="announcement-feed-tag-text">${type}</p>
                             </div>
                         `).join('')}
@@ -258,7 +258,7 @@ class AnnouncementUI {
                     </div>
                 <div class="announcement-feed-flex-wrapper tags">
                     ${a.type.map(type => `
-                        <div class="${AnnouncementUI.getRandomTypeTagClass()}">
+                        <div class="${AnnouncementUI.getRandomTypeTagClass(type)}">
                             <p class="announcement-feed-tag-text">${type}</p>
                         </div>
                     `).join('')}
@@ -347,12 +347,10 @@ class AnnouncementUI {
                 const date = new Date(dateStr);
                 return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
             }
-            static getRandomTypeTagClass() {
+            static getRandomTypeTagClass(type) {
                 const classes = [
-                    'announcement-feed-tags',
                     'announcement-feed-tags green',
-                    'announcement-feed-tags dark-green',
-                    'announcement-feed-tags dark-orange'
+                    'announcement-feed-tags orange'
                 ];
                 return classes[Math.floor(Math.random() * classes.length)];
             }
