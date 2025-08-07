@@ -191,7 +191,7 @@ class AnnouncementUI {
                 <div>
                     <div class="announcement-feed-flex-wrapper">
                         ${a.type.map(type => `
-                            <div class="${AnnouncementUI.getRandomTypeTagClass(type)}">
+                            <div class="${AnnouncementUI.getTypeTagClass(type)}">
                                 <p class="announcement-feed-tag-text">${type}</p>
                             </div>
                         `).join('')}
@@ -258,7 +258,7 @@ class AnnouncementUI {
                     </div>
                 <div class="announcement-feed-flex-wrapper tags">
                     ${a.type.map(type => `
-                        <div class="${AnnouncementUI.getRandomTypeTagClass(type)}">
+                        <div class="${AnnouncementUI.getTypeTagClass(type)}">
                             <p class="announcement-feed-tag-text">${type}</p>
                         </div>
                     `).join('')}
@@ -347,13 +347,19 @@ class AnnouncementUI {
                 const date = new Date(dateStr);
                 return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
             }
-            static getRandomTypeTagClass(type) {
-                const classes = [
+            static getTypeTagClass(type) {
+                if (!this.prototype.$typeClassMap) this.prototype.$typeClassMap = {};
+                if (!this.prototype.$typeClassList) this.prototype.$typeClassList = [
                     'announcement-feed-tags',
                     'announcement-feed-tags green',
                     'announcement-feed-tags orange'
                 ];
-                return classes[Math.floor(Math.random() * classes.length)];
+                if (!this.prototype.$typeClassMap[type]) {
+                    const keys = Object.keys(this.prototype.$typeClassMap);
+                    const idx = keys.length % this.prototype.$typeClassList.length;
+                    this.prototype.$typeClassMap[type] = this.prototype.$typeClassList[idx];
+                }
+                return this.prototype.$typeClassMap[type];
             }
         }
         
