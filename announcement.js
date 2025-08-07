@@ -1,4 +1,4 @@
- class AnnouncementUI {
+class AnnouncementUI {
             static isMobile() {
                 return window.innerWidth <= 766;
             }
@@ -349,6 +349,7 @@
             }
             static getRandomTypeTagClass(type) {
                 const classes = [
+                    'announcement-feed-tags',
                     'announcement-feed-tags green',
                     'announcement-feed-tags orange'
                 ];
