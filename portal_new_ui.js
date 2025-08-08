@@ -1,4 +1,4 @@
-class Portal {
+ class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -279,7 +279,7 @@ class Portal {
                 textEls[0].textContent = displayText;
 
                 // Update modal content and add click event for Learn More button
-                
+                $this.updateModalContent(student, recommendedLevel);
                 this.addLearnMoreClickEvent(recommendedSection, student, recommendedLevel);
 
                 
