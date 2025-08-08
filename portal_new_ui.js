@@ -1486,5 +1486,6 @@ class Portal {
                 });
             }
 
-        } document.addEventListener('DOMContentLoaded', function () {
+        } 
         
+
