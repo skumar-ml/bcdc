@@ -279,7 +279,7 @@
                 textEls[0].textContent = displayText;
 
                 // Update modal content and add click event for Learn More button
-                $this.updateModalContent(student, recommendedLevel);
+                this.updateModalContent(student, recommendedLevel);
                 this.addLearnMoreClickEvent(recommendedSection, student, recommendedLevel);
 
                 
@@ -1494,3 +1494,4 @@
 
         } 
         
+
