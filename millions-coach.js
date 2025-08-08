@@ -10,9 +10,11 @@ class MillionsCoach {
                 this.currentStudentsList = []; // Store current students data
                 this.render();
                 this.setupEventListeners();
+                this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
             }
 
             async render() {
+                this.noRecordDiv.style.display = "none"
                 try {
                     this.showLoading('Loading students data...');
                     const data = await this.fetchMillionsStudents();
@@ -24,9 +26,11 @@ class MillionsCoach {
                         this.totalStudents = studentsList.length >= this.limit ? data.count : studentsList.length;
                     }
                     this.hideLoading();
+                    this.noRecordDiv.style.display = "block"
                     this.displayStudentsList(studentsList);
                     this.displayPagination();
                 } catch (error) {
+                    this.noRecordDiv.style.display = "block"
                     console.error('Error rendering students:', error);
                     this.hideLoading();
                     this.displayError('Failed to load students data');
@@ -96,7 +100,7 @@ class MillionsCoach {
 
             displayStudentsList(studentsList) {
                 const studentsListDiv = document.querySelector('[data-millions="students-list"]');
-                const noRecordDiv = document.querySelector('[data-container="no-record-found"]');
+                //const noRecordDiv = document.querySelector('[data-container="no-record-found"]');
                 
                 if (!studentsListDiv) {
                     console.error('Students list container not found');
@@ -112,14 +116,14 @@ class MillionsCoach {
                 if (!studentsList || studentsList.length === 0) {
                     // Show no records message
                     if (noRecordDiv) {
-                        noRecordDiv.style.display = 'block';
+                        //noRecordDiv.style.display = 'block';
                     }
                     return;
                 }
 
                 // Hide no records message
                 if (noRecordDiv) {
-                    noRecordDiv.style.display = 'none';
+                    //noRecordDiv.style.display = 'none';
                 }
 
                 // Create student rows
@@ -635,3 +639,4 @@ class MillionsCoach {
                 return this.currentStudentsList.find(student => student._id === studentId);
             }
         }
+  
