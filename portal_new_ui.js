@@ -369,6 +369,11 @@ class Portal {
                     enrollButtons.href = enrollUrl;
                     enrollButtons.target = '_blank'; // Open in new tab
                 }
+                const enrollButtons2 = document.getElementById('enroll-now-btn-2');
+                if(enrollButtons2){
+                    enrollButtons2.href = enrollUrl;
+                    enrollButtons2.target = '_blank'; // Open in new tab
+                }
             }
             addLearnMoreClickEvent(recommendedSection, student, recommendedLevel) {
                 var $this = this
