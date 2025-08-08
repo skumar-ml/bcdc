@@ -1,6 +1,7 @@
 class MillionsCoach {
             $currentStudent = null;
             constructor(data) {
+                this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
                 this.data = data;
                 this.currentPage = 0;
                 this.limit = 10;
@@ -10,7 +11,7 @@ class MillionsCoach {
                 this.currentStudentsList = []; // Store current students data
                 this.render();
                 this.setupEventListeners();
-                this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
+
             }
 
             async render() {
@@ -640,3 +641,4 @@ class MillionsCoach {
             }
         }
   
+
