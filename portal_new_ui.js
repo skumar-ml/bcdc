@@ -279,8 +279,8 @@ class Portal {
                 textEls[0].textContent = displayText;
 
                 // Update modal content and add click event for Learn More button
-                this.updateModalContent(student, recommendedLevel);
-                this.addLearnMoreClickEvent(recommendedSection);
+                
+                this.addLearnMoreClickEvent(recommendedSection, student, recommendedLevel);
 
                 // Update Enroll Now button links based on recommended level
                 this.updateEnrollNowLinks(recommendedSection, recommendedLevel);
@@ -373,7 +373,7 @@ class Portal {
                     }
                 });
             }
-            addLearnMoreClickEvent(recommendedSection) {
+            addLearnMoreClickEvent(recommendedSection, student, recommendedLevel) {
                 const learnMoreBtn = recommendedSection.querySelector('#next-recomm-learn-more');
                 if (!learnMoreBtn) return;
 
@@ -384,6 +384,7 @@ class Portal {
                 learnMoreBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.handleLearnMoreClick();
+                    this.updateModalContent(student, recommendedLevel);
                 });
             }
             handleLearnMoreClick() {
