@@ -597,10 +597,10 @@ class Portal {
                     const { programName = 'Summer Program', location = '', year, summerSessionId } = student.summerProgramDetail;
                     let inferredYear = year || 'Summer ' + (student.summerProgramDetail?.currentYear) || (new Date().getFullYear() + ' Summer');
                     const paren = [inferredYear].filter(Boolean).join(', ');
-                    if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(${paren})</span>`;
+                    if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
                     if (classInfoEl) classInfoEl.textContent = programName + ' | ' + summerSessionId + ' | ' + location;
                 } else {
-                    if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(No class or summer program data available)</span>`;
+                    if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(No class or summer program data available)</span>`;
                     if (classInfoEl) classInfoEl.textContent = '';
                 }
             }
@@ -1488,4 +1488,3 @@ class Portal {
 
         } 
         
-
