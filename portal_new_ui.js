@@ -16,7 +16,7 @@
             async fetchMillionsData() {
                 const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
                 if (!response.ok) {
-                 return [];
+                    return [];
                 };
                 const millionsData = await response.json();
                 return millionsData;
@@ -25,7 +25,7 @@
             async fetchAnnouncements() {
                 const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
                 if (!response.ok) {
-                  return [];
+                    return [];
                 }
                 const data = await response.json();
                 return data;
@@ -43,7 +43,7 @@
                 if (freeResourcesDivs) freeResourcesDivs.forEach(div => div.style.display = "none");
                 if (paidResource) paidResource.forEach(div => div.style.display = "grid");
             }
-            
+
             async render() {
                 const paidResource = document.querySelector('.portal-info-wrapper')
                 paidResource.style.display = "none";
@@ -53,7 +53,7 @@
                     this.fetchMillionsData(),
                     this.fetchAnnouncements()
                 ]);
-                if(data == "No data Found"){
+                if (data == "No data Found") {
                     this.hideShowFreeAndPaidResources(false);
                     return false
                 }
@@ -266,7 +266,13 @@
 
                     const date = document.createElement('p');
                     date.className = 'dm-sans medium';
-                    date.textContent = ann.date || ann.createdAt || '';
+                    const dates = new Date(ann.created_on);
+
+                    // Format to "July 10"
+                    const options = { month: "long", day: "numeric" };
+                    const formattedDate = dates.toLocaleDateString("en-US", options);
+                    
+                    date.textContent = formattedDate || '';
 
                     flex.appendChild(title);
                     flex.appendChild(date);
@@ -339,7 +345,7 @@
                 }
             }
 
-             renderCurrentClassSection(tabPane, student) {
+            renderCurrentClassSection(tabPane, student) {
                 const currentClassDiv = tabPane.querySelector('.recent-announcement-div.current-class');
                 if (!currentClassDiv) return;
 
@@ -355,10 +361,10 @@
                     if (classInfoEl) classInfoEl.textContent = `${classLevel} | ${day} ${startTime} | ${location}`;
                 } else if (hasSummerProgram) {
                     const { programName = 'Summer Program', location = '', year, summerSessionId } = student.summerProgramDetail;
-                    let inferredYear = year || 'Summer '+(student.summerProgramDetail?.currentYear ) || (new Date().getFullYear() + ' Summer');
+                    let inferredYear = year || 'Summer ' + (student.summerProgramDetail?.currentYear) || (new Date().getFullYear() + ' Summer');
                     const paren = [inferredYear].filter(Boolean).join(', ');
                     if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
-                    if (classInfoEl) classInfoEl.textContent = programName  +' | '+summerSessionId+ ' | '+location ;
+                    if (classInfoEl) classInfoEl.textContent = programName + ' | ' + summerSessionId + ' | ' + location;
                 } else {
                     if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(No class or summer program data available)</span>`;
                     if (classInfoEl) classInfoEl.textContent = '';
@@ -618,7 +624,7 @@
                 img.addEventListener('click', () => {
                     window.open(link, '_blank');
                 });
-                
+
                 // let tooltip;
                 // const showTooltip = (text) => {
                 //     if (!tooltip) {
@@ -1165,7 +1171,7 @@
                                             }
                                         });
                                     }
-                                $this.spinner.style.display = 'none';
+                                    $this.spinner.style.display = 'none';
                                 });
                             }, 500);
                         },
@@ -1246,4 +1252,5 @@
                 });
             }
 
-        }
+        } document.addEventListener('DOMContentLoaded', function () {
+            
