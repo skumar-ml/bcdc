@@ -27,11 +27,12 @@ class MillionsCoach {
                         this.totalStudents = studentsList.length >= this.limit ? data.count : studentsList.length;
                     }
                     this.hideLoading();
-                    this.noRecordDiv.style.display = "block"
+                    if(studentsList.length == 0){
+                       // this.noRecordDiv.style.display = "block"
+                    }
                     this.displayStudentsList(studentsList);
                     this.displayPagination();
                 } catch (error) {
-                    this.noRecordDiv.style.display = "block"
                     console.error('Error rendering students:', error);
                     this.hideLoading();
                     this.displayError('Failed to load students data');
@@ -641,5 +642,6 @@ class MillionsCoach {
             }
         }
   
+
 
 
