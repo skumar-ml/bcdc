@@ -1,4 +1,4 @@
- class Portal {
+class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -279,7 +279,7 @@
                 textEls[0].textContent = displayText;
 
                 // Update modal content and add click event for Learn More button
-                this.updateModalContent(student, recommendedLevel);
+                this.updateModalContent(student, recommendedLevel, tabPane);
                 this.addLearnMoreClickEvent(recommendedSection, student, recommendedLevel);
 
                 
@@ -298,7 +298,7 @@
                 modal.classList.remove("show");
                 modal.style.display = "none";
             }
-            updateModalContent(student, recommendedLevel) {
+            updateModalContent(student, recommendedLevel, tabPane="") {
                 const modal = document.getElementById('next-recomm-modal');
                 if (!modal) return;
 
@@ -339,7 +339,7 @@
                 }
 
                 // Update modal's Enroll Now button link
-                this.updateEnrollNowLinks(modal, recommendedLevel);
+                this.updateEnrollNowLinks(modal, recommendedLevel, tabPane);
 
                 // Update "Why This Program" section
                 const whyProgramTextEl = modal.querySelector('.why-this-program-rounded-div .dm-sans.blue-text');
@@ -348,7 +348,7 @@
                     whyProgramTextEl.textContent = `Based on ${studentName}'s current level and performance, we recommend enrolling in ${levelLabel} for continued skill growth and advanced debate techniques.`;
                 }
             }
-            updateEnrollNowLinks(contextEl, recommendedLevel) {
+            updateEnrollNowLinks(contextEl, recommendedLevel, tabPane) {
                 if (!contextEl || !recommendedLevel) return;
 
                 // Get the level from recommendedLevel
@@ -369,7 +369,7 @@
                     enrollButtons.href = enrollUrl;
                     enrollButtons.target = '_blank'; // Open in new tab
                 }
-                const enrollButtons2 = document.getElementById('enroll-now-btn-2');
+                const enrollButtons2 = tabPane.querySelector('#enroll-now-btn-2');
                 if(enrollButtons2){
                     enrollButtons2.href = enrollUrl;
                     enrollButtons2.target = '_blank'; // Open in new tab
@@ -1494,4 +1494,3 @@
 
         } 
         
-
