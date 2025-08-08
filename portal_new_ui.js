@@ -591,7 +591,7 @@ class Portal {
 
                 if (hasClassDetail) {
                     const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = student.classDetail;
-                    if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(${sessionName} ${currentYear})</span>`;
+                    if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${sessionName} ${currentYear})</span>`;
                     if (classInfoEl) classInfoEl.textContent = `${classLevel} | ${day} ${startTime} | ${location}`;
                 } else if (hasSummerProgram) {
                     const { programName = 'Summer Program', location = '', year, summerSessionId } = student.summerProgramDetail;
