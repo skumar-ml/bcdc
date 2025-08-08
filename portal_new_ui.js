@@ -231,7 +231,7 @@ class Portal {
                     // hide recommended section if student data is empty
                     const recommendedSection = tabPane.querySelector('.next-recomm-prog-info');
                     recommendedSection.style.display = 'none';
-                    return;
+                   // return;
                 }
                 this.renderRecentAnnouncements(tabPane, announcements);
                 this.renderFutureClasses(tabPane, studentData);
@@ -597,7 +597,7 @@ class Portal {
                     const { programName = 'Summer Program', location = '', year, summerSessionId } = student.summerProgramDetail;
                     let inferredYear = year || 'Summer ' + (student.summerProgramDetail?.currentYear) || (new Date().getFullYear() + ' Summer');
                     const paren = [inferredYear].filter(Boolean).join(', ');
-                    if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
+                    if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(${paren})</span>`;
                     if (classInfoEl) classInfoEl.textContent = programName + ' | ' + summerSessionId + ' | ' + location;
                 } else {
                     if (titleEl) titleEl.innerHTML = `Current Class <span class="dm-sans regular">(No class or summer program data available)</span>`;
@@ -1486,6 +1486,5 @@ class Portal {
                 });
             }
 
-        } 
+        } document.addEventListener('DOMContentLoaded', function () {
         
-
