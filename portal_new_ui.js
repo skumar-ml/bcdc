@@ -1252,5 +1252,6 @@
                 });
             }
 
-        } document.addEventListener('DOMContentLoaded', function () {
+        }
             
+
