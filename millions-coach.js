@@ -102,7 +102,7 @@ class MillionsCoach {
 
             displayStudentsList(studentsList) {
                 const studentsListDiv = document.querySelector('[data-millions="students-list"]');
-                //const noRecordDiv = document.querySelector('[data-container="no-record-found"]');
+                const noRecordDiv = document.querySelector('[data-table="no-record-found"]');
                 
                 if (!studentsListDiv) {
                     console.error('Students list container not found');
@@ -117,16 +117,17 @@ class MillionsCoach {
 
                 if (!studentsList || studentsList.length === 0) {
                     // Show no records message
-                   // if (noRecordDiv) {
-                        //noRecordDiv.style.display = 'block';
-                   // }
+                    if (noRecordDiv) {
+                        studentsListDiv.style.display = "none"
+                        noRecordDiv.style.display = 'block';
+                    }
                     return;
                 }
 
                 // Hide no records message
-               // if (noRecordDiv) {
-                    //noRecordDiv.style.display = 'none';
-              //  }
+                if (noRecordDiv) {
+                    noRecordDiv.style.display = 'none';
+                }
 
                 // Create student rows
                 studentsList.forEach(student => {
@@ -647,6 +648,7 @@ class MillionsCoach {
             }
         }
   
+
 
 
 
