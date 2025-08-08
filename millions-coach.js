@@ -116,16 +116,16 @@ class MillionsCoach {
 
                 if (!studentsList || studentsList.length === 0) {
                     // Show no records message
-                    if (noRecordDiv) {
+                   // if (noRecordDiv) {
                         //noRecordDiv.style.display = 'block';
-                    }
+                   // }
                     return;
                 }
 
                 // Hide no records message
-                if (noRecordDiv) {
+               // if (noRecordDiv) {
                     //noRecordDiv.style.display = 'none';
-                }
+              //  }
 
                 // Create student rows
                 studentsList.forEach(student => {
@@ -641,4 +641,5 @@ class MillionsCoach {
             }
         }
   
+
 
