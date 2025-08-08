@@ -282,8 +282,7 @@ class Portal {
                 
                 this.addLearnMoreClickEvent(recommendedSection, student, recommendedLevel);
 
-                // Update Enroll Now button links based on recommended level
-                this.updateEnrollNowLinks(recommendedSection, recommendedLevel);
+                
 
                 // Start/Update countdown in the recommended section if deadline exists
                 const earlyBirdDeadline = student?.classDetail?.earlyBirdDeadlineDate;
@@ -365,15 +364,14 @@ class Portal {
                 const enrollUrl = `https://www.bergendebate.com/programs/${levelUrl}`;
 
                 // Find and update all Enroll Now buttons in the context
-                const enrollButtons = contextEl.querySelectorAll('a[href*="/portal/millions"]');
-                enrollButtons.forEach(button => {
-                    if (button.textContent.trim() === 'Enroll Now') {
-                        button.href = enrollUrl;
-                        button.target = '_blank'; // Open in new tab
-                    }
-                });
+                const enrollButtons = document.getElementById('enroll-now-btn');
+                if(enrollButtons){
+                    enrollButtons.href = enrollUrl;
+                    enrollButtons.target = '_blank'; // Open in new tab
+                }
             }
             addLearnMoreClickEvent(recommendedSection, student, recommendedLevel) {
+                var $this = this
                 const learnMoreBtn = recommendedSection.querySelector('#next-recomm-learn-more');
                 if (!learnMoreBtn) return;
 
@@ -384,7 +382,9 @@ class Portal {
                 learnMoreBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.handleLearnMoreClick();
-                    this.updateModalContent(student, recommendedLevel);
+                    // Update Enroll Now button links based on recommended level
+                    //$this.updateEnrollNowLinks(recommendedSection, recommendedLevel);
+                    $this.updateModalContent(student, recommendedLevel);
                 });
             }
             handleLearnMoreClick() {
