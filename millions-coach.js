@@ -181,16 +181,20 @@ class MillionsCoach {
             }
 
             displayPagination() {
+                let paginationContainer = document.querySelector('[data-millions="pagination"]');
+                
                 const totalPages = Math.ceil(this.totalStudents / this.limit);
                 console.log('Total students:', this.totalStudents, 'Limit:', this.limit, 'Total pages:', totalPages, 'Test mode:', this.testMode);
                 
                 // Show pagination if we have more than one page OR if in test mode
                 if (totalPages <= 1 && this.totalStudents <= this.limit && !this.testMode) {
                     console.log('No pagination needed - only one page or less data');
+                    paginationContainer.style.display = "none"
                     return;
+                }else {
+                    paginationContainer.style.display = "block"
                 }
 
-                let paginationContainer = document.querySelector('[data-millions="pagination"]');
                 if (!paginationContainer) {
                     // Create pagination container if it doesn't exist
                     const studentsTableDiv = document.querySelector('.students-info-table-div');
@@ -253,6 +257,7 @@ class MillionsCoach {
                 });
                 console.log('Pagination displayed');
             }
+
 
             generatePageNumbers(totalPages) {
                 const currentPage = this.currentPage;
@@ -642,6 +647,7 @@ class MillionsCoach {
             }
         }
   
+
 
 
 
