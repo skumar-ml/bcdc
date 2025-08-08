@@ -1,4 +1,4 @@
- class Portal {
+class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -222,17 +222,251 @@
                     this.renderCurrentClassSection(tabPane, student);
                     this.renderMillions(tabPane, student, millionsData);
                     this.renderUploadedContent(tabPane, student);
+                    this.renderRecommendedLevel(tabPane, student)
+                    
                     setTimeout(() => {
                         this.renderPendingItems(tabPane, student);
                     }, 500);
+                }else{
+                    // hide recommended section if student data is empty
+                    const recommendedSection = tabPane.querySelector('.next-recomm-prog-info');
+                    recommendedSection.style.display = 'none';
+                    return;
                 }
                 this.renderRecentAnnouncements(tabPane, announcements);
                 this.renderFutureClasses(tabPane, studentData);
                 this.renderPastClasses(tabPane, studentData);
             }
+            renderRecommendedLevel(tabPane, student){
+                const recommendedSection = tabPane.querySelector('.next-recomm-prog-info');
+                const programTitle =  tabPane.querySelector('.next-recomm-prog-title');
+                if (!recommendedSection) return;
+                const studentName = student.studentDetail.studentName || 'Student';
+                if(programTitle){
+                    programTitle.textContent = `Next Recommended Program for ${studentName}`;
+                }
+
+                const recommendedLevel = student.recommendedLevel;
+
+                const isEmpty = !recommendedLevel || Object.values(recommendedLevel).every(v => v === undefined || v === null || `${v}`.trim() === '');
+                if (isEmpty) {
+                    recommendedSection.style.display = 'none';
+                    return;
+                }
+
+                // Show section
+                recommendedSection.style.display = '';
+
+                // Update the first next-recomm-prog-text (the line that shows session/year | level)
+                const textEls = recommendedSection.querySelectorAll('.next-recomm-prog-text');
+                if (!textEls || textEls.length === 0) return;
+
+                const sessionYear = [recommendedLevel.session, recommendedLevel.year].filter(Boolean).join(' ');
+                const levelLabel = recommendedLevel.level || '';
+
+                let displayText = '';
+                if (sessionYear && levelLabel) displayText = `${sessionYear} | ${levelLabel}`;
+                else if (sessionYear) displayText = sessionYear;
+                else if (levelLabel) displayText = levelLabel;
+                else if (recommendedLevel.grade) displayText = recommendedLevel.grade;
+
+                if (!displayText) {
+                    recommendedSection.style.display = 'none';
+                    return;
+                }
+
+                // First element is the headline line we want to update
+                textEls[0].textContent = displayText;
+
+                // Update modal content and add click event for Learn More button
+                this.updateModalContent(student, recommendedLevel);
+                this.addLearnMoreClickEvent(recommendedSection);
+
+                // Update Enroll Now button links based on recommended level
+                this.updateEnrollNowLinks(recommendedSection, recommendedLevel);
+
+                // Start/Update countdown in the recommended section if deadline exists
+                const earlyBirdDeadline = student?.classDetail?.earlyBirdDeadlineDate;
+                if (earlyBirdDeadline) {
+                    this.startOfferCountdown(recommendedSection, earlyBirdDeadline);
+                }
+            }
+            showModal(modal){
+                modal.classList.add("show");
+                modal.style.display = "flex";
+            }
+            hideModal(modal){
+                modal.classList.remove("show");
+                modal.style.display = "none";
+            }
+            updateModalContent(student, recommendedLevel) {
+                const modal = document.getElementById('next-recomm-modal');
+                if (!modal) return;
+
+                // Get student name (fallback to 'Student' if not available)
+                const studentName = student.studentDetail.studentName || 'Student';
+                
+                // Update modal title using the new ID
+                const titleEl = document.getElementById('modal-student-name');
+                if (titleEl) {
+                    titleEl.textContent = `Next Step for ${studentName}`;
+                }
+
+                // Update recommended text using the new ID
+                const recommendedTextEl = document.getElementById('modal-recommended-text');
+                if (recommendedTextEl) {
+                    const sessionYear = [recommendedLevel.session, recommendedLevel.year].filter(Boolean).join(' ');
+                    const levelLabel = recommendedLevel.level || '';
+                    const gradeLabel = recommendedLevel.grade || '';
+                    
+                    let recommendedText = 'Recommended: ';
+                    if (sessionYear && levelLabel) {
+                        recommendedText += `${sessionYear} | ${levelLabel}`;
+                    } else if (sessionYear) {
+                        recommendedText += sessionYear;
+                    } else if (levelLabel) {
+                        recommendedText += levelLabel;
+                    } else if (gradeLabel) {
+                        recommendedText += gradeLabel;
+                    }
+                    
+                    recommendedTextEl.textContent = recommendedText;
+                }
+
+                // Update countdown in modal if deadline exists
+                const earlyBirdDeadline = student?.classDetail?.earlyBirdDeadlineDate;
+                if (earlyBirdDeadline) {
+                    this.startOfferCountdown(modal, earlyBirdDeadline);
+                }
+
+                // Update modal's Enroll Now button link
+                this.updateEnrollNowLinks(modal, recommendedLevel);
+
+                // Update "Why This Program" section
+                const whyProgramTextEl = modal.querySelector('.why-this-program-rounded-div .dm-sans.blue-text');
+                if (whyProgramTextEl) {
+                    const levelLabel = recommendedLevel.level || recommendedLevel.grade || 'this level';
+                    whyProgramTextEl.textContent = `Based on ${studentName}'s current level and performance, we recommend enrolling in ${levelLabel} for continued skill growth and advanced debate techniques.`;
+                }
+            }
+            updateEnrollNowLinks(contextEl, recommendedLevel) {
+                if (!contextEl || !recommendedLevel) return;
+
+                // Get the level from recommendedLevel
+                const level = recommendedLevel.level || recommendedLevel.grade || '';
+                if (!level) return;
+
+                // Convert level to URL format (e.g., "Level 3B" -> "level-3b")
+                const levelUrl = level.toLowerCase()
+                    .replace(/\s+/g, '-')  // Replace spaces with hyphens
+                    .replace(/[^a-z0-9-]/g, ''); // Remove any other special characters
+
+                // Generate the enrollment URL
+                const enrollUrl = `https://www.bergendebate.com/programs/${levelUrl}`;
+
+                // Find and update all Enroll Now buttons in the context
+                const enrollButtons = contextEl.querySelectorAll('a[href*="/portal/millions"]');
+                enrollButtons.forEach(button => {
+                    if (button.textContent.trim() === 'Enroll Now') {
+                        button.href = enrollUrl;
+                        button.target = '_blank'; // Open in new tab
+                    }
+                });
+            }
+            addLearnMoreClickEvent(recommendedSection) {
+                const learnMoreBtn = recommendedSection.querySelector('#next-recomm-learn-more');
+                if (!learnMoreBtn) return;
+
+                // Remove existing event listeners to prevent duplicates
+                learnMoreBtn.removeEventListener('click', this.handleLearnMoreClick);
+                
+                // Add new click event
+                learnMoreBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.handleLearnMoreClick();
+                });
+            }
+            handleLearnMoreClick() {
+                const modal = document.getElementById('next-recomm-modal');
+                if (modal) {
+                    this.showModal(modal);
+                    this.addModalCloseEvents(modal);
+                }
+            }
+            startOfferCountdown(contextEl, deadlineString) {
+                if (!contextEl || !deadlineString) return;
+
+                // Locate timer elements within the provided context element
+                const daysEl = contextEl.querySelector('[data-timer="day"]');
+                const hoursEl = contextEl.querySelector('[data-timer="hour"]');
+                const minutesEl = contextEl.querySelector('[data-timer="minutes"]');
+                if (!daysEl || !hoursEl || !minutesEl) return;
+
+                // Clear any previous interval attached to this context
+                if (contextEl._countdownInterval) {
+                    clearInterval(contextEl._countdownInterval);
+                    contextEl._countdownInterval = null;
+                }
+
+                // Parse deadline (treat provided string as local time)
+                const parsed = new Date(deadlineString.replace(' ', 'T'));
+                if (isNaN(parsed.getTime())) return;
+
+                const update = () => {
+                    const now = new Date();
+                    let totalSeconds = Math.floor((parsed.getTime() - now.getTime()) / 1000);
+                    if (totalSeconds <= 0) {
+                        daysEl.textContent = '0';
+                        hoursEl.textContent = '00';
+                        minutesEl.textContent = '00';
+                        clearInterval(contextEl._countdownInterval);
+                        contextEl._countdownInterval = null;
+                        return;
+                    }
+
+                    const days = Math.floor(totalSeconds / 86400);
+                    totalSeconds -= days * 86400;
+                    const hours = Math.floor(totalSeconds / 3600);
+                    totalSeconds -= hours * 3600;
+                    const minutes = Math.floor(totalSeconds / 60);
+
+                    daysEl.textContent = String(days);
+                    hoursEl.textContent = String(hours).padStart(2, '0');
+                    minutesEl.textContent = String(minutes).padStart(2, '0');
+                };
+
+                // Initial paint and start 1s updates
+                update();
+                contextEl._countdownInterval = setInterval(update, 1000);
+            }
+            addModalCloseEvents(modal) {
+                // Close on background click
+                const modalBg = modal.querySelector('#next-recomm-modal-bg');
+                if (modalBg) {
+                    modalBg.addEventListener('click', () => this.hideModal(modal));
+                }
+
+                // Close on close button click
+                const closeBtn = modal.querySelector('#close-modal');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.hideModal(modal);
+                    });
+                }
+
+                // Close on Escape key
+                const handleEscape = (e) => {
+                    if (e.key === 'Escape') {
+                        this.hideModal(modal);
+                        document.removeEventListener('keydown', handleEscape);
+                    }
+                };
+                document.addEventListener('keydown', handleEscape);
+            }
             renderRecentAnnouncements(tabPane, announcements) {
 
-                // update sidebar data count data-announcements of is_read is false 
+                // update sidebar d)ata count data-announcements of is_read is false 
                 const sidebarAnnouncementsCount = document.querySelectorAll('[data-announcements="counts"]');
                 sidebarAnnouncementsCount.forEach(el => {
                     el.textContent = announcements.announcement.filter(ann => !ann.is_read).length;
@@ -271,7 +505,7 @@
                     // Format to "July 10"
                     const options = { month: "long", day: "numeric" };
                     const formattedDate = dates.toLocaleDateString("en-US", options);
-                    
+
                     date.textContent = formattedDate || '';
 
                     flex.appendChild(title);
@@ -1252,6 +1486,5 @@
                 });
             }
 
-        }
-            
-
+        } document.addEventListener('DOMContentLoaded', function () {
+        
