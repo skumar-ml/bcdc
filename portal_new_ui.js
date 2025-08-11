@@ -1395,6 +1395,7 @@ class Portal {
                 [].forEach.call(document.getElementsByClassName("iframe-lightbox-link"), function (el) {
                     el.lightbox = new IframeLightbox(el, {
                         onClosed: function () {
+                            window.location.reload()
                             let activeTab = document.querySelector('.portal-tab-link.w--current');
                             let activeTabName = activeTab ? activeTab.querySelector('.portal-tab-text-semibold').textContent : null;
 
@@ -1494,3 +1495,4 @@ class Portal {
 
         } 
         
+
