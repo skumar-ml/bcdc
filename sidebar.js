@@ -20,6 +20,8 @@ class Sidebar {
     // add condition url doesn't contain "members"
     if (!window.location.href.includes("members")) {
       this.checkReferralsAccess();
+    } else if (!window.location.href.includes("dashboard")) {
+      this.checkOtherAccess();
     }
   }
   checkReferralsAccess() {
@@ -57,5 +59,4 @@ class Sidebar {
     });
   }
 }
-
 
