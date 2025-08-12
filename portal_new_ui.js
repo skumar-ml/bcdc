@@ -21,7 +21,38 @@ class Portal {
                 const millionsData = await response.json();
                 return millionsData;
             }
-
+            checkReferralsAccess(data) {
+                const referralsLinks = document.querySelectorAll('[sidebar-menu="referrals"]');
+                if (data) {
+                    if (Array.isArray(data) && data.length > 0) {
+                    let hasCurrentSession = false;
+                    data.forEach((studentObj) => {
+                        const studentName = Object.keys(studentObj)[0];
+                        const studentData = studentObj[studentName];
+                        if (
+                        studentData.currentSession &&
+                        Array.isArray(studentData.currentSession) &&
+                        studentData.currentSession.length > 0
+                        ) {
+                        hasCurrentSession = true;
+                        }
+                    });
+                    referralsLinks.forEach((referralsLink) => {
+                        referralsLink.style.display = hasCurrentSession ? "block" : "none";
+                    });
+                    } else {
+                    referralsLinks.forEach((referralsLink) => {
+                        referralsLink.style.display = "none";
+                    });
+                    }
+                } else {
+                    if (referralsLinks.length > 0) {
+                    referralsLinks.forEach((referralsLink) => {
+                        referralsLink.style.display = "none";
+                    });
+                    }
+                }
+            }
             async fetchAnnouncements() {
                 const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
                 if (!response.ok) {
@@ -66,6 +97,7 @@ class Portal {
                 this.initializeFAQAccordion();
                 this.initializeInvoiceAccordion();
                 this.hideRegistrationFormAccordion();
+                this.checkReferralsAccess(data);
                 paidResource.style.display = "block";
                 setTimeout(() => {
                     this.spinner.style.display = "none";
@@ -1498,5 +1530,6 @@ class Portal {
 
         } 
         
+
 
 
