@@ -40,7 +40,7 @@ class Sidebar {
             }
           });
           referralsLinks.forEach((referralsLink) => {
-            referralsLink.style.display = hasCurrentSession ? "block" : "none";
+            referralsLink.style.display = hasCurrentSession ? "flex" : "none";
           });
         } else {
           referralsLinks.forEach((referralsLink) => {
@@ -57,4 +57,5 @@ class Sidebar {
     });
   }
 }
+
 
