@@ -6,7 +6,7 @@ class Sidebar {
   async fetchData(endPoint) {
     try {
       const response = await fetch(
-        `${this.data.apiBaseURL}${endPoint}/${this.data.memberId}`
+        `${this.data.baseUrl}${endPoint}/${this.data.memberId}`
       );
       if (!response.ok) throw new Error("Network response was not ok");
 
@@ -55,4 +55,5 @@ class Sidebar {
     });
   }
 }
+
 
