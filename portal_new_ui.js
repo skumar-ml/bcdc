@@ -43,7 +43,7 @@ class Portal {
                         }
                     });
                     referralsLinks.forEach((referralsLink) => {
-                        referralsLink.style.display = hasCurrentSession ? "block" : "none";
+                        referralsLink.style.display = hasCurrentSession ? "flex" : "none";
                     });
                     if (!hasCurrentSession) {
                         localStorage.setItem(
@@ -1541,6 +1541,7 @@ class Portal {
 
         } 
         
+
 
 
 
