@@ -22,6 +22,7 @@ class Portal {
                 return millionsData;
             }
              checkReferralsAccess(data) {
+                const currentDateTime = new Date().toISOString();
                 const referralsLinks = document.querySelectorAll('[sidebar-menu="referrals"]');
                 if (data) {
                     if (Array.isArray(data) && data.length > 0) {
@@ -1540,6 +1541,7 @@ class Portal {
 
         } 
         
+
 
 
 
