@@ -25,38 +25,73 @@ class Sidebar {
     }
   }
   checkReferralsAccess() {
-    const referralsLinks = document.querySelectorAll('[sidebar-menu="referrals"]');
-    this.fetchData("getPortalDetail").then((data) => {
-      if (data) {
-        if (Array.isArray(data) && data.length > 0) {
-          let hasCurrentSession = false;
-          data.forEach((studentObj) => {
-            const studentName = Object.keys(studentObj)[0];
-            const studentData = studentObj[studentName];
-            if (
-              studentData.currentSession &&
-              Array.isArray(studentData.currentSession) &&
-              studentData.currentSession.length > 0
-            ) {
-              hasCurrentSession = true;
+    // get hasReferralSession localstorage data and check for date should be > 1 hours and hasCurrentSession should false
+    const hasReferralSession = JSON.parse(
+      localStorage.getItem("hasReferralSession")
+    );
+    const currentDateTime = new Date().toISOString();
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    if (
+      hasReferralSession &&
+      hasReferralSession.hasCurrentSession &&
+      hasReferralSession.memberId === this.data.memberId &&
+      new Date(hasReferralSession.currentDateTime) > new Date(oneHourAgo)
+    ) {
+      // if hasReferralSession is true and currentDateTime is less than 1 hour then show referrals links
+      const referralsLinks = document.querySelectorAll(
+        '[sidebar-menu="referrals"]'
+      );
+      referralsLinks.forEach((referralsLink) => {
+        referralsLink.style.display = "flex";
+      });
+    } else {
+      const referralsLinks = document.querySelectorAll(
+        '[sidebar-menu="referrals"]'
+      );
+      this.fetchData("getPortalDetail").then((data) => {
+        if (data) {
+          const currentDateTime = new Date().toISOString();
+          if (Array.isArray(data) && data.length > 0) {
+            let hasCurrentSession = false;
+            data.forEach((studentObj) => {
+              const studentName = Object.keys(studentObj)[0];
+              const studentData = studentObj[studentName];
+              if (
+                studentData.currentSession &&
+                Array.isArray(studentData.currentSession) &&
+                studentData.currentSession.length > 0
+              ) {
+                hasCurrentSession = true;
+                // add in local storage hasCurrentSession and current date time json
+                
+                localStorage.setItem(
+                  "hasReferralSession",
+                  JSON.stringify({ hasCurrentSession, currentDateTime, memberId: this.data.memberId })
+                );
+              }
+            });
+            referralsLinks.forEach((referralsLink) => {
+              referralsLink.style.display = hasCurrentSession ? "flex" : "none";
+            });
+            if (!hasCurrentSession) {
+                localStorage.setItem(
+                  "hasReferralSession",
+                  JSON.stringify({ hasCurrentSession, currentDateTime })
+                );
             }
-          });
-          referralsLinks.forEach((referralsLink) => {
-            referralsLink.style.display = hasCurrentSession ? "flex" : "none";
-          });
+          } else {
+            referralsLinks.forEach((referralsLink) => {
+              referralsLink.style.display = "none";
+            });
+          }
         } else {
-          referralsLinks.forEach((referralsLink) => {
-            referralsLink.style.display = "none";
-          });
+          if (referralsLinks.length > 0) {
+            referralsLinks.forEach((referralsLink) => {
+              referralsLink.style.display = "none";
+            });
+          }
         }
-      } else {
-        if (referralsLinks.length > 0) {
-          referralsLinks.forEach((referralsLink) => {
-            referralsLink.style.display = "none";
-          });
-        }
-      }
-    });
+      });
+    }
   }
 }
-
