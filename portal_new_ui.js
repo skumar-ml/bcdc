@@ -21,7 +21,7 @@ class Portal {
                 const millionsData = await response.json();
                 return millionsData;
             }
-            checkReferralsAccess(data) {
+             checkReferralsAccess(data) {
                 const referralsLinks = document.querySelectorAll('[sidebar-menu="referrals"]');
                 if (data) {
                     if (Array.isArray(data) && data.length > 0) {
@@ -35,11 +35,21 @@ class Portal {
                         studentData.currentSession.length > 0
                         ) {
                         hasCurrentSession = true;
+                        localStorage.setItem(
+                            "hasReferralSession",
+                            JSON.stringify({ hasCurrentSession, currentDateTime, memberId: this.data.memberId })
+                            );
                         }
                     });
                     referralsLinks.forEach((referralsLink) => {
-                        referralsLink.style.display = hasCurrentSession ? "flex" : "none";
+                        referralsLink.style.display = hasCurrentSession ? "block" : "none";
                     });
+                    if (!hasCurrentSession) {
+                        localStorage.setItem(
+                        "hasReferralSession",
+                        JSON.stringify({ hasCurrentSession, currentDateTime })
+                        );
+                    }
                     } else {
                     referralsLinks.forEach((referralsLink) => {
                         referralsLink.style.display = "none";
@@ -1530,6 +1540,7 @@ class Portal {
 
         } 
         
+
 
 
 
