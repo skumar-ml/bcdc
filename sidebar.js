@@ -23,7 +23,7 @@ class Sidebar {
     }
   }
   checkReferralsAccess() {
-    const referralsLink = document.querySelector('[sidebar-menu="referrals"]');
+    const referralsLinks = document.querySelectorAll('[sidebar-menu="referrals"]');
     this.fetchData("getPortalDetail").then((data) => {
       if (data) {
         if (Array.isArray(data) && data.length > 0) {
@@ -39,21 +39,22 @@ class Sidebar {
               hasCurrentSession = true;
             }
           });
-          if (referralsLink) {
+          referralsLinks.forEach((referralsLink) => {
             referralsLink.style.display = hasCurrentSession ? "block" : "none";
-          }
+          });
         } else {
-          if (referralsLink) {
+          referralsLinks.forEach((referralsLink) => {
             referralsLink.style.display = "none";
-          }
+          });
         }
       } else {
-        if (referralsLink) {
-          referralsLink.style.display = "none";
+        if (referralsLinks.length > 0) {
+          referralsLinks.forEach((referralsLink) => {
+            referralsLink.style.display = "none";
+          });
         }
       }
     });
   }
 }
-
 
