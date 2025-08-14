@@ -1,4 +1,4 @@
-class AnnouncementUI {
+ class AnnouncementUI {
             static isMobile() {
                 return window.innerWidth <= 766;
             }
@@ -8,8 +8,10 @@ class AnnouncementUI {
             $studentFilter = 'All Students';
             $typeFilter = 'all types';
             $readUnreadFilter = 'all status';
+            $selectedEmailId = null;
             constructor(data) {
                 this.data = data;
+                this.$selectedEmailId = data.accountEmail;
                 this.spinner = document.getElementById("half-circle-spinner");
                 this.portalInfoWrapper = document.querySelector('.portal-info-wrapper');
                 this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
@@ -111,7 +113,8 @@ class AnnouncementUI {
                 if (this.studentSelect) {
                     // Get unique students by name+email
                     const studentMap = new Map();
-                    this.$announcements.forEach(a => {
+                    const onlyStudentData = this.$announcements.filter(a => a.accountType == "student");
+                    onlyStudentData.forEach(a => {
                         if (a.emailId && a.name) {
                             studentMap.set(a.emailId, a.name);
                         }
@@ -156,6 +159,8 @@ class AnnouncementUI {
                         (a.emailId && a.emailId.toLowerCase().includes(this.$studentFilter.toLowerCase())) ||
                         (a.name && a.name.toLowerCase().includes(this.$studentFilter.toLowerCase()))
                     );
+                }else{
+                    filtered = filtered.filter(a => a.emailId === this.$selectedEmailId);        
                 }
                 if (this.$typeFilter && this.$typeFilter !== 'all types') {
                     filtered = filtered.filter(a => Array.isArray(a.type) && a.type.some(type => type.toLowerCase().includes(this.$typeFilter.toLowerCase())));
@@ -171,6 +176,10 @@ class AnnouncementUI {
                     this.listDiv.innerHTML = '<div class="no-record-found-div"><p class="dm-sans no-record-found">No Record Found</p></div>';
                     return;
                 }
+                filtered.forEach(a => {
+                    a.allSentNames = this.$announcements.filter(b => b.message_id === a.message_id).map(c => c.name).join(', ');
+                });
+
                 this.listDiv.innerHTML = filtered.map(a => {
                     // Remove HTML tags from message
                     const plainMessage = a.message ? a.message.replace(/<[^>]*>/g, '') : '';
@@ -200,7 +209,7 @@ class AnnouncementUI {
                         </p>
                     </div>
                     <div class="announcement-feed-flex-wrapper margin-0">
-                        <p class="poppins-para announcement-text">${a.name}</p>
+                        <p class="poppins-para announcement-text">${a.allSentNames}</p>
                     </div>
                 </div>
             </div>
