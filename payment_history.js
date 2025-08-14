@@ -361,12 +361,12 @@ class PaymentHistory {
           actionButtonDiv.appendChild(paymentLink);
 
           // Add separator if not last
-          if (idx < invoice.jotFormUrlLink.length - 1) {
-            const separator = document.createElement("span");
-            separator.className = "separator";
-            separator.textContent = " | ";
-            actionButtonDiv.appendChild(separator);
-          }
+          // if (idx < invoice.jotFormUrlLink.length - 1) {
+          //   const separator = document.createElement("span");
+          //   separator.className = "separator";
+          //   separator.textContent = " | ";
+          //   actionButtonDiv.appendChild(separator);
+          // }
         });
       } else if (invoice.is_completed) {
         // Show paid status
@@ -678,3 +678,4 @@ class PaymentHistory {
     }
   }
 }
+
