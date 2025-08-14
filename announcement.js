@@ -252,6 +252,7 @@
 
             renderDetails() {
                 const a = this.$announcements.find(x => x.oid === this.$selectedOid);
+                a.allSentNames = this.$announcements.filter(b => b.message_id === a.message_id).map(c => c.name).join(', ');
                 if (!a) {
                     this.detailsDiv.innerHTML = '<div class="announcement-feed-assignment-info"><p class="select-announcement-text">Select an announcement to see details.</p></div>';
                     if (AnnouncementUI.isMobile()) {
@@ -275,7 +276,7 @@
             </div>
             <div class="announcement-feed-assignment-info">
                 <div class="announcement-flex-wrapper assignment">
-                    <p class="dm-sans announcement-text"><span class="bold-text">To: &nbsp;</span>${a.name}</p>
+                    <p class="dm-sans announcement-text"><span class="bold-text">To: &nbsp;</span>${a.allSentNames}</p>
                     <p class="dm-sans announcement-text-small">${new Date(a.created_on).toLocaleString()}</p>
                 </div>
                 <div class="announcement-feed-assignment-inner-div">
