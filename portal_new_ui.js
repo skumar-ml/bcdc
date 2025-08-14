@@ -449,6 +449,7 @@ class Portal {
                 const daysEl = contextEl.querySelector('[data-timer="day"]');
                 const hoursEl = contextEl.querySelector('[data-timer="hour"]');
                 const minutesEl = contextEl.querySelector('[data-timer="minutes"]');
+                const secondsEl = contextEl.querySelector('[data-timer="seconds"]');
                 if (!daysEl || !hoursEl || !minutesEl) return;
 
                 // Clear any previous interval attached to this context
@@ -478,10 +479,11 @@ class Portal {
                     const hours = Math.floor(totalSeconds / 3600);
                     totalSeconds -= hours * 3600;
                     const minutes = Math.floor(totalSeconds / 60);
-
+                    const seconds = totalSeconds % 60;
                     daysEl.textContent = String(days);
                     hoursEl.textContent = String(hours).padStart(2, '0');
                     minutesEl.textContent = String(minutes).padStart(2, '0');
+                    secondsEl.textContent = String(seconds).padStart(2, '0');
                 };
 
                 // Initial paint and start 1s updates
@@ -1541,6 +1543,7 @@ class Portal {
 
         } 
         
+
 
 
 
