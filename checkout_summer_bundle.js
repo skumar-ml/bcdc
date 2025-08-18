@@ -937,13 +937,17 @@ class CheckOutWebflow {
 			// Remove commas and parse as float
 			let achAmount = parseFloat(this.memberData.achAmount.replace(/,/g, ""));
 			// Add 50 and assign to disc_amount
-			var disc_amount = (achAmount + 50).toFixed(2);
+      var disc_amount = (achAmount).toFixed(2);
+			if(item.disc_amount){
+        var disc_amount = (achAmount + parseFloat(item.disc_amount)).toFixed(2);
+      }
 		}
 		var coreData = {
 			"amount": this.memberData.achAmount,
 			"bundle_type": "Summer",
-			"desc": "Last Year's Locked-In Tuition + $50 Off | Full-Day Enrollment",
+			"desc": (item.desc ? item.desc : ""),
 			"disc_amount": this.numberWithCommas(disc_amount),
+      		"original_desc_amount": item.disc_amount,
 			"label": "Summer",
 			"sessionId": 2,
 			"upsellProgramId": 99,
@@ -984,18 +988,21 @@ class CheckOutWebflow {
           var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
           modalCardContainer.appendChild(modelCard);
         });
-        this.displayTotalDiscount(item.upsellPrograms);
+        this.displayTotalDiscount(item.upsellPrograms, item.disc_amount);
       });
       this.disableEnableBuyNowButton();
     }
-	
-	displayTotalDiscount(bundleData){
+
+	displayTotalDiscount(bundleData, discAmount){
       const totalDiscount = bundleData.reduce((acc, bundle) => {
           const amount = Number(bundle.portal_amount) || 0;
           const discAmount = Number(bundle.portal_disc_amount) || 0;
           return acc + (discAmount - amount);
         }, 0);
-      const discountEl = document.querySelectorAll('[data-addon="discount"]')
+		if(discAmount){
+			totalDiscount += parseFloat(discAmount);
+		}
+		const discountEl = document.querySelectorAll('[data-addon="discount"]')
       discountEl.forEach(el=>{
         el.innerHTML = "$"+this.numberWithCommas(totalDiscount);
       })
@@ -1062,7 +1069,13 @@ class CheckOutWebflow {
       discountPrice.textContent = singleBundleData.amount
         ? `$${this.numberWithCommas(amount)}`
         : "$3,350";
-      priceFlex.appendChild(originalPrice);
+      if(type === "core"){
+        if(singleBundleData.original_desc_amount){
+          priceFlex.appendChild(originalPrice);
+        }
+      }else {
+        priceFlex.appendChild(originalPrice);
+      }
       priceFlex.appendChild(discountPrice);
 
       // Assemble
@@ -1114,165 +1127,6 @@ class CheckOutWebflow {
 
       return flexContainer;
     }
-    // createBundlePrograms(academicData) {
-    //   const cardContainer = document.querySelector(
-    //     "[data-upSell='card-container']"
-    //   );
-    //   const modalCardContainer = document.querySelector(
-    //     "[data-upSell='modal-card-container']"
-    //   );
-    //   if (!cardContainer) {
-    //     return;
-    //   }
-    //   if (!modalCardContainer) {
-    //     return;
-    //   }
-    //   modalCardContainer.innerHTML = ""; // Clear existing content
-    //   cardContainer.innerHTML = ""; // Clear existing content
-    //   // remove remove session data based on summerSessionId 2
-    //   academicData = academicData.filter((item) => {
-    //     return item.sessionId !== 2;
-    //   });
-
-    //   academicData.forEach((item) => {
-    //     var currentSessionId = item.sessionId;
-    //     // remove current Session Data based on summerSessionId item.
-    //     var bundleData = item.upsellPrograms.filter(
-    //       (bundle) => bundle.sessionId !== currentSessionId
-    //     );
-    //     bundleData.forEach((singleBundleData) => {
-    //       var card = this.createBundleCard(singleBundleData);
-    //       cardContainer.appendChild(card);
-    //       var modelCard = this.createModelBundleCard(singleBundleData);
-    //       modalCardContainer.appendChild(modelCard);
-    //     });
-    //   });
-    //   this.disableEnableBuyNowButton();
-    // }
-    // createModelBundleCard(singleBundleData) {
-    //   var $this = this;
-    //   const label = creEl("label", "option");
-    //   const input = creEl("input", "bundleProgram");
-    //   input.type = "checkbox";
-    //   input.setAttribute("programDetailId", singleBundleData.upsellProgramId);
-    //   input.value = singleBundleData.amount
-    //     ? singleBundleData.amount
-    //     : "3350";
-    //   input.addEventListener("change", (event) => {
-    //     console.log("Checkbox changed:", event.target.checked);
-    //     if (event.target.checked) {
-    //       // push in array if not already present
-    //       if (!this.$selectedProgram.includes(singleBundleData)) {
-    //         this.$selectedProgram.push(singleBundleData);
-    //       }
-    //     } else {
-    //       // remove singleBundleData from $selectedProgram
-    //       this.$selectedProgram = this.$selectedProgram.filter(
-    //         (program) =>
-    //           program.upsellProgramId !== singleBundleData.upsellProgramId
-    //       );
-    //     }
-        
-    //     // checked and unchecked all elements based on data-upsell-program-id
-    //     const allCheckboxes = document.querySelectorAll("[programDetailId]");
-    //     allCheckboxes.forEach((checkbox) => {
-    //       if(checkbox.getAttribute("programDetailId") ==
-    //       singleBundleData.upsellProgramId){
-    //         checkbox.checked = event.target.checked;
-    //       }
-    //     });
-    //     //$this.disableEnableBuyNowButton();
-    //   });
-    //   // check if $selectedProgram already contains singleBundleData
-    //   const cardContent = creEl("div", "option-content");
-
-    //   const seasonTitle = creEl("div", "term-title");
-    //   seasonTitle.textContent = `${singleBundleData.label + "("+ singleBundleData.yearId+ ")" || "Winter/Spring"}`;
-
-    //   const priceDiv = creEl("div", "price");
-    //   const price = creEl("span", "original");
-    //   price.textContent = singleBundleData.disc_amount
-    //     ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
-    //     : "$3,350";
-    //   const originalPrice = creEl("span", "discounted-price");
-    //   originalPrice.textContent = singleBundleData.amount
-    //     ? `$${this.numberWithCommas(singleBundleData.amount)}`
-    //     : "$3,770";
-    //   priceDiv.appendChild(price);
-    //   priceDiv.appendChild(originalPrice);
-
-
-    //   cardContent.appendChild(seasonTitle);
-    //   cardContent.appendChild(priceDiv);
-
-    //   label.appendChild(input);
-    //   label.appendChild(cardContent);
-    //   return label;
-    // }
-
-    // createBundleCard(singleBundleData) {
-    //   var $this = this;
-    //   const planOption = creEl("div", "plan-option");
-
-    //   // Checkbox label and input
-    //   const label = creEl("label", "checkbox");
-    //   const input = creEl("input", "bundleProgram");
-    //   input.type = "checkbox";
-    //   input.setAttribute("programDetailId", singleBundleData.upsellProgramId);
-    //   input.value = singleBundleData.amount
-    //     ? singleBundleData.amount
-    //     : "3350";
-
-    //   input.addEventListener("change", (event) => {
-    //     console.log("Checkbox changed:", event.target.checked);
-    //     if (event.target.checked) {
-    //       // push in array if not already present
-    //       if (!this.$selectedProgram.includes(singleBundleData)) {
-    //         this.$selectedProgram.push(singleBundleData);
-    //       }
-    //     } else {
-    //       // remove singleBundleData from $selectedProgram
-    //       this.$selectedProgram = this.$selectedProgram.filter(
-    //         (program) =>
-    //           program.upsellProgramId !== singleBundleData.upsellProgramId
-    //       );
-    //     }
-        
-    //     // checked and unchecked all elements based on data-upsell-program-id
-    //     const allCheckboxes = document.querySelectorAll("[programDetailId]");
-    //     allCheckboxes.forEach((checkbox) => {
-    //       if(checkbox.getAttribute("programDetailId") ==
-    //       singleBundleData.upsellProgramId){
-    //         checkbox.checked = event.target.checked;
-    //       }
-    //     });
-    //     //$this.disableEnableBuyNowButton();
-    //   });
-    //   const seasonTitle = creEl("div", "term-title");
-    //   seasonTitle.textContent = `${singleBundleData.label + "("+ singleBundleData.yearId+ ")" || "Winter/Spring"}`;
-       
-    //   label.appendChild(input);
-    //   label.appendChild(seasonTitle);
-
-    //   // Price div
-    //   const priceDiv = creEl("div", "price");
-    //   const discounted = creEl("span", "discounted");
-    //   discounted.textContent = singleBundleData.amount
-    //     ? `$${this.numberWithCommas(singleBundleData.amount)}`
-    //     : "$3,350";
-    //   const original = creEl("span", "original");
-    //   original.textContent = singleBundleData.disc_amount
-    //     ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
-    //     : "$3,770";
-    //   priceDiv.appendChild(discounted);
-    //   priceDiv.appendChild(original);
-
-    //   // Assemble
-    //   planOption.appendChild(label);
-    //   planOption.appendChild(priceDiv);
-
-    //   return planOption;
-    // }
 
     disableEnableBuyNowButton() {
       // is selected program is empty then disable the buy now button
