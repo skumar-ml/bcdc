@@ -994,7 +994,7 @@ class CheckOutWebflow {
     }
 
 	displayTotalDiscount(bundleData, discAmount){
-      const totalDiscount = bundleData.reduce((acc, bundle) => {
+      var totalDiscount = bundleData.reduce((acc, bundle) => {
           const amount = Number(bundle.portal_amount) || 0;
           const discAmount = Number(bundle.portal_disc_amount) || 0;
           return acc + (discAmount - amount);
@@ -1327,3 +1327,4 @@ class CheckOutWebflow {
       //data-stripe="totalDepositPrice"
     }
 }
+
