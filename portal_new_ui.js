@@ -520,7 +520,8 @@ class Portal {
                 // update sidebar d)ata count data-announcements of is_read is false 
                 const sidebarAnnouncementsCount = document.querySelectorAll('[data-announcements="counts"]');
                 sidebarAnnouncementsCount.forEach(el => {
-                    el.textContent = announcements.announcement.filter(ann => !ann.is_read).length;
+                    //el.textContent = announcements.announcement.filter(ann => !ann.is_read).length;
+                    el.textContent = announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail).length;
                     el.parentElement.style.display = 'block';
                 });
 
@@ -1543,6 +1544,7 @@ class Portal {
 
         } 
         
+
 
 
 
