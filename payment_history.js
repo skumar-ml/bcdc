@@ -33,7 +33,7 @@ class PaymentHistory {
                     return [];
                 }
                 const data = await response.json();
-                this.updateAnnouncement(apiData);
+                this.updateAnnouncement(data);
                 return data;
             }
             updateAnnouncement(announcementData) {
@@ -688,4 +688,5 @@ class PaymentHistory {
                 }
             }
         }
+
 
