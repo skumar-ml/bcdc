@@ -153,12 +153,12 @@
                 this.updateUnreadCount();
                 // filter announcement by account email
                 let filtered = this.$announcements.filter(a => a.emailId === this.$selectedEmailId);
-                
+
                 filtered.forEach(a => {
                     a.allSentNames = this.$announcements.filter(b => b.message_id === a.message_id).map(c => c.name).join(', ');
                     a.allSentStudents = this.$announcements.filter(b => b.message_id === a.message_id).map(c => c.emailId.toLowerCase());
                 });
-                
+
                 // Filter announcements by search term, student, tags, and read/unread
                 if (this.$searchTerm && this.$searchTerm.trim() !== '') {
                     filtered = filtered.filter(a =>
@@ -188,7 +188,7 @@
                     this.listDiv.innerHTML = '<div class="no-record-found-div"><p class="dm-sans no-record-found">No Record Found</p></div>';
                     return;
                 }
-                
+
 
                 this.listDiv.innerHTML = filtered.map(a => {
                     // Remove HTML tags from message
@@ -219,7 +219,7 @@
                         </p>
                     </div>
                     <div class="announcement-feed-flex-wrapper margin-0">
-                        <p class="poppins-para announcement-text">${a.allSentNames}</p>
+                        <p class="poppins-para announcement-text">${(this.data.accountType != 'student') ? a.allSentNames : ""}</p>
                     </div>
                 </div>
             </div>
@@ -286,7 +286,7 @@
             </div>
             <div class="announcement-feed-assignment-info">
                 <div class="announcement-flex-wrapper assignment">
-                    <p class="dm-sans announcement-text"><span class="bold-text">To: &nbsp;</span>${a.allSentNames}</p>
+                    <p class="dm-sans announcement-text"><span class="bold-text">To: &nbsp;</span>${(this.data.accountType != 'student') ? a.allSentNames : ""}</p>
                     <p class="dm-sans announcement-text-small">${new Date(a.created_on).toLocaleString()}</p>
                 </div>
                 <div class="announcement-feed-assignment-inner-div">
