@@ -33,9 +33,19 @@ class PaymentHistory {
                     return [];
                 }
                 const data = await response.json();
+                this.updateAnnouncement(apiData);
                 return data;
             }
-
+            updateAnnouncement(announcementData) {
+                const announcementLength = announcementData.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail).length;
+                const announcementDiv = document.querySelectorAll('[data-announcements="counts"]');
+                if (announcementDiv) {
+                    announcementDiv.forEach(div => {
+                        div.textContent = announcementLength;
+                        div.parentElement.style.display = 'block';
+                    });
+                }
+            }
             async render() {
                 const paidResource = document.querySelector(".portal-info-wrapper");
                 paidResource.style.display = "none";
@@ -678,3 +688,4 @@ class PaymentHistory {
                 }
             }
         }
+
