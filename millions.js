@@ -62,7 +62,7 @@
             }
 
             updateAnnouncement(announcementData) {
-                const announcementLength = announcementData.announcement.filter(ann => !ann.is_read).length;
+                const announcementLength = announcementData.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail).length;
                 const announcementDiv = document.querySelectorAll('[data-announcements="counts"]');
                 if (announcementDiv) {
                     announcementDiv.forEach(div => {
@@ -251,3 +251,4 @@
             }
         }
         
+
