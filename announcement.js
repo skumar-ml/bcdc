@@ -24,6 +24,11 @@
                 this.studentSelect = document.getElementById('student');
                 this.typeSelect = document.getElementById('type');
                 this.readUnreadSelect = document.getElementById('readUnread');
+
+                if (this.data.accountType !== "parent") {
+                    this.studentSelect.style.display = "none";
+                }
+
                 if (this.searchInput) {
                     this.searchInput.addEventListener('input', (e) => {
                         this.$searchTerm = e.target.value.toLowerCase();
@@ -99,10 +104,10 @@
                 this.portalInfoWrapper.style.display = "none";
                 const apiData = await this.fetchData();
                 this.spinner.style.display = "none";
-                if(apiData.announcement.length > 0){
+                if (apiData.announcement.length > 0) {
                     this.noRecordDiv.style.display = "none";
                     this.portalInfoWrapper.style.display = "block";
-                }else{
+                } else {
                     this.noRecordDiv.style.display = "block";
                     this.portalInfoWrapper.style.display = "none";
                     return;
@@ -146,21 +151,28 @@
 
             renderAnnouncements() {
                 this.updateUnreadCount();
+                // filter announcement by account email
+                let filtered = this.$announcements.filter(a => a.emailId === this.$selectedEmailId);
+                
+                filtered.forEach(a => {
+                    a.allSentNames = this.$announcements.filter(b => b.message_id === a.message_id).map(c => c.name).join(', ');
+                    a.allSentStudents = this.$announcements.filter(b => b.message_id === a.message_id).map(c => c.emailId.toLowerCase());
+                });
+                
                 // Filter announcements by search term, student, tags, and read/unread
-                let filtered = this.$announcements;
                 if (this.$searchTerm && this.$searchTerm.trim() !== '') {
                     filtered = filtered.filter(a =>
                         (a.title && a.title.toLowerCase().includes(this.$searchTerm)) ||
                         (a.message && a.message.toLowerCase().includes(this.$searchTerm))
                     );
                 }
+                // Filter by allSentNames is not all student not selected  
                 if (this.$studentFilter && this.$studentFilter !== 'All Students') {
                     filtered = filtered.filter(a =>
-                        (a.emailId && a.emailId.toLowerCase().includes(this.$studentFilter.toLowerCase())) ||
-                        (a.name && a.name.toLowerCase().includes(this.$studentFilter.toLowerCase()))
+                        (a.allSentStudents && a.allSentStudents.includes(this.$studentFilter.toLowerCase()))
                     );
-                }else{
-                    filtered = filtered.filter(a => a.emailId === this.$selectedEmailId);        
+                } else {
+                    filtered = filtered.filter(a => a.emailId === this.$selectedEmailId);
                 }
                 if (this.$typeFilter && this.$typeFilter !== 'all types') {
                     filtered = filtered.filter(a => Array.isArray(a.type) && a.type.some(type => type.toLowerCase().includes(this.$typeFilter.toLowerCase())));
@@ -176,9 +188,7 @@
                     this.listDiv.innerHTML = '<div class="no-record-found-div"><p class="dm-sans no-record-found">No Record Found</p></div>';
                     return;
                 }
-                filtered.forEach(a => {
-                    a.allSentNames = this.$announcements.filter(b => b.message_id === a.message_id).map(c => c.name).join(', ');
-                });
+                
 
                 this.listDiv.innerHTML = filtered.map(a => {
                     // Remove HTML tags from message
@@ -300,16 +310,16 @@
 
             updateUnreadCount() {
                 if (!this.countsDivs || this.countsDivs.length === 0) return;
-                const unreadCount = this.$announcements.filter(a => !a.is_read).length;
+                const unreadCount = this.$announcements.filter(a => !a.is_read && a.emailId === this.data.accountEmail).length;
                 this.countsDivs.forEach(el => {
                     if (unreadCount > 0) {
                         el.textContent = `${unreadCount}`;
                     } else {
                         el.textContent = '0';
                     }
-                   el.parentElement.style.display = "block";
+                    el.parentElement.style.display = "block";
                 });
-            
+
             }
 
             async markAsRead(oid, isRead) {
@@ -372,4 +382,3 @@
                 return this.prototype.$typeClassMap[type];
             }
         }
-        
