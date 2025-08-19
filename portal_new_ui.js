@@ -531,7 +531,7 @@ class Portal {
                 if (!announcementDiv || !Array.isArray(announcements.announcement)) return;
 
                 const countDiv = tabPane.querySelector('.recent-announcement-number');
-                const unreadAnnouncements = announcements.announcement.filter(ann => !ann.is_read);
+                const unreadAnnouncements = announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail);
                 if (countDiv) countDiv.textContent = unreadAnnouncements.length;
 
                 const recent = announcements.announcement.slice(0, 2);
@@ -1544,6 +1544,7 @@ class Portal {
 
         } 
         
+
 
 
 
