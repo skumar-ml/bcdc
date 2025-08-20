@@ -10,6 +10,12 @@ class ReferralProgram {
     this.referralCodeInput.setAttribute("readonly", "true");
     this.referralCodeInput.setAttribute("aria-readonly", "true");
     this.copyMsg = document.getElementById("copyMsg");
+
+    // referrals Link data-referral="referral-link-input", data-referrals="copy-link", data-referrals="copy-text"
+    this.referralLinkInput = document.querySelector("[data-referral='referral-link-input']");
+    this.copyLinkBtn = document.querySelector("[data-referrals='copy-link']");
+    this.copyTextBtn = document.querySelector("[data-referrals='copy-text']");
+
     this.referralsTableBody = document.getElementById("referralList");
     // showEnrolled and showPending is checkbox field
     // this.showEnrolled = document.getElementById("showEnrolled");
@@ -25,10 +31,20 @@ class ReferralProgram {
     this.copyCodeBtns.forEach((btn) => {
       btn.addEventListener("click", () => this.copyCode());
     });
+
+    // Copy link code
+    this.copyLinkBtn.addEventListener("click", () => this.copyLink());
     // Load referral data on page load
     this.loadReferralData();
     //this.showEnrolled.addEventListener("change", () => this.loadReferralData());
     //this.showPending.addEventListener("change", () => this.loadReferralData());
+  }
+  copyLink(){
+    this.referralLinkInput.select();
+    this.referralLinkInput.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+    this.copyMsg.style.display = "block";
+    setTimeout(() => (this.copyMsg.style.display = "none"), 1500);
   }
   copyCode() {
     this.referralCodeInput.select();
@@ -61,6 +77,9 @@ class ReferralProgram {
       } 
       // Set coupon code
       this.referralCodeInput.value = data.coupon_code || "";
+      // Encrypted code append
+      var encryptedCode = btoa(data.coupon_code);
+      this.referralLinkInput.value = data.coupon_code ? `https://www.bergendebate.com?code=${encryptedCode}` : "";
       data.referrals = data.referrals || [];
       if(data.referrals.length == 0) {
         document.querySelector(".no-record-div").style.display = "block";
