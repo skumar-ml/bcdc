@@ -13,6 +13,10 @@ class ReferralProgram {
 
     // referrals Link data-referral="referral-link-input", data-referrals="copy-link", data-referrals="copy-text"
     this.referralLinkInput = document.querySelector("[data-referral='referral-link-input']");
+    if(this.referralLinkInput){
+      this.referralLinkInput.setAttribute("readonly", "true");
+      this.referralLinkInput.setAttribute("aria-readonly", "true");
+    }
     this.copyLinkBtn = document.querySelector("[data-referrals='copy-link']");
     this.copyTextBtn = document.querySelector("[data-referrals='copy-text']");
 
@@ -33,7 +37,9 @@ class ReferralProgram {
     });
 
     // Copy link code
-    this.copyLinkBtn.addEventListener("click", () => this.copyLink());
+    if(this.copyLinkBtn){
+      this.copyLinkBtn.addEventListener("click", () => this.copyLink());
+    }
     // Load referral data on page load
     this.loadReferralData();
     //this.showEnrolled.addEventListener("change", () => this.loadReferralData());
@@ -43,8 +49,8 @@ class ReferralProgram {
     this.referralLinkInput.select();
     this.referralLinkInput.setSelectionRange(0, 99999);
     document.execCommand("copy");
-    this.copyMsg.style.display = "block";
-    setTimeout(() => (this.copyMsg.style.display = "none"), 1500);
+    this.copyTextBtn.style.display = "block";
+    setTimeout(() => (this.copyTextBtn.style.display = "none"), 1500);
   }
   copyCode() {
     this.referralCodeInput.select();
