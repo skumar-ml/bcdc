@@ -254,18 +254,18 @@ class PaymentHistory {
                     noInvoicesRow.className = "invoices-table-row-grid-wrapper";
 
                     const noInvoicesText = document.createElement("div");
-                    noInvoicesText.className = "invoices-table-row-text";
+                    noInvoicesText.className = "invoices-table-row-text no-outstanding-invoices";
                     noInvoicesText.textContent = "No outstanding invoices";
 
-                    const emptyTextDiv = document.createElement("div");
-                    emptyTextDiv.className = "invoices-table-row-text";
+                    // const emptyTextDiv = document.createElement("div");
+                    // emptyTextDiv.className = "invoices-table-row-text";
 
-                    const emptyActionDiv = document.createElement("div");
-                    emptyActionDiv.className = "invoices-action-button-div";
+                    // const emptyActionDiv = document.createElement("div");
+                    // emptyActionDiv.className = "invoices-action-button-div";
 
                     noInvoicesRow.appendChild(noInvoicesText);
-                    noInvoicesRow.appendChild(emptyTextDiv);
-                    noInvoicesRow.appendChild(emptyActionDiv);
+                    // noInvoicesRow.appendChild(emptyTextDiv);
+                    // noInvoicesRow.appendChild(emptyActionDiv);
                     outstandingInvoiceContainer.appendChild(noInvoicesRow);
                     return;
                 }
@@ -688,5 +688,6 @@ class PaymentHistory {
                 }
             }
         }
+
 
 
