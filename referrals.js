@@ -85,7 +85,8 @@ class ReferralProgram {
       this.referralCodeInput.value = data.coupon_code || "";
       // Encrypted code append
       var encryptedCode = btoa(data.coupon_code);
-      this.referralLinkInput.value = data.coupon_code ? `https://www.bergendebate.com?code=${encryptedCode}` : "";
+      var encryptedMemberId = btoa(this.memberId);
+      this.referralLinkInput.value = data.coupon_code ? `https://www.bergendebate.com?code=${encryptedCode}&id=${encryptedMemberId}` : "";
       data.referrals = data.referrals || [];
       if(data.referrals.length == 0) {
         document.querySelector(".no-record-div").style.display = "block";
@@ -396,3 +397,4 @@ class ReferralProgram {
   container.innerHTML = progressInner.join("");
   }
 }
+
