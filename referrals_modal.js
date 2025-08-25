@@ -1,5 +1,4 @@
-        // required elements #referral-form-modal, #modal-close, #referral-modal-bg, #no-thanks-btn, [data-referral="claim-discount"], #half-circle-spinner, [data-referral="referrer-name"], .discount-code-red
-        class ReferralModal {
+class ReferralModal {
             $referredMemberId = null;
             constructor(data) {
                 this.data = data;
@@ -224,13 +223,12 @@
                         this.referralForm.reset();
                         this.nameEl.value = "";
                         this.emailEl.value = "";
-                        this.closeReferralModal()
-                        this.referralForm.style.display = "grid";
-                        formDone.style.display = "none";
-                        formFail.style.display = "none";
+                        //this.closeReferralModal()
+                        //this.referralForm.style.display = "grid";
+                        //formDone.style.display = "none";
+                        //formFail.style.display = "none";
                     }, 3000)
 
                 }
             }
         }
-
