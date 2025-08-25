@@ -7,6 +7,7 @@ class ReferralModal {
             }
 
             checkEmptyState() {
+                this.formContainer = document.querySelector(".referral-claim-discount-form");
                 this.referralForm = document.getElementById("referral-form-modal");
                 this.closeModalBtn = document.getElementById('modal-close');
                 this.modalBg = document.getElementById('referral-modal-bg');
@@ -159,8 +160,8 @@ class ReferralModal {
                 const name = this.nameEl.value.trim();
                 const email = this.emailEl.value.trim();
                 // select w-form-done and w-form-fail
-                const formDone = this.referralForm.querySelector(".w-form-done");
-                const formFail = this.referralForm.querySelector(".w-form-fail");
+                const formDone = this.formContainer.querySelector(".w-form-done");
+                const formFail = this.formContainer.querySelector(".w-form-fail");
                 if (!name || !email) {
                     formFail.textContent = "Please fill in all fields.";
                     formFail.style.display = "block";
