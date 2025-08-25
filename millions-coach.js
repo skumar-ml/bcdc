@@ -1,17 +1,17 @@
 /**
- * MillionsCoach Class
- * 
- * This class manages the millions coach functionality for displaying and managing student data.
- * It handles:
- * - Fetching and displaying students from the API
- * - Pagination for large datasets
- * - Search functionality for filtering students
- * - Adding/removing millions amounts for students
- * - Modal interactions for data entry
- * - Real-time updates and error handling
- * 
- * @param {Object} data - Configuration object containing API base URL and member ID
- */
+* MillionsCoach Class
+* 
+* This class manages the millions coach functionality for displaying and managing student data.
+* It handles:
+* - Fetching and displaying students from the API
+* - Pagination for large datasets
+* - Search functionality for filtering students
+* - Adding/removing millions amounts for students
+* - Modal interactions for data entry
+* - Real-time updates and error handling
+* 
+* @param {Object} data - Configuration object containing API base URL and member ID
+*/
 class MillionsCoach {
     $currentStudent = null;
     /**
@@ -39,28 +39,25 @@ class MillionsCoach {
         if (this.noRecordDiv) {
             this.noRecordDiv.style.display = "none";
         }
-        
+
         try {
             this.showLoading('Loading students data...');
             const data = await this.fetchMillionsStudents();
             const studentsList = data.data;
-            
+
             // Set total students count
             this.totalStudents = studentsList.length >= this.limit ? data.count : studentsList.length;
-            
-            this.hideLoading();
-            
+
             // Handle no records found
             if (studentsList.length === 0) {
                 this.showNoRecordsMessage('No students found');
                 return;
             }
-            
+
             this.displayStudentsList(studentsList);
             this.displayPagination();
         } catch (error) {
             console.error('Error rendering students:', error);
-            this.hideLoading();
             this.displayError('Failed to load students data');
         }
     }
@@ -129,7 +126,7 @@ class MillionsCoach {
             });
 
             const data = await response.json();
-            return {message: "Success", data: data};
+            return { message: "Success", data: data };
         } catch (error) {
             console.error('Error updating portal millions:', error);
             throw error;
@@ -142,7 +139,7 @@ class MillionsCoach {
      */
     displayStudentsList(studentsList) {
         const studentsListDiv = document.querySelector('[data-millions="students-list"]');
-        
+
         if (!studentsListDiv) {
             console.error('Students list container not found');
             return;
@@ -224,33 +221,33 @@ class MillionsCoach {
         const amountText = student.amount > 0 ? `+$${student.amount}` : `$${student.amount}`;
 
         row.innerHTML = `
-            <div class="students-info-row-text">${student.name || 'N/A'}</div>
-            <div class="students-info-row-text">${student.emailId || 'N/A'}</div>
-            <div class="students-info-row-text ${amountClass}">${amountText}</div>
-            <div class="students-info-flex-wrapper">
-                <div class="students-info-add-icon-div" data-student-id="${student._id}" data-action="add">
-                    <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/688a001a61f82b5217fc5b50_add_box%201.svg" 
-                         loading="lazy" alt="" class="add-icon">
-                    <div class="add-tooltip-text">Add</div>
-                </div>
-                <div class="students-info-delete-icon-div" data-student-id="${student._id}" data-action="delete">
-                    <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/688a0024a37a8bf30b97a453_remove_circle%201.svg" 
-                         loading="lazy" alt="" class="delete-icon">
-                    <div class="delete-tooltip-text">Delete</div>
-                </div>
-            </div>
-        `;
+    <div class="students-info-row-text">${student.name || 'N/A'}</div>
+    <div class="students-info-row-text">${student.emailId || 'N/A'}</div>
+    <div class="students-info-row-text ${amountClass}">${amountText}</div>
+    <div class="students-info-flex-wrapper">
+        <div class="students-info-add-icon-div" data-student-id="${student._id}" data-action="add">
+            <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/688a001a61f82b5217fc5b50_add_box%201.svg" 
+                 loading="lazy" alt="" class="add-icon">
+            <div class="add-tooltip-text">Add</div>
+        </div>
+        <div class="students-info-delete-icon-div" data-student-id="${student._id}" data-action="delete">
+            <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/688a0024a37a8bf30b97a453_remove_circle%201.svg" 
+                 loading="lazy" alt="" class="delete-icon">
+            <div class="delete-tooltip-text">Delete</div>
+        </div>
+    </div>
+`;
 
         // Add event listeners to the action buttons
         const addButton = row.querySelector('[data-action="add"]');
         const deleteButton = row.querySelector('[data-action="delete"]');
-        
+
         if (addButton) {
             addButton.addEventListener('click', () => {
                 this.addStudentAmount(student._id);
             });
         }
-        
+
         if (deleteButton) {
             deleteButton.addEventListener('click', () => {
                 this.deleteStudentAmount(student._id);
@@ -265,9 +262,9 @@ class MillionsCoach {
      */
     displayPagination() {
         let paginationContainer = document.querySelector('[data-millions="pagination"]');
-        
+
         const totalPages = Math.ceil(this.totalStudents / this.limit);
-        
+
         // Show pagination if we have more than one page
         if (totalPages <= 1) {
             if (paginationContainer) {
@@ -293,41 +290,41 @@ class MillionsCoach {
         paginationContainer.style.display = "block";
 
         const pageNumbers = this.generatePageNumbers(totalPages);
-        
+
         paginationContainer.innerHTML = `
-            <div class="pagination-controls">
-                <button class="pagination-btn" data-page="${this.currentPage - 1}" data-action="prev"
-                        ${this.currentPage === 0 ? 'disabled' : ''}>
-                    <
-                </button>
-                <div class="page-numbers">
-                    ${pageNumbers}
-                </div>
-                <button class="pagination-btn" data-page="${this.currentPage + 1}" data-action="next"
-                        ${this.currentPage >= totalPages - 1 ? 'disabled' : ''}>
-                    >
-                </button>
-            </div>
-            <div class="pagination-info">Page ${this.currentPage + 1} of ${totalPages} (${this.totalStudents} total students)</div>
-        `;
+    <div class="pagination-controls">
+        <button class="pagination-btn" data-page="${this.currentPage - 1}" data-action="prev"
+                ${this.currentPage === 0 ? 'disabled' : ''}>
+            <
+        </button>
+        <div class="page-numbers">
+            ${pageNumbers}
+        </div>
+        <button class="pagination-btn" data-page="${this.currentPage + 1}" data-action="next"
+                ${this.currentPage >= totalPages - 1 ? 'disabled' : ''}>
+            >
+        </button>
+    </div>
+    <div class="pagination-info">Page ${this.currentPage + 1} of ${totalPages} (${this.totalStudents} total students)</div>
+`;
 
         // Add event listeners to pagination buttons
         const prevButton = paginationContainer.querySelector('[data-action="prev"]');
         const nextButton = paginationContainer.querySelector('[data-action="next"]');
         const pageButtons = paginationContainer.querySelectorAll('[data-page]');
-        
+
         if (prevButton && !prevButton.disabled) {
             prevButton.addEventListener('click', () => {
                 this.goToPage(this.currentPage - 1);
             });
         }
-        
+
         if (nextButton && !nextButton.disabled) {
             nextButton.addEventListener('click', () => {
                 this.goToPage(this.currentPage + 1);
             });
         }
-        
+
         // Add event listeners to page number buttons
         pageButtons.forEach(button => {
             if (!button.disabled) {
@@ -348,10 +345,10 @@ class MillionsCoach {
     generatePageNumbers(totalPages) {
         const currentPage = this.currentPage;
         const pageNumbers = [];
-        
+
         // Always show first page
         pageNumbers.push(this.createPageButton(1, currentPage === 0));
-        
+
         if (totalPages <= 7) {
             // If 7 or fewer pages, show all page numbers
             for (let i = 2; i <= totalPages; i++) {
@@ -382,7 +379,7 @@ class MillionsCoach {
                 pageNumbers.push(this.createPageButton(totalPages, currentPage === totalPages - 1));
             }
         }
-        
+
         return pageNumbers.join('');
     }
 
@@ -406,20 +403,18 @@ class MillionsCoach {
      */
     async goToPage(page) {
         if (page < 0) return;
-        
+
         this.currentPage = page;
         const offset = page * this.limit;
-        
+
         try {
             this.showLoading('Loading page...');
             const data = await this.fetchMillionsStudents(this.currentSearchText, offset, this.limit);
             const studentsList = data.data;
-            this.hideLoading();
             this.displayStudentsList(studentsList);
             this.displayPagination();
         } catch (error) {
             console.error('Error loading page:', error);
-            this.hideLoading();
             this.displayError('Failed to load page');
         }
     }
@@ -431,31 +426,28 @@ class MillionsCoach {
     async searchStudents(searchText) {
         this.currentSearchText = searchText;
         this.currentPage = 0;
-        
+
         try {
             this.showLoading('Searching students...');
             const data = await this.fetchMillionsStudents(searchText, 0, this.limit);
             const studentsList = data.data;
-            
+
             // Set total students count for search results
             this.totalStudents = studentsList.length >= this.limit ? data.count : studentsList.length;
-            
-            this.hideLoading();
-            
+
             // Handle no search results
             if (studentsList.length === 0) {
                 this.showNoRecordsMessage(`No students found matching "${searchText}"`);
                 return;
             }
-            
+
             this.displayStudentsList(studentsList);
             this.displayPagination();
         } catch (error) {
             console.error('Error searching students:', error);
-            this.hideLoading();
             this.displayError('Failed to search students');
         }
-        
+
         // Handle search form display
         this.handleSearchFormDisplay();
     }
@@ -484,31 +476,28 @@ class MillionsCoach {
     async clearSearch() {
         this.currentSearchText = '';
         this.currentPage = 0;
-        
+
         try {
             this.showLoading('Loading students...');
             const data = await this.fetchMillionsStudents('', 0, this.limit);
             const studentsList = data.data;
-            
+
             // Set total students count for original list
             this.totalStudents = studentsList.length >= this.limit ? data.count : studentsList.length;
-            
-            this.hideLoading();
-            
+
             // Handle no records in original list
             if (studentsList.length === 0) {
                 this.showNoRecordsMessage('No students found');
                 return;
             }
-            
+
             this.displayStudentsList(studentsList);
             this.displayPagination();
         } catch (error) {
             console.error('Error clearing search:', error);
-            this.hideLoading();
             this.displayError('Failed to load students');
         }
-        
+
         // Clear search input
         const searchInput = document.getElementById('Search');
         if (searchInput) {
@@ -532,13 +521,13 @@ class MillionsCoach {
         this.currentStudentId = studentId;
         this.currentAction = 'add';
         this.$currentStudent = student;
-        
+
         // Update modal title and form
         const modal = document.getElementById('millionsDetails');
         const title = modal.querySelector('.millions-details-title');
         const amountInput = document.getElementById('field');
         const descriptionField = document.getElementById('Description');
-        
+
         if (title) title.textContent = 'Add Millions Amount';
         if (amountInput) {
             amountInput.value = '';
@@ -548,7 +537,7 @@ class MillionsCoach {
             descriptionField.value = '';
             descriptionField.placeholder = 'Enter description (optional)';
         }
-        
+
         // Show modal
         modal.classList.add("show");
         modal.style.display = "flex";
@@ -570,13 +559,13 @@ class MillionsCoach {
         this.currentStudentId = studentId;
         this.currentAction = 'delete';
         this.$currentStudent = student;
-        
+
         // Update modal title and form
         const modal = document.getElementById('millionsDetails');
         const title = modal.querySelector('.millions-details-title');
         const amountInput = document.getElementById('field');
         const descriptionField = document.getElementById('Description');
-        
+
         if (title) title.textContent = 'Remove Millions Amount';
         if (amountInput) {
             amountInput.value = '';
@@ -586,7 +575,7 @@ class MillionsCoach {
             descriptionField.value = '';
             descriptionField.placeholder = 'Enter description (optional)';
         }
-        
+
         // Show modal
         modal.style.display = "flex";
         modal.classList.add("show");
@@ -600,10 +589,10 @@ class MillionsCoach {
         const studentsListDiv = document.querySelector('[data-millions="students-list"]');
         if (studentsListDiv) {
             studentsListDiv.innerHTML = `
-                <div class="error-message" style="text-align: center; color: red; padding: 20px;">
-                    ${message}
-                </div>
-            `;
+        <div class="error-message" style="text-align: center; color: red; padding: 20px;">
+            ${message}
+        </div>
+    `;
         }
     }
 
@@ -615,21 +604,15 @@ class MillionsCoach {
         const studentsListDiv = document.querySelector('[data-millions="students-list"]');
         if (studentsListDiv) {
             studentsListDiv.innerHTML = `
-                <div class="loading-container">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">${message}</div>
-                </div>
-            `;
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">${message}</div>
+        </div>
+    `;
         }
     }
 
-    /**
-     * Hides the loading spinner (called before displaying new content)
-     */
-    hideLoading() {
-        // Loading will be hidden when new content is displayed
-        // This method is called before displaying new content
-    }
+
 
     /**
      * Sets up all event listeners for search, pagination, and modal interactions
@@ -716,7 +699,7 @@ class MillionsCoach {
         try {
             const amountInput = document.getElementById('field');
             const descriptionField = document.getElementById('Description');
-            
+
             if (!amountInput || !amountInput.value) {
                 alert('Please enter an amount');
                 return;
@@ -729,7 +712,7 @@ class MillionsCoach {
             }
 
             // Determine the amount to send (positive for add, negative for delete)
-            const apiAmount = this.currentAction === 'add' ? this.$currentStudent.amount + amount : this.$currentStudent.amount -  amount;
+            const apiAmount = this.currentAction === 'add' ? this.$currentStudent.amount + amount : this.$currentStudent.amount - amount;
 
             // Show loading in modal
             const saveButton = document.querySelector('.main-button.save');
@@ -739,7 +722,7 @@ class MillionsCoach {
 
             // Call API
             const result = await this.updatePortalMillions(descriptionField.value, apiAmount);
-            
+
             // Reset button
             saveButton.textContent = originalText;
             saveButton.disabled = false;
@@ -750,13 +733,13 @@ class MillionsCoach {
                 if (studentIndex !== -1) {
                     this.currentStudentsList[studentIndex].amount = apiAmount;
                 }
-                
+
                 // Close modal
                 this.closeModal();
-                
+
                 // Update the display immediately with the new data
                 this.displayStudentsList(this.currentStudentsList);
-                
+
                 // Also refresh from server to ensure consistency
                 this.render();
             } else {
@@ -765,14 +748,14 @@ class MillionsCoach {
 
         } catch (error) {
             console.error('Error handling modal submit:', error);
-            
+
             // Reset button
             const saveButton = document.querySelector('.main-button.save');
             if (saveButton) {
                 saveButton.textContent = 'Save';
                 saveButton.disabled = false;
             }
-            
+
             alert('An error occurred while updating the millions amount. Please try again.');
         }
     }
@@ -786,7 +769,7 @@ class MillionsCoach {
             modal.classList.remove("show");
             modal.style.display = "none";
         }
-        
+
         // Clear current student data
         this.currentStudentId = null;
         this.currentAction = null;
@@ -802,4 +785,3 @@ class MillionsCoach {
         return this.currentStudentsList.find(student => student._id === studentId);
     }
 }
-
