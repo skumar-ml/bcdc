@@ -681,15 +681,6 @@ class MillionsCoach {
                 this.closeModal();
             });
         }
-
-        // Form submission
-        const emailForm = document.getElementById('email-form');
-        if (emailForm) {
-            emailForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleModalSubmit();
-            });
-        }
     }
 
     /**
@@ -785,3 +776,4 @@ class MillionsCoach {
         return this.currentStudentsList.find(student => student._id === studentId);
     }
 }
+
