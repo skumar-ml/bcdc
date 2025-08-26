@@ -186,8 +186,7 @@ class ReferralModal {
                     });
                     let apiResponse = await res.json();
                     //formDone.querySelector('.claim-discount').textContent = apiResponse;
-                    formDone.querySelector('.claim-discount').textContent = "The user has successfully claimed the discount
- ";
+                    formDone.querySelector('.claim-discount').textContent = "The user has successfully claimed the discount";
                     if (res.ok) {
                         this.referralForm.style.display = "none";
                         formDone.style.display = "block";
@@ -235,5 +234,6 @@ class ReferralModal {
                 }
             }
         }
+
 
 
