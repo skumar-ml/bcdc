@@ -1,15 +1,15 @@
 /**
- * TrialClassDetails Class
- * 
- * This class manages the trial class details functionality including:
- * - Fetching and displaying appointment types from the API
- * - Displaying student lists for selected appointment types
- * - Pagination for large datasets
- * - Attendance tracking and notes functionality
- * - Real-time updates and error handling
- * 
- * @param {Object} data - Configuration object containing API base URL and member ID
- */
+* TrialClassDetails Class
+* 
+* This class manages the trial class details functionality including:
+* - Fetching and displaying appointment types from the API
+* - Displaying student lists for selected appointment types
+* - Pagination for large datasets
+* - Attendance tracking and notes functionality
+* - Real-time updates and error handling
+* 
+* @param {Object} data - Configuration object containing API base URL and member ID
+*/
 class TrialClassDetails {
     currentAppointmentType = null;
     currentPage = 0;
@@ -556,120 +556,138 @@ class TrialClassDetails {
         console.log('Opening notes modal for student:', student);
         console.log('Current student notes:', student.notes);
 
-        // Create modal for notes
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        `;
+        // Get the existing modal
+        const modal = document.getElementById('trial-class-add-notes-modal');
+        if (!modal) {
+            console.error('Modal not found');
+            return;
+        }
 
-        const modalContent = document.createElement('div');
-        modalContent.style.cssText = `
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 500px;
-            max-width: 90%;
-            max-height: 80%;
-            overflow-y: auto;
-        `;
-
-        // Determine modal title and button text based on whether notes exist
+        // Update modal title based on whether notes exist
         const hasExistingNotes = student.notes && student.notes.trim();
         const modalTitle = hasExistingNotes ? `Update Notes for ${student.name}` : `Add Notes for ${student.name}`;
-        const saveButtonText = hasExistingNotes ? 'Update Notes' : 'Save Notes';
+        const modalTitleElement = modal.querySelector('.poppins-heading');
+        if (modalTitleElement) {
+            modalTitleElement.textContent = modalTitle;
+        }
 
-        modalContent.innerHTML = `
-            <h3 style="margin-top: 0; color: #333;">${modalTitle}</h3>
-            <div style="margin-bottom: 15px;">
-                <label for="notesText" style="display: block; margin-bottom: 5px; font-weight: bold;">Notes:</label>
-                <textarea id="notesText" rows="6" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;" 
-                        placeholder="Enter notes for this student...">${student.notes || ''}</textarea>
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="cancelNotes" style="padding: 10px 20px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 5px;">Cancel</button>
-                <button id="saveNotes" style="padding: 10px 20px; background: #8B0000; color: white; border: none; cursor: pointer; border-radius: 5px;">${saveButtonText}</button>
-            </div>
-        `;
-
-        modal.appendChild(modalContent);
-        document.body.appendChild(modal);
-
-        // Add event listeners
-        const cancelBtn = modal.querySelector('#cancelNotes');
-        const saveBtn = modal.querySelector('#saveNotes');
+        // Update textarea with current notes
         const notesTextarea = modal.querySelector('#notesText');
+        if (notesTextarea) {
+            notesTextarea.value = student.notes || '';
+            notesTextarea.placeholder = 'Enter notes for this student...';
+        }
 
-        cancelBtn.addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
+        // Update save button text
+        const saveBtn = modal.querySelector('#saveNotes');
+        if (saveBtn) {
+            const saveButtonText = hasExistingNotes ? 'Update Notes' : 'Save Notes';
+            saveBtn.value = saveButtonText;
+        }
 
-        saveBtn.addEventListener('click', async () => {
-            const notes = notesTextarea.value.trim();
+        // Store current student ID for use in save function
+        modal.setAttribute('data-current-student-id', studentId);
 
-            // Show loading state on save button
-            const originalSaveText = saveBtn.textContent;
-            saveBtn.textContent = 'Updating...';
-            saveBtn.disabled = true;
-            saveBtn.style.opacity = '0.7';
-            saveBtn.style.cursor = 'not-allowed';
+        // Show the modal
+        this.showModal(modal);
 
-            try {
-                // Prepare the API call data with all required attributes
-                const apiData = {
-                    memberId: this.data.memberId,
-                    notes: notes,
-                    trialClassId: studentId
-                };
+        // Set up event listeners for the modal
+        this.setupModalEventListeners(modal, student);
+    }
 
-                console.log('Sending notes update with data:', apiData);
+    /**
+     * Sets up event listeners for the notes modal
+     * @param {HTMLElement} modal - The modal element
+     * @param {Object} student - The student object
+     */
+    setupModalEventListeners(modal, student) {
+        // Remove existing event listeners to prevent duplicates
+        const saveBtn = modal.querySelector('#saveNotes');
+        const closeBtn = modal.querySelector('#modal-close');
+        const modalBg = modal.querySelector('#login-modal-bg');
 
-                const success = await this.updateTrialClass(apiData);
+        // Remove existing listeners
+        if (saveBtn) {
+            const newSaveBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        }
 
-                if (success) {
-                    // Determine success message based on whether notes existed before
-                    const hadExistingNotes = student.notes && student.notes.trim();
-                    const successMessage = hadExistingNotes ? 'Notes updated successfully' : 'Notes saved successfully';
-                    //alert(successMessage);
+        // Add save button event listener
+        const newSaveBtn = modal.querySelector('#saveNotes');
+        if (newSaveBtn) {
+            newSaveBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
 
-                    // Update the student object with new notes
-                    student.notes = notes;
+                const notesTextarea = modal.querySelector('#notesText');
+                const notes = notesTextarea.value.trim();
+                const studentId = modal.getAttribute('data-current-student-id');
 
-                    // Update the button text to reflect the change
-                    const notesButton = document.querySelector(`[data-student-id="${student._id}"][data-action="add-notes"]`);
-                    if (notesButton) {
-                        notesButton.textContent = notes.trim() ? 'Update Notes' : 'Add Notes';
+                // Show loading state on save button
+                const originalSaveText = newSaveBtn.value;
+                newSaveBtn.value = 'Updating...';
+                newSaveBtn.disabled = true;
+                newSaveBtn.style.opacity = '0.7';
+                newSaveBtn.style.cursor = 'not-allowed';
+
+                try {
+                    // Prepare the API call data with all required attributes
+                    const apiData = {
+                        memberId: this.data.memberId,
+                        notes: notes,
+                        trialClassId: studentId
+                    };
+
+                    console.log('Sending notes update with data:', apiData);
+
+                    const success = await this.updateTrialClass(apiData);
+
+                    if (success) {
+                        // Determine success message based on whether notes existed before
+                        const hadExistingNotes = student.notes && student.notes.trim();
+                        const successMessage = hadExistingNotes ? 'Notes updated successfully' : 'Notes saved successfully';
+                        //alert(successMessage);
+
+                        // Update the student object with new notes
+                        student.notes = notes;
+
+                        // Update the button text to reflect the change
+                        const notesButton = document.querySelector(`[data-student-id="${student._id}"][data-action="add-notes"]`);
+                        if (notesButton) {
+                            notesButton.textContent = notes.trim() ? 'Update Notes' : 'Add Notes';
+                        }
+
+                        console.log('Updated student notes:', student.notes);
                     }
 
-                    console.log('Updated student notes:', student.notes);
+                    // Hide the modal
+                    this.hideModal(modal);
+                } catch (error) {
+                    console.error('Error saving notes:', error);
+                    //alert('Failed to save notes. Please try again.');
+                } finally {
+                    // Restore button state regardless of success or failure
+                    newSaveBtn.value = originalSaveText;
+                    newSaveBtn.disabled = false;
+                    newSaveBtn.style.opacity = '1';
+                    newSaveBtn.style.cursor = 'pointer';
                 }
-                document.body.removeChild(modal);
-            } catch (error) {
-                console.error('Error saving notes:', error);
-                //alert('Failed to save notes. Please try again.');
-            } finally {
-                // Restore button state regardless of success or failure
-                saveBtn.textContent = originalSaveText;
-                saveBtn.disabled = false;
-                saveBtn.style.opacity = '1';
-                saveBtn.style.cursor = 'pointer';
-            }
-        });
+            });
+        }
 
-        // Close modal when clicking outside
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-            }
-        });
+        // Add close button event listener
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.hideModal(modal);
+            });
+        }
+
+        // Add modal background click event listener
+        if (modalBg) {
+            modalBg.addEventListener('click', () => {
+                this.hideModal(modal);
+            });
+        }
     }
 
     /**
@@ -974,6 +992,18 @@ class TrialClassDetails {
         // Initially hide the Mark Attendance button
         if (markAttendanceButton) {
             markAttendanceButton.style.display = 'none';
+        }
+    }
+    showModal(modal) {
+        if (modal) {
+            modal.classList.add("show");
+            modal.style.display = "flex";
+        }
+    }
+    hideModal(modal) {
+        if (modal) {
+            modal.classList.remove("show");
+            modal.style.display = "none";
         }
     }
 }
