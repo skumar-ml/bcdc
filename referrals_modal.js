@@ -1,9 +1,15 @@
-class ReferralModal {
-            $referredMemberId = null;
+ class ReferralModal {
             constructor(data) {
                 this.data = data;
-                this.checkEmptyState();
+                this.referredMemberId = null;
+                this.referralCode = null;
                 this.init();
+            }
+
+            init() {
+                this.checkEmptyState();
+                this.handleModalEvents();
+                this.processReferralFlow();
             }
 
             checkEmptyState() {
@@ -18,15 +24,8 @@ class ReferralModal {
                 this.emailEl = this.referralForm.querySelector("[data-name='email']");
             }
 
-            init() {
-                this.handleModalEvents();
-                this.checkCouponCodeInURLParam()
-                if (this.data.memberId) {
-                    this.updateLocalStorage(this.data.memberId);
-                }
-            }
             handleModalEvents() {
-                var $this = this;
+                const $this = this;
                 this.closeModalBtn?.addEventListener('click', function () {
                     $this.closeReferralModal();
                 });
@@ -36,84 +35,140 @@ class ReferralModal {
                 this.noThanksBtn?.addEventListener('click', function () {
                     $this.closeReferralModal();
                 });
-                this.noThanksBtn?.addEventListener('click', function () {
-                    $this.closeReferralModal();
-                });
                 this.submitBtn.addEventListener("click", (e) => this.handleFormSubmit(e));
             }
-            // handle user logged in state and referral code name and email of empty
-            // Update local storage with timestamp, name, and email if not already set
-            updateLocalStorage(memberId) {
-                let referralData = localStorage.getItem('referralCode');
-                // If no referral data exists, return early
-                if (!referralData) {
-                    return;
-                } else {
-                    referralData = JSON.parse(referralData);
-                }
-                // If name is already set, return early
-                if (referralData.name && referralData.email) {
-                    return;
-                }
-                // If name is not set, update it with the current data
-                referralData = {
-                    ...referralData,
-                    timestamp: new Date().toISOString(),
-                    name: this.data.name,
-                    email: this.data.email
-                };
-                this.nameEl.value = referralData.name;
-                this.emailEl.value = referralData.email;
-                localStorage.setItem('referralCode', JSON.stringify(referralData));
-            }
-            // Check for coupon code in URL parameters
-            checkCouponCodeInURLParam() {
-                // Get URL parameters
+
+            // Main referral flow processor
+            processReferralFlow() {
                 const urlParams = new URLSearchParams(window.location.search);
-                // Get the coupon code and member ID from the URL parameters
                 const codeParam = urlParams.get('code');
                 const idParam = urlParams.get('id');
-                if (codeParam && idParam) {
-                    try {
-                        // Decode the base64 encoded code using atob
-                        const decodedCode = atob(codeParam);
-                        const referredMemberId = atob(idParam);
-                        this.$referredMemberId = referredMemberId;
-                        // Update the discount code display
-                        const discountCodeElement = document.querySelector('.discount-code-red');
-                        if (discountCodeElement) {
-                            discountCodeElement.textContent = decodedCode;
-                        }
-                        // fetch the referred member's details
-                        const referredMemberDetails = this.getMemberDetails(referredMemberId);
-                        // Store code and timestamp in localStorage as JSON string
-                        const referralData = {
-                            code: decodedCode,
-                            memberId: referredMemberId,
-                            timestamp: new Date().toISOString()
-                        };
-                        localStorage.setItem('referralCode', JSON.stringify(referralData));
+                
+                // Check if user came via referral link
+                const hasReferralLink = codeParam && idParam;
+                
+                // Get existing referral data from localStorage
+                const existingReferralData = this.getReferralData();
+                
+                if (hasReferralLink) {
+                    // User came via referral link
+                    this.handleReferralLinkVisit(codeParam, idParam, existingReferralData);
+                } else {
+                    // User came without referral link
+                    this.handleNonReferralVisit(existingReferralData);
+                }
+            }
 
+            // Handle user coming via referral link
+            handleReferralLinkVisit(codeParam, idParam, existingReferralData) {
+                try {
+                    // Decode the base64 encoded parameters
+                    const decodedCode = atob(codeParam);
+                    const referredMemberId = atob(idParam);
+                    
+                    this.referredMemberId = referredMemberId;
+                    this.referralCode = decodedCode;
+                    
+                    // Update discount code display
+                    this.updateDiscountCodeDisplay(decodedCode);
+                    
+                    // Fetch and display referrer name
+                    this.fetchReferrerDetails(referredMemberId);
+                    
+                    // Create new referral data
+                    const newReferralData = {
+                        code: decodedCode,
+                        memberId: referredMemberId,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    if (existingReferralData) {
+                        // User has visited before
+                        if (existingReferralData.name && existingReferralData.email) {
+                            // Case 2: They entered details before - don't show popup, just update timestamp
+                            newReferralData.name = existingReferralData.name;
+                            newReferralData.email = existingReferralData.email;
+                            this.saveReferralData(newReferralData);
+                            console.log('User previously submitted form - not showing popup');
+                        } else {
+                            // Case 1: They didn't enter details before - show popup again
+                            this.saveReferralData(newReferralData);
+                            this.showReferralModal();
+                        }
+                    } else {
+                        // First time visit via referral link
+                        this.saveReferralData(newReferralData);
                         this.showReferralModal();
-                    } catch (error) {
-                        console.error('Error decoding referral code:', error);
-                        // If decoding fails, use the original code
-                        const discountCodeElement = document.querySelector('.discount-code-red');
-                        if (discountCodeElement) {
-                            discountCodeElement.textContent = codeParam;
-                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Error processing referral link:', error);
+                    // Fallback to original parameters if decoding fails
+                    this.handleReferralLinkVisitFallback(codeParam, idParam, existingReferralData);
+                }
+            }
 
-                        const referralData = {
-                            code: codeParam,
-                            timestamp: new Date().toISOString()
-                        };
-                        localStorage.setItem('referralCode', JSON.stringify(referralData));
+            // Fallback for referral link processing
+            handleReferralLinkVisitFallback(codeParam, idParam, existingReferralData) {
+                this.referralCode = codeParam;
+                this.referredMemberId = idParam;
+                
+                this.updateDiscountCodeDisplay(codeParam);
+                
+                const newReferralData = {
+                    code: codeParam,
+                    memberId: idParam,
+                    timestamp: new Date().toISOString()
+                };
+                
+                if (existingReferralData && existingReferralData.name && existingReferralData.email) {
+                    newReferralData.name = existingReferralData.name;
+                    newReferralData.email = existingReferralData.email;
+                    this.saveReferralData(newReferralData);
+                } else {
+                    this.saveReferralData(newReferralData);
+                    this.showReferralModal();
+                }
+            }
 
+            // Handle user coming without referral link
+            handleNonReferralVisit(existingReferralData) {
+                if (existingReferralData) {
+                    if (existingReferralData.name && existingReferralData.email) {
+                        // Case 2: They entered details before - don't show popup
+                        console.log('User previously submitted form - not showing popup');
+                    } else {
+                        // Case 1: They didn't enter details before - show popup based on existing data
+                        this.referredMemberId = existingReferralData.memberId;
+                        this.referralCode = existingReferralData.code;
+                        this.updateDiscountCodeDisplay(existingReferralData.code);
                         this.showReferralModal();
                     }
                 }
+                // If no existing referral data, do nothing
             }
-            getMemberDetails(memberId) {
+
+            // Get referral data from localStorage
+            getReferralData() {
+                const referralData = localStorage.getItem('referralCode');
+                return referralData ? JSON.parse(referralData) : null;
+            }
+
+            // Save referral data to localStorage
+            saveReferralData(data) {
+                localStorage.setItem('referralCode', JSON.stringify(data));
+            }
+
+            // Update discount code display
+            updateDiscountCodeDisplay(code) {
+                const discountCodeElement = document.querySelector('.discount-code-red');
+                if (discountCodeElement) {
+                    discountCodeElement.textContent = code;
+                }
+            }
+
+            // Fetch referrer details and update display
+            fetchReferrerDetails(memberId) {
                 fetch(`${this.data.baseUrl}getMemberDetails/${memberId}`)
                     .then(response => response.json())
                     .then(data => {
@@ -128,112 +183,130 @@ class ReferralModal {
                         console.error('Error fetching member details:', error);
                     });
             }
+
+            // Show referral modal
             showReferralModal() {
-                var loginModal = document.getElementById('referral-modal');
-                loginModal.classList.add('show');
+                const modal = document.getElementById('referral-modal');
+                modal.classList.add('show');
+                
+                // Pre-fill form if user is logged in
+                if (this.data.name && this.data.email) {
+                    this.nameEl.value = this.data.name;
+                    this.emailEl.value = this.data.email;
+                }
             }
 
+            // Close referral modal
             closeReferralModal() {
-                var loginModal = document.getElementById('referral-modal');
-                loginModal.classList.remove('show');
+                const modal = document.getElementById('referral-modal');
+                modal.classList.remove('show');
             }
-            handleModelEvents() {
-                var $this = this;
-                this.closeModalBtn?.addEventListener('click', function () {
-                    $this.closeReferralModal();
-                });
-                this.modalBg?.addEventListener('click', function () {
-                    $this.closeReferralModal();
-                });
-                this.noThanksBtn?.addEventListener('click', function () {
-                    $this.closeReferralModal();
-                });
-                this.noThanksBtn?.addEventListener('click', function () {
-                    $this.closeReferralModal();
-                });
-                this.submitBtn.addEventListener("click", (e) => this.handleFormSubmit(e));
-            }
+
+            // Handle form submission
             async handleFormSubmit(e) {
                 e.preventDefault();
                 this.spinner.style.display = "block";
 
                 const name = this.nameEl.value.trim();
                 const email = this.emailEl.value.trim();
-                // select w-form-done and w-form-fail
+                
                 const formDone = this.formContainer.querySelector(".w-form-done");
                 const formFail = this.formContainer.querySelector(".w-form-fail");
+                
                 if (!name || !email) {
                     formFail.textContent = "Please fill in all fields.";
                     formFail.style.display = "block";
                     this.spinner.style.display = "none";
-                    // Hide the error message after 3 seconds
                     setTimeout(() => (formFail.style.display = "none"), 3000);
-                    this.referralForm.setAttribute("data-wf-page", "false");
                     return;
                 }
 
-                // Disable submit button to prevent multiple submissions
+                // Disable submit button
                 if (this.submitBtn) {
                     this.submitBtn.style.pointerEvents = "none";
-                    //this.submitBtn.innerHTML = "Submitting...";
                 }
 
                 try {
-                    const res = await fetch(`${this.data.baseUrl}addReferralData`, {
+                    // Call API to insert referral record
+                    const response = await fetch(`${this.data.baseUrl}addReferralData`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ name, email, memberId: this.$referredMemberId }),
+                        body: JSON.stringify({ 
+                            name, 
+                            email, 
+                            memberId: this.referredMemberId 
+                        }),
                     });
-                    let apiResponse = await res.json();
-                    //formDone.querySelector('.claim-discount').textContent = apiResponse;
-                    formDone.querySelector('.claim-discount').textContent = "The user has successfully claimed the discount";
-                    if (res.ok) {
+                    
+                    const apiResponse = await response.json();
+                    
+                    if (response.ok) {
+                        // Update localStorage with form data
+                        const currentReferralData = this.getReferralData();
+                        const updatedReferralData = {
+                            ...currentReferralData,
+                            name: name,
+                            email: email,
+                            formSubmittedAt: new Date().toISOString()
+                        };
+                        this.saveReferralData(updatedReferralData);
+                        
+                        // Show success message
                         this.referralForm.style.display = "none";
                         formDone.style.display = "block";
                         formFail.style.display = "none";
-                        this.referralForm.setAttribute("data-wf-page", "true");
+                        formDone.querySelector('div').textContent = apiResponse;
+                        
+                        // Close modal after 3 seconds
+                        setTimeout(() => {
+                            this.closeReferralModal();
+                            this.resetForm();
+                        }, 3000);
+                        
                     } else {
+                        // Show error message
                         this.referralForm.style.display = "grid";
                         formDone.style.display = "none";
                         formFail.style.display = "block";
                         formFail.textContent = apiResponse;
-                        this.referralForm.setAttribute("data-wf-page", "false");
-                        // Hide the error message after 3 seconds
                         setTimeout(() => (formFail.style.display = "none"), 3000);
-                        //throw new Error(apiResponse);
                     }
-                    // Reset the form and clear all inputs
-                    this.referralForm.reset();
-                    this.nameEl.value = "";
-                    this.emailEl.value = "";
-                    this.spinner.style.display = "none";
-                    return;
-                } catch (err) {
-                    this.spinner.style.display = "none";
-                    this.formFail.querySelector('div').textContent = "Submission failed!";
-                    setTimeout(() => (this.formFail.querySelector('div').textContent = ""), 2000);
+                    
+                } catch (error) {
+                    console.error('Error submitting referral form:', error);
+                    formFail.textContent = "Submission failed! Please try again.";
+                    formFail.style.display = "block";
+                    setTimeout(() => (formFail.style.display = "none"), 3000);
                 } finally {
-                    // Re-enable submit button after submission is complete
+                    // Re-enable submit button
                     if (this.submitBtn) {
                         this.submitBtn.style.pointerEvents = "auto";
-                        this.submitBtn.innerHTML = "Claim Discount";
-                        this.spinner.style.display = "none";
                     }
-
-                    // Clear the form completely
-                    setTimeout(() => {
-                        this.referralForm.reset();
-                        this.nameEl.value = "";
-                        this.emailEl.value = "";
-                        //this.closeReferralModal()
-                        //this.referralForm.style.display = "grid";
-                        //formDone.style.display = "none";
-                        //formFail.style.display = "none";
-                    }, 3000)
-
+                    this.spinner.style.display = "none";
                 }
             }
+
+            // Reset form
+            resetForm() {
+                this.referralForm.reset();
+                this.nameEl.value = "";
+                this.emailEl.value = "";
+                this.referralForm.style.display = "grid";
+                const formDone = this.formContainer.querySelector(".w-form-done");
+                const formFail = this.formContainer.querySelector(".w-form-fail");
+                formDone.style.display = "none";
+                formFail.style.display = "none";
+            }
+
+            // Method to handle checkout flow (to be called from checkout page)
+            handleCheckout() {
+                const referralData = this.getReferralData();
+                if (referralData && referralData.code) {
+                    // Apply referral code to checkout
+                    console.log('Applying referral code to checkout:', referralData.code);
+                    // This would integrate with your checkout system
+                    return referralData.code;
+                }
+                return null;
+            }
         }
-
-
-
