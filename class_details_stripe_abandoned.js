@@ -462,15 +462,15 @@ function creEl(name, className, idName) {
         message = {};
         message.type = "waitlist";
         message.class = "yellow-info-text";
-        message.message = "Seats are full you can fill the wait list forms below";
+        message.message = "Class is full. Please fill the waitlist form to get notified if spots open.";
       } else if (leftSpotsPercentage <= 25) {
         message = {};
         message.type = "filling_fast";
         message.class = "brown-info-text";
         message.message =
           "Hurry! Register now. Seats filling up fast! only <b>" +
-          leftSpots +
-          " spot left</b>";
+          leftSpots + (parseInt(spot) > 1 ? " spots" : " spot" +
+          " left</b>";
       }
       return message;
     }
@@ -1616,3 +1616,4 @@ function creEl(name, className, idName) {
       localStorage.setItem("checkOutData", JSON.stringify(checkoutData));
     }
   }
+
