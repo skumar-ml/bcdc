@@ -1,4 +1,4 @@
- class ReferralModal {
+class ReferralModal {
             constructor(data) {
                 this.data = data;
                 this.referredMemberId = null;
@@ -10,14 +10,15 @@
                 this.checkEmptyState();
                 this.handleModalEvents();
                 this.processReferralFlow();
+                this.autoSubmitIfEligible();
             }
 
             checkEmptyState() {
                 this.formContainer = document.querySelector(".referral-claim-discount-form");
                 this.referralForm = document.getElementById("referral-form-modal");
-                this.closeModalBtn = document.getElementById('modal-close');
+                this.closeModalBtn = document.getElementById('referral-modal-close');
                 this.modalBg = document.getElementById('referral-modal-bg');
-                this.noThanksBtn = document.getElementById('no-thanks-btn');
+                this.noThanksBtn = document.getElementById('referrals-no-thanks-btn');
                 this.submitBtn = document.querySelector('[data-referral="claim-discount"]');
                 this.spinner = document.getElementById("half-circle-spinner");
                 this.nameEl = this.referralForm.querySelector("[data-name='name']");
@@ -308,5 +309,47 @@
                     return referralData.code;
                 }
                 return null;
+            }
+
+            // Auto-submit referral data if user is logged in and localStorage lacks name/email
+            async autoSubmitIfEligible() {
+                try {
+                    const existingReferralData = this.getReferralData();
+                    const isLoggedIn = !!(this.data && this.data.name && this.data.email);
+                    const hasMissingDetails = !!(existingReferralData && (!existingReferralData.name || !existingReferralData.email));
+                    const alreadySubmitted = !!(existingReferralData && existingReferralData.formSubmittedAt);
+
+                    if (isLoggedIn && hasMissingDetails && !alreadySubmitted && existingReferralData.memberId) {
+                        const payload = {
+                            name: this.data.name,
+                            email: this.data.email,
+                            memberId: existingReferralData.memberId
+                        };
+
+                        const response = await fetch(`${this.data.baseUrl}addReferralData`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload),
+                        });
+
+                        let apiResponse = null;
+                        try { apiResponse = await response.json(); } catch (_) { /* noop */ }
+
+                        if (response.ok) {
+                            const updatedReferralData = {
+                                ...existingReferralData,
+                                name: this.data.name,
+                                email: this.data.email,
+                                formSubmittedAt: new Date().toISOString()
+                            };
+                            this.saveReferralData(updatedReferralData);
+                            console.log('Referral details auto-submitted successfully');
+                        } else {
+                            console.error('Auto referral submission failed', apiResponse);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error during auto referral submission:', error);
+                }
             }
         }
