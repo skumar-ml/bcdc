@@ -468,7 +468,7 @@ function creEl(name, className, idName) {
         message.type = "filling_fast";
         message.class = "brown-info-text";
         message.message =
-          "Hurry! Register now. Seats filling up fast! only <b>" +
+          "Hurry! Register now. Seats filling fast! Only <b>" +
           leftSpots + (parseInt(leftSpots) > 1 ? " spots" : " spot") +
           " left</b>";
       }
@@ -1616,6 +1616,7 @@ function creEl(name, className, idName) {
       localStorage.setItem("checkOutData", JSON.stringify(checkoutData));
     }
   }
+
 
 
 
