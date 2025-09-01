@@ -469,7 +469,7 @@ function creEl(name, className, idName) {
         message.class = "brown-info-text";
         message.message =
           "Hurry! Register now. Seats filling up fast! only <b>" +
-          leftSpots + (parseInt(spot) > 1 ? " spots" : " spot") +
+          leftSpots + (parseInt(leftSpots) > 1 ? " spots" : " spot") +
           " left</b>";
       }
       return message;
@@ -1616,5 +1616,6 @@ function creEl(name, className, idName) {
       localStorage.setItem("checkOutData", JSON.stringify(checkoutData));
     }
   }
+
 
 
