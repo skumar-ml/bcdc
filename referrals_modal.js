@@ -10,7 +10,6 @@ class ReferralModal {
                 this.checkEmptyState();
                 this.handleModalEvents();
                 this.processReferralFlow();
-                this.autoSubmitIfEligible();
             }
 
             checkEmptyState() {
@@ -29,12 +28,15 @@ class ReferralModal {
                 const $this = this;
                 this.closeModalBtn?.addEventListener('click', function () {
                     $this.closeReferralModal();
+                    $this.autoSubmitIfEligible();
                 });
                 this.modalBg?.addEventListener('click', function () {
                     $this.closeReferralModal();
+                    $this.autoSubmitIfEligible();
                 });
                 this.noThanksBtn?.addEventListener('click', function () {
                     $this.closeReferralModal();
+                    $this.autoSubmitIfEligible();
                 });
                 this.submitBtn.addEventListener("click", (e) => this.handleFormSubmit(e));
             }
