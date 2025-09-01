@@ -1,4 +1,4 @@
-class ReferralModal {
+ class ReferralModal {
             constructor(data) {
                 this.data = data;
                 this.referredMemberId = null;
@@ -320,6 +320,16 @@ class ReferralModal {
                     const isLoggedIn = !!(this.data && this.data.name && this.data.email);
                     const hasMissingDetails = !!(existingReferralData && (!existingReferralData.name || !existingReferralData.email));
                     const alreadySubmitted = !!(existingReferralData && existingReferralData.formSubmittedAt);
+
+                    // First, update localStorage with logged-in user's name/email if missing
+                    if (isLoggedIn && hasMissingDetails && existingReferralData) {
+                        const mergedData = {
+                            ...existingReferralData,
+                            name: this.data.name,
+                            email: this.data.email
+                        };
+                        this.saveReferralData(mergedData);
+                    }
 
                     if (isLoggedIn && hasMissingDetails && !alreadySubmitted && existingReferralData.memberId) {
                         const payload = {
