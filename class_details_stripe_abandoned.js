@@ -220,6 +220,9 @@ function creEl(name, className, idName) {
          setTimeout(() => {this.spinner.style.display = "none";}, 500);
         return;
       }
+	  if(paymentData.memberId !== this.webflowMemberId){
+        return;
+      }
       // check createdOn date for back button
       if(paymentData.createdOn == undefined){
        setTimeout(() => {this.spinner.style.display = "none";}, 500);
@@ -1616,6 +1619,7 @@ function creEl(name, className, idName) {
       localStorage.setItem("checkOutData", JSON.stringify(checkoutData));
     }
   }
+
 
 
 
