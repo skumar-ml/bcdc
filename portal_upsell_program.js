@@ -485,11 +485,9 @@ class DisplaySuppProgram {
       upsellProgramIds: upsellProgramId.map((id) => parseInt(id)),
       successUrl:
         this.memberData.site_url +
-        "members/" +
-        this.memberData.memberId +
-        "?success=true",
+        "portal/dashboard?success=true",
       cancelUrl:
-        this.memberData.site_url + "members/" + this.memberData.memberId,
+        document.referrer,
       label: programName,
       amount: parseFloat(amount * 100),
       source: "portal_page",
@@ -738,3 +736,4 @@ class DisplaySuppProgram {
     });
   }
 }
+
