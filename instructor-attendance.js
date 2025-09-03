@@ -499,18 +499,22 @@ class ClassData {
 	$studentData = '';
 	constructor(webflowMemberId){
 		this.webflowMemberId = webflowMemberId;
+		this.spinner = document.getElementById("half-circle-spinner");
 		this.getClasssData();
 	}
 	getClasssData(){
+		this.spinner.style.display = "block";
 		var xhr = new XMLHttpRequest()
 		var $this = this;
 		xhr.open("GET", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
 		xhr.withCredentials = false
 		xhr.send()
 		xhr.onload = function() {
+			this.spinner.style.display = "none";
 			let responseText =  JSON.parse(xhr.responseText);
 			new checkInForm($this.webflowMemberId, responseText); 			
 		}
 	}
 }
+
 
