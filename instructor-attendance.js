@@ -499,23 +499,40 @@ class ClassData {
 	$studentData = '';
 	constructor(webflowMemberId){
 		this.webflowMemberId = webflowMemberId;
+		// element for handling api responce message message
+		this.noRecordAPIDiv = document.querySelector('[data-container="no-record-found"]');
 		this.spinner = document.getElementById("half-circle-spinner");
+		this.portalInfoWrapper = document.querySelector('.portal-info-wrapper');
+		
 		this.getClasssData();
 	}
 	getClasssData(){
 		var xhr = new XMLHttpRequest()
 		var $this = this;
-		$this.spinner.style.display = "block";
+		if ($this.portalInfoWrapper) {
+			$this.portalInfoWrapper.style.display = "none";
+		}
+		if ($this.spinner) {
+			$this.spinner.style.display = "block";
+		}
 		xhr.open("GET", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
 		xhr.withCredentials = false
 		xhr.send()
 		xhr.onload = function() {
+			$this.portalInfoWrapper.style.display = "block";
 			$this.spinner.style.display = "none";
 			let responseText =  JSON.parse(xhr.responseText);
 			new checkInForm($this.webflowMemberId, responseText); 			
 		}
+		// error handling if api not working
+		xhr.onerror = function() {
+			$this.spinner.style.display = "none";
+			$this.portalInfoWrapper.style.display = "none";
+			$this.noRecordAPIDiv.style.display = "block";
+		}
 	}
 }
+
 
 
 
