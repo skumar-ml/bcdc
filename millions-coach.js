@@ -261,13 +261,13 @@
 
                 if (addButton) {
                     addButton.addEventListener('click', () => {
-                        this.addStudentAmount(student._id);
+                        this.addStudentAmount(student.paymentId);
                     });
                 }
 
                 if (deleteButton) {
                     deleteButton.addEventListener('click', () => {
-                        this.deleteStudentAmount(student._id);
+                        this.deleteStudentAmount(student.paymentId);
                     });
                 }
 
@@ -737,7 +737,7 @@
 
                     if (result.message === 'Success') {
                         // Update the current student's amount in the local data immediately
-                        const studentIndex = this.currentStudentsList.findIndex(student => student._id === this.currentStudentId);
+                        const studentIndex = this.currentStudentsList.findIndex(student => student.paymentId === this.currentStudentId);
                         if (studentIndex !== -1) {
                             this.currentStudentsList[studentIndex].amount = apiAmount;
                         }
@@ -749,7 +749,7 @@
                         this.displayStudentsList(this.currentStudentsList);
 
                         // Also refresh from server to ensure consistency
-                        this.render();
+                        //this.render();
                     } else {
                         alert('Failed to update millions amount. Please try again.');
                     }
@@ -790,7 +790,6 @@
              * @returns {Object|null} Student object if found, null otherwise
              */
             findStudentById(studentId) {
-                return this.currentStudentsList.find(student => student._id === studentId);
+                return this.currentStudentsList.find(student => student.paymentId === studentId);
             }
         }
-        
