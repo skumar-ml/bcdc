@@ -868,6 +868,8 @@ function creEl(name, className, idName) {
           } else {
             window.location.href = responseText.achUrl;
           }
+        }else if (responseText == "payment_details updated successfully") {
+          window.location.href = 'https://www.bergendebate.com/portal/dashboard';
         }
       };
     }
@@ -2022,6 +2024,7 @@ function creEl(name, className, idName) {
       }
     }
   }
+
 
 
 
