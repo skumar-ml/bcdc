@@ -24,6 +24,8 @@ function creEl(name, className, idName) {
     $selectedProgram = [];
     $oldSelectedProgram = [];
     $coreData = [];
+    $isCheckoutFlow = "Normal"; // Normal | Pre-Registration-Info | Bundle-Purchase
+    $bundleProgram = [];
     constructor(
       baseUrl,
       webflowMemberId,
@@ -45,12 +47,53 @@ function creEl(name, className, idName) {
       this.updatePriceForCardPayment();
       this.updateOldStudentList();
       this.initiateLightbox();
+      // check pre registered bundle program
+      this.checkBundleProgram();
+    }
+    // checkBundleProgram
+    // checkBundleProgram
+    async checkBundleProgram() {
+      let preRegistration = document.querySelector("[data-checkout='pre-registration']");
+      let registration = document.querySelector("[data-checkout='registration']");
+      let isBundle = "Pre-Registration-Info";
+      if (preRegistration) {
+        preRegistration.style.display = "none" ;
+      }
+      if (registration) {
+        registration.style.display ="none";
+      }
+      // Logic to check if the program is a bundle
+      await this.fetchData("getYearLongBundleDetails/" + this.webflowMemberId)
+        .then((data) => {
+          if(data.message && data.message == "Either pre-registration not yet started or already ended"){
+            isBundle = "Normal";
+          }else {
+            // Check if the programId exists in any of the bundles
+              data.data.forEach((bundle) => {
+                console.log('bundle', bundle)
+                if (bundle) {
+                  this.$bundleProgram = bundle;
+                  isBundle = "Bundle-Purchase";
+                }
+             });
+          }
+        });
+        
+      this.$isCheckoutFlow = isBundle;
+       
+      if (preRegistration) {
+        preRegistration.style.display = isBundle=="Pre-Registration-Info" ? "block" : "none";
+      }
+      if (registration) {
+        registration.style.display = isBundle=="Bundle-Purchase" || isBundle == "Normal"  ? "grid" : "none";
+      }
+      return isBundle;
     }
     // Creating main dom for location
     viewClassLocations(data) {
       const selectField = document.getElementById("location-select-field");
       //submit-class
-      const submitClassPayment = document.getElementById("submit-class");
+      const submitClassPayment = (this.$isCheckoutFlow == "Bundle-Purchase") ? document.getElementById("pre_registration_btn") : document.getElementById("submit-class") ;
       var $this = this;
       // Create an object to store class times by location
       const classTimesData = {};
@@ -221,6 +264,12 @@ function creEl(name, className, idName) {
         var paymentData = JSON.parse(checkoutJson);
       }else{
          setTimeout(() => {this.spinner.style.display = "none";}, 500);
+        return;
+      }
+      if(paymentData.memberId !== this.webflowMemberId){
+        return;
+      }
+      if(this.$isCheckoutFlow == "Bundle-Purchase"){
         return;
       }
       // check createdOn date for back button
@@ -781,7 +830,13 @@ function creEl(name, className, idName) {
           ? "https://www.bergendebate.com/payment-confirmation"
           : cancelUrl.href,
       };
-  
+
+      if(this.$isCheckoutFlow == "Bundle-Purchase"){
+        data.paymentId = this.$bundleProgram.paymentId;
+        data.isCheckoutFlow = this.$isCheckoutFlow;
+        data.classUniqueId = classId;
+      }
+      
       //console.log('Data !!!!!', data)
       //return;
       var xhr = new XMLHttpRequest();
@@ -851,7 +906,12 @@ function creEl(name, className, idName) {
           ); // Remove red from others
 
         label.classList.add("class-time-with-brown-white-style"); // Make selected red
-        paymentMethodsDiv.classList.remove("hide");
+        if($this.$isCheckoutFlow == "Bundle-Purchase"){
+          let pre_registration_btn = document.querySelector('[data-checkout="pre-registration-btn"]');
+          pre_registration_btn.classList.remove("hide");
+        }else{
+          paymentMethodsDiv.classList.remove("hide");
+        }
         
         let timingTextElement = document.querySelector(
           ".class-time.class-time-with-brown-white-style"
