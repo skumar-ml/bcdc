@@ -2,6 +2,7 @@ class Sidebar {
   constructor(data) {
     this.data = data;
     this.init();
+    this.updateAllPortalLinks();
   }
   async fetchData(endPoint) {
     try {
@@ -18,7 +19,7 @@ class Sidebar {
   }
   init() {
     // add condition url doesn't contain "members"
-    if (!window.location.href.includes("members")) {
+    if (!window.location.href.includes("dashboard")) {
       this.checkReferralsAccess();
     } else if (!window.location.href.includes("dashboard")) {
       this.checkOtherAccess();
@@ -94,4 +95,38 @@ class Sidebar {
       });
     }
   }
+  updateAllPortalLinks() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const testMemberId = urlParams.get('testMemberId');
+    if(!testMemberId){
+      return;
+    }
+    const allPortalLinks = document.querySelectorAll('a[href*="/portal/"]');
+    
+    allPortalLinks.forEach((link) => {
+      const currentHref = link.getAttribute('href');
+      
+      // Skip if no href or already has testMemberId
+      if (!currentHref || currentHref.includes('testMemberId=')) {
+        return;
+      }
+      
+      // Check if it's a portal URL (starts with /portal/ or contains /portal/)
+      if (currentHref.startsWith('/portal/') || currentHref.includes('/portal/')) {
+        try {
+          // Create URL object
+          const url = new URL(currentHref, window.location.origin);
+          
+          // Add or update testMemberId parameter
+          url.searchParams.set('testMemberId', testMemberId);
+          
+          // Update the link
+          link.setAttribute('href', url.pathname + url.search);
+        } catch (error) {
+          console.error('Error updating link:', error);
+        }
+      }
+    });
+  }
 }
+
