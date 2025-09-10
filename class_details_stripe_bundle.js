@@ -833,7 +833,7 @@ function creEl(name, className, idName) {
 
       if(this.$isCheckoutFlow == "Bundle-Purchase"){
         data.paymentId = this.$bundleProgram.paymentId;
-        data.isCheckoutFlow = this.$isCheckoutFlow;
+        data.isCheckoutFlow = true;
         data.classUniqueId = classId;
       }
       
@@ -2022,4 +2022,5 @@ function creEl(name, className, idName) {
       }
     }
   }
+
 
