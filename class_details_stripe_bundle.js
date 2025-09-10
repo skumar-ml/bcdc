@@ -879,6 +879,7 @@ function creEl(name, className, idName) {
       classTimeDiv,
       paymentMethodsDiv
     ) {
+	  var $this = this;
       classTimesContainer.innerHTML = ""; // Clear previous times
       paymentMethodsDiv.classList.add("hide"); // Hide payment methods initially
   
@@ -2021,3 +2022,4 @@ function creEl(name, className, idName) {
       }
     }
   }
+
