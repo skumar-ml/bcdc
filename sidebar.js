@@ -99,7 +99,8 @@ class Sidebar {
     const urlParams = new URLSearchParams(window.location.search);
     const testMemberId = urlParams.get('testMemberId');
     const testAccountEmail = urlParams.get('testAccountEmail');
-    if(!testMemberId && !testAccountEmail){
+    const testAccountType = urlParams.get('testAccountType');
+    if(!testMemberId && !testAccountEmail && !testAccountType){
       return;
     }
     const allPortalLinks = document.querySelectorAll('a[href*="/portal/"]');
@@ -118,15 +119,14 @@ class Sidebar {
           // Create URL object
           const url = new URL(currentHref, window.location.origin);
           
-          // Add or update testMemberId parameter if present
-          if (testMemberId) {
-            url.searchParams.set('testMemberId', testMemberId);
-          }
+          // Add or update testMemberId parameter
+          url.searchParams.set('testMemberId', testMemberId);
           
-          // Add or update testAccountEmail parameter if present
-          if (testAccountEmail) {
-            url.searchParams.set('testAccountEmail', testAccountEmail);
-          }
+          // Add or update testAccountEmail parameter
+          url.searchParams.set('testAccountEmail', testAccountEmail);
+          
+          // Add or update testAccountType parameter
+          url.searchParams.set('testAccountType', testAccountType);
           
           // Update the link
           link.setAttribute('href', url.pathname + url.search);
@@ -137,5 +137,6 @@ class Sidebar {
     });
   }
 }
+
 
 
