@@ -890,6 +890,8 @@ function creEl(name, className, idName) {
       paymentMethodsDiv
     ) {
 	  var $this = this;
+	  let pre_registration_btn = document.querySelector('[data-checkout="pre-registration-btn"]');
+      pre_registration_btn.classList.add("hide");
       classTimesContainer.innerHTML = ""; // Clear previous times
       paymentMethodsDiv.classList.add("hide"); // Hide payment methods initially
   
@@ -918,7 +920,6 @@ function creEl(name, className, idName) {
 
         label.classList.add("class-time-with-brown-white-style"); // Make selected red
         if($this.$isCheckoutFlow == "Bundle-Purchase"){
-          let pre_registration_btn = document.querySelector('[data-checkout="pre-registration-btn"]');
           pre_registration_btn.classList.remove("hide");
         }else{
           paymentMethodsDiv.classList.remove("hide");
@@ -2077,6 +2078,7 @@ function creEl(name, className, idName) {
       document.querySelector('[data-registration-begin="date"]').textContent = formattedDate;
   }
 }
+
 
 
 
