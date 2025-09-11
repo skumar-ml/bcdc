@@ -76,6 +76,12 @@ function creEl(name, className, idName) {
                   isBundle = "Bundle-Purchase";
                 }
              });
+			  if(data.registrationDates){
+                this.updateCountdown(data.registrationDates);
+                setInterval(() => {
+                  this.updateCountdown(data.registrationDates);
+                }, 1000);
+             }
           }
         });
         
@@ -2025,7 +2031,53 @@ function creEl(name, className, idName) {
         container.appendChild(feeGrid);
       }
     }
+	updateCountdown(date) {
+      // Registration start date
+      var registrationStartDate = date.registrationStartDate;
+      // change year for the 2026 session dynamicly 
+      registrationStartDate = registrationStartDate.replace(new Date().getFullYear(), new Date().getFullYear() + 1);
+      
+      const now = new Date().getTime();
+      const registrationDate = new Date(registrationStartDate).getTime();
+      const timeLeft = registrationDate - now;
+      
+      // If countdown is over, set all to 0
+      if (timeLeft < 0) {
+          document.querySelector('[data-countdown="days"]').textContent = '0';
+          document.querySelector('[data-countdown="hours"]').textContent = '0';
+          document.querySelector('[data-countdown="minutes"]').textContent = '0';
+          document.querySelector('[data-countdown="seconds"]').textContent = '0';
+          return;
+      }
+      
+      // Calculate time units
+      const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+      
+      // Update DOM elements
+      document.querySelector('[data-countdown="days"]').textContent = days;
+      document.querySelector('[data-countdown="hours"]').textContent = hours;
+      document.querySelector('[data-countdown="minutes"]').textContent = minutes;
+      document.querySelector('[data-countdown="seconds"]').textContent = seconds;
+      
+      // Format and update the registration begin date
+      const registrationDateTime = new Date(registrationStartDate);
+      const options = { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short'
+      };
+      const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
+      document.querySelector('[data-registration-begin="date"]').textContent = formattedDate;
   }
+}
+
 
 
 
