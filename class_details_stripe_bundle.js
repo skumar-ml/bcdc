@@ -819,7 +819,7 @@ function creEl(name, className, idName) {
         //added id for up-sell program
         upsellProgramIds: upsellProgramIds,
         has_fee: has_fee,
-        amount: finalPrice,
+        //amount: finalPrice,
         successUrl: encodeURI(
           "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
             label +
@@ -835,7 +835,9 @@ function creEl(name, className, idName) {
         data.paymentId = this.$bundleProgram.paymentId;
         data.isBundleProgram = true;
         data.classUniqueId = classId;
-      }
+      }else{
+		  data.amount = finalPrice
+	  }
       
       //console.log('Data !!!!!', data)
       //return;
@@ -2024,6 +2026,7 @@ function creEl(name, className, idName) {
       }
     }
   }
+
 
 
 
