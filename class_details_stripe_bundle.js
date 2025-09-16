@@ -25,7 +25,8 @@ function creEl(name, className, idName) {
     $oldSelectedProgram = [];
     $coreData = [];
     $isCheckoutFlow = "Normal"; // Normal | Pre-Registration-Info | Bundle-Purchase
-    $bundleProgram = [];
+    $selectedBundleProgram = null;
+    $allBundlePrograms = [];
     constructor(
       baseUrl,
       webflowMemberId,
@@ -45,12 +46,10 @@ function creEl(name, className, idName) {
       this.renderPortalData();
       this.initializeToolTips();
       this.updatePriceForCardPayment();
-      this.updateOldStudentList();
       this.initiateLightbox();
       // check pre registered bundle program
       this.checkBundleProgram();
     }
-    // checkBundleProgram
     // checkBundleProgram
     async checkBundleProgram() {
       let preRegistration = document.querySelector("[data-checkout='pre-registration']");
@@ -65,24 +64,24 @@ function creEl(name, className, idName) {
       // Logic to check if the program is a bundle
       await this.fetchData("getYearLongBundleDetails/" + this.webflowMemberId)
         .then((data) => {
-          if(data.message && data.message == "Either pre-registration not yet started or already ended"){
+          if(data.message && data.data.length == 0 && data.message == "Either pre-registration not yet started or already ended"){
             isBundle = "Normal";
-          }else {
-            // Check if the programId exists in any of the bundles
-              data.data.forEach((bundle) => {
-                console.log('bundle', bundle)
-                if (bundle) {
-                  this.$bundleProgram = bundle;
-                  isBundle = "Bundle-Purchase";
-                }
-             });
-			  if(data.registrationDates){
-                this.updateCountdown(data.registrationDates);
-                setInterval(() => {
-                  this.updateCountdown(data.registrationDates);
-                }, 1000);
-             }
           }
+          else if(data.data && data.data.length == 0 && data.message == "Pre-registration is going on"){
+            isBundle = "Pre-Registration-Info";
+          }else if(data.data && data.data.length > 0 && data.message == "Pre-registration is going on"){
+            isBundle = "Bundle-Purchase";
+          }else {
+            isBundle = "Normal";
+          }
+          this.$allBundlePrograms = data.data;
+          if(data.registrationDates){
+            this.updateCountdown(data.registrationDates);
+            setInterval(() => {
+              this.updateCountdown(data.registrationDates);
+            }, 1000);
+          }
+
         });
         
       this.$isCheckoutFlow = isBundle;
@@ -93,13 +92,18 @@ function creEl(name, className, idName) {
       if (registration) {
         registration.style.display = isBundle=="Bundle-Purchase" || isBundle == "Normal"  ? "grid" : "none";
       }
+      if(isBundle == "Bundle-Purchase"){
+
+      }
+      this.updateOldStudentList();
       return isBundle;
     }
     // Creating main dom for location
     viewClassLocations(data) {
       const selectField = document.getElementById("location-select-field");
       //submit-class
-      const submitClassPayment = (this.$isCheckoutFlow == "Bundle-Purchase") ? document.getElementById("pre_registration_btn") : document.getElementById("submit-class") ;
+      const submitClassPayment = document.getElementById("submit-class") ;
+      const preRegistrationDiv = document.getElementById("pre_registration_btn");
       var $this = this;
       // Create an object to store class times by location
       const classTimesData = {};
@@ -206,12 +210,13 @@ function creEl(name, className, idName) {
   
       // add event listener when  trying to payment
       // submitClassPayment
-      submitClassPayment.addEventListener("click", function (event) {
-        event.preventDefault();
-        submitClassPayment.style.pointerEvents = "none";
-  
-        let selectedOption = selectField.options[selectField.selectedIndex];
-        let responseText = selectedOption.getAttribute("responseText");
+      [preRegistrationDiv, submitClassPayment].forEach((element) => {
+        element.addEventListener("click", function (event) {
+          event.preventDefault();
+          submitClassPayment.style.pointerEvents = "none";
+
+          let selectedOption = selectField.options[selectField.selectedIndex];
+          let responseText = selectedOption.getAttribute("responseText");
   
         responseText = JSON.parse(atob(responseText));
         let timingTextElement = document.querySelector(
@@ -239,7 +244,9 @@ function creEl(name, className, idName) {
           levelName
         );
       });
+    });
     }
+
     //-------------Start new code for stripe payment integration----------------
   
     // Call API url with this method and response as a json
@@ -331,6 +338,20 @@ function creEl(name, className, idName) {
           prevStudent.value = "No";
         }
 
+        // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram 
+        if(this.$allBundlePrograms.length > 0){
+          const matchedProgram = this.$allBundlePrograms.find(
+            (program) => program.studentEmail == paymentData.studentEmail
+          );
+          if (matchedProgram) {
+            this.$selectedBundleProgram = matchedProgram;
+            this.$isCheckoutFlow = "Bundle-Purchase";
+          } else {
+            this.$selectedBundleProgram = null;
+            this.$isCheckoutFlow = "Normal";
+          }
+        } 
+        
         if (!paymentData.checkoutData) {
             this.storeBasicData();
             this.AddStudentData();
@@ -425,6 +446,16 @@ function creEl(name, className, idName) {
         studentFirstName.value,
         studentLastName.value
       );
+      // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram
+      if(this.$allBundlePrograms.length > 0){
+        const matchedProgram = this.$allBundlePrograms.find(
+          (program) => program.studentEmail === studentEmail.value
+        );
+        if (matchedProgram) {
+          this.$selectedBundleProgram = matchedProgram;
+          this.$isCheckoutFlow = "Bundle-Purchase";
+        }
+      }
       localStorage.setItem("checkOutBasicData", JSON.stringify(data));
     }
     // check old student records
@@ -825,7 +856,6 @@ function creEl(name, className, idName) {
         //added id for up-sell program
         upsellProgramIds: upsellProgramIds,
         has_fee: has_fee,
-        //amount: finalPrice,
         successUrl: encodeURI(
           "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
             label +
@@ -838,12 +868,12 @@ function creEl(name, className, idName) {
       };
 
       if(this.$isCheckoutFlow == "Bundle-Purchase"){
-        data.paymentId = this.$bundleProgram.paymentId;
+        data.paymentId = this.$selectedBundleProgram.paymentId;
         data.isBundleProgram = true;
         data.classUniqueId = classId;
       }else{
-		  data.amount = finalPrice
-	  }
+        data.amount = finalPrice
+      }
       
       //console.log('Data !!!!!', data)
       //return;
@@ -889,8 +919,8 @@ function creEl(name, className, idName) {
       classTimeDiv,
       paymentMethodsDiv
     ) {
-	  var $this = this;
-	  let pre_registration_btn = document.querySelector('[data-checkout="pre-registration-btn"]');
+      var $this = this;
+      let pre_registration_btn = document.querySelector('[data-checkout="pre-registration-btn"]');
       pre_registration_btn.classList.add("hide");
       classTimesContainer.innerHTML = ""; // Clear previous times
       paymentMethodsDiv.classList.add("hide"); // Hide payment methods initially
@@ -921,6 +951,7 @@ function creEl(name, className, idName) {
         label.classList.add("class-time-with-brown-white-style"); // Make selected red
         if($this.$isCheckoutFlow == "Bundle-Purchase"){
           pre_registration_btn.classList.remove("hide");
+          paymentMethodsDiv.classList.add("hide");
         }else{
           paymentMethodsDiv.classList.remove("hide");
         }
@@ -931,6 +962,8 @@ function creEl(name, className, idName) {
         let actionType = timingTextElement.getAttribute("action-type");
         let payment_option = document.querySelector('.payment_option')
         if (actionType == "waitlist") {
+          paymentMethodsDiv.classList.remove("hide");
+          pre_registration_btn.classList.add("hide");
           payment_option.classList.add("hide"); // Show payment methods
         }else{
           payment_option.classList.remove("hide");
@@ -1521,16 +1554,21 @@ function creEl(name, className, idName) {
       }
       //data-stripe="totalDepositPrice"
     }
-  
+    
+   
     //updateOldStudentList
-    async updateOldStudentList() {
+    async updateOldStudentList(data) {
       const selectBox = document.getElementById("existing-students");
       var $this = this;
       try {
-        const data = await this.fetchData(
+        var data = [];
+        if ($this.$allBundlePrograms.length > 0 && $this.$isCheckoutFlow == "Bundle-Purchase") {
+          data = $this.$allBundlePrograms;
+        } else {
+          data = await this.fetchData(
           "getAllPreviousStudents/" + this.webflowMemberId+"/all"
         );
-  
+        }
         //finding unique value and sorting by firstName
         const filterData = data
           .filter(
@@ -1572,6 +1610,18 @@ function creEl(name, className, idName) {
               ? filterData[event.target.value].prevStudent
               : "",
           };
+          // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram 
+          const matchedProgram = $this.$allBundlePrograms.find(
+            (program) => program.studentEmail === data.studentEmail
+          );
+          if (matchedProgram) {
+            $this.$selectedBundleProgram = matchedProgram;
+            $this.$isCheckoutFlow = "Bundle-Purchase";
+          } else {
+            $this.$selectedBundleProgram = null;
+            $this.$isCheckoutFlow = "Normal";
+          }
+
           localStorage.setItem("checkOutBasicData", JSON.stringify(data));
           $this.updateBasicData('old_student');
         });
@@ -2032,7 +2082,7 @@ function creEl(name, className, idName) {
         container.appendChild(feeGrid);
       }
     }
-	updateCountdown(date) {
+    updateCountdown(date) {
       // Registration start date
       var registrationStartDate = date.registrationStartDate;
       // change year for the 2026 session dynamicly 
@@ -2077,11 +2127,5 @@ function creEl(name, className, idName) {
       const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
       document.querySelector('[data-registration-begin="date"]').textContent = formattedDate;
   }
-}
-
-
-
-
-
-
-
+        
+  }
