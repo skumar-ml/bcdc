@@ -20,8 +20,8 @@
                 this.noThanksBtn = document.getElementById('referrals-no-thanks-btn');
                 this.submitBtn = document.querySelector('[data-referral="claim-discount"]');
                 this.spinner = document.getElementById("half-circle-spinner");
-                this.nameEl = this.referralForm.querySelector("[data-name='name']");
-                this.emailEl = this.referralForm.querySelector("[data-name='email']");
+                this.nameEl = this.referralForm.querySelector("[data-name='referral-name']");
+                this.emailEl = this.referralForm.querySelector("[data-name='referral-email']");
             }
 
             handleModalEvents() {
@@ -365,3 +365,4 @@
                 }
             }
         }
+
