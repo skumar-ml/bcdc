@@ -226,6 +226,7 @@
 
                 // Disable submit button
                 if (this.submitBtn) {
+                    this.submitBtn.innerHTML = "Processing...";
                     this.submitBtn.style.pointerEvents = "none";
                 }
 
@@ -283,6 +284,7 @@
                 } finally {
                     // Re-enable submit button
                     if (this.submitBtn) {
+                        this.submitBtn.innerHTML = "Claim Discount";
                         this.submitBtn.style.pointerEvents = "auto";
                     }
                     //this.spinner.style.display = "none";
@@ -365,5 +367,6 @@
                 }
             }
         }
+
 
 
