@@ -19,7 +19,7 @@
                 this.modalBg = document.getElementById('referral-modal-bg');
                 this.noThanksBtn = document.getElementById('referrals-no-thanks-btn');
                 this.submitBtn = document.querySelector('[data-referral="claim-discount"]');
-                this.spinner = document.getElementById("half-circle-spinner");
+                //this.spinner = document.getElementById("half-circle-spinner");
                 this.nameEl = this.referralForm.querySelector("[data-name='referral-name']");
                 this.emailEl = this.referralForm.querySelector("[data-name='referral-email']");
             }
@@ -208,7 +208,7 @@
             // Handle form submission
             async handleFormSubmit(e) {
                 e.preventDefault();
-                this.spinner.style.display = "block";
+                //this.spinner.style.display = "block";
 
                 const name = this.nameEl.value.trim();
                 const email = this.emailEl.value.trim();
@@ -219,7 +219,7 @@
                 if (!name || !email) {
                     formFail.textContent = "Please fill in all fields.";
                     formFail.style.display = "block";
-                    this.spinner.style.display = "none";
+                    //this.spinner.style.display = "none";
                     setTimeout(() => (formFail.style.display = "none"), 3000);
                     return;
                 }
@@ -285,7 +285,7 @@
                     if (this.submitBtn) {
                         this.submitBtn.style.pointerEvents = "auto";
                     }
-                    this.spinner.style.display = "none";
+                    //this.spinner.style.display = "none";
                 }
             }
 
@@ -365,4 +365,5 @@
                 }
             }
         }
+
 
