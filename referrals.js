@@ -86,7 +86,7 @@ class ReferralProgram {
       // Encrypted code append
       var encryptedCode = btoa(data.coupon_code);
       var encryptedMemberId = btoa(this.memberId);
-      this.referralLinkInput.value = data.coupon_code ? `https://www.bergendebate.com/referral-modal?code=${encryptedCode}&id=${encryptedMemberId}` : "";
+      this.referralLinkInput.value = data.coupon_code ? `https://www.bergendebate.com?code=${encryptedCode}&id=${encryptedMemberId}` : "";
       data.referrals = data.referrals || [];
       if(data.referrals.length == 0) {
         document.querySelector(".no-record-div").style.display = "block";
@@ -227,8 +227,8 @@ class ReferralProgram {
     const name = document.getElementById("name").value.trim();
     const email = document.getElementById("email").value.trim();
     // select w-form-done and w-form-fail
-    const formDone = document.querySelector(".w-form-done");
-    const formFail = document.querySelector(".w-form-fail");
+    const formDone = document.querySelector(".referral-form-block .w-form-done");
+    const formFail = document.querySelector(".referral-form-block .w-form-fail");
     if (!name || !email) {
       formFail.textContent = "Please fill in all fields.";
       formFail.style.display = "block";
@@ -397,5 +397,3 @@ class ReferralProgram {
   container.innerHTML = progressInner.join("");
   }
 }
-
-
