@@ -93,7 +93,15 @@ function creEl(name, className, idName) {
         registration.style.display = isBundle=="Bundle-Purchase" || isBundle == "Normal"  ? "grid" : "none";
       }
       if(isBundle == "Bundle-Purchase"){
-
+        const checkout_student_container = document.getElementById("checkout_student_container");
+        // for="existing-students" change label text to "Select Student Info"
+        let existingStudentLabel = document.querySelector("label[for='existing-students']");
+        if(existingStudentLabel){
+          existingStudentLabel.innerText = "Select Student Info";
+        }
+        if(checkout_student_container){
+          checkout_student_container.style.display = "none";
+        }
       }
       this.updateOldStudentList();
       return isBundle;
@@ -647,7 +655,7 @@ function creEl(name, className, idName) {
         };
       }
       this.eventUpdateTotalAmountPrice();
-    }
+    }t
     // update basic student form data from local storage
     updateBasicData(old_student = false) {
       var checkoutJson = localStorage.getItem("checkOutBasicData");
@@ -660,7 +668,8 @@ function creEl(name, className, idName) {
         var studentSchool = document.getElementById("Student-School");
         var studentGender = document.getElementById("Student-Gender");
         var prevStudent = document.getElementById("prevStudent");
-  
+
+        
         studentEmail.value = paymentData.studentEmail;
         
         if (paymentData.studentName) {
@@ -701,17 +710,33 @@ function creEl(name, className, idName) {
     addEventForPrevNaxt() {
       var next_page_1 = document.getElementById("next_page_1");
       var prev_page_1 = document.getElementById("prev_page_1");
+      const selectField = document.getElementById("location-select-field");
   
       var $this = this;
       var form = $("#checkout-form");
       next_page_1.addEventListener("click", async function () {
+        // existing-students required if this.$isCheckoutFlow is Bundle-Purchase
+        let existingStudents = document.getElementById("existing-students");
+        if($this.$isCheckoutFlow == "Bundle-Purchase"){
+          if(existingStudents){
+            existingStudents.setAttribute("required", "true");
+          }
+        }else {
+          if(existingStudents){
+            existingStudents.removeAttribute("required");
+          }
+        }
         if (form.valid()) {
           $this.storeBasicData();
           $this.AddStudentData();
           $this.showSemesterBundleModal();
+          selectField.value = "";
+          // trigger change event to update class times
+          selectField.dispatchEvent(new Event("change"));
           $this.activeBreadCrumb("select-class");
           $this.activateDiv("class-selection-container");
           $this.displayStudentInfo("block");
+          
         }
       });
   
