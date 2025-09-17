@@ -221,7 +221,9 @@
             showReferralModal() {
                 const modal = document.getElementById('referral-modal');
                 modal.classList.add('show');
-
+                (window.CE_API || (window.CE_API=[])).push(function(){
+                    CE2.startRecording();
+                });
                 // Pre-fill form if user is logged in
                 if (this.data.name && this.data.email) {
                     this.nameEl.value = this.data.name;
@@ -397,3 +399,4 @@
                 }
             }
         }
+
