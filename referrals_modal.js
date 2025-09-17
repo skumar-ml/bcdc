@@ -27,14 +27,17 @@
             handleModalEvents() {
                 const $this = this;
                 this.closeModalBtn?.addEventListener('click', function () {
+                    $this.setModalSuppression();
                     $this.closeReferralModal();
                     $this.autoSubmitIfEligible();
                 });
                 this.modalBg?.addEventListener('click', function () {
+                    $this.setModalSuppression();
                     $this.closeReferralModal();
                     $this.autoSubmitIfEligible();
                 });
                 this.noThanksBtn?.addEventListener('click', function () {
+                    $this.setModalSuppression();
                     $this.closeReferralModal();
                     $this.autoSubmitIfEligible();
                 });
@@ -46,18 +49,25 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const codeParam = urlParams.get('code');
                 const idParam = urlParams.get('id');
-                
+
                 // Check if user came via referral link
                 const hasReferralLink = codeParam && idParam;
-                
+
+                // Check if modal should be suppressed (1 hour after dismissal)
+                const shouldSuppressModal = this.shouldSuppressModal();
+
                 // Get existing referral data from localStorage
                 const existingReferralData = this.getReferralData();
-                
+
                 if (hasReferralLink) {
-                    // User came via referral link
+                    // User came via referral link - always show modal regardless of suppression
                     this.handleReferralLinkVisit(codeParam, idParam, existingReferralData);
                 } else {
-                    // User came without referral link
+                    // User came without referral link - check suppression
+                    if (shouldSuppressModal) {
+                        console.log('Modal suppressed for 1 hour after dismissal');
+                        return;
+                    }
                     this.handleNonReferralVisit(existingReferralData);
                 }
             }
@@ -68,23 +78,23 @@
                     // Decode the base64 encoded parameters
                     const decodedCode = atob(codeParam);
                     const referredMemberId = atob(idParam);
-                    
+
                     this.referredMemberId = referredMemberId;
                     this.referralCode = decodedCode;
-                    
+
                     // Update discount code display
                     this.updateDiscountCodeDisplay(decodedCode);
-                    
+
                     // Fetch and display referrer name
                     this.fetchReferrerDetails(referredMemberId);
-                    
+
                     // Create new referral data
                     const newReferralData = {
                         code: decodedCode,
                         memberId: referredMemberId,
                         timestamp: new Date().toISOString()
                     };
-                    
+
                     if (existingReferralData) {
                         // User has visited before
                         if (existingReferralData.name && existingReferralData.email) {
@@ -103,7 +113,7 @@
                         this.saveReferralData(newReferralData);
                         this.showReferralModal();
                     }
-                    
+
                 } catch (error) {
                     console.error('Error processing referral link:', error);
                     // Fallback to original parameters if decoding fails
@@ -115,15 +125,15 @@
             handleReferralLinkVisitFallback(codeParam, idParam, existingReferralData) {
                 this.referralCode = codeParam;
                 this.referredMemberId = idParam;
-                
+
                 this.updateDiscountCodeDisplay(codeParam);
-                
+
                 const newReferralData = {
                     code: codeParam,
                     memberId: idParam,
                     timestamp: new Date().toISOString()
                 };
-                
+
                 if (existingReferralData && existingReferralData.name && existingReferralData.email) {
                     newReferralData.name = existingReferralData.name;
                     newReferralData.email = existingReferralData.email;
@@ -162,6 +172,26 @@
                 localStorage.setItem('referralCode', JSON.stringify(data));
             }
 
+            // Check if modal should be suppressed (1 hour after dismissal)
+            shouldSuppressModal() {
+                const suppressionTimestamp = localStorage.getItem('referralModalSuppressed');
+                if (!suppressionTimestamp) {
+                    return false;
+                }
+
+                const now = new Date().getTime();
+                const suppressionTime = parseInt(suppressionTimestamp);
+                const oneHourInMs = 60 * 60 * 1000; // 1 hour in milliseconds
+
+                return (now - suppressionTime) < oneHourInMs;
+            }
+
+            // Set modal suppression timestamp
+            setModalSuppression() {
+                const now = new Date().getTime();
+                localStorage.setItem('referralModalSuppressed', now.toString());
+            }
+
             // Update discount code display
             updateDiscountCodeDisplay(code) {
                 const discountCodeElement = document.querySelector('.discount-code-red');
@@ -191,7 +221,7 @@
             showReferralModal() {
                 const modal = document.getElementById('referral-modal');
                 modal.classList.add('show');
-                
+
                 // Pre-fill form if user is logged in
                 if (this.data.name && this.data.email) {
                     this.nameEl.value = this.data.name;
@@ -212,10 +242,10 @@
 
                 const name = this.nameEl.value.trim();
                 const email = this.emailEl.value.trim();
-                
+
                 const formDone = this.formContainer.querySelector(".w-form-done");
                 const formFail = this.formContainer.querySelector(".w-form-fail");
-                
+
                 if (!name || !email) {
                     formFail.textContent = "Please fill in all fields.";
                     formFail.style.display = "block";
@@ -235,15 +265,15 @@
                     const response = await fetch(`${this.data.baseUrl}addReferralData`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ 
-                            name, 
-                            email, 
-                            memberId: this.referredMemberId 
+                        body: JSON.stringify({
+                            name,
+                            email,
+                            memberId: this.referredMemberId
                         }),
                     });
-                    
+
                     const apiResponse = await response.json();
-                    
+
                     if (response.ok) {
                         // Update localStorage with form data
                         const currentReferralData = this.getReferralData();
@@ -254,19 +284,19 @@
                             formSubmittedAt: new Date().toISOString()
                         };
                         this.saveReferralData(updatedReferralData);
-                        
+
                         // Show success message
                         this.referralForm.style.display = "none";
                         formDone.style.display = "block";
                         formFail.style.display = "none";
                         formDone.querySelector('div').textContent = apiResponse;
-                        
+
                         // Close modal after 3 seconds
                         setTimeout(() => {
                             this.closeReferralModal();
                             this.resetForm();
                         }, 3000);
-                        
+
                     } else {
                         // Show error message
                         this.referralForm.style.display = "grid";
@@ -275,7 +305,7 @@
                         formFail.textContent = apiResponse;
                         setTimeout(() => (formFail.style.display = "none"), 3000);
                     }
-                    
+
                 } catch (error) {
                     console.error('Error submitting referral form:', error);
                     formFail.textContent = "Submission failed! Please try again.";
@@ -367,6 +397,3 @@
                 }
             }
         }
-
-
-
