@@ -75,6 +75,11 @@
             // Handle user coming via referral link
             handleReferralLinkVisit(codeParam, idParam, existingReferralData) {
                 try {
+                    // Set UTM source tracking for referral links
+                    const currentTime = new Date();
+                    localStorage.setItem("utm_source", "referral");
+                    localStorage.setItem("utm_source_time", currentTime.toISOString());
+
                     // Decode the base64 encoded parameters
                     const decodedCode = atob(codeParam);
                     const referredMemberId = atob(idParam);
@@ -123,6 +128,11 @@
 
             // Fallback for referral link processing
             handleReferralLinkVisitFallback(codeParam, idParam, existingReferralData) {
+                // Set UTM source tracking for referral links (fallback)
+                const currentTime = new Date();
+                localStorage.setItem("utm_source", "referral");
+                localStorage.setItem("utm_source_time", currentTime.toISOString());
+
                 this.referralCode = codeParam;
                 this.referredMemberId = idParam;
 
@@ -350,6 +360,15 @@
             // Auto-submit referral data if user is logged in and localStorage lacks name/email
             async autoSubmitIfEligible() {
                 try {
+                    // Check if current URL contains /programs/ or /summer/
+                    const currentPath = window.location.pathname;
+                    const isEligiblePath = currentPath.includes('/programs/') || currentPath.includes('/summer/');
+                    
+                    if (!isEligiblePath) {
+                        console.log('Auto-submit skipped: URL does not contain /programs/ or /summer/');
+                        return;
+                    }
+
                     const existingReferralData = this.getReferralData();
                     const isLoggedIn = !!(this.data && this.data.name && this.data.email);
                     const hasMissingDetails = !!(existingReferralData && (!existingReferralData.name || !existingReferralData.email));
@@ -399,4 +418,3 @@
                 }
             }
         }
-
