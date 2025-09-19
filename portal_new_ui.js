@@ -1736,8 +1736,8 @@ class Portal {
             "paymentId": student.studentDetail.uniqueIdentification,
             "paymentLinkId": paymentLinkId,
             "memberId": this.data.memberId,
-            "successUrl": encodeURI("https://www.bergendebate.com/members/" + this.data.memberId + "?programName=" + title),
-            "cancelUrl": "https://www.bergendebate.com/members/" + this.data.memberId,
+            "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
+            "cancelUrl": "https://www.bergendebate.com/portal/dashboard",
         }
 
         // Send payment request to API
@@ -1952,4 +1952,5 @@ class Portal {
     }
 
 }
+
 
