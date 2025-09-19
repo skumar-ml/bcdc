@@ -615,7 +615,7 @@
                 // Use the same logic as updateButtonVisibility function
                 const hasBundle = studentData ? this.checkHasBundle(studentData) : false;
                 const hasReturnerConversion = this.checkReturnerConversion(recommendedLevel);
-                const hasRecommendedCondition = hasBundle || hasReturnerConversion;
+                const hasRecommendedCondition = hasReturnerConversion;
                 
                 // Generate the enrollment URL based on condition
                 let enrollUrl;
