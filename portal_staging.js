@@ -1,4 +1,4 @@
-class Portal {
+ class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -590,7 +590,7 @@ class Portal {
                 }
 
                 // Update modal's Enroll Now button link
-                this.updateEnrollNowLinks(modal, recommendedLevel, tabPane);
+                this.updateEnrollNowLinks(modal, recommendedLevel, tabPane, studentData);
 
                 // Update "Why This Program" section
                 const whyProgramTextEl = modal.querySelector('.why-this-program-rounded-div .dm-sans.blue-text');
@@ -599,7 +599,7 @@ class Portal {
                     whyProgramTextEl.textContent = `Based on ${studentName}'s current level and performance, we recommend enrolling in ${levelLabel} for continued skill growth and advanced debate techniques.`;
                 }
             }
-            updateEnrollNowLinks(contextEl, recommendedLevel, tabPane) {
+            updateEnrollNowLinks(contextEl, recommendedLevel, tabPane, studentData) {
                 if (!contextEl || !recommendedLevel) return;
 
                 // Get the level from recommendedLevel
@@ -611,8 +611,19 @@ class Portal {
                     .replace(/\s+/g, '-')  // Replace spaces with hyphens
                     .replace(/[^a-z0-9-]/g, ''); // Remove any other special characters
 
-                // Generate the enrollment URL
-                const enrollUrl = `https://www.bergendebate.com/programs/${levelUrl}`;
+                // Check if recommended condition matches (hasBundle or hasReturnerConversion)
+                // Use the same logic as updateButtonVisibility function
+                const hasBundle = studentData ? this.checkHasBundle(studentData) : false;
+                const hasReturnerConversion = this.checkReturnerConversion(recommendedLevel);
+                const hasRecommendedCondition = hasBundle || hasReturnerConversion;
+                
+                // Generate the enrollment URL based on condition
+                let enrollUrl;
+                if (hasRecommendedCondition) {
+                    enrollUrl = `https://www.bergendebate.com/programs/${levelUrl}`;
+                } else {
+                    enrollUrl = 'https://www.bergendebate.com/classes-overview';
+                }
 
                 // Find and update all Enroll Now buttons in the context
                 const enrollButtons = document.getElementById('enroll-now-btn');
