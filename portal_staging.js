@@ -1,4 +1,4 @@
- class Portal {
+class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -429,26 +429,31 @@
                     // Both periods are active: Show both buttons
                     registerNowBtn.style.display = 'inline-block';
                     learnMoreBtn.style.display = 'inline-block';
+                    recommendedSection.style.display = 'block';
                     console.log('Showing both buttons (both pre-registration and registration periods are active)');
                 } else if (hasBundle && timeBasedVisibility.showPreRegistration) {
                     // If A: Only show Register Now button during pre-registration
                     registerNowBtn.style.display = 'inline-block';
                     learnMoreBtn.style.display = 'none';
                     console.log('Showing only Register Now button (hasBundle + pre-registration period)');
+                    recommendedSection.style.display = 'block';
                 } else if (hasReturnerConversion && timeBasedVisibility.showRegistration) {
                     // If B: Show both buttons during registration period
                     registerNowBtn.style.display = 'inline-block';
                     learnMoreBtn.style.display = 'inline-block';
+                    recommendedSection.style.display = 'block';
                     console.log('Showing both buttons (hasReturnerConversion + registration period)');
                 } else if (hasBundle && hasReturnerConversion && timeBasedVisibility.showRegistration) {
                     // If A & B: Show both buttons during registration period
                     registerNowBtn.style.display = 'inline-block';
                     learnMoreBtn.style.display = 'inline-block';
+                    recommendedSection.style.display = 'block';
                     console.log('Showing both buttons (hasBundle & hasReturnerConversion + registration period)');
                 } else {
                     // Default: Hide both buttons
                     registerNowBtn.style.display = 'none';
                     learnMoreBtn.style.display = 'none';
+                    recommendedSection.style.display = 'none';
                     console.log('Hiding both buttons (default or not in appropriate time period)');
                 }
             }
