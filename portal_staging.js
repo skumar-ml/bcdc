@@ -1,4 +1,4 @@
-class Portal {
+ class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -370,7 +370,7 @@ class Portal {
                 }
 
                 // Update the first next-recomm-prog-text (the line that shows session/year | level)
-                const textEls = recommendedSection.querySelectorAll('.next-recomm-prog-text');
+                const textEls = recommendedSection.querySelectorAll('[data-portal="next-recomm-prog-text"]');
                 if (!textEls || textEls.length === 0) return;
 
                 const sessionYear = [recommendedLevel.session, recommendedLevel.year].filter(Boolean).join(' ');
@@ -1645,8 +1645,8 @@ class Portal {
                     "paymentId": student.studentDetail.uniqueIdentification,
                     "paymentLinkId": paymentLinkId,
                     "memberId": this.data.memberId,
-                    "successUrl": encodeURI("https://www.bergendebate.com/members/" + this.data.memberId + "?programName=" + title),
-                    "cancelUrl": "https://www.bergendebate.com/members/" + this.data.memberId,
+                    "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
+                    "cancelUrl": "https://www.bergendebate.com/portal/dashboard",
                 }
                 var xhr = new XMLHttpRequest()
                 var $this = this;
