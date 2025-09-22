@@ -27,6 +27,7 @@ function creEl(name, className, idName) {
     $isCheckoutFlow = "Normal"; // Normal | Pre-Registration-Info | Bundle-Purchase
     $selectedBundleProgram = null;
     $allBundlePrograms = [];
+    $allSuppData = [];
     constructor(
       baseUrl,
       webflowMemberId,
@@ -43,12 +44,13 @@ function creEl(name, className, idName) {
       this.amount = amount;
       this.discount_amount = parseInt(amount)
       this.spinner = document.getElementById("half-circle-spinner"); 
+      this.checkBundleProgram();
       this.renderPortalData();
       this.initializeToolTips();
       this.updatePriceForCardPayment();
       this.initiateLightbox();
       // check pre registered bundle program
-      this.checkBundleProgram();
+      
     }
     // checkBundleProgram
     async checkBundleProgram() {
@@ -249,7 +251,8 @@ function creEl(name, className, idName) {
           paymentType,
           has_fee,
           classId,
-          levelName
+          levelName,
+          preRegistrationDiv
         );
       });
     });
@@ -396,7 +399,17 @@ function creEl(name, className, idName) {
         //     addToCartBtn.click();
         //   }
         // }
-        if(paymentData.selectedProgram && paymentData.suppPro.length > 0){
+        this.createBundlePrograms(this.$allSuppData);
+        this.updateBundleProgram(paymentData)
+      } else {
+        // removed local storage when checkout page rendar direct without back button
+        localStorage.removeItem("checkOutData");
+      }
+      setTimeout(() => {this.spinner.style.display = "none";}, 500);
+    }
+    // update Addon program based on local storage data
+    updateBundleProgram(paymentData){
+      if(paymentData.selectedProgram && paymentData.suppPro.length > 0){
           this.updateSupplementaryProgramData(paymentData.suppPro);
           this.$selectedProgram = paymentData.selectedProgram;
           console.log("old selected program", this.$selectedProgram)
@@ -414,7 +427,6 @@ function creEl(name, className, idName) {
           setTimeout(() => {
         const allCheckboxes = document.querySelectorAll("[programDetailId]");
         allCheckboxes.forEach((checkbox) => {
-          console.log("checkbox", checkbox.getAttribute("programDetailId"), paymentData.upsellProgramIds.includes(parseInt(checkbox.getAttribute("programDetailId"))))
           if(paymentData.upsellProgramIds.includes(parseInt(checkbox.getAttribute("programDetailId")))){
             checkbox.checked = true;
           }
@@ -423,11 +435,6 @@ function creEl(name, className, idName) {
         this.disableEnableBuyNowButton();
 
         }
-      } else {
-        // removed local storage when checkout page rendar direct without back button
-        localStorage.removeItem("checkOutData");
-      }
-      setTimeout(() => {this.spinner.style.display = "none";}, 500);
     }
     // store basic student form data in local storage
     storeBasicData() {
@@ -715,9 +722,24 @@ function creEl(name, className, idName) {
       var $this = this;
       var form = $("#checkout-form");
       next_page_1.addEventListener("click", async function () {
+        // check bundle purchase flow
+        //$this.checkBundlePurchaseFlow();
         // existing-students required if this.$isCheckoutFlow is Bundle-Purchase
         let existingStudents = document.getElementById("existing-students");
-        if($this.$isCheckoutFlow == "Bundle-Purchase"){
+        var studentEmail = document.getElementById("Student-Email");
+
+        $this.createBundlePrograms($this.$allSuppData);
+        if($this.$selectedProgram.length > 0){
+          // Get local storage data for back button
+          var checkoutJson = localStorage.getItem("checkOutData");
+          if (checkoutJson != undefined) {
+            var paymentData = JSON.parse(checkoutJson);
+            // update bundle program based on local storage data
+            $this.updateBundleProgram(paymentData);
+          }
+        }
+        let existingStudentLabel = document.querySelector("label[for='existing-students']");
+        if(existingStudentLabel.innerText == "Select Student Info"){
           if(existingStudents){
             existingStudents.setAttribute("required", "true");
           }
@@ -792,6 +814,7 @@ function creEl(name, className, idName) {
         );
         this.viewClassLocations(data);
         var suppData = await this.fetchData("getUpsellProgramTest/");
+        this.$allSuppData = suppData;
         // Check if there are any upsell programs
         var academicSuppData = suppData.find((item) => {
           return item.sessionId !== 2;
@@ -799,27 +822,34 @@ function creEl(name, className, idName) {
         //this.$suppPro = academicSuppData ? academicSuppData.upsellPrograms : [];
         this.updateSupplementaryProgramData(academicSuppData ? academicSuppData.upsellPrograms : [])
         //this.updateAddonProgram();
-        this.createBundlePrograms(suppData);
         // Setup back button for browser and stripe checkout page
         this.setUpBackButtonTab();
+        // Onload render bundle programs
+        this.createBundlePrograms(suppData);
+        
         this.spinner.style.display = "none";
-        // var $this = this;
-        // var locationData = data[0][0].location;
-        // var levelId = data[0][0].levelId;
-        // var levelName = data[0][0].levelName;
-        // this.viewClassLocations(locationData);
-        // Object.values(locationData).forEach((formData, index) => {
-        // 	setTimeout(function () {
-        // 		let currentIndex = index + 1;
-        // 		new classLocationStripe($this.webflowMemberId, formData, currentIndex, $this.accountEmail, levelId, levelName, $this.parentName,  $this.amount);
-        // 	}, 30)
-        // })
+       
       } catch (error) {
         this.spinner.style.display = "none";
         console.error("Error rendering random number:", error);
       }
     }
-  
+    getSelectedBundleProgram(){
+       // added code for up-sell program
+      var suppProIdE = document.getElementById("suppProIds");
+      let upsellProgramIds =
+        JSON.parse(suppProIdE.value).length > 0
+          ? JSON.parse(suppProIdE.value).map(Number)
+          : [];
+      // Remove core program id from upsellProgramIds if present
+      if (this.$coreData && this.$coreData.upsellProgramId) {
+        upsellProgramIds = upsellProgramIds.filter(
+          id => id !== this.$coreData.upsellProgramId
+        );
+      }
+      upsellProgramIds = [...new Set(upsellProgramIds)];
+      return upsellProgramIds;
+    }
     // API call for stripe checkout URL
     initializeStripePayment(
       locationActionLink,
@@ -829,7 +859,8 @@ function creEl(name, className, idName) {
       type,
       has_fee,
       classId,
-      levelName
+      levelName,
+      preRegistrationDiv=null
     ) {
       var label;
       if (responseText.locationName != "None") {
@@ -845,20 +876,10 @@ function creEl(name, className, idName) {
       //console.log('event', locationActionLink)
       locationActionLink.innerHTML = "Processing...";
       locationActionLink.disabled = true;
-  
-      // added code for up-sell program
-      var suppProIdE = document.getElementById("suppProIds");
-      let upsellProgramIds =
-        JSON.parse(suppProIdE.value).length > 0
-          ? JSON.parse(suppProIdE.value).map(Number)
-          : [];
-      // Remove core program id from upsellProgramIds if present
-      if (this.$coreData && this.$coreData.upsellProgramId) {
-        upsellProgramIds = upsellProgramIds.filter(
-          id => id !== this.$coreData.upsellProgramId
-        );
-      }
-      upsellProgramIds = [...new Set(upsellProgramIds)];
+      preRegistrationDiv.innerHTML = "Processing...";
+      preRegistrationDiv.disabled = true;    
+      // Get selected up-sell program ids
+      var upsellProgramIds = this.getSelectedBundleProgram();
       //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
       var cancelUrl = new URL(window.location.href);
       //console.log(window.location.href)
@@ -906,7 +927,7 @@ function creEl(name, className, idName) {
       var $this = this;
       xhr.open(
         "POST",
-        "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl",
+        this.baseUrl + "updateDataToCheckoutUrl",
         true
       );
       xhr.withCredentials = false;
@@ -932,11 +953,74 @@ function creEl(name, className, idName) {
             window.location.href = responseText.achUrl;
           }
         }else if (responseText == "payment_details updated successfully") {
-          window.location.href = 'https://www.bergendebate.com/portal/dashboard';
+
+          if(upsellProgramIds.length > 0){
+            $this.initSupplementaryPayment(
+               $this.$selectedBundleProgram.paymentId,
+              upsellProgramIds,
+              label,
+              finalPrice,
+              type,
+              cancelUrl
+            );
+          }else{
+            window.location.href = 'https://www.bergendebate.com/portal/dashboard';
+          }
         }
       };
     }
-  
+
+    initSupplementaryPayment(paymentId, upsellProgramId, programName, amount, type, cancelUrl) {
+      // Define the data to be sent in the POST request
+      const data = {
+        sessionId: "",
+        paymentId: paymentId,
+        //upsellProgramIds: [parseInt(upsellProgramId), 105, 106],
+        upsellProgramIds: upsellProgramId.map((id) => parseInt(id)),
+        successUrl: encodeURI(
+          "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
+            programName +
+            "&pType=" +
+            type
+        ),
+        cancelUrl: cancelUrl.href.includes("file:///")
+          ? "https://www.bergendebate.com"
+          : cancelUrl.href,
+        label: programName,
+        amount: parseFloat(amount * 100),
+        source: "cart_page",
+        hasFee: false,
+        memberId: this.webflowMemberId,
+      };
+      // Create the POST request
+      fetch(this.baseUrl + "checkoutUrlForUpsellProgram", {
+        method: "POST", // Specify the method
+        headers: {
+          "Content-Type": "application/json", // Specify the content type
+        },
+        body: JSON.stringify(data), // Convert the data to a JSON string
+      })
+        .then((response) => {
+          if (!response.ok) {
+            // Handle the error response
+            throw new Error("Network response was not ok " + response.statusText);
+          }
+          return response.json(); // Parse the JSON from the response
+        })
+        .then((data) => {
+          console.log("Success:", data); // Handle the JSON data
+          if (data.success) {
+            if (type == "card") {
+              window.location.href = data.cardUrl;
+            } else {
+              window.location.href = data.achUrl;
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("There was a problem with the fetch operation:", error); // Handle errors
+        });
+    }
     updateClassTimes(
       selectedLocation,
       classTimesData,
@@ -944,6 +1028,8 @@ function creEl(name, className, idName) {
       classTimeDiv,
       paymentMethodsDiv
     ) {
+      let joinWaitListEl = document.getElementById("join-waitlist-class");
+      const submitClassPayment = document.getElementById("submit-class");
       var $this = this;
       let pre_registration_btn = document.querySelector('[data-checkout="pre-registration-btn"]');
       pre_registration_btn.classList.add("hide");
@@ -976,8 +1062,16 @@ function creEl(name, className, idName) {
         label.classList.add("class-time-with-brown-white-style"); // Make selected red
         if($this.$isCheckoutFlow == "Bundle-Purchase"){
           pre_registration_btn.classList.remove("hide");
-          paymentMethodsDiv.classList.add("hide");
-        }else{
+          // Hide payment methods for bundle purchase and not as supplementary program
+          var upsellProgramIds = $this.getSelectedBundleProgram();
+          if (upsellProgramIds.length == 0) {
+            paymentMethodsDiv.classList.add("hide");
+            submitClassPayment.style.display = "block";
+          } else {
+            paymentMethodsDiv.classList.remove("hide");
+            submitClassPayment.style.display = "none";
+          }
+        } else {
           paymentMethodsDiv.classList.remove("hide");
         }
         
@@ -995,8 +1089,7 @@ function creEl(name, className, idName) {
         }
         // hide and show join wait list link
         
-        let joinWaitListEl = document.getElementById("join-waitlist-class");
-        const submitClassPayment = document.getElementById("submit-class");
+       
         
         let waitLink = timingTextElement.getAttribute("wait-link");
         //wait-link
@@ -1006,7 +1099,9 @@ function creEl(name, className, idName) {
           submitClassPayment.style.display = "none";
         } else {
           joinWaitListEl.style.display = "none";
-          submitClassPayment.style.display = "block";
+          if($this.$isCheckoutFlow != "Bundle-Purchase"){
+            submitClassPayment.style.display = "block";
+          }
         }
       });
   
@@ -1400,7 +1495,7 @@ function creEl(name, className, idName) {
       // let bundleLabel = creEl("p", "main-text order-details-no-strike");
       // bundleLabel.innerHTML = "Bundle Price";
       let bundlePrice = creEl("div","main-text order-details-price-no-strike");
-      bundlePrice.innerHTML = "$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2));
+      bundlePrice.innerHTML = (sup.amount) ?"$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2)) : "Purchased";
       bundlePrice.setAttribute("data-stripe", "addon_price");
       bundlePrice.setAttribute("addon-price",$this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
       //cartGridWrapper3.prepend(bundleLabel);
@@ -1658,6 +1753,18 @@ function creEl(name, className, idName) {
           '<option value="">Student Details not available</option>';
       }
     }
+    checkBundlePurchaseFlow() {
+      const matchedProgram = this.$allBundlePrograms.find(
+        (program) => program.studentEmail === data.studentEmail
+      );
+      if (matchedProgram) {
+        this.$selectedBundleProgram = matchedProgram;
+        this.$isCheckoutFlow = "Bundle-Purchase";
+      } else {
+        this.$selectedBundleProgram = null;
+        this.$isCheckoutFlow = "Normal";
+      }
+    }
     updateAddonProgram() {
       const addonProgram = this.$suppPro.find(
         (data) => data.upsellProgramId == 104
@@ -1801,6 +1908,10 @@ function creEl(name, className, idName) {
     }
 
     createBundlePrograms(academicData) {
+      var academicData = academicData;
+      if (academicData.length == 0) {
+        return;
+      }
       const cardContainer = document.querySelector(
         "[data-upSell='card-container']"
       );
@@ -1847,6 +1958,27 @@ function creEl(name, className, idName) {
         var addonSubHeading = creEl("span", "poppins-para bundle-sem-text");
         addonSubHeading.innerHTML = "(select at least one to bundle)";
         addonHeading.appendChild(addonSubHeading)
+        if (this.$isCheckoutFlow === "Bundle-Purchase") {
+          // Store original coreData values for future restoration
+          if (coreData._originalAmount === undefined && coreData._originalDiscAmount === undefined) {
+            coreData._originalAmount = coreData.amount;
+            coreData._originalDiscAmount = coreData.disc_amount;
+          }
+          // Set core program amount and disc_amount to 0
+          coreData.amount = 0;
+          coreData.disc_amount = 0;
+          this.$selectedProgram = [coreData, ...this.$selectedProgram.filter(prog => prog.upsellProgramId !== coreData.upsellProgramId)];
+        } else {
+          // Restore original coreData values if available
+          if (coreData._originalAmount !== undefined && coreData._originalDiscAmount !== undefined) {
+            coreData.amount = coreData._originalAmount;
+            coreData.disc_amount = coreData._originalDiscAmount;
+          } else {
+            // Store original values for future restoration
+            coreData._originalAmount = coreData.amount;
+            coreData._originalDiscAmount = coreData.disc_amount;
+          }
+        }
 
         var coreCard = this.createBundleCard(coreData, 'core', "", coreData);
   
@@ -1930,7 +2062,7 @@ function creEl(name, className, idName) {
       originalPrice.setAttribute("data-addon", "price");
       originalPrice.textContent = singleBundleData.disc_amount
         ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
-        : "$3,770";
+        : "Purchased";
       const discountPrice = creEl("div", "bundle-sem-pop-up-price-text");
       discountPrice.setAttribute("data-addon", "discount-price");
       //let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
@@ -1938,7 +2070,7 @@ function creEl(name, className, idName) {
       let amount = singleBundleData.amount;
       discountPrice.textContent = singleBundleData.amount
         ? `$${this.numberWithCommas(amount)}`
-        : "$3,350";
+        : "";
       priceFlex.appendChild(originalPrice);
       priceFlex.appendChild(discountPrice);
 
