@@ -2116,6 +2116,17 @@ function creEl(name, className, idName) {
         //window.scrollTo({ top: 0, behavior: "smooth" });
         $this.updateCheckOutData({upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram});
         $this.$oldSelectedProgram = $this.$selectedProgram;
+
+        // Trigger click event for payment class tab
+        //if(this.$selectedProgram.length - 1 > 0){
+          // trigger click event class name class-time-with-brown-white-style
+          let paymentClassTab = document.querySelectorAll(".class-time-with-brown-white-style");
+          if(paymentClassTab.length > 0){
+            paymentClassTab[0].click();
+            // event trigger click event
+            paymentClassTab[0].dispatchEvent(new Event('click'));
+          }
+        //}
       });
       if (input.checked) {
         flexContainer.classList.add("border-brown-red");
