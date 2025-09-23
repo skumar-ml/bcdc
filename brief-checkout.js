@@ -127,8 +127,11 @@ class BriefsCheckout {
                                         <span class="hide w-form-label">Radio</span>
                                     </label>
                                     <div class="brief-pricing-title-red">Full Version</div>
-                                    <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68d12df293ed238fb7b07265_Info.svg"
+                                    <div class="brief-info-wrapper">
+                                        <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68d12df293ed238fb7b07265_Info.svg"
                                          loading="lazy" alt="" class="brief-info-icon" />
+                                         <div><p class="dm-sans brief-tooltip">${fullVersion.description}</p></div>
+                                    </div>
                                 </div>
                                 <div class="brief-price-medium">$${parseFloat(fullVersion.price || 0).toFixed(2)}</div>
                             </div>
@@ -143,8 +146,11 @@ class BriefsCheckout {
                                         <span class="hide w-form-label">Radio</span>
                                     </label>
                                     <div class="brief-pricing-title-red">Light Version</div>
+                                    <div class="brief-info-wrapper">
                                     <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68d12df293ed238fb7b07265_Info.svg"
                                          loading="lazy" alt="" class="brief-info-icon" />
+                                         <div><p class="dm-sans brief-tooltip">${lightVersion.description}</p></div>
+                                    </div>
                                 </div>
                                 <div class="brief-price-medium">$${parseFloat(lightVersion.price || 0).toFixed(2)}</div>
                             </div>
@@ -176,6 +182,8 @@ class BriefsCheckout {
                         price: fullVersion.price || 0,
                         description: fullVersion.description || topic.headings
                     });
+                    // Add brown-red-border class for initially selected briefs
+                    card.classList.add('brown-red-border');
                 }
 
                 return card;
@@ -184,32 +192,58 @@ class BriefsCheckout {
             selectVersion(topic, version, card) {
                 const fullVersionDiv = card.querySelector('[data-briefs-checkout="full-version"]');
                 const lightVersionDiv = card.querySelector('[data-briefs-checkout="light-version"]');
+                const fullRadio = card.querySelector('input[value="full"]');
+                const lightRadio = card.querySelector('input[value="light"]');
 
-                // Update visual selection
-                if (version === 'full') {
-                    fullVersionDiv.className = 'brief-pricing-info-wrapper selected-border-red';
-                    lightVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
-                } else {
-                    fullVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
-                    lightVersionDiv.className = 'brief-pricing-info-wrapper selected-border-red';
-                }
-
-                // Update selected briefs
+                // Check if this brief is already selected with the same version
                 const existingIndex = this.selectedBriefs.findIndex(brief => brief.topicId === topic.topicId);
-                const versionData = version === 'full' ? topic.full_version : topic.light_version;
+                const isAlreadySelected = existingIndex >= 0 && this.selectedBriefs[existingIndex].version === version;
 
-                const briefData = {
-                    topicId: topic.topicId,
-                    topicName: topic.topicName,
-                    version: version,
-                    price: versionData.price || 0,
-                    description: versionData.description || topic.headings
-                };
-
-                if (existingIndex >= 0) {
-                    this.selectedBriefs[existingIndex] = briefData;
+                if (isAlreadySelected) {
+                    // Unselect the brief
+                    this.selectedBriefs.splice(existingIndex, 1);
+                    
+                    // Remove brown-red-border class
+                    card.classList.remove('brown-red-border');
+                    
+                    // Reset visual selection to unselected state
+                    fullVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+                    lightVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+                    
+                    // Uncheck radio buttons
+                    fullRadio.checked = false;
+                    lightRadio.checked = false;
                 } else {
-                    this.selectedBriefs.push(briefData);
+                    // Select the brief
+                    const versionData = version === 'full' ? topic.full_version : topic.light_version;
+
+                    const briefData = {
+                        topicId: topic.topicId,
+                        topicName: topic.topicName,
+                        version: version,
+                        price: versionData.price || 0,
+                        description: versionData.description || topic.headings
+                    };
+
+                    if (existingIndex >= 0) {
+                        // Update existing selection
+                        this.selectedBriefs[existingIndex] = briefData;
+                    } else {
+                        // Add new selection
+                        this.selectedBriefs.push(briefData);
+                    }
+
+                    // Update visual selection
+                    if (version === 'full') {
+                        fullVersionDiv.className = 'brief-pricing-info-wrapper selected-border-red';
+                        lightVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+                    } else {
+                        fullVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+                        lightVersionDiv.className = 'brief-pricing-info-wrapper selected-border-red';
+                    }
+
+                    // Add brown-red-border class to the card when selected
+                    card.classList.add('brown-red-border');
                 }
 
                 this.updateTotal();
