@@ -45,6 +45,7 @@ class BriefsCheckout {
                         } else {
                             this.renderBriefs(response.topics);
                             this.attachPreviewHandlers(response.topics);
+                            this.showPayNowButton();
                         }
                     } else {
                         console.error('No briefs data received');
@@ -235,6 +236,13 @@ class BriefsCheckout {
                         <p>${message}</p>
                     </div>
                 `;
+                }
+            }
+
+            showPayNowButton() {
+                const payNowButtonDiv = document.querySelector('.button-div.align-end-with-margin-top-0');
+                if (payNowButtonDiv) {
+                    payNowButtonDiv.classList.remove('hide');
                 }
             }
 
