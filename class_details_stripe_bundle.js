@@ -1497,7 +1497,7 @@ function creEl(name, className, idName) {
       let bundlePrice = creEl("div","main-text order-details-price-no-strike");
       bundlePrice.innerHTML = (sup.amount) ?"$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2)) : "Purchased";
       bundlePrice.setAttribute("data-stripe", "addon_price");
-      bundlePrice.setAttribute("addon-price",$this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
+      bundlePrice.setAttribute("addon-price", (sup.amount) ? $this.numberWithCommas(parseFloat(sup.amount).toFixed(2)) : "Purchased" );
       //cartGridWrapper3.prepend(bundleLabel);
       mainGridWrapper.appendChild(bundlePrice);
       
@@ -1657,8 +1657,7 @@ function creEl(name, className, idName) {
                   .replace(/,/g, "")
                   .replace(/\$/g, "");
                 let addonPriceValue = (parseFloat(addonPrice) + 0.3) / 0.971;
-                addon_deposit_price.innerHTML =
-                  "$" + $this.numberWithCommas(addonPriceValue.toFixed(2));
+                addon_deposit_price.innerHTML = (addonPrice) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
               });
             }
           } else {
