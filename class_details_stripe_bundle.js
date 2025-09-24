@@ -1497,7 +1497,7 @@ function creEl(name, className, idName) {
       // bundleLabel.innerHTML = "Bundle Price";
       let bundlePrice = creEl("div","main-text order-details-price-no-strike");
       bundlePrice.innerHTML = (parseFloat(sup.amount) > 0) ?"$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2)) : "Purchased";
-      bundlePrice.setAttribute("data-stripe", "addon_price");
+      bundlePrice.setAttribute("data-stripe", "addon-price");
       bundlePrice.setAttribute("addon-price", $this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
       //cartGridWrapper3.prepend(bundleLabel);
       mainGridWrapper.appendChild(bundlePrice);
@@ -1622,7 +1622,7 @@ function creEl(name, className, idName) {
   
           // Code for addon price update based on payment method selection
           let addonPrice = document.querySelectorAll(
-            "[data-stripe='addon_price']"
+            "[data-stripe='addon-price']"
           );
           if (tab == "Tab 2") {
             if (addonPrice.length > 0) {
@@ -1631,7 +1631,7 @@ function creEl(name, className, idName) {
                   .replace(/,/g, "")
                   .replace(/\$/g, "");
                 let addonPriceValue = (parseFloat(addonPrice) > 0) ? (parseFloat(addonPrice) + 0.3) / 0.971 : 0;
-                addon_deposit_price.innerHTML = (parseFloat(addonPriceValue) >= 0) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
+                addon_deposit_price.innerHTML = (parseFloat(addonPriceValue) > 0) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
               });
             }
           } else {
