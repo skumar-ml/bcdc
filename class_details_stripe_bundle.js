@@ -961,7 +961,8 @@ function creEl(name, className, idName) {
               label,
               finalPrice,
               type,
-              cancelUrl
+              cancelUrl,
+              has_fee
             );
           }else{
             window.location.href = 'https://www.bergendebate.com/portal/dashboard';
@@ -970,7 +971,7 @@ function creEl(name, className, idName) {
       };
     }
 
-    initSupplementaryPayment(paymentId, upsellProgramId, programName, amount, type, cancelUrl) {
+    initSupplementaryPayment(paymentId, upsellProgramId, programName, amount, type, cancelUrl, has_fee) {
       // Define the data to be sent in the POST request
       const data = {
         sessionId: "",
@@ -989,7 +990,7 @@ function creEl(name, className, idName) {
         label: programName,
         amount: parseFloat(amount * 100),
         source: "cart_page",
-        hasFee: false,
+        hasFee: has_fee,
         memberId: this.webflowMemberId,
       };
       // Create the POST request
@@ -1497,7 +1498,7 @@ function creEl(name, className, idName) {
       let bundlePrice = creEl("div","main-text order-details-price-no-strike");
       bundlePrice.innerHTML = (sup.amount) ?"$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2)) : "Purchased";
       bundlePrice.setAttribute("data-stripe", "addon_price");
-      bundlePrice.setAttribute("addon-price", (sup.amount) ? $this.numberWithCommas(parseFloat(sup.amount).toFixed(2)) : "Purchased" );
+      bundlePrice.setAttribute("addon-price", $this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
       //cartGridWrapper3.prepend(bundleLabel);
       mainGridWrapper.appendChild(bundlePrice);
       
@@ -1656,8 +1657,8 @@ function creEl(name, className, idName) {
                 let addonPrice = addon_deposit_price.getAttribute("addon-price")
                   .replace(/,/g, "")
                   .replace(/\$/g, "");
-                let addonPriceValue = (parseFloat(addonPrice) + 0.3) / 0.971;
-                addon_deposit_price.innerHTML = (addonPrice) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
+                let addonPriceValue = (addonPrice) ? (parseFloat(addonPrice) + 0.3) / 0.971 : 0;
+                addon_deposit_price.innerHTML = (addonPrice !== "0.00") ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
               });
             }
           } else {
@@ -1665,7 +1666,7 @@ function creEl(name, className, idName) {
               addonPrice.forEach((addon_deposit_price) => {
                 let addonSinglePrice =
                   addon_deposit_price.getAttribute("addon-price");
-                addon_deposit_price.innerHTML = "$" + addonSinglePrice;
+                addon_deposit_price.innerHTML = (addonSinglePrice) ? "$" + addonSinglePrice : "Purchased";
               });
             }
           }
