@@ -723,7 +723,7 @@ function creEl(name, className, idName) {
       var form = $("#checkout-form");
       next_page_1.addEventListener("click", async function () {
         // check bundle purchase flow
-        //$this.checkBundlePurchaseFlow();
+        $this.checkBundlePurchaseFlow();
         // existing-students required if this.$isCheckoutFlow is Bundle-Purchase
         let existingStudents = document.getElementById("existing-students");
         var studentEmail = document.getElementById("Student-Email");
@@ -1754,8 +1754,9 @@ function creEl(name, className, idName) {
       }
     }
     checkBundlePurchaseFlow() {
+      var studentEmail = document.getElementById("Student-Email").value;
       const matchedProgram = this.$allBundlePrograms.find(
-        (program) => program.studentEmail === data.studentEmail
+        (program) => program.studentEmail === studentEmail
       );
       if (matchedProgram) {
         this.$selectedBundleProgram = matchedProgram;
