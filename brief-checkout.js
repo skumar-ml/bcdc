@@ -114,7 +114,7 @@ class BriefsCheckout {
                 card.innerHTML = `
                         <div class="brief-flex-wrapper checkout">
                             <div class="briefs-title">${topic.topicName}</div>
-                            <a href="#" class="button view-brief w-button" data-topic-id="${topic.topicId}">View Brief</a>
+                            <a href="#" class="button view-brief w-button" data-topic-id="${topic.topicId}">Preview</a>
                         </div>
                         <p class="dm-sans brief">${topic.headings}</p>
                         <div class="recommended-tag-text">Recommended</div>
@@ -528,3 +528,4 @@ class BriefsCheckout {
                 document.getElementById(activeId).classList.add('active')
             }
         }
+
