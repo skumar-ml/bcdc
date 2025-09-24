@@ -1584,20 +1584,6 @@ function creEl(name, className, idName) {
                     coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice;
                 }
                 
-                // let addonPriceEl = document.querySelectorAll(
-                //   "[data-stripe='addon_price']"
-                // );
-                // if (addonPriceEl) {
-                //   addonPriceEl.forEach(addonPrice => {
-                //     let addonPriceValue = addonPrice.getAttribute('addon-price')
-                //       .replace(/,/g, "")
-                //       .replace(/\$/g, "");
-                //     addonPriceValue = (parseFloat(addonPriceValue) + 0.3) / 0.971;
-                //     coreDepositPrice = addonPriceValue + coreDepositPrice;
-                //   });
-                // }
-                //let amount = deposit_price.innerHTML.replace(/,/g, "").replace(/\$/g, "");
-                //deposit_price.innerHTML = "$"+ $this.numberWithCommas(((parseFloat(amount) + 0.30)/0.971).toFixed(2));
                 deposit_price.innerHTML =
                   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
               });
@@ -1621,19 +1607,6 @@ function creEl(name, className, idName) {
                  })
                }
                   
-              //   let addonPriceEl = document.querySelectorAll(
-              //     "[data-stripe='addon_price']"
-              //   );
-              //   if (addonPriceEl) {
-              //     addonPriceEl.forEach(addonPrice => {
-              //       let addonPriceElValue =
-              //         addonPrice.getAttribute("addon-price");
-              //     addonPriceElValue = addonPriceElValue
-              //       .replace(/,/g, "")
-              //       .replace(/\$/g, "");
-              //     amount = amount + parseFloat(addonPriceElValue);
-              //   });
-              // }
               var sumOfSelectedPrograms = (
               $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
         ).toFixed(2);
@@ -1657,8 +1630,8 @@ function creEl(name, className, idName) {
                 let addonPrice = addon_deposit_price.getAttribute("addon-price")
                   .replace(/,/g, "")
                   .replace(/\$/g, "");
-                let addonPriceValue = (addonPrice) ? (parseFloat(addonPrice) + 0.3) / 0.971 : 0;
-                addon_deposit_price.innerHTML = (parseFloat(addonPriceValue) > 0) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
+                let addonPriceValue = (parseFloat(addonPrice) > 0) ? (parseFloat(addonPrice) + 0.3) / 0.971 : 0;
+                addon_deposit_price.innerHTML = (parseFloat(addonPriceValue) >= 0) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
               });
             }
           } else {
@@ -1666,7 +1639,8 @@ function creEl(name, className, idName) {
               addonPrice.forEach((addon_deposit_price) => {
                 let addonSinglePrice =
                   addon_deposit_price.getAttribute("addon-price");
-                addon_deposit_price.innerHTML = (addonSinglePrice) ? "$" + addonSinglePrice : "Purchased";
+                addon_deposit_price.innerHTML = (parseFloat(addonSinglePrice) > 0
+              ) ? "$" + addonSinglePrice : "Purchased";
               });
             }
           }
