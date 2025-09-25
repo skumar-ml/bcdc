@@ -465,12 +465,14 @@ class Portal {
             }
             checkHasBundle(student) {
                 // Check if student has bundle in future sessions except Summer
-                if (!student.futureSession || !Array.isArray(student.futureSession)) {
-                    console.log('No futureSession data found');
+                if (!student.currentSession || !Array.isArray(student.currentSession)) {
+                    console.log('No currentSession data found');
                     return false;
                 }
-                const result = student.futureSession.some(session => {
-                    return !session.sessionName.toLowerCase().includes('Summer');
+                const result = student.currentSession.some(session => {
+                    // check empty classDetail object
+                    return !Object.keys(session.classDetail).length > 0;
+                    //return !session.sessionName.toLowerCase().includes('Summer');
                 });
                 
                 console.log('checkHasBundle result:', result);
@@ -507,14 +509,14 @@ class Portal {
                 let showRegistration = false;
                 
                 // Check pre-registration period from future session
-                if (studentData.futureSession && Array.isArray(studentData.futureSession)) {
-                    const futureSession = studentData.futureSession.find(session => 
+                if (studentData.currentSession && Array.isArray(studentData.currentSession)) {
+                    const currentSession = studentData.currentSession.find(session => 
                         session['pre-registrationDates'] && session['pre-registrationDates'].preRegStartDate
                     );
                     
-                    if (futureSession && futureSession['pre-registrationDates']) {
-                        const preRegStart = new Date(futureSession['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
-                        const preRegEnd = new Date(futureSession['pre-registrationDates'].preRegEndDate.replace(' ', 'T'));
+                    if (currentSession && currentSession['pre-registrationDates']) {
+                        const preRegStart = new Date(currentSession['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
+                        const preRegEnd = new Date(currentSession['pre-registrationDates'].preRegEndDate.replace(' ', 'T'));
                         
                         showPreRegistration = now >= preRegStart && now <= preRegEnd;
                         
