@@ -1,4 +1,4 @@
- class Portal {
+class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -332,6 +332,12 @@
                         preRegContainer.style.display = '';
                         showPreRegContainer = true;
                         console.log('Showing pre-reg-container (has bundle and pre-registration period)');
+                        
+                        // Update pre-registration username dynamically
+                        const preRegUserName = preRegContainer.querySelector('.pre-reg-user-name');
+                        if (preRegUserName && studentName) {
+                            preRegUserName.textContent = studentName + "'s";
+                        }
                         
                         // Start registration timer for pre-registration end date
                         this.startRegistrationTimer(preRegContainer, studentData);
@@ -1838,3 +1844,4 @@
             }
 
         }
+
