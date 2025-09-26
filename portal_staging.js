@@ -1,4 +1,4 @@
- class Portal {
+class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -320,7 +320,7 @@
                 
                 // Show bundle container if either has bundle or has recommended program
                 if (bundleContainer) {
-                    bundleContainer.style.display = '';
+                    bundleContainer.style.display = 'block';
                     console.log('Showing bundle container');
                 }
 
