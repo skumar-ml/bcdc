@@ -2311,7 +2311,7 @@ function creEl(name, className, idName) {
         // Registration start date
         var registrationStartDate = date.registrationStartDate;
         // change year for the 2026 session dynamicly 
-        registrationStartDate = registrationStartDate.replace(new Date().getFullYear(), new Date().getFullYear() + 1);
+        //registrationStartDate = registrationStartDate.replace(new Date().getFullYear(), new Date().getFullYear() + 1);
         
         const now = new Date().getTime();
         const registrationDate = new Date(registrationStartDate).getTime();
@@ -2825,3 +2825,4 @@ function creEl(name, className, idName) {
     }
 
   }
+
