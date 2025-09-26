@@ -51,6 +51,7 @@ function creEl(name, className, idName) {
       //this.updatePriceForBriefs();
       this.initiateLightbox();
       this.initBriefs();
+      this.displayTopicData("none")
       // check pre registered bundle program
       
     }
@@ -382,8 +383,10 @@ function creEl(name, className, idName) {
             this.activeBreadCrumb("select-class");
             this.activateDiv("class-selection-container");
             this.displayStudentInfo("block");
+            this.displayTopicData("block")
         } else {
           this.displayStudentInfo("block");
+          this.displayTopicData("none")
         }
         
         
@@ -787,6 +790,7 @@ function creEl(name, className, idName) {
             $this.activeBreadCrumb("select-class");
             $this.activateDiv("class-selection-container");
             $this.displayStudentInfo("block");
+            $this.displayTopicData("block")
           } else {
             $this.activateDiv('pf_labs_error_message');
           }
@@ -798,6 +802,7 @@ function creEl(name, className, idName) {
         $this.activeBreadCrumb("student-details");
         $this.activateDiv("checkout_student_details");
         $this.displayStudentInfo("none");
+        $this.displayTopicData("none")
       });
 
       let editStudentEl = document.querySelectorAll("[data-student-info='edit']")
@@ -816,6 +821,7 @@ function creEl(name, className, idName) {
         $this.activeBreadCrumb("student-details");
         $this.activateDiv("checkout_student_details");
         $this.displayStudentInfo("none");
+        $this.displayTopicData("none")
       })
       // Coupon code event
       //Coupon code variable
@@ -840,6 +846,7 @@ function creEl(name, className, idName) {
           $this.activeBreadCrumb("select-class");
           $this.activateDiv("class-selection-container");
           $this.displayStudentInfo("block");
+          $this.displayTopicData("block");
         }
       })
     }
@@ -2607,8 +2614,8 @@ function creEl(name, className, idName) {
                 const briefElement = document.createElement('div');
                 briefElement.className = 'brief-flex-wrapper';
                 briefElement.innerHTML = `
-                        <p class="main-text order-details">${brief.topicName} (${brief.version === 'full' ? 'Full' : 'Light'})</p>
-                        <p class="main-text order-details" data-stripe="brief-price" data-stripe-price="${brief.price}">$${parseFloat(brief.price).toFixed(2)}</p>
+                        <p class="main-text order-details-price-no-strike">${brief.topicName} (${brief.version === 'full' ? 'Full' : 'Light'})</p>
+                        <p class="main-text order-details-price-no-strike" data-stripe="brief-price" data-stripe-price="${brief.price}">$${parseFloat(brief.price).toFixed(2)}</p>
                     `;
                 briefsContainer.insertBefore(briefElement, templateBrief.nextSibling);
             });
@@ -2802,6 +2809,19 @@ function creEl(name, className, idName) {
             </div>
         `;
         }
+    }
+
+    displayTopicData(display="none"){
+      const topicContainer = document.querySelectorAll('.add-supplimental-pdf-container');
+      if(display=="none"){
+        topicContainer.forEach(container => {
+          container.style.display = 'none';
+        });
+      }else{
+        topicContainer.forEach(container => {
+          container.style.display = 'block';
+        });
+      }
     }
 
   }
