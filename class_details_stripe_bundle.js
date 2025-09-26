@@ -2607,8 +2607,8 @@ function creEl(name, className, idName) {
                 const briefElement = document.createElement('div');
                 briefElement.className = 'brief-flex-wrapper';
                 briefElement.innerHTML = `
-                        <p class="dm-sans medium-500">${brief.topicName} (${brief.version === 'full' ? 'Full' : 'Light'})</p>
-                        <p class="dm-sans medium-500" data-stripe="brief-price" data-stripe-price="${brief.price}">$${parseFloat(brief.price).toFixed(2)}</p>
+                        <p class="main-text order-details">${brief.topicName} (${brief.version === 'full' ? 'Full' : 'Light'})</p>
+                        <p class="main-text order-details" data-stripe="brief-price" data-stripe-price="${brief.price}">$${parseFloat(brief.price).toFixed(2)}</p>
                     `;
                 briefsContainer.insertBefore(briefElement, templateBrief.nextSibling);
             });
