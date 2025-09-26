@@ -48,7 +48,9 @@ function creEl(name, className, idName) {
       this.renderPortalData();
       this.initializeToolTips();
       this.updatePriceForCardPayment();
+      //this.updatePriceForBriefs();
       this.initiateLightbox();
+      this.initBriefs();
       // check pre registered bundle program
       
     }
@@ -194,7 +196,7 @@ function creEl(name, className, idName) {
       classTimeDiv.classList.add("hide");
       paymentMethodsDiv.classList.add("hide");
   
-      if (this.levelId == "competitivetrack") {
+      if (this.levelId == "competitivetrack" || this.levelId == "worldschools") {
         $this.updateClassTimes(
           "none",
           classTimesData,
@@ -211,11 +213,21 @@ function creEl(name, className, idName) {
         //select-class-time-div
         paymentMethodsDiv.classList.remove("hide");
         locationForm.style.display = "none";
-        label.classList.add("class-time-with-brown-white-style");
-        joinWaitListEl.style.display = "none";
-        heading.style.display = "none";
-        selectField.value = "none";
-        classTimeDiv.style.display = "none";
+        if(label) {
+          label.classList.add("class-time-with-brown-white-style");
+        }
+        if(joinWaitListEl) {
+          joinWaitListEl.style.display = "none";
+        }
+        if(heading) {
+          heading.style.display = "none";
+        }
+        if(selectField) {
+          selectField.value = "none";
+        }
+        if(classTimeDiv) {
+          classTimeDiv.style.display = "none";
+        }
       }
   
       // add event listener when  trying to payment
@@ -293,9 +305,10 @@ function creEl(name, className, idName) {
       if(paymentData.memberId !== this.webflowMemberId){
         return;
       }
-      if(this.$isCheckoutFlow == "Bundle-Purchase"){
+      if(this.$isCheckoutFlow == "Bundle-Purchase" || this.levelId == 'worldschools'){
         return;
       }
+      
       // check createdOn date for back button
       if(paymentData.createdOn == undefined){
        setTimeout(() => {this.spinner.style.display = "none";}, 500);
@@ -471,6 +484,7 @@ function creEl(name, className, idName) {
           this.$isCheckoutFlow = "Bundle-Purchase";
         }
       }
+      studentName.innerHTML = studentFirstName.value + ' ' + studentLastName.value;
       localStorage.setItem("checkOutBasicData", JSON.stringify(data));
     }
     // check old student records
@@ -721,7 +735,12 @@ function creEl(name, className, idName) {
   
       var $this = this;
       var form = $("#checkout-form");
-      next_page_1.addEventListener("click", async function () {
+      next_page_1.addEventListener("click", async function (event) {
+        event.preventDefault();
+        next_page_1.style.pointerEvents = "none";
+        setTimeout(() => {
+          next_page_1.style.pointerEvents = "auto";
+        }, 3000);
         // check bundle purchase flow
         $this.checkBundlePurchaseFlow();
         // existing-students required if this.$isCheckoutFlow is Bundle-Purchase
@@ -749,15 +768,28 @@ function creEl(name, className, idName) {
           }
         }
         if (form.valid()) {
+          var eligible = true;
+
           $this.storeBasicData();
           $this.AddStudentData();
-          $this.showSemesterBundleModal();
-          selectField.value = "";
-          // trigger change event to update class times
-          selectField.dispatchEvent(new Event("change"));
-          $this.activeBreadCrumb("select-class");
-          $this.activateDiv("class-selection-container");
-          $this.displayStudentInfo("block");
+          
+          if ($this.levelId == 'worldschools') {
+              eligible = false;
+          }
+          if (eligible) {
+            $this.showSemesterBundleModal();
+            
+            // trigger change event to update class times
+            if($this.levelId != 'worldschools' && $this.levelId != 'competitivetrack'){
+              selectField.value = "";
+              selectField.dispatchEvent(new Event("change"));
+            }
+            $this.activeBreadCrumb("select-class");
+            $this.activateDiv("class-selection-container");
+            $this.displayStudentInfo("block");
+          } else {
+            $this.activateDiv('pf_labs_error_message');
+          }
           
         }
       });
@@ -779,10 +811,41 @@ function creEl(name, className, idName) {
           })
         })
       }
+
+      pflabs_prev_page_1.addEventListener('click', function () {
+        $this.activeBreadCrumb("student-details");
+        $this.activateDiv("checkout_student_details");
+        $this.displayStudentInfo("none");
+      })
+      // Coupon code event
+      //Coupon code variable
+      var coupon_code_button = document.getElementById('coupon_code_button');
+      var coupon_2f_code = document.getElementById('coupon_2f_code');
+      var code2fErrorMsg = document.getElementById('code-2f-error-msg');
+      //Added event for validate 2F coupon code
+      coupon_code_button.addEventListener('click',function(event){
+        event.preventDefault();
+        if(coupon_2f_code.value == ''){
+          code2fErrorMsg.style.display = 'block';
+          code2fErrorMsg.innerHTML = 'Please insert coupon code';
+        }else if(coupon_2f_code.value != 'TVUM89NX4P'){
+          code2fErrorMsg.style.display = 'block';
+          code2fErrorMsg.innerHTML = 'The code you entered is invalid. Please enter a different code.';
+        }else{
+          code2fErrorMsg.style.display = 'none';
+          $this.showSemesterBundleModal();
+          // selectField.value = "";
+          // // trigger change event to update class times
+          // selectField.dispatchEvent(new Event("change"));
+          $this.activeBreadCrumb("select-class");
+          $this.activateDiv("class-selection-container");
+          $this.displayStudentInfo("block");
+        }
+      })
     }
     // Hide and show tab for program selection, student info and checkout payment
     activateDiv(divId) {
-      var divIds = ["checkout_student_details", "class-selection-container"];
+      var divIds = ["checkout_student_details", "pf_labs_error_message", "class-selection-container"];
       // Remove the active class from all div elements
       divIds.forEach((id) =>
         document.getElementById(id).classList.remove("active_checkout_tab")
@@ -867,7 +930,7 @@ function creEl(name, className, idName) {
         label =
           responseText.locationName + " | " + levelName + " | " + timingText;
       } else {
-        label = "Competitive Track";
+        label = this.levelId == "worldschools" ? "World Schools" : "Competitive Track";
       }
   
       var iBackButton = document.getElementById("backbuttonstate");
@@ -917,8 +980,15 @@ function creEl(name, className, idName) {
         data.paymentId = this.$selectedBundleProgram.paymentId;
         data.isBundleProgram = true;
         data.classUniqueId = classId;
-      }else{
+      }else{  
         data.amount = finalPrice
+      }
+      // Add Briefs data if selected
+      if(this.selectedBriefs.length > 0){
+          data.topics =  this.selectedBriefs.map(brief => ({
+            topicId: brief.topicId,
+            version: brief.version === 'full' ? 'full_version' : 'light_version'
+        }))
       }
       
       //console.log('Data !!!!!', data)
@@ -1664,6 +1734,11 @@ function creEl(name, className, idName) {
         );
         }
         //finding unique value and sorting by firstName
+        if(data == "No data Found" || data.length == 0){
+          selectBox.disabled = true;
+          selectBox.innerHTML = '<option value="">No previous students found</option>';
+          return;
+        }
         const filterData = data
           .filter(
             (item, index, self) =>
@@ -2020,11 +2095,11 @@ function creEl(name, className, idName) {
       const titleP = creEl("p", "bundle-sem-title");
       titleP.textContent = type === "upsell"
         ? `${singleBundleData.label} (${singleBundleData.yearId})`
-        : "Fall (2025)";
+        : "Winter/Spring (2026)";
       const infoP = creEl("p", "bundle-sem-info");
       infoP.textContent = (singleBundleData.desc )
         ? (singleBundleData.desc || "")
-        : "Fall Tuition + Early Bird (With Deposit)";
+        : "Winter/Spring Tuition + Early Bird (With Deposit)";
       titleInfoDiv.appendChild(titleP);
       titleInfoDiv.appendChild(infoP);
 
@@ -2226,49 +2301,507 @@ function creEl(name, className, idName) {
       }
     }
     updateCountdown(date) {
-      // Registration start date
-      var registrationStartDate = date.registrationStartDate;
-      // change year for the 2026 session dynamicly 
-      registrationStartDate = registrationStartDate.replace(new Date().getFullYear(), new Date().getFullYear() + 1);
-      
-      const now = new Date().getTime();
-      const registrationDate = new Date(registrationStartDate).getTime();
-      const timeLeft = registrationDate - now;
-      
-      // If countdown is over, set all to 0
-      if (timeLeft < 0) {
-          document.querySelector('[data-countdown="days"]').textContent = '0';
-          document.querySelector('[data-countdown="hours"]').textContent = '0';
-          document.querySelector('[data-countdown="minutes"]').textContent = '0';
-          document.querySelector('[data-countdown="seconds"]').textContent = '0';
+        // Registration start date
+        var registrationStartDate = date.registrationStartDate;
+        // change year for the 2026 session dynamicly 
+        registrationStartDate = registrationStartDate.replace(new Date().getFullYear(), new Date().getFullYear() + 1);
+        
+        const now = new Date().getTime();
+        const registrationDate = new Date(registrationStartDate).getTime();
+        const timeLeft = registrationDate - now;
+        
+        // If countdown is over, set all to 0
+        if (timeLeft < 0) {
+            document.querySelector('[data-countdown="days"]').textContent = '0';
+            document.querySelector('[data-countdown="hours"]').textContent = '0';
+            document.querySelector('[data-countdown="minutes"]').textContent = '0';
+            document.querySelector('[data-countdown="seconds"]').textContent = '0';
+            return;
+        }
+        
+        // Calculate time units
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        
+        // Update DOM elements
+        document.querySelector('[data-countdown="days"]').textContent = days;
+        document.querySelector('[data-countdown="hours"]').textContent = hours;
+        document.querySelector('[data-countdown="minutes"]').textContent = minutes;
+        document.querySelector('[data-countdown="seconds"]').textContent = seconds;
+        
+        // Format and update the registration begin date
+        const registrationDateTime = new Date(registrationStartDate);
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        };
+        const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
+        document.querySelector('[data-registration-begin="date"]').textContent = formattedDate;
+    }
+    initBriefs(){
+      this.selectedBriefs = [];
+      this.getBriefs();
+      this.addCloseModalHandler();
+    }
+    addCloseModalHandler() {
+        if (this.closeBtn) {
+            this.closeBtn.addEventListener("click", () => {
+                this.modal.style.display = "none";
+                this.iframe.src = "";
+            });
+        }
+    }
+    async getBriefs() {
+        this.showLoading();
+        try {
+            const response = await this.fetchData('getTopicsDetails');
+            if (response && response.topics) {
+                if (response.topics.length === 0) {
+                    this.showError('No briefs are currently available.');
+                } else {
+                    this.renderBriefs(response.topics);
+                    this.attachPreviewHandlers(response.topics);
+                }
+            } else {
+                console.error('No briefs data received');
+                this.showError('Unable to load briefs. Please try again later.');
+            }
+        } catch (error) {
+            console.error('Error fetching briefs:', error);
+            this.showError('Network error. Please check your connection and try again.');
+        }
+    }
+    renderBriefs(topics){
+      const container = document.querySelector('[data-briefs-checkout="select-briefs"]');
+      if (!container) {
+          console.error('Briefs container not found');
           return;
       }
+      // Clear existing content
+      container.innerHTML = '';
+      // Sort topics by topic_order
+      const sortedTopics = topics.sort((a, b) => (a.topic_order || 0) - (b.topic_order || 0));
+
+      // Create brief cards
+      sortedTopics.forEach((topic, index) => {
+          const briefCard = this.createBriefCard(topic, false); // No default selection
+          container.appendChild(briefCard);
+      });
+    }
+    createBriefCard(topic, isSelected = false) {
+      const card = document.createElement('div');
+      card.className = `brief-card supp-pdf ${isSelected ? 'brown-red-border' : ''}`;
+      card.dataset.topicId = topic.topicId;
+
+      const fullVersion = topic.full_version || {};
+      const lightVersion = topic.light_version || {};
+
+      card.innerHTML = `
+              <div class="brief-flex-wrapper">
+                  <div class="briefs-title">${topic.topicName}</div>
+                  <a href="#" class="button view-brief w-button" data-topic-id="${topic.topicId}">View Brief</a>
+              </div>
+              <div data-briefs-checkout="full-version" class="brief-pricing-info-wrapper ${isSelected ? 'selected-border-red' : 'not-selected-white'}">
+                  <div class="brief-pricing-info-flex">
+                      <div class="brief-inner-flex">
+                          <label class="no-margin-bottom w-radio">
+                              <input type="radio" data-name="Radio" name="radio-${topic.topicId}" 
+                                     class="w-form-formradioinput w-radio-input" value="full" ${isSelected ? 'checked' : ''} />
+                              <span class="hide w-form-label">Radio</span>
+                          </label>
+                          <div class="brief-pricing-title-red">Full Version</div>
+                          <div class="brief-info-wrapper">
+                              <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68d12df293ed238fb7b07265_Info.svg"
+                               loading="lazy" alt="" class="brief-info-icon" />
+                               <div><p class="dm-sans brief-tooltip">${fullVersion.description}</p></div>
+                          </div>
+                      </div>
+                      <div class="brief-price-medium">$${parseFloat(fullVersion.price || 0).toFixed(2)}</div>
+                  </div>
+                  <div class="recommended-tag-text">Recommended</div>
+              </div>
+              <div data-briefs-checkout="light-version" class="brief-pricing-info-wrapper not-selected-white">
+                  <div class="brief-pricing-info-flex">
+                      <div class="brief-inner-flex">
+                          <label class="no-margin-bottom w-radio">
+                              <input type="radio" data-name="Radio" name="radio-${topic.topicId}" 
+                                     class="w-form-formradioinput w-radio-input" value="light" />
+                              <span class="hide w-form-label">Radio</span>
+                          </label>
+                          <div class="brief-pricing-title-red">Light Version</div>
+                          <div class="brief-info-wrapper">
+                          <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68d12df293ed238fb7b07265_Info.svg"
+                               loading="lazy" alt="" class="brief-info-icon" />
+                               <div><p class="dm-sans brief-tooltip">${lightVersion.description}</p></div>
+                          </div>
+                      </div>
+                      <div class="brief-price-medium">$${parseFloat(lightVersion.price || 0).toFixed(2)}</div>
+                  </div>
+              </div>
+          `;
+
+      // Add click handlers for version selection
+      const fullVersionDiv = card.querySelector('[data-briefs-checkout="full-version"]');
+      const lightVersionDiv = card.querySelector('[data-briefs-checkout="light-version"]');
+      const fullRadio = card.querySelector('input[value="full"]');
+      const lightRadio = card.querySelector('input[value="light"]');
+
+      fullVersionDiv.addEventListener('click', () => {
+          fullRadio.checked = true;
+          this.selectVersion(topic, 'full', card);
+      });
+
+      lightVersionDiv.addEventListener('click', () => {
+          lightRadio.checked = true;
+          this.selectVersion(topic, 'light', card);
+      });
+
+      // Add to selected briefs if initially selected
+      if (isSelected) {
+          this.selectedBriefs.push({
+              topicId: topic.topicId,
+              topicName: topic.topicName,
+              version: 'full',
+              price: fullVersion.price || 0,
+              description: fullVersion.description || topic.headings
+          });
+          // Add brown-red-border class for initially selected briefs
+          card.classList.add('brown-red-border');
+      }
+
+      return card;
+    }
+
+    attachPreviewHandlers(briefs) {
+        document.querySelectorAll(".button.view-brief").forEach((button) => {
+            console.log("Modal:", this.modal);
+            console.log("Iframe:", this.iframe);
+            //console.log("Buttons:", document.querySelectorAll(".button.view-brief"));
+
+            button.addEventListener("click", async (e) => {
+                e.preventDefault();
+
+                const topicId = button.dataset.topicId;
+                const brief = briefs.find((b) => b.topicId == topicId);
+                console.log("Selected Brief:", brief);
+
+                if (!brief) return;
+
+                const originalText = button.textContent;
+                // show spinner while PDF is loading
+                //this.showLoading();
+
+                // Determine which PDF to use (full_version preferred)
+                const pdfUrl = brief.full_version?.preview_pdf_url || brief.light_version?.preview_pdf_url;
+
+                if (pdfUrl) {
+                    console.log("Preview URL:", pdfUrl);
+                    this.modal.style.display = "flex";
+                    this.iframe.src = pdfUrl;
+
+                    this.iframe.onload = () => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                        //this.hideLoading(); // hide spinner after PDF loads
+                    };
+                } else {
+                    button.textContent = "Not Available";
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                        //this.hideLoading(); // hide spinner after PDF loads
+                    }, 2000);
+                }
+            });
+
+        });
+    }
+    selectVersion(topic, version, card) {
+        const fullVersionDiv = card.querySelector('[data-briefs-checkout="full-version"]');
+        const lightVersionDiv = card.querySelector('[data-briefs-checkout="light-version"]');
+        const fullRadio = card.querySelector('input[value="full"]');
+        const lightRadio = card.querySelector('input[value="light"]');
+
+        // Check if this brief is already selected with the same version
+        const existingIndex = this.selectedBriefs.findIndex(brief => brief.topicId === topic.topicId);
+        const isAlreadySelected = existingIndex >= 0 && this.selectedBriefs[existingIndex].version === version;
+
+        if (isAlreadySelected) {
+            // Unselect the brief
+            this.selectedBriefs.splice(existingIndex, 1);
+            
+            // Remove brown-red-border class
+            card.classList.remove('brown-red-border');
+            
+            // Reset visual selection to unselected state
+            fullVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+            lightVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+            
+            // Uncheck radio buttons
+            fullRadio.checked = false;
+            lightRadio.checked = false;
+        } else {
+            // Select the brief
+            const versionData = version === 'full' ? topic.full_version : topic.light_version;
+
+            const briefData = {
+                topicId: topic.topicId,
+                topicName: topic.topicName,
+                version: version,
+                price: versionData.price || 0,
+                description: versionData.description || topic.headings
+            };
+
+            if (existingIndex >= 0) {
+                // Update existing selection
+                this.selectedBriefs[existingIndex] = briefData;
+            } else {
+                // Add new selection
+                this.selectedBriefs.push(briefData);
+            }
+
+            // Update visual selection
+            if (version === 'full') {
+                fullVersionDiv.className = 'brief-pricing-info-wrapper selected-border-red';
+                lightVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+            } else {
+                fullVersionDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+                lightVersionDiv.className = 'brief-pricing-info-wrapper selected-border-red';
+            }
+
+            // Add brown-red-border class to the card when selected
+            card.classList.add('brown-red-border');
+        }
+
+        this.updateTotal();
+        this.updatePriceForBriefs();
+    }
+    // Update briefs list in order details
+
+    updateBriefsListInOrderDetails() {
       
-      // Calculate time units
-      const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-      
-      // Update DOM elements
-      document.querySelector('[data-countdown="days"]').textContent = days;
-      document.querySelector('[data-countdown="hours"]').textContent = hours;
-      document.querySelector('[data-countdown="minutes"]').textContent = minutes;
-      document.querySelector('[data-countdown="seconds"]').textContent = seconds;
-      
-      // Format and update the registration begin date
-      const registrationDateTime = new Date(registrationStartDate);
-      const options = { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZoneName: 'short'
-      };
-      const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
-      document.querySelector('[data-registration-begin="date"]').textContent = formattedDate;
-  }
+        const briefsContainers = document.querySelectorAll('[data-briefs-checkout="briefs-order-details"]');
+        if (!briefsContainers.length) return;
         
+        // Process all briefs containers
+        briefsContainers.forEach(briefsContainer => {
+            // Find the template brief-flex-wrapper (the one with hide class)
+            const templateBrief = briefsContainer.querySelector('.brief-flex-wrapper.hide');
+            if (!templateBrief) return;
+
+            // Clear existing briefs (except the template)
+            const existingBriefs = briefsContainer.querySelectorAll('.brief-flex-wrapper:not(.hide)');
+            existingBriefs.forEach(brief => {
+                brief.remove();
+            });
+
+            // Add selected briefs to this container
+            this.selectedBriefs.forEach(brief => {
+                const briefElement = document.createElement('div');
+                briefElement.className = 'brief-flex-wrapper';
+                briefElement.innerHTML = `
+                        <p class="dm-sans medium-500">${brief.topicName} (${brief.version === 'full' ? 'Full' : 'Light'})</p>
+                        <p class="dm-sans medium-500" data-stripe="brief-price" data-stripe-price="${brief.price}">$${parseFloat(brief.price).toFixed(2)}</p>
+                    `;
+                briefsContainer.insertBefore(briefElement, templateBrief.nextSibling);
+            });
+        });
+
+        // Update total
+        this.updateOrderTotal();
+    }
+    // Update total
+    updateTotal() {
+      // Calculate total from selected briefs
+      const total = this.selectedBriefs.reduce((sum, brief) => {
+          return sum + (parseFloat(brief.price) || 0);
+      }, 0);
+
+      // Update order details sidebar
+      this.updateBriefsListInOrderDetails();
+
+      // Update totalDepositPrice elements
+      this.updateTotalDepositPrice(total);
+
+      console.log('Selected briefs:', this.selectedBriefs);
+      console.log('Total amount:', total);
+
+    }
+
+    // Update total
+    updateOrderTotal(){
+        const totalElements = document.querySelectorAll('[data-briefs-checkout="briefs-order-details"] .total-price-bold');
+        if (totalElements.length > 0) {
+            const total = this.selectedBriefs.reduce((sum, brief) => {
+                return sum + (parseFloat(brief.price) || 0);
+            }, 0);
+            
+            totalElements.forEach(totalElement => {
+                totalElement.textContent = `$${total.toFixed(2)}`;
+            });
+        }
+    }
+
+    // Update totalDepositPrice elements for briefs (similar to updatePriceForCardPayment)
+    updatePriceForBriefs() {
+        var $this = this;
+        let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+        let totalDepositPrice = document.querySelectorAll(
+            "[data-stripe='totalDepositPrice']"
+        );
+        
+        for (let i = 0; i < paymentTab.length; i++) {
+            paymentTab[i].addEventListener("click", function (e) {
+                e.preventDefault()
+                let tab = paymentTab[i].getAttribute("data-w-tab");
+                if (tab == "Tab 2") {
+                    if (totalDepositPrice.length > 0) {
+                        totalDepositPrice.forEach((deposit_price) => {
+                            var core_product_price = document.getElementById("core_product_price");
+                            var coreDepositPrice = parseFloat(
+                                core_product_price.value.replace(/,/g, "")
+                            );
+                            coreDepositPrice = (parseFloat(coreDepositPrice) + 0.3) / 0.971;
+
+                            // Calculate briefs total with percentage (same as program amount calculation)
+                            let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
+                                return total + ((parseFloat(brief.price) + 0.3) / 0.971);
+                            }, 0);
+                            
+                            // Add briefs total to core deposit price
+                            let sumOfSelectedPrograms = (
+                                $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
+                            ).toFixed(2);
+                            
+                            if($this.$selectedProgram.length > 0){
+                                coreDepositPrice = parseFloat(sumOfSelectedPrograms) + briefsTotal;
+                            } else {
+                                coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice + briefsTotal;
+                            }
+                            
+                            deposit_price.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+                        });
+                    }
+                } else {
+                    if (totalDepositPrice.length > 0) {
+                        totalDepositPrice.forEach((deposit_price) => {
+                            let amountEl = deposit_price.getAttribute("data-stripe-price");
+                            
+                            let amount = parseFloat(
+                                amountEl.replace(/,/g, "").replace(/\$/g, "")
+                            );
+
+                            // Calculate briefs total
+                            let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
+                                return total + (parseFloat(brief.price) || 0);
+                            }, 0);
+                            
+                            var sumOfSelectedPrograms = (
+                                $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
+                            ).toFixed(2);
+                            
+                            var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + parseFloat(amount) + briefsTotal);
+                            
+                            if($this.$selectedProgram.length > 0){
+                                finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + briefsTotal);
+                            }
+                            
+                            deposit_price.innerHTML = "$" + finalPrice;
+                        });
+                    }
+                }
+
+                let addonPrice = document.querySelectorAll(
+                  "[data-stripe='brief-price']"
+                );
+                if (tab == "Tab 2") {
+                  if (addonPrice.length > 0) {
+                    addonPrice.forEach((addon_deposit_price) => {
+                      let addonPrice = addon_deposit_price.getAttribute("data-stripe-price")
+                      addonPrice = addonPrice.replace(/,/g, "")
+                        .replace(/\$/g, "");
+                      let addonPriceValue = (parseFloat(addonPrice) > 0) ? (parseFloat(addonPrice) + 0.3) / 0.971 : 0;
+                      addon_deposit_price.innerHTML = (parseFloat(addonPriceValue) > 0) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
+                    });
+                  }
+                } else {
+                  if (addonPrice.length > 0) {
+                    addonPrice.forEach((addon_deposit_price) => {
+                      let addonSinglePrice =
+                        addon_deposit_price.getAttribute("data-stripe-price");
+                      addon_deposit_price.innerHTML = (parseFloat(addonSinglePrice) > 0
+                    ) ? "$" + addonSinglePrice : "Purchased";
+                    });
+                  }
+                }
+            });
+        }
+    }
+
+    // Update totalDepositPrice elements
+    updateTotalDepositPrice(total) {
+        const totalDepositPriceElements = document.querySelectorAll('[data-stripe="totalDepositPrice"]');
+        if (totalDepositPriceElements.length > 0) {
+            totalDepositPriceElements.forEach(element => {
+                // Check if Tab 2 (card payment) is active
+                let activeTab = document.querySelector('.payment-cards-tab-link.w--current');
+                let isTab2 = activeTab && activeTab.getAttribute("data-w-tab") === "Tab 2";
+                
+                // Calculate briefs total with or without percentage based on tab
+                let briefsTotal = this.selectedBriefs.reduce((sum, brief) => {
+                    if (isTab2) {
+                        // Apply percentage calculation for Tab 2 (card payment)
+                        return sum + ((parseFloat(brief.price) + 0.3) / 0.971);
+                    } else {
+                        // Use base price for other tabs
+                        return sum + (parseFloat(brief.price) || 0);
+                    }
+                }, 0);
+                
+                // Update the data-stripe-price attribute
+                //element.setAttribute('data-stripe-price', total.toFixed(2));
+                let coreDepositPrice = element.getAttribute("data-stripe-price");
+                // Update the text content if it exists
+                if (element.textContent) {
+                    element.textContent = `$${(briefsTotal + parseFloat(coreDepositPrice)).toFixed(2)}`;
+                }
+            });
+        }
+    }
+    showLoading() {
+        const container = document.querySelector('[data-briefs-checkout="select-briefs"]');
+        if (container) {
+            container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #666; grid-column: 1 / 4">
+                <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #d38d97; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="margin-top: 20px;">Loading briefs...</p>
+            </div>
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+        }
+    }
+
+    showError(message) {
+        const container = document.querySelector('[data-briefs-checkout="select-briefs"]');
+        if (container) {
+            container.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: #666;">
+                <p>${message}</p>
+            </div>
+        `;
+        }
+    }
+
   }
