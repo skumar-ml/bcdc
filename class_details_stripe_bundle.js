@@ -1074,6 +1074,14 @@ class classDetailsStripe {
       hasFee: has_fee,
       memberId: this.webflowMemberId,
     };
+
+    if(this.selectedBriefs.length > 0){
+        data.topics =  this.selectedBriefs.map(brief => ({
+          topicId: brief.topicId,
+          version: brief.version === 'full' ? 'full_version' : 'light_version'
+      }))
+    }
+
     // Create the POST request
     fetch(this.baseUrl + "checkoutUrlForUpsellProgram", {
       method: "POST", // Specify the method
@@ -1488,6 +1496,10 @@ addToCart() {
       "[data-stripe='totalDepositPrice']"
     );
     var selectedIds = [];
+    let briefsTotal = this.selectedBriefs.reduce((sum, brief) => {
+        return sum + (parseFloat(brief.price) || 0);
+    }, 0);
+
     totalPriceAllText.forEach(totalPriceText=>{
       var sumOfSelectedPrograms = 0;
       sumOfSelectedPrograms = (
@@ -1495,9 +1507,9 @@ addToCart() {
       ).toFixed(2);
       var dataStripePrice = parseFloat(totalPriceText.getAttribute("data-stripe-price"));
       if(this.$selectedProgram.length > 0){
-        sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms);
+        sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
       } else {
-        sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice);
+        sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice) + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
       
       }
       totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
@@ -2645,8 +2657,8 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
     this.updateBriefsListInOrderDetails();
 
     // Update totalDepositPrice elements
-    this.updateTotalDepositPrice(total);
-
+    //this.updateTotalDepositPrice(total);
+    this.updateAmount(total)
     console.log('Selected briefs:', this.selectedBriefs);
     console.log('Total amount:', total);
 
