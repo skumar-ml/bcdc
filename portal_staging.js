@@ -818,7 +818,9 @@ class Portal {
                 document.addEventListener('keydown', handleEscape);
             }
             renderRecentAnnouncements(tabPane, announcements) {
-
+                if(!announcements.announcement){
+                    return;
+                }
                 // update sidebar d)ata count data-announcements of is_read is false 
                 const sidebarAnnouncementsCount = document.querySelectorAll('[data-announcements="counts"]');
                 sidebarAnnouncementsCount.forEach(el => {
@@ -1844,3 +1846,4 @@ class Portal {
             }
 
         }
+
