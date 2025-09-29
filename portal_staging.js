@@ -866,7 +866,8 @@ class Portal {
 
                     const message = document.createElement('p');
                     message.className = 'dm-sans recent-announcement-info';
-                    const plainText = ann.message ? ann.message.replace(/<[^>]*>/g, '') : '';
+                    var plainText = ann.message ? ann.message.replace(/<[^>]*>/g, '') : '';
+                    plainText = plainText.replace(/&nbsp;/g, " ");
                     message.textContent = plainText;
                     message.style.display = '-webkit-box';
                     message.style.webkitBoxOrient = 'vertical';
@@ -1845,5 +1846,6 @@ class Portal {
             }
 
         }
+
 
 
