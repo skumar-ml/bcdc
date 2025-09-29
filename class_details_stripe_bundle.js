@@ -2408,20 +2408,25 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
       }
   }
   renderBriefs(topics){
-    const container = document.querySelector('[data-briefs-checkout="select-briefs"]');
-    if (!container) {
+    // Select all containers for briefs checkout
+    const containers = document.querySelectorAll('[data-briefs-checkout="select-briefs"]');
+    containers.forEach(container => {
+      container.innerHTML = '';
+    });
+    if (!containers) {
         console.error('Briefs container not found');
         return;
     }
     // Clear existing content
-    container.innerHTML = '';
     // Sort topics by topic_order
     const sortedTopics = topics.sort((a, b) => (a.topic_order || 0) - (b.topic_order || 0));
 
     // Create brief cards
     sortedTopics.forEach((topic, index) => {
         const briefCard = this.createBriefCard(topic, false); // No default selection
-        container.appendChild(briefCard);
+        containers.forEach(container => {
+          container.appendChild(briefCard);
+        });
     });
   }
   createBriefCard(topic, isSelected = false) {
