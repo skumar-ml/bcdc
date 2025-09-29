@@ -818,26 +818,24 @@ class Portal {
                 document.addEventListener('keydown', handleEscape);
             }
             renderRecentAnnouncements(tabPane, announcements) {
-                if(!announcements.announcement){
-                    return;
-                }
+                
                 // update sidebar d)ata count data-announcements of is_read is false 
                 const sidebarAnnouncementsCount = document.querySelectorAll('[data-announcements="counts"]');
                 sidebarAnnouncementsCount.forEach(el => {
-                    el.textContent = announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail).length;
+                    el.textContent = (announcements.announcement) ? announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail).length : 0;
                     el.parentElement.style.display = 'block';
                 });
 
 
                 const announcementDiv = tabPane.querySelector('.recent-announcement-info-div');
 
-                if (!announcementDiv || !Array.isArray(announcements.announcement)) return;
+                //if (!announcementDiv || !Array.isArray(announcements.announcement)) return;
 
                 const countDiv = tabPane.querySelector('.recent-announcement-number');
-                const unreadAnnouncements = announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail);
+                const unreadAnnouncements = (announcements.announcement) ? announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail) : [];
                 if (countDiv) countDiv.textContent = unreadAnnouncements.length;
 
-                const recent = announcements.announcement.slice(0, 2);
+                const recent = (announcements.announcement) ? announcements.announcement.slice(0, 2) : [];
                 announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
 
                 recent.forEach(ann => {
@@ -881,6 +879,7 @@ class Portal {
                     announcementDiv.appendChild(container);
                 });
             }
+            
             renderFutureClasses(tabPane, studentData) {
                 const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
                 if (!futureClassesDiv) return;
@@ -1846,4 +1845,5 @@ class Portal {
             }
 
         }
+
 
