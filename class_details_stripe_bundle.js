@@ -2418,8 +2418,8 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
 
     card.innerHTML = `
             <div class="brief-flex-wrapper">
-                <div class="briefs-title">${topic.topicName}</div>
-                <a href="#" class="button view-brief w-button" data-topic-id="${topic.topicId}">View Brief</a>
+                <div class="brief-title-black">${topic.topicName}</div>
+                <a href="#" class="button preview-brief w-button" data-topic-id="${topic.topicId}">View Brief</a>
             </div>
             <div data-briefs-checkout="full-version" class="brief-pricing-info-wrapper ${isSelected ? 'selected-border-red' : 'not-selected-white'}">
                 <div class="brief-pricing-info-flex">
@@ -2493,7 +2493,7 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
   }
 
   attachPreviewHandlers(briefs) {
-      document.querySelectorAll(".button.view-brief").forEach((button) => {
+      document.querySelectorAll(".button.preview-brief").forEach((button) => {
           console.log("Modal:", this.modal);
           console.log("Iframe:", this.iframe);
           //console.log("Buttons:", document.querySelectorAll(".button.view-brief"));
