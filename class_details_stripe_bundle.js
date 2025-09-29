@@ -2413,7 +2413,7 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
     containers.forEach(container => {
       container.innerHTML = '';
     });
-    if (!containers) {
+    if (containers.length === 0) {
         console.error('Briefs container not found');
         return;
     }
@@ -2421,11 +2421,11 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
     // Sort topics by topic_order
     const sortedTopics = topics.sort((a, b) => (a.topic_order || 0) - (b.topic_order || 0));
 
-    // Create brief cards
-    sortedTopics.forEach((topic, index) => {
-        const briefCard = this.createBriefCard(topic, false); // No default selection
-        containers.forEach(container => {
-          container.appendChild(briefCard);
+    // Create brief cards for each container
+    containers.forEach(container => {
+        sortedTopics.forEach((topic, index) => {
+            const briefCard = this.createBriefCard(topic, false); // No default selection
+            container.appendChild(briefCard);
         });
     });
   }
