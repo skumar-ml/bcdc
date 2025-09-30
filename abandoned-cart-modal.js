@@ -36,7 +36,11 @@ class AbandonedCartModal {
     oneWeekAgo.setDate(now.getDate() - 7);
     return date >= oneWeekAgo && date <= now;
   }
-  checkSellingSession(data){
+  checkSellingSession(cartData){
+        if(!cartData){
+            return false;
+        }
+        var data = JSON.parse(cartData)
         if(!data){
             return false;
         }
@@ -351,6 +355,7 @@ class AbandonedCartModal {
     }, 45000);
   }
 }
+
 
 
 
