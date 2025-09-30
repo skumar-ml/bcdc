@@ -531,6 +531,12 @@ class classDetailsStripe {
     x = parseFloat(x).toFixed(2)
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
+
+  // trim to 2 decimal places without rounding
+  trimToTwoDecimals(x) {
+    const num = parseFloat(x);
+    return Math.floor(num * 100) / 100;
+  }
   checkUncheckOldStudentCheckBox(isPreviousStudent, $this) {
     const prevStudentCheckBox = document.getElementsByClassName(
       "prev_student_checkbox"
@@ -1506,9 +1512,10 @@ addToCart() {
 
     totalPriceAllText.forEach(totalPriceText=>{
       var sumOfSelectedPrograms = 0;
-      sumOfSelectedPrograms = (
-        this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
-      ).toFixed(2);
+      // Use amount (discounted price) for the total calculation
+      sumOfSelectedPrograms = this.trimToTwoDecimals(
+        this.$selectedProgram.reduce((total, program) => total + (parseFloat(program.amount) || 0), 0)
+      );
       var dataStripePrice = parseFloat(totalPriceText.getAttribute("data-stripe-price"));
       if(this.$selectedProgram.length > 0){
         sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
@@ -1641,7 +1648,11 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
     this.$oldSelectedProgram = this.$selectedProgram;
     this.disableEnableBuyNowButton()
   }
-
+  calculateCreditCardAmount(amount) {
+    var total = (parseFloat(amount) + 0.3) / 0.971;
+    //let truncated = Math.floor(total * 100) / 100;
+    return total;
+}
   // Card payment update total price
   updatePriceForCardPayment() {
     var $this = this;
@@ -1672,20 +1683,28 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
                  addonDepositPrice.innerHTML =   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));  
                })
              }
-              let sumOfSelectedPrograms = (
-                $this.$selectedProgram.reduce((total, program) => total + ((program.amount) ? parseFloat((program.amount) + 0.3) / 0.971 : 0), 0)
-              ).toFixed(2);
-
-              let briefsTotal = ($this.selectedBriefs.reduce((total, brief) => total + ((brief.price) ? parseFloat((brief.price) + 0.3) / 0.971 : 0), 0)).toFixed(2);
+             
+             let sumOfSelectedPrograms = $this.trimToTwoDecimals(
+              $this.$selectedProgram.reduce((total, program) => total + (program.amount) ? ((parseFloat(program.amount) + 0.3) / 0.971) : 0, 0)
+            );
             
+              let briefsTotal =  $this.selectedBriefs.reduce((total, brief) => {
+                let ccp = $this.calculateCreditCardAmount(brief.price).toFixed(2);
+                console.log("ccp", ccp)
+                let tA =  parseFloat(total) + parseFloat(ccp) 
+                console.log("tA", tA)
+                return tA
+              }, 0);
+
+            briefsTotal = (briefsTotal) ? briefsTotal : 0
               if($this.$selectedProgram.length > 0){
-                  coreDepositPrice = parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
+                  coreDepositPrice = parseFloat(sumOfSelectedPrograms) + parseFloat(briefsTotal);
               } else {
-                  coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
+                  coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice + parseFloat(briefsTotal);
               }
               
               deposit_price.innerHTML =
-                "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+                "$" + $this.numberWithCommas(coreDepositPrice);
             });
           }
         } else {
@@ -1707,22 +1726,23 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
                })
              }
                 
-            var sumOfSelectedPrograms = (
-            $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
-      ).toFixed(2);
+            var sumOfSelectedPrograms = $this.trimToTwoDecimals(
+            $this.$selectedProgram.reduce((total, program) => total + program.amount, 0) );
 
             let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
-              return total + (parseFloat((brief.price) || 0).toFixed(2));
-          }, 0);
+              return total + (parseFloat(brief.price) || 0);
+            }, 0);
 
-            var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms)+ parseFloat(amount)) + ((briefsTotal) ? parseFloat(briefsTotal) : 0)       
+            var finalPrice;
             if($this.$selectedProgram.length > 0){
-                finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0))
+                finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0));
+            } else {
+                finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + parseFloat(amount) + ((briefsTotal) ? parseFloat(briefsTotal) : 0));
             }
             deposit_price.innerHTML =
               "$" + finalPrice;
           });
-        }
+         }
         }
 
         // Code for addon price update based on payment method selection
@@ -2326,7 +2346,7 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
       label.textContent = "Tuition "+program.label || "Tuition";
       const priceWrap = creEl("div", "w-embed");
       const price = creEl("p", "main-text order-details-price");
-      price.textContent = "$" + this.numberWithCommas(Number(program.disc_amount).toFixed(2));
+      price.textContent = "$" + this.numberWithCommas(this.trimToTwoDecimals(Number(program.disc_amount)));
       priceWrap.appendChild(price);
       grid.appendChild(label);
       grid.appendChild(priceWrap);
@@ -2340,7 +2360,7 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
     totalLabel.textContent = "Tuition Total";
     const totalWrap = creEl("div", "w-embed");
     const totalPrice = creEl("p", "main-text order-details-price");
-    totalPrice.textContent = "$" + this.numberWithCommas(tuitionTotal.toFixed(2));
+    totalPrice.textContent = "$" + this.numberWithCommas(this.trimToTwoDecimals(tuitionTotal));
     totalWrap.appendChild(totalPrice);
     totalGrid.appendChild(totalLabel);
     totalGrid.appendChild(totalWrap);
@@ -2715,7 +2735,7 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
           }, 0);
           
           totalElements.forEach(totalElement => {
-              totalElement.textContent = `$${total.toFixed(2)}`;
+              totalElement.textContent = `$${this.trimToTwoDecimals(total)}`;
           });
       }
   }
@@ -2841,7 +2861,7 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
               let coreDepositPrice = element.getAttribute("data-stripe-price");
               // Update the text content if it exists
               if (element.textContent) {
-                  element.textContent = `$${(briefsTotal + parseFloat(coreDepositPrice)).toFixed(2)}`;
+                  element.textContent = `$${this.trimToTwoDecimals(briefsTotal + parseFloat(coreDepositPrice))}`;
               }
           });
       }
