@@ -52,7 +52,6 @@ class classDetailsStripe {
     this.renderPortalData();
     this.initializeToolTips();
     this.updatePriceForCardPayment();
-    //this.updatePriceForBriefs();
     this.initiateLightbox();
     this.initBriefs();
     this.displayTopicData("none")
@@ -201,7 +200,7 @@ class classDetailsStripe {
     classTimeDiv.classList.add("hide");
     paymentMethodsDiv.classList.add("hide");
 
-    if (this.levelId == "competitivetrack" || this.levelId == "worldschools") {
+    if (this.levelId == "competitivetrack") {
       $this.updateClassTimes(
         "none",
         classTimesData,
@@ -529,6 +528,7 @@ class classDetailsStripe {
   // formatting price in comma based value
   
   numberWithCommas(x) {
+    x = parseFloat(x).toFixed(2)
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
   checkUncheckOldStudentCheckBox(isPreviousStudent, $this) {
@@ -755,15 +755,17 @@ class classDetailsStripe {
       var studentEmail = document.getElementById("Student-Email");
 
       $this.createBundlePrograms($this.$allSuppData);
-      if($this.$selectedProgram.length > 0){
-        // Get local storage data for back button
-        var checkoutJson = localStorage.getItem("checkOutData");
-        if (checkoutJson != undefined) {
-          var paymentData = JSON.parse(checkoutJson);
-          // update bundle program based on local storage data
-          $this.updateBundleProgram(paymentData);
-        }
-      }
+      
+      // if($this.$selectedProgram.length > 0){
+      //   // Get local storage data for back button
+      //   var checkoutJson = localStorage.getItem("checkOutData");
+      //   if (checkoutJson != undefined) {
+      //     var paymentData = JSON.parse(checkoutJson);
+      //     // update bundle program based on local storage data
+      //     $this.updateBundleProgram(paymentData);
+      //   }
+      // }
+
       let existingStudentLabel = document.querySelector("label[for='existing-students']");
       if(existingStudentLabel.innerText == "Select Student Info"){
         if(existingStudents){
@@ -786,8 +788,8 @@ class classDetailsStripe {
         if (eligible) {
           $this.showSemesterBundleModal();
           
-          // trigger change event to update class times
-          if($this.levelId != 'worldschools' && $this.levelId != 'competitivetrack'){
+          // trigger change event to update class times, Removed world school condition
+          if($this.levelId != 'competitivetrack'){
             selectField.value = "";
             selectField.dispatchEvent(new Event("change"));
           }
@@ -821,12 +823,13 @@ class classDetailsStripe {
       })
     }
 
-    pflabs_prev_page_1.addEventListener('click', function () {
-      $this.activeBreadCrumb("student-details");
-      $this.activateDiv("checkout_student_details");
-      $this.displayStudentInfo("none");
-      $this.displayTopicData("none")
-    })
+    // pflabs_prev_page_1.addEventListener('click', function () {
+    //   $this.activeBreadCrumb("student-details");
+    //   $this.activateDiv("checkout_student_details");
+    //   $this.displayStudentInfo("none");
+    //   $this.displayTopicData("none")
+    // })
+    
     // Coupon code event
     //Coupon code variable
     var coupon_code_button = document.getElementById('coupon_code_button');
@@ -941,7 +944,8 @@ class classDetailsStripe {
       label =
         responseText.locationName + " | " + levelName + " | " + timingText;
     } else {
-      label = this.levelId == "worldschools" ? "World Schools" : "Competitive Track";
+      // label = this.levelId == "worldschools" ? "World Schools" : "Competitive Track";
+      label = "Competitive Track";
     }
 
     var iBackButton = document.getElementById("backbuttonstate");
@@ -1669,12 +1673,15 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
                })
              }
               let sumOfSelectedPrograms = (
-                $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
+                $this.$selectedProgram.reduce((total, program) => total + ((program.amount) ? parseFloat((program.amount) + 0.3) / 0.971 : 0), 0)
               ).toFixed(2);
+
+              let briefsTotal = ($this.selectedBriefs.reduce((total, brief) => total + ((brief.price) ? parseFloat((brief.price) + 0.3) / 0.971 : 0), 0)).toFixed(2);
+            
               if($this.$selectedProgram.length > 0){
-                  coreDepositPrice = parseFloat(sumOfSelectedPrograms);
+                  coreDepositPrice = parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
               } else {
-                  coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice;
+                  coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
               }
               
               deposit_price.innerHTML =
@@ -1703,10 +1710,15 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
             var sumOfSelectedPrograms = (
             $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
       ).toFixed(2);
-            var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms)+ parseFloat(amount))      
+
+            let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
+              return total + (parseFloat((brief.price) || 0).toFixed(2));
+          }, 0);
+
+            var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms)+ parseFloat(amount)) + ((briefsTotal) ? parseFloat(briefsTotal) : 0)       
             if($this.$selectedProgram.length > 0){
-                finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms))
-            }      
+                finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0))
+            }
             deposit_price.innerHTML =
               "$" + finalPrice;
           });
@@ -1732,6 +1744,31 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
             addonPrice.forEach((addon_deposit_price) => {
               let addonSinglePrice =
                 addon_deposit_price.getAttribute("addon-price");
+              addon_deposit_price.innerHTML = (parseFloat(addonSinglePrice) > 0
+            ) ? "$" + addonSinglePrice : "Purchased";
+            });
+          }
+        }
+
+        // update briefs order details amaount 
+        let briefAaddonPrice = document.querySelectorAll(
+          "[data-stripe='brief-price']"
+        );
+        if (tab == "Tab 2") {
+          if (briefAaddonPrice.length > 0) {
+            briefAaddonPrice.forEach((addon_deposit_price) => {
+              let addonPrice = addon_deposit_price.getAttribute("data-stripe-price")
+              addonPrice = addonPrice.replace(/,/g, "")
+                .replace(/\$/g, "");
+              let addonPriceValue = (parseFloat(addonPrice) > 0) ? (parseFloat(addonPrice) + 0.3) / 0.971 : 0;
+              addon_deposit_price.innerHTML = (parseFloat(addonPriceValue) > 0) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
+            });
+          }
+        } else {
+          if (briefAaddonPrice.length > 0) {
+            briefAaddonPrice.forEach((addon_deposit_price) => {
+              let addonSinglePrice =
+                addon_deposit_price.getAttribute("data-stripe-price");
               addon_deposit_price.innerHTML = (parseFloat(addonSinglePrice) > 0
             ) ? "$" + addonSinglePrice : "Purchased";
             });
@@ -2613,9 +2650,9 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
           // Add brown-red-border class to the card when selected
           card.classList.add('brown-red-border');
       }
-
+      this.updateCheckOutData({selectedBriefs: this.selectedBriefs});
       this.updateTotal();
-      this.updatePriceForBriefs();
+      //this.updatePriceForBriefs();
   }
   // Update briefs list in order details
 
@@ -2684,100 +2721,100 @@ displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
   }
 
   // Update totalDepositPrice elements for briefs (similar to updatePriceForCardPayment)
-  updatePriceForBriefs() {
-      var $this = this;
-      let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
-      let totalDepositPrice = document.querySelectorAll(
-          "[data-stripe='totalDepositPrice']"
-      );
+  // updatePriceForBriefs() {
+  //     var $this = this;
+  //     let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+  //     let totalDepositPrice = document.querySelectorAll(
+  //         "[data-stripe='totalDepositPrice']"
+  //     );
       
-      for (let i = 0; i < paymentTab.length; i++) {
-          paymentTab[i].addEventListener("click", function (e) {
-              e.preventDefault()
-              let tab = paymentTab[i].getAttribute("data-w-tab");
-              if (tab == "Tab 2") {
-                  if (totalDepositPrice.length > 0) {
-                      totalDepositPrice.forEach((deposit_price) => {
-                          var core_product_price = document.getElementById("core_product_price");
-                          var coreDepositPrice = parseFloat(
-                              core_product_price.value.replace(/,/g, "")
-                          );
-                          coreDepositPrice = (parseFloat(coreDepositPrice) + 0.3) / 0.971;
+  //     for (let i = 0; i < paymentTab.length; i++) {
+  //         paymentTab[i].addEventListener("click", function (e) {
+  //             e.preventDefault()
+  //             let tab = paymentTab[i].getAttribute("data-w-tab");
+  //             if (tab == "Tab 2") {
+  //                 if (totalDepositPrice.length > 0) {
+  //                     totalDepositPrice.forEach((deposit_price) => {
+  //                         var core_product_price = document.getElementById("core_product_price");
+  //                         var coreDepositPrice = parseFloat(
+  //                             core_product_price.value.replace(/,/g, "")
+  //                         );
+  //                         coreDepositPrice = (parseFloat(coreDepositPrice) + 0.3) / 0.971;
 
-                          // Calculate briefs total with percentage (same as program amount calculation)
-                          let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
-                              return total + ((parseFloat(brief.price) + 0.3) / 0.971);
-                          }, 0);
+  //                         // Calculate briefs total with percentage (same as program amount calculation)
+  //                         let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
+  //                             return total + ((parseFloat(brief.price) + 0.3) / 0.971);
+  //                         }, 0);
                           
-                          // Add briefs total to core deposit price
-                          let sumOfSelectedPrograms = (
-                              $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
-                          ).toFixed(2);
+  //                         // Add briefs total to core deposit price
+  //                         let sumOfSelectedPrograms = (
+  //                             $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
+  //                         ).toFixed(2);
                           
-                          if($this.$selectedProgram.length > 0){
-                              coreDepositPrice = parseFloat(sumOfSelectedPrograms) + briefsTotal;
-                          } else {
-                              coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice + briefsTotal;
-                          }
+  //                         if($this.$selectedProgram.length > 0){
+  //                             coreDepositPrice = parseFloat(sumOfSelectedPrograms) + briefsTotal;
+  //                         } else {
+  //                             coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice + briefsTotal;
+  //                         }
                           
-                          deposit_price.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
-                      });
-                  }
-              } else {
-                  if (totalDepositPrice.length > 0) {
-                      totalDepositPrice.forEach((deposit_price) => {
-                          let amountEl = deposit_price.getAttribute("data-stripe-price");
+  //                         deposit_price.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+  //                     });
+  //                 }
+  //             } else {
+  //                 if (totalDepositPrice.length > 0) {
+  //                     totalDepositPrice.forEach((deposit_price) => {
+  //                         let amountEl = deposit_price.getAttribute("data-stripe-price");
                           
-                          let amount = parseFloat(
-                              amountEl.replace(/,/g, "").replace(/\$/g, "")
-                          );
+  //                         let amount = parseFloat(
+  //                             amountEl.replace(/,/g, "").replace(/\$/g, "")
+  //                         );
 
-                          // Calculate briefs total
-                          let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
-                              return total + (parseFloat(brief.price) || 0);
-                          }, 0);
+  //                         // Calculate briefs total
+  //                         let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
+  //                             return total + (parseFloat(brief.price) || 0);
+  //                         }, 0);
                           
-                          var sumOfSelectedPrograms = (
-                              $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
-                          ).toFixed(2);
+  //                         var sumOfSelectedPrograms = (
+  //                             $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
+  //                         ).toFixed(2);
                           
-                          var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + parseFloat(amount) + briefsTotal);
+  //                         var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + parseFloat(amount) + briefsTotal);
                           
-                          if($this.$selectedProgram.length > 0){
-                              finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + briefsTotal);
-                          }
+  //                         if($this.$selectedProgram.length > 0){
+  //                             finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + briefsTotal);
+  //                         }
                           
-                          deposit_price.innerHTML = "$" + finalPrice;
-                      });
-                  }
-              }
+  //                         deposit_price.innerHTML = "$" + finalPrice;
+  //                     });
+  //                 }
+  //             }
 
-              let addonPrice = document.querySelectorAll(
-                "[data-stripe='brief-price']"
-              );
-              if (tab == "Tab 2") {
-                if (addonPrice.length > 0) {
-                  addonPrice.forEach((addon_deposit_price) => {
-                    let addonPrice = addon_deposit_price.getAttribute("data-stripe-price")
-                    addonPrice = addonPrice.replace(/,/g, "")
-                      .replace(/\$/g, "");
-                    let addonPriceValue = (parseFloat(addonPrice) > 0) ? (parseFloat(addonPrice) + 0.3) / 0.971 : 0;
-                    addon_deposit_price.innerHTML = (parseFloat(addonPriceValue) > 0) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
-                  });
-                }
-              } else {
-                if (addonPrice.length > 0) {
-                  addonPrice.forEach((addon_deposit_price) => {
-                    let addonSinglePrice =
-                      addon_deposit_price.getAttribute("data-stripe-price");
-                    addon_deposit_price.innerHTML = (parseFloat(addonSinglePrice) > 0
-                  ) ? "$" + addonSinglePrice : "Purchased";
-                  });
-                }
-              }
-          });
-      }
-  }
+  //             let addonPrice = document.querySelectorAll(
+  //               "[data-stripe='brief-price']"
+  //             );
+  //             if (tab == "Tab 2") {
+  //               if (addonPrice.length > 0) {
+  //                 addonPrice.forEach((addon_deposit_price) => {
+  //                   let addonPrice = addon_deposit_price.getAttribute("data-stripe-price")
+  //                   addonPrice = addonPrice.replace(/,/g, "")
+  //                     .replace(/\$/g, "");
+  //                   let addonPriceValue = (parseFloat(addonPrice) > 0) ? (parseFloat(addonPrice) + 0.3) / 0.971 : 0;
+  //                   addon_deposit_price.innerHTML = (parseFloat(addonPriceValue) > 0) ? "$" + $this.numberWithCommas(addonPriceValue.toFixed(2)) : "Purchased";
+  //                 });
+  //               }
+  //             } else {
+  //               if (addonPrice.length > 0) {
+  //                 addonPrice.forEach((addon_deposit_price) => {
+  //                   let addonSinglePrice =
+  //                     addon_deposit_price.getAttribute("data-stripe-price");
+  //                   addon_deposit_price.innerHTML = (parseFloat(addonSinglePrice) > 0
+  //                 ) ? "$" + addonSinglePrice : "Purchased";
+  //                 });
+  //               }
+  //             }
+  //         });
+  //     }
+  // }
 
   // Update totalDepositPrice elements
   updateTotalDepositPrice(total) {
