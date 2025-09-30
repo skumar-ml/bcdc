@@ -36,7 +36,22 @@ class AbandonedCartModal {
     oneWeekAgo.setDate(now.getDate() - 7);
     return date >= oneWeekAgo && date <= now;
   }
-
+  checkSellingSession(data){
+        if(!data){
+            return false;
+        }
+        var is_selling_started = true;
+        const createdOnDate = new Date(data.createdOn);
+         // Condition 2.5: If createdOnDate is less than September 29th AND September 29th is greater than current date OR createdOnDate is greater than current date
+         const currentYear = new Date().getFullYear();
+         const sellingStartDate = new Date(currentYear, 8, 29); // Month is 0-indexed, so 8 = September
+         const currentDate = new Date();
+         if (createdOnDate < sellingStartDate && sellingStartDate < currentDate && currentDate < sellingEndDate) {
+           localStorage.removeItem("checkOutData");
+           is_selling_started = false;
+         }
+         return is_selling_started;
+    }
   checkAndDisplayModal() {
     var $this = this;
     if (
@@ -50,6 +65,10 @@ class AbandonedCartModal {
     }
     
     const cartData = localStorage.getItem("checkOutData");
+    var is_selling_started = $this.checkSellingSession(cartData);
+    if(!is_selling_started){
+        return;
+    }
     if (cartData) {
       $this.displayCartMenuData()
       const parsedCartData = JSON.parse(cartData);
@@ -116,17 +135,6 @@ class AbandonedCartModal {
         //   fiveMonthsAgo
         // )
       }
-
-      // Condition 2.5: If createdOnDate is less than September 29th AND greater than current date
-        const currentYear = new Date().getFullYear();
-        const september29 = new Date(currentYear, 8, 29); // Month is 0-indexed, so 8 = September
-        const currentDate = new Date();
-        
-        if (createdOnDate < september29 && currentDate > september29) {
-          localStorage.removeItem("checkOutData");
-          reject("Created date is before September 29th and greater than current date, not displaying modal.");
-          return;
-        }
       
       // Condition 3: If it is after the programStartDate for an abandoned cart
       // if (data.programStartDate) {
@@ -343,5 +351,6 @@ class AbandonedCartModal {
     }, 45000);
   }
 }
+
 
 
