@@ -50,7 +50,7 @@ class AbandonedCartModal {
          const currentYear = new Date().getFullYear();
          const sellingStartDate = new Date(currentYear, 8, 29); // Month is 0-indexed, so 8 = September
          const currentDate = new Date();
-         if (createdOnDate < sellingStartDate && sellingStartDate < currentDate && currentDate < sellingEndDate) {
+         if (createdOnDate < sellingStartDate && sellingStartDate <= currentDate) {
            localStorage.removeItem("checkOutData");
            is_selling_started = false;
          }
@@ -355,6 +355,7 @@ class AbandonedCartModal {
     }, 45000);
   }
 }
+
 
 
 
