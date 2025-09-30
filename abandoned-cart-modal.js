@@ -117,6 +117,17 @@ class AbandonedCartModal {
         // )
       }
 
+      // Condition 2.5: If createdOnDate is less than September 29th AND greater than current date
+        const currentYear = new Date().getFullYear();
+        const september29 = new Date(currentYear, 8, 29); // Month is 0-indexed, so 8 = September
+        const currentDate = new Date();
+        
+        if (createdOnDate < september29 && currentDate > september29) {
+          localStorage.removeItem("checkOutData");
+          reject("Created date is before September 29th and greater than current date, not displaying modal.");
+          return;
+        }
+      
       // Condition 3: If it is after the programStartDate for an abandoned cart
       // if (data.programStartDate) {
       //   const programStartDate = new Date(data.programStartDate);
@@ -332,4 +343,5 @@ class AbandonedCartModal {
     }, 45000);
   }
 }
+
 
