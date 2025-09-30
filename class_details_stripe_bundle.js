@@ -983,9 +983,11 @@ class classDetailsStripe {
       label: label,
       classUniqueId: classId,
       location: selectBox.value,
+      memberId: this.webflowMemberId,
       //added id for up-sell program
       upsellProgramIds: upsellProgramIds,
       has_fee: has_fee,
+      source: "cart_page",
       successUrl: encodeURI(
         "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
           label +
@@ -998,100 +1000,70 @@ class classDetailsStripe {
     };
 
     if(this.$isCheckoutFlow == "Bundle-Purchase"){
+      
       data.paymentId = this.$selectedBundleProgram.paymentId;
       data.isBundleProgram = true;
       data.classUniqueId = classId;
+      
+      // Add Briefs data if selected
+      if(this.selectedBriefs.length > 0){
+        data.topics =  this.selectedBriefs.map(brief => ({
+          topicId: brief.topicId,
+          version: brief.version === 'full' ? 'full_version' : 'light_version'
+      }))
+      this.initSupplementaryPayment(data,type);
+      
+
     }else{  
       data.amount = finalPrice
-    }
-    // Add Briefs data if selected
-    if(this.selectedBriefs.length > 0){
-        data.topics =  this.selectedBriefs.map(brief => ({
-          topicId: brief.topicId,
-          version: brief.version === 'full' ? 'full_version' : 'light_version'
-      }))
-    }
-    
-    //console.log('Data !!!!!', data)
-    //return;
-    var xhr = new XMLHttpRequest();
-    var $this = this;
-    xhr.open(
-      "POST",
-      this.baseUrl + "updateDataToCheckoutUrl",
-      true
-    );
-    xhr.withCredentials = false;
-    xhr.send(JSON.stringify(data));
-    xhr.onload = function () {
-      let responseText = JSON.parse(xhr.responseText);
-      //console.log('responseText', responseText)
-      if (responseText.success) {
-        $this.$checkoutData = responseText;
-
-        //Storing data in local storage
-        //data = [...checkOutLocalData, ...data]
-        data.checkoutId = responseText;
-        //localStorage.setItem("checkOutData", JSON.stringify(data));
-
-        $this.updateCheckOutData(data)
-
-        iBackButton.value = "1";
-        //window.location.href = responseText.cardUrl;
-        if (type == "card") {
-          window.location.href = responseText.cardUrl;
-        } else {
-          window.location.href = responseText.achUrl;
-        }
-      }else if (responseText == "payment_details updated successfully") {
-
-        if(upsellProgramIds.length > 0){
-          $this.initSupplementaryPayment(
-             $this.$selectedBundleProgram.paymentId,
-            upsellProgramIds,
-            label,
-            finalPrice,
-            type,
-            cancelUrl,
-            has_fee
-          );
-        }else{
-          window.location.href = 'https://www.bergendebate.com/portal/dashboard';
-        }
+      // Add Briefs data if selected
+      if(this.selectedBriefs.length > 0){
+          data.topics =  this.selectedBriefs.map(brief => ({
+            topicId: brief.topicId,
+            version: brief.version === 'full' ? 'full_version' : 'light_version'
+        }))
       }
-    };
+      
+      //console.log('Data !!!!!', data)
+      //return;
+      var xhr = new XMLHttpRequest();
+      var $this = this;
+      xhr.open(
+        "POST",
+        this.baseUrl + "updateDataToCheckoutUrl",
+        true
+      );
+      xhr.withCredentials = false;
+      xhr.send(JSON.stringify(data));
+      xhr.onload = function () {
+        let responseText = JSON.parse(xhr.responseText);
+        //console.log('responseText', responseText)
+        if (responseText.success) {
+          $this.$checkoutData = responseText;
+
+          //Storing data in local storage
+          //data = [...checkOutLocalData, ...data]
+          data.checkoutId = responseText;
+          //localStorage.setItem("checkOutData", JSON.stringify(data));
+
+          $this.updateCheckOutData(data)
+
+          iBackButton.value = "1";
+          //window.location.href = responseText.cardUrl;
+          if (type == "card") {
+            window.location.href = responseText.cardUrl;
+          } else {
+            window.location.href = responseText.achUrl;
+          }
+        }else{
+            window.location.href = 'https://www.bergendebate.com/portal/dashboard';
+          }
+        }
+      };
+    }
   }
 
-  initSupplementaryPayment(paymentId, upsellProgramId, programName, amount, type, cancelUrl, has_fee) {
-    // Define the data to be sent in the POST request
-    const data = {
-      sessionId: "",
-      paymentId: paymentId,
-      //upsellProgramIds: [parseInt(upsellProgramId), 105, 106],
-      upsellProgramIds: upsellProgramId.map((id) => parseInt(id)),
-      successUrl: encodeURI(
-        "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
-          programName +
-          "&pType=" +
-          type
-      ),
-      cancelUrl: cancelUrl.href.includes("file:///")
-        ? "https://www.bergendebate.com"
-        : cancelUrl.href,
-      label: programName,
-      amount: parseFloat(amount * 100),
-      source: "cart_page",
-      hasFee: has_fee,
-      memberId: this.webflowMemberId,
-    };
-
-    if(this.selectedBriefs.length > 0){
-        data.topics =  this.selectedBriefs.map(brief => ({
-          topicId: brief.topicId,
-          version: brief.version === 'full' ? 'full_version' : 'light_version'
-      }))
-    }
-
+  initSupplementaryPayment(data, type) {
     // Create the POST request
     fetch(this.baseUrl + "checkoutUrlForUpsellProgram", {
       method: "POST", // Specify the method
