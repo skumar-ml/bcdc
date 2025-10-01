@@ -743,6 +743,7 @@ class classDetailsStripe {
   addEventForPrevNaxt() {
     var next_page_1 = document.getElementById("next_page_1");
     var prev_page_1 = document.getElementById("prev_page_1");
+    var pflabs_prev_page_1 = document.getElementById("pflabs_prev_page_1");
     const selectField = document.getElementById("location-select-field");
 
     var $this = this;
@@ -828,12 +829,12 @@ class classDetailsStripe {
       })
     }
 
-    // pflabs_prev_page_1.addEventListener('click', function () {
-    //   $this.activeBreadCrumb("student-details");
-    //   $this.activateDiv("checkout_student_details");
-    //   $this.displayStudentInfo("none");
-    //   $this.displayTopicData("none")
-    // })
+    pflabs_prev_page_1.addEventListener('click', function () {
+      $this.activeBreadCrumb("student-details");
+      $this.activateDiv("checkout_student_details");
+      $this.displayStudentInfo("none");
+      //$this.displayTopicData("none")
+    })
 
     // Coupon code event
     //Coupon code variable
