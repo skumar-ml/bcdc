@@ -487,7 +487,7 @@ class DisplaySuppProgram {
         this.memberData.site_url +
         "portal/dashboard?success=true",
       cancelUrl:
-        document.referrer,
+        (document.referrer) ? document.referrer : "https://www.bergendebate.com/portal/dashboard",
       label: programName,
       amount: parseFloat(amount * 100),
       source: "portal_page",
@@ -736,5 +736,6 @@ class DisplaySuppProgram {
     });
   }
 }
+
 
 
