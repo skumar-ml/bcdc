@@ -847,7 +847,7 @@ class classDetailsStripe {
       if (coupon_2f_code.value == '') {
         code2fErrorMsg.style.display = 'block';
         code2fErrorMsg.innerHTML = 'Please insert coupon code';
-      } else if (coupon_2f_code.value != 'TVUM89NX4P') {
+      } else if (coupon_2f_code.value != 'qp4wM1hDXZ') {
         code2fErrorMsg.style.display = 'block';
         code2fErrorMsg.innerHTML = 'The code you entered is invalid. Please enter a different code.';
       } else {
