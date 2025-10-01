@@ -431,7 +431,6 @@ class classDetailsStripe {
     if (paymentData.selectedProgram && paymentData.suppPro.length > 0) {
       this.updateSupplementaryProgramData(paymentData.suppPro);
       this.$selectedProgram = paymentData.selectedProgram;
-      console.log("old selected program", this.$selectedProgram)
       this.displaySelectedSuppProgram(paymentData.upsellProgramIds);
       if (paymentData.selectedProgram.length > 0) {
         this.hideShowNewStudentFee("none");
@@ -1078,7 +1077,6 @@ class classDetailsStripe {
         return response.json(); // Parse the JSON from the response
       })
       .then((data) => {
-        console.log("Success:", data); // Handle the JSON data
         if (data.success) {
           if (type == "card") {
             window.location.href = data.cardUrl;
@@ -1396,7 +1394,6 @@ class classDetailsStripe {
     var $this = this;
     addToCartButtons.forEach((button) => {
       button.addEventListener("click", function (event) {
-        console.log("selected program", $this.$selectedProgram)
         // Select all 'add-to-card' buttons
         // bundleProgram checkbox
         const checkboxes = document.querySelectorAll(".bundleProgram");
@@ -1660,9 +1657,7 @@ class classDetailsStripe {
 
               let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
                 let ccp = $this.calculateCreditCardAmount(brief.price).toFixed(2);
-                console.log("ccp", ccp)
                 let tA = parseFloat(total) + parseFloat(ccp)
-                console.log("tA", tA)
                 return tA
               }, 0);
 
@@ -2542,8 +2537,6 @@ class classDetailsStripe {
 
   attachPreviewHandlers(briefs) {
     document.querySelectorAll(".button.preview-brief").forEach((button) => {
-      console.log("Modal:", this.modal);
-      console.log("Iframe:", this.iframe);
       //console.log("Buttons:", document.querySelectorAll(".button.view-brief"));
 
       button.addEventListener("click", async (e) => {
@@ -2551,7 +2544,6 @@ class classDetailsStripe {
 
         const topicId = button.dataset.topicId;
         const brief = briefs.find((b) => b.topicId == topicId);
-        console.log("Selected Brief:", brief);
 
         if (!brief) return;
 
@@ -2563,7 +2555,6 @@ class classDetailsStripe {
         const pdfUrl = brief.full_version?.preview_pdf_url || brief.light_version?.preview_pdf_url;
 
         if (pdfUrl) {
-          console.log("Preview URL:", pdfUrl);
           this.modal.style.display = "flex";
           this.iframe.src = pdfUrl;
 
@@ -2691,8 +2682,6 @@ class classDetailsStripe {
     // Update totalDepositPrice elements
     //this.updateTotalDepositPrice(total);
     this.updateAmount(total)
-    console.log('Selected briefs:', this.selectedBriefs);
-    console.log('Total amount:', total);
 
   }
 
