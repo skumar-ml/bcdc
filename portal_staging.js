@@ -1,4 +1,4 @@
-class Portal {
+ class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -302,18 +302,11 @@ class Portal {
                 // Get current time-based visibility status
                 const timeBasedVisibility = this.getTimeBasedVisibility(recommendedLevel, studentData);
                 
-                console.log('Container Visibility Logic:', {
-                    hasBundle,
-                    isRecommendedEmpty,
-                    timeBasedVisibility,
-                    student: student.studentDetail?.studentName || 'Unknown'
-                });
                 
                 // Hide entire bundle container if no bundle and no recommended program
                 if (!hasBundle && isRecommendedEmpty) {
                     if (bundleContainer) {
                         bundleContainer.style.display = 'none';
-                        console.log('Hiding entire bundle container (no bundle, no recommended program)');
                     }
                     return;
                 }
@@ -321,7 +314,6 @@ class Portal {
                 // Show bundle container if either has bundle or has recommended program
                 if (bundleContainer) {
                     bundleContainer.style.display = 'block';
-                    console.log('Showing bundle container');
                 }
 
                 // Handle pre-reg-container visibility based on bundle status and pre-registration timing
@@ -331,7 +323,6 @@ class Portal {
                     if (hasBundle && timeBasedVisibility.showPreRegistration) {
                         preRegContainer.style.display = '';
                         showPreRegContainer = true;
-                        console.log('Showing pre-reg-container (has bundle and pre-registration period)');
                         
                         // Update pre-registration username dynamically
                         const preRegUserName = preRegContainer.querySelector('.pre-reg-user-name');
@@ -344,7 +335,6 @@ class Portal {
                     } else {
                         preRegContainer.style.display = 'none';
                         showPreRegContainer = false;
-                        console.log('Hiding pre-reg-container (no bundle or not pre-registration period)');
                     }
                 }
 
@@ -358,11 +348,9 @@ class Portal {
                     if (timeBasedVisibility.showRegistration) {
                         recommendedSection.style.display = '';
                         showRecommendedSection = true;
-                        console.log('Showing recommended program (registration period)');
                     } else {
                         recommendedSection.style.display = 'none';
                         showRecommendedSection = false;
-                        console.log('Hiding recommended program (not registration period)');
                     }
                 }
 
@@ -370,7 +358,6 @@ class Portal {
                 if (!showPreRegContainer && !showRecommendedSection) {
                     if (bundleContainer) {
                         bundleContainer.style.display = 'none';
-                        console.log('Hiding entire bundle container (both pre-reg and recommended sections are hidden)');
                         return;
                     }
                 }
@@ -390,7 +377,7 @@ class Portal {
 
                 if (!displayText) {
                     recommendedSection.style.display = 'none';
-                    return;
+                    //return;
                 }
 
                 // First element is the headline line we want to update
@@ -423,12 +410,6 @@ class Portal {
                 const hasReturnerConversion = this.checkReturnerConversion(recommendedLevel);
                 
                 // Debug logging
-                console.log('Button Visibility Logic:', {
-                    hasBundle,
-                    hasReturnerConversion,
-                    timeBasedVisibility,
-                    student: student.studentDetail?.studentName || 'Unknown'
-                });
                 
                 // Apply button visibility logic based on time-based visibility
                 if (timeBasedVisibility.showPreRegistration && timeBasedVisibility.showRegistration) {
@@ -436,55 +417,53 @@ class Portal {
                     registerNowBtn.style.display = 'inline-block';
                     learnMoreBtn.style.display = 'inline-block';
                     recommendedSection.style.display = 'block';
-                    console.log('Showing both buttons (both pre-registration and registration periods are active)');
                 } else if (hasBundle && timeBasedVisibility.showPreRegistration) {
                     // If A: Only show Register Now button during pre-registration
                     registerNowBtn.style.display = 'inline-block';
                     learnMoreBtn.style.display = 'none';
-                    console.log('Showing only Register Now button (hasBundle + pre-registration period)');
                     recommendedSection.style.display = 'block';
                 } else if (hasReturnerConversion && timeBasedVisibility.showRegistration) {
                     // If B: Show both buttons during registration period
                     registerNowBtn.style.display = 'inline-block';
                     learnMoreBtn.style.display = 'inline-block';
                     recommendedSection.style.display = 'block';
-                    console.log('Showing both buttons (hasReturnerConversion + registration period)');
                 } else if (hasBundle && hasReturnerConversion && timeBasedVisibility.showRegistration) {
                     // If A & B: Show both buttons during registration period
                     registerNowBtn.style.display = 'inline-block';
                     learnMoreBtn.style.display = 'inline-block';
                     recommendedSection.style.display = 'block';
-                    console.log('Showing both buttons (hasBundle & hasReturnerConversion + registration period)');
                 } else {
                     // Default: Hide both buttons
                     registerNowBtn.style.display = 'none';
                     learnMoreBtn.style.display = 'none';
                     recommendedSection.style.display = 'none';
-                    console.log('Hiding both buttons (default or not in appropriate time period)');
                 }
             }
             checkHasBundle(student) {
                 // Check if student has bundle in future sessions except Summer
                 if (!student.futureSession || !Array.isArray(student.futureSession)) {
-                    console.log('No futureSession data found');
                     return false;
                 }
-                const result = student.futureSession.some(session => {
-                    return !session.sessionName.toLowerCase().includes('Summer');
+                
+                // Filter out futureSession objects that have classId
+                const filteredSessions = student.futureSession.filter(session => !session.classId);
+                if(filteredSessions.length == 0) {
+                    return false;
+                }
+                // Check if any remaining sessions are not Summer sessions
+                const result = filteredSessions.some(session => {
+                    return !session.sessionName.toLowerCase().includes('summer');
                 });
                 
-                console.log('checkHasBundle result:', result);
                 return result;
             }
             checkReturnerConversion(recommendedLevel) {
                 // Check if returner conversion is published in recommendedLevel
                 const result = recommendedLevel && recommendedLevel.level;
-                console.log('checkReturnerConversion result:', result, 'recommendedLevel:', recommendedLevel);
                 return result;
             }
             isPreRegistrationPeriod(recommendedLevel) {
                 if (!recommendedLevel || !recommendedLevel.pre_registrationDates) {
-                    console.log('No pre-registration dates found');
                     return false;
                 }
                 
@@ -493,12 +472,6 @@ class Portal {
                 const preRegEnd = new Date(recommendedLevel.pre_registrationDates.preRegEndDate);
                 
                 const result = now >= preRegStart && now <= preRegEnd;
-                console.log('isPreRegistrationPeriod check:', {
-                    now: now.toISOString(),
-                    preRegStart: preRegStart.toISOString(),
-                    preRegEnd: preRegEnd.toISOString(),
-                    result
-                });
                 return result;
             }
             getTimeBasedVisibility(recommendedLevel, studentData) {
@@ -518,12 +491,6 @@ class Portal {
                         
                         showPreRegistration = now >= preRegStart && now <= preRegEnd;
                         
-                        console.log('Pre-registration period check:', {
-                            now: now.toISOString(),
-                            preRegStart: preRegStart.toISOString(),
-                            preRegEnd: preRegEnd.toISOString(),
-                            showPreRegistration
-                        });
                     }
                 }
                 
@@ -534,12 +501,6 @@ class Portal {
                     
                     showRegistration = now >= regStart && now <= regEnd;
                     
-                    console.log('Registration period check:', {
-                        now: now.toISOString(),
-                        regStart: regStart.toISOString(),
-                        regEnd: regEnd.toISOString(),
-                        showRegistration
-                    });
                 }
                 
                 return {
@@ -730,11 +691,9 @@ class Portal {
                 }
 
                 if (!preRegEndDate) {
-                    console.log('No pre-registration end date found in future session');
                     return;
                 }
 
-                console.log('Starting registration timer with end date:', preRegEndDate);
 
                 // Locate timer elements within the provided context element
                 const daysEl = contextEl.querySelector('[data-registration-timer="day"]');
@@ -743,7 +702,6 @@ class Portal {
                 const secondsEl = contextEl.querySelector('[data-registration-timer="seconds"]');
                 
                 if (!daysEl || !hoursEl || !minutesEl || !secondsEl) {
-                    console.log('Registration timer elements not found');
                     return;
                 }
 
@@ -756,7 +714,6 @@ class Portal {
                 // Parse deadline (treat provided string as local time)
                 const parsed = new Date(preRegEndDate.replace(' ', 'T'));
                 if (isNaN(parsed.getTime())) {
-                    console.log('Invalid pre-registration end date format');
                     return;
                 }
 
@@ -771,7 +728,6 @@ class Portal {
                         secondsEl.textContent = '00';
                         clearInterval(contextEl._registrationTimerInterval);
                         contextEl._registrationTimerInterval = null;
-                        console.log('Pre-registration period ended');
                         return;
                     }
 
@@ -880,7 +836,6 @@ class Portal {
                     announcementDiv.appendChild(container);
                 });
             }
-            
             renderFutureClasses(tabPane, studentData) {
                 const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
                 if (!futureClassesDiv) return;
@@ -1679,7 +1634,6 @@ class Portal {
                 xhr.send(JSON.stringify(data))
                 xhr.onload = function () {
                     let responseText = JSON.parse(xhr.responseText);
-                    console.log('responseText', responseText)
                     if (responseText.success) {
                         span.innerHTML = link_title;
                         window.location.href = responseText.stripe_url;
@@ -1846,6 +1800,3 @@ class Portal {
             }
 
         }
-
-
-
