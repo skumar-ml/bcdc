@@ -1614,6 +1614,7 @@ class classDetailsStripe {
     }
     this.$oldSelectedProgram = this.$selectedProgram;
     this.disableEnableBuyNowButton()
+    this.resetPaymentOption();
   }
   calculateCreditCardAmount(amount) {
     var total = (parseFloat(amount) + 0.3) / 0.971;
@@ -2211,8 +2212,18 @@ class classDetailsStripe {
       //window.scrollTo({ top: 0, behavior: "smooth" });
       $this.updateCheckOutData({ upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram });
       $this.$oldSelectedProgram = $this.$selectedProgram;
+      $this.resetPaymentOption();
+      
+    });
+    if (input.checked) {
+      flexContainer.classList.add("border-brown-red");
+    }
 
-      // Trigger click event for payment class tab
+    return flexContainer;
+  }
+
+  resetPaymentOption(){
+    // Trigger click event for payment class tab
       //if(this.$selectedProgram.length - 1 > 0){
       // trigger click event class name class-time-with-brown-white-style
       let paymentClassTab = document.querySelectorAll(".class-time-with-brown-white-style");
@@ -2222,12 +2233,6 @@ class classDetailsStripe {
         paymentClassTab[0].dispatchEvent(new Event('click'));
       }
       //}
-    });
-    if (input.checked) {
-      flexContainer.classList.add("border-brown-red");
-    }
-
-    return flexContainer;
   }
 
   updateCoreData(type = "upsell") {
