@@ -386,10 +386,10 @@ class classDetailsStripe {
         this.activeBreadCrumb("select-class");
         this.activateDiv("class-selection-container");
         this.displayStudentInfo("block");
-        this.displayTopicData("block")
+       // this.displayTopicData("block")
       } else {
         this.displayStudentInfo("block");
-        this.displayTopicData("none")
+       // this.displayTopicData("none")
       }
 
 
@@ -802,7 +802,7 @@ class classDetailsStripe {
           $this.activeBreadCrumb("select-class");
           $this.activateDiv("class-selection-container");
           $this.displayStudentInfo("block");
-          $this.displayTopicData("block")
+          //$this.displayTopicData("block")
         } else {
           $this.activateDiv('pf_labs_error_message');
         }
@@ -814,7 +814,7 @@ class classDetailsStripe {
       $this.activeBreadCrumb("student-details");
       $this.activateDiv("checkout_student_details");
       $this.displayStudentInfo("none");
-      $this.displayTopicData("none")
+      //$this.displayTopicData("none")
     });
 
     let editStudentEl = document.querySelectorAll("[data-student-info='edit']")
@@ -859,7 +859,7 @@ class classDetailsStripe {
         $this.activeBreadCrumb("select-class");
         $this.activateDiv("class-selection-container");
         $this.displayStudentInfo("block");
-        $this.displayTopicData("block");
+        //$this.displayTopicData("block");
       }
     })
   }
