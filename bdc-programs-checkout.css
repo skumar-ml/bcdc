@@ -1,0 +1,297 @@
+
+.class-time-flex-wrapper label.form-label.class-time {
+    margin-bottom: 0;
+}
+.half-circle-spinner,
+.half-circle-spinner * {
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+  z-index:99999999;
+}
+.half-circle-spinner {
+	width: 80px;
+	height: 80px;
+	border-radius: 100%;
+	position: relative;
+	margin: 0;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	margin-right: -50%;
+	-webkit-transform: translate(-50%, -50%);
+	transform: translate(-50%, -50%);
+}
+.half-circle-spinner .circle {
+	content: "";
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	border-radius: 100%;
+	border: calc(60px / 10) solid transparent;
+}
+.half-circle-spinner .circle.circle-1 {
+	border-top-color: #000000;
+	-webkit-animation: half-circle-spinner-animation 1s infinite;
+	animation: half-circle-spinner-animation 1s infinite;
+}
+.half-circle-spinner .circle.circle-2 {
+	border-bottom-color: #000000;
+	-webkit-animation: half-circle-spinner-animation 1s infinite alternate;
+	animation: half-circle-spinner-animation 1s infinite alternate;
+}
+div.half-circle-spinner:after {
+    content: "Loading...";
+    color: #a51c30;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 38%;
+    font-size: 12px;
+    bottom: 0;
+    text-align: center;
+    font-weight: 700;
+}
+.iframe-lightbox .backdrop {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+.location_action_div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+	  text-align: center;
+}
+
+/**Checkout Css**/
+#checkout_student_details, #checkout_payment , #class-selection-container {
+    display: none;
+    transform: translate(0%, 0%);
+    animation: slide-in-top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+.active_checkout_tab {
+    display: block !important;
+}
+label.error {
+    color: #af0909;
+}
+/*Tooltip*/
+[tip] .tooltip {
+  position: fixed;
+  font-size: 16px;
+  line-height: 20px;
+  padding: 5px;
+  background: #444;
+  border: 1px solid #222;
+  visibility: hidden;
+  opacity: 0;
+  box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.3s, visibility 0s;
+  color: white;
+  min-width: 200px;
+}
+
+[tip]:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+span.info_text {
+    background: #7c303e;
+    color: #fff;
+    border-radius: 25px;
+    position: relative;
+    top: -3px;
+    padding: 0px 7px;
+    font-size: 16px;
+    font-weight: 700;
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    text-align: center;
+}
+input.prev_student_checkbox {
+    width: 18px;
+    height: 18px;
+}
+.gradient-div-cart-bundle-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.25);
+ /* background: linear-gradient(to bottom, rgb(242, 211, 133) 0%, rgba(242, 211, 133, 0.1) 70%);*/
+  z-index: 0; /* Keeps the gradient on top of the image */
+  transition: transform 0.5s ease-out;
+}
+
+@media (max-width: 991px) {
+    .gradient-div-cart-bundle-modal::before {
+        background: rgba(0, 0, 0, 0.1);
+    }
+}
+
+.gradient-div-cart-login-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgb(242, 211, 133) 0%, rgba(242, 211, 133, 0.1) 70%);
+  z-index: 1; /* Keeps the gradient on top of the image */
+  transition: transform 0.5s ease-out;
+}
+
+.bundle-container {
+   overflow: auto;
+   scrollbar-width: thin;
+   scrollbar-color: gray transparent;
+}
+.bundle-discount-price.light-pink-with-margin {
+     opacity: .5;
+}
+.bundle-discount-price.light-pink-with-margin::before {
+    top: 50%;
+    width: 100%;
+    height: 2px;
+    background-color: #C8ABB1;
+    transform: translate(0, 0) rotate(180deg);
+    position: absolute;
+    content: '';
+    transform-origin: center;
+}
+
+.payment-cards-tab-link.w--current  .cart-payment-text {
+    color: #7c303e; 
+    font-weight: 500;    
+}
+/* Show the active icon when the parent has the 'w--current' class */
+.payment-cards-tab-link.w--current .check_active-icon {
+    display: block;
+}
+
+/* Hide the inactive icon when the parent has the 'w--current' class */
+.payment-cards-tab-link.w--current .check_inactive-icon {
+    display: none;
+}
+
+/* Show the inactive icon when the parent does not have the 'w--current' class */
+.payment-cards-tab-link:not(.w--current) .check_inactive-icon {
+    display: block;
+}
+
+/* Hide the active icon when the parent does not have the 'w--current' class */
+.payment-cards-tab-link:not(.w--current) .check_active-icon {
+    display: none;
+}
+@media screen and (max-width: 991px) {
+      .upsell-modal-container.login {
+              overflow-y: scroll;
+              overflow-x: hidden;
+              scrollbar-width: thin;
+              scrollbar-color: gray transparent;
+  }
+}
+/* Remove autofill background color in WebKit browsers */
+.form-input:-webkit-autofill {
+    background-color: transparent !important;
+    box-shadow: 0 0 10px #00000014, 0 0 0px 1000px white inset !important;
+} 
+.menu-link-label.programs-overview {
+    white-space: nowrap;
+}
+.location-select-field , #Student-Grade , #Student-Gender, #prevStudent , #existing-students {
+    appearance: none; /* Removes default dropdown */
+    -webkit-appearance: none;
+    -moz-appearance: none;    
+    /*background-image: url('https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/67a5c34ec511ed73732a8303_arrow_forward_ios.svg');*/
+     background-image: url('https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/67a9f3531b68a8c8190d4edc_arrow_forward_ios%20(2).svg'); 
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+}
+
+.w-icon-dropdown-toggle {
+     display: none !important;
+}
+.bundle-price-text-gray::before , .year-round-price-text-gray::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 1px;
+    background-color: #CCC;
+    transform: translate(-50%, -50%) rotate(180deg);
+    transform-origin: center;
+}
+
+ .limited-time-text-medium , .full-academic-container {
+  z-index: 1;
+}
+/* Student Info */
+.student-info-body-content-div {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease;
+}
+
+.student-info-rounded-accordian.open .student-info-body-content-div {
+  overflow: hidden;
+}
+
+.accordion-toggle-icon {
+  transition: transform 0.5s ease;
+}
+
+.student-info-rounded-accordian.open .accordion-toggle-icon-down {
+  transform: rotate(0deg) !important; 
+}
+.bundle-sem-price-gray::before,
+.bundle-sem-popup-price-gray::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 1px;
+  background-color: #CCC;
+  transform: translate(-50%, -50%) rotate(180deg);
+  transform-origin: center;
+}
+.student-info-container.desktop {
+    display: none ; 
+}
+.student-info-rounded-accordian.open .student-info-header-wrapper {
+    border-bottom: 1px solid #ccc;
+}
+/* Add Supp. PDF*/
+@media screen and (width: 1024px) {
+  .brief-title-black,
+  .button.preview {
+    margin-bottom: 10px;
+  }
+
+  .brief-pricing-info-flex,
+  .brief-flex-wrapper {
+    display: block;
+  }
+}
+  .add-supplimental-pdf-container.mobile , .add-supplimental-pdf-container {
+    display: none !important;
+  }
+@media screen and (max-width: 568px) {
+  .add-supplimental-pdf-container.mobile {
+    display: none !important;
+  }
+}
+
+/* Tooltip visible on hover of wrapper or icon */
+.brief-info-wrapper:hover .dm-sans.brief-tooltip {
+    opacity: 1;
+    display: block;
+}
+[data-briefs-checkout="briefs-order-details"] .brief-flex-wrapper {
+    margin-bottom: 3px !important;
+}
