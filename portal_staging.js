@@ -1,4 +1,4 @@
- class Portal {
+class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -345,7 +345,7 @@
                     showRecommendedSection = false;
                 } else {
                     // Show recommended section only during registration period
-                    if (timeBasedVisibility.showRegistration) {
+                    if (timeBasedVisibility.showRegistration && hasBundle) {
                         recommendedSection.style.display = '';
                         showRecommendedSection = true;
                     } else {
@@ -495,8 +495,8 @@
                 }
                 
                 // Check registration period from recommended level
-                if (recommendedLevel && recommendedLevel.registrationStartDate) {
-                    const regStart = new Date(recommendedLevel.registrationStartDate.replace(' ', 'T'));
+                if (recommendedLevel && recommendedLevel['pre-registrationDates'] && recommendedLevel['pre-registrationDates'].preRegStartDate && recommendedLevel.registrationStartDate) {
+                    const regStart = new Date(recommendedLevel['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
                     const regEnd = new Date(recommendedLevel.registrationEndDate.replace(' ', 'T'));
                     
                     showRegistration = now >= regStart && now <= regEnd;
