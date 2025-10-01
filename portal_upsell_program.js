@@ -491,7 +491,7 @@ class DisplaySuppProgram {
       label: programName,
       amount: parseFloat(amount * 100),
       source: "portal_page",
-      hasFee: false,
+      has_fee: false,
       memberId: this.memberData.memberId,
     };
     // Create the POST request
@@ -736,4 +736,5 @@ class DisplaySuppProgram {
     });
   }
 }
+
 
