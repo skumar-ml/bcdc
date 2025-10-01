@@ -847,7 +847,18 @@
                 if (futureList.length > 0) {
                     futureClassesDiv.style.display = '';
                     futureList.forEach(session => {
-                        let text = session.sessionName || session.classDetail?.sessionName || session.summerProgramDetail?.programName || 'No details available';
+                        let text = 'No details available';
+                        if(session.classId){
+                            const hasClassDetail = session.classDetail && Object.keys(session.classDetail).length > 0;
+                            const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = session.classDetail;
+                            if(hasClassDetail){
+                                text = `${classLevel} | ${day} ${startTime} | ${location} | ${sessionName} ${currentYear}`;
+                            }else{
+                                text = 'No details available';
+                            }
+                        }else{
+                            text = session.sessionName || session.classDetail?.sessionName || session.summerProgramDetail?.programName || 'No details available';
+                        }
                         const div = document.createElement('div');
                         div.className = 'announcement-flex-wrapper';
                         div.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg" alt="" />\n<p class="poppins-para no-margin-bottom">${text}</p>`;
