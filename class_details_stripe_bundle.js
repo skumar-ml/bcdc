@@ -761,15 +761,15 @@ class classDetailsStripe {
 
       $this.createBundlePrograms($this.$allSuppData);
 
-      // if($this.$selectedProgram.length > 0){
-      //   // Get local storage data for back button
-      //   var checkoutJson = localStorage.getItem("checkOutData");
-      //   if (checkoutJson != undefined) {
-      //     var paymentData = JSON.parse(checkoutJson);
-      //     // update bundle program based on local storage data
-      //     $this.updateBundleProgram(paymentData);
-      //   }
-      // }
+      if($this.$selectedProgram.length > 0){
+        // Get local storage data for back button
+        var checkoutJson = localStorage.getItem("checkOutData");
+        if (checkoutJson != undefined) {
+          var paymentData = JSON.parse(checkoutJson);
+          // update bundle program based on local storage data
+          $this.updateBundleProgram(paymentData);
+        }
+      }
 
       let existingStudentLabel = document.querySelector("label[for='existing-students']");
       if (existingStudentLabel.innerText == "Select Student Info") {
