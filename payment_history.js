@@ -443,12 +443,10 @@ class PaymentHistory {
             paymentLinkId: paymentLinkId,
             memberId: this.data.memberId,
             successUrl: encodeURI(
-                "https://www.bergendebate.com/members/" +
-                this.data.memberId +
-                "?programName=" +
+                "https://www.bergendebate.com/portal/payment-history?programName=" +
                 title
             ),
-            cancelUrl: "https://www.bergendebate.com/members/" + this.data.memberId,
+            cancelUrl: "https://www.bergendebate.com/portal/payment-history",
         };
         // Send payment request to API
         var xhr = new XMLHttpRequest();
@@ -718,3 +716,4 @@ class PaymentHistory {
         }
     }
 }
+
