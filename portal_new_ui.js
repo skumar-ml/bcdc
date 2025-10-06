@@ -46,37 +46,27 @@ class Portal {
     checkReferralsAccess(data) {
         const currentDateTime = new Date().toISOString();
         const referralsLinks = document.querySelectorAll('[sidebar-menu="referrals"]');
-
         if (data) {
             if (Array.isArray(data) && data.length > 0) {
                 let hasCurrentSession = false;
-
-                // Check each student for current session
                 data.forEach((studentObj) => {
                     const studentName = Object.keys(studentObj)[0];
                     const studentData = studentObj[studentName];
-
-                    // If student has current session, enable referrals access
                     if (
                         studentData.currentSession &&
                         Array.isArray(studentData.currentSession) &&
                         studentData.currentSession.length > 0
                     ) {
                         hasCurrentSession = true;
-                        // Store referral session info in localStorage
                         localStorage.setItem(
                             "hasReferralSession",
                             JSON.stringify({ hasCurrentSession, currentDateTime, memberId: this.data.memberId })
                         );
                     }
                 });
-
-                // Show/hide referral links based on current session availability
                 referralsLinks.forEach((referralsLink) => {
                     referralsLink.style.display = hasCurrentSession ? "flex" : "none";
                 });
-
-                // Store session status even if no current session
                 if (!hasCurrentSession) {
                     localStorage.setItem(
                         "hasReferralSession",
@@ -84,13 +74,11 @@ class Portal {
                     );
                 }
             } else {
-                // No data available, hide referral links
                 referralsLinks.forEach((referralsLink) => {
                     referralsLink.style.display = "none";
                 });
             }
         } else {
-            // No data provided, hide referral links
             if (referralsLinks.length > 0) {
                 referralsLinks.forEach((referralsLink) => {
                     referralsLink.style.display = "none";
@@ -112,68 +100,48 @@ class Portal {
     }
 
     /**
-     * Controls visibility of free and paid resources based on data availability
-     * @param {Object} response - Portal data response, null/undefined shows free resources
+     * Controls visibility of free and paid resources based on response data
+     * @param {Object} response - Response data to determine resource visibility
      */
     hideShowFreeAndPaidResources(response) {
         const freeResourcesDivs = document.querySelectorAll('[data-resources="free"]');
         const paidResource = document.querySelectorAll('[data-resources="paid"]');
-
         if (!response) {
-            // No data found - show free resources, hide paid resources
             if (freeResourcesDivs) freeResourcesDivs.forEach(div => div.style.display = "block");
             if (paidResource) paidResource.forEach(div => div.style.display = "none");
             this.spinner.style.display = "none";
             return;
         }
-
-        // Data found - hide free resources, show paid resources
         if (freeResourcesDivs) freeResourcesDivs.forEach(div => div.style.display = "none");
         if (paidResource) paidResource.forEach(div => div.style.display = "grid");
     }
 
     /**
      * Main render method - orchestrates the entire portal rendering process
-     * Fetches data, sets up UI components, and initializes interactions
+     * Fetches data, sets up tabs, initializes components, and handles UI updates
      */
     async render() {
-        // Hide portal content and show loading spinner
         const paidResource = document.querySelector('.portal-info-wrapper')
         paidResource.style.display = "none";
         this.spinner.style.display = "block";
-
-        // Fetch all required data in parallel for better performance
         const [data, millionsData, announcements] = await Promise.all([
             this.fetchData(),
             this.fetchMillionsData(),
             this.fetchAnnouncements()
         ]);
-
-        // Handle case where no data is found
         if (data == "No data Found") {
             this.hideShowFreeAndPaidResources(false);
             return false
         }
-
-        // Extract millions transactions data
         const millions_transactions = millionsData.millions_transactions;
-
-        // Set up the main portal interface
         this.setupTabs(data, millions_transactions, announcements);
         this.initTooltips();
-        //this.initStripePaymentLinks(); // Commented out - may be used later
         this.initiateLightbox();
-        Webflow.require('tabs').redraw(); // Refresh Webflow tabs component
-
-        // Initialize accordion components
+        Webflow.require('tabs').redraw();
         this.initializeFAQAccordion();
         this.initializeInvoiceAccordion();
         this.hideRegistrationFormAccordion();
-
-        // Check and configure referrals access
         this.checkReferralsAccess(data);
-
-        // Show portal content and hide spinner with delay for smooth transition
         paidResource.style.display = "block";
         setTimeout(() => {
             this.spinner.style.display = "none";
@@ -186,7 +154,7 @@ class Portal {
         };
         this.updateSidebarMillionsCount(millions_transactions, getCurrentStudentName());
 
-        // Set up tab change listeners to update sidebar millions count
+        // Update sidebar millions count on tab change
         document.querySelectorAll('.portal-tab-link').forEach(tab => {
             tab.addEventListener('click', () => {
                 setTimeout(() => {
@@ -194,26 +162,21 @@ class Portal {
                 }, 0);
             });
         });
-
-        // Execute onReady callback if provided
         if (typeof this.onReady === 'function') {
             this.onReady();
         }
     }
 
     /**
-     * Hides registration form accordion (currently commented out)
-     * This method was used to hide registration forms but is now disabled
+     * Hides registration form accordion elements
+     * Currently commented out - may be used for future functionality
      */
     hideRegistrationFormAccordion() {
-        // const tabPane = document.querySelector('.portal-tab-pane');
-        // tabPane.querySelectorAll('.registration-form-accordian').forEach(el => {
-        //     if (el) el.style.display = 'none';
-        // });
+        // Method is currently empty - functionality may be added in the future
     }
     /**
      * Sets up dynamic tabs for each student
-     * Creates tab structure based on student data and manages tab switching
+     * Creates tab links and panes based on student data, sorts by most recent session
      * @param {Array} data - Student data array
      * @param {Array} millionsData - Millions transaction data
      * @param {Array} announcements - Announcements data
@@ -225,27 +188,25 @@ class Portal {
         const tabContent = document.querySelector('.portal-tab-content');
         const tabPanes = tabContent.querySelectorAll('.portal-tab-pane');
 
-        // 2. Filter students from data (studentDetail.studentName must exist)
-        //const students = data.filter(item => item.studentDetail && item.studentDetail.studentName);
+        // 2. Use all student data
         const students = data;
-
-        // 3. Use the first tab and pane as templates for cloning
+        // 3. Use the first tab and pane as templates
         const tabLinkTemplate = tabLinks[0].cloneNode(true);
         const tabPaneTemplate = tabPanes[0].cloneNode(true);
 
-        // 4. Remove all existing tab links and panes (except first ones)
+        // 4. Remove all existing tab links and panes
         tabLinks.forEach((link, idx) => { if (idx > 0) link.remove(); });
         tabPanes.forEach((pane, idx) => { if (idx > 0) pane.remove(); });
 
-        // 5. Clear the first tab link and pane for reuse
+        // 5. Clear the first tab link and pane
         const firstTabLink = tabMenu.querySelector('.portal-tab-link');
         const firstTabPane = tabContent.querySelector('.portal-tab-pane');
 
-        // Remove active classes from first tab
+        // Remove active classes
         firstTabLink.classList.remove('w--current');
         firstTabLink.setAttribute('aria-selected', 'false');
         firstTabPane.classList.remove('w--tab-active');
-        // 6. Sort students by currentSession[0].createdOn (most recent first)
+        // Sort students by currentSession[0].createdOn (most recent first)
         students.sort((a, b) => {
             const aData = Object.values(a)[0];
             const bData = Object.values(b)[0];
@@ -253,32 +214,27 @@ class Portal {
             const bSession = bData.currentSession && bData.currentSession[0] ? bData.currentSession[0] : null;
             const aDate = aSession && aSession.createdOn ? new Date(aSession.createdOn) : new Date(0);
             const bDate = bSession && bSession.createdOn ? new Date(bSession.createdOn) : new Date(0);
-            // Most recent first (descending order)
+            // Most recent first
             return bDate - aDate;
         });
-
-        // 7. For each student, create tab link and pane
+        // 6. For each student, create tab link and pane
         students.forEach((student, idx) => {
-            // Extract student name and data from the student object
+            // get Object key from the student object
             const studentName = Object.keys(student)[0];
             const studentData = Object.values(student)[0];
             const currentSession = studentData.currentSession && studentData.currentSession.length > 0 ? studentData.currentSession[0] : null;
             // comment for future change: studentData.currentSession.length - 1
-
-            // Determine whether to use existing first tab or create new ones
             let tabLink, tabPane;
             if (idx === 0) {
-                // Use the existing first tab and pane
                 tabLink = firstTabLink;
                 tabPane = firstTabPane;
             } else {
-                // Clone templates for additional tabs
                 tabLink = tabLinkTemplate.cloneNode(true);
                 tabPane = tabPaneTemplate.cloneNode(true);
                 tabMenu.appendChild(tabLink);
                 tabContent.appendChild(tabPane);
             }
-            // 8. Set tab attributes for Webflow tabs functionality
+            // Set tab attributes
             tabLink.setAttribute('data-w-tab', 'Tab-' + idx);
             tabLink.setAttribute('id', 'w-tabs-0-data-w-tab-' + idx);
             tabLink.setAttribute('href', '#w-tabs-0-data-w-pane-' + idx);
@@ -286,8 +242,7 @@ class Portal {
             tabPane.setAttribute('data-w-tab', 'Tab-' + idx);
             tabPane.setAttribute('id', 'w-tabs-0-data-w-pane-' + idx);
             tabPane.setAttribute('aria-labelledby', 'w-tabs-0-data-w-tab-' + idx);
-
-            // 9. Set active class for first tab only
+            // Set active class for first tab
             if (idx === 0) {
                 tabLink.classList.add('w--current');
                 tabLink.setAttribute('aria-selected', 'true');
@@ -297,21 +252,17 @@ class Portal {
                 tabLink.setAttribute('aria-selected', 'false');
                 tabPane.classList.remove('w--tab-active');
             }
-
-            // 10. Set student name as tab label
+            // Set label
             if (tabLink.querySelector('.portal-tab-text-semibold')) {
                 tabLink.querySelector('.portal-tab-text-semibold').textContent = studentName;
             }
-
-            // 11. Render content inside tab based on available data
+            // Render content inside tab based on available data
             this.renderStudentTab(tabPane, studentData, millionsData, announcements);
-            // 12. Control section visibility based on current session availability
             if (currentSession) {
-                // Show all main sections when student has current session
+                // Show all main sections
                 tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .class-tools-quick-links-div, .millions-balance-flex-wrapper').forEach(el => {
                     if (el) el.style.display = '';
                 });
-
                 // Show/hide registration-form-accordian based on formList in currentSession
                 const regFormAccordian = tabPane.querySelector('.registration-form-accordian');
                 if (currentSession.formList && Array.isArray(currentSession.formList) && currentSession.formList.length > 0) {
@@ -324,23 +275,20 @@ class Portal {
                 tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .class-tools-quick-links-div, .millions-balance-flex-wrapper').forEach(el => {
                     if (el) el.style.display = 'none';
                 });
-
                 // Hide registration-form-accordian if no currentSession
                 tabPane.querySelectorAll('.registration-form-accordian').forEach(el => {
                     if (el) el.style.display = 'none';
                 });
             }
-            // 13. Always handle Future Classes and Past Class History (independent of current session)
-
-            // Future Classes - Show if future sessions exist
+            // Always handle Future Classes and Past Class History
+            // Future Classes
             const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
             if (studentData.futureSession && Array.isArray(studentData.futureSession) && studentData.futureSession.length > 0) {
                 if (futureClassesDiv) futureClassesDiv.style.display = '';
             } else {
                 if (futureClassesDiv) futureClassesDiv.style.display = 'none';
             }
-
-            // Past Class History - Show if past sessions exist
+            // Past Class History
             const pastClassesDiv = tabPane.querySelectorAll('.sem-classes-info-div')[1]; // assuming second div is for past classes
             if (studentData.pastSession && Array.isArray(studentData.pastSession) && studentData.pastSession.length > 0) {
                 if (pastClassesDiv) pastClassesDiv.style.display = '';
@@ -351,49 +299,46 @@ class Portal {
     }
 
     /**
-     * Main function to render all content for a student tab
-     * Orchestrates rendering of all tab sections and components
+     * Main function to render individual student tab content
+     * Handles current class, millions, uploaded content, and recommended level sections
      * @param {HTMLElement} tabPane - The tab pane element to render content into
-     * @param {Object} studentData - Student data object containing all student information
+     * @param {Object} studentData - Student data object
      * @param {Array} millionsData - Millions transaction data
      * @param {Array} announcements - Announcements data
      */
     renderStudentTab(tabPane, studentData, millionsData, announcements) {
         const student = studentData.currentSession[0];
-
         if (student) {
-            // Render sections that require current session data
             this.renderCurrentClassSection(tabPane, student);
             this.renderMillions(tabPane, student, millionsData);
             this.renderUploadedContent(tabPane, student);
-            this.renderRecommendedLevel(tabPane, student);
+            this.renderRecommendedLevel(tabPane, student, studentData)
 
-            // Render pending items with delay to ensure DOM is ready
             setTimeout(() => {
                 this.renderPendingItems(tabPane, student);
             }, 500);
         } else {
-            // Hide recommended section if no current session data
-            const recommendedSection = tabPane.querySelector('.next-recomm-prog-info');
+            // hide recommended section if student data is empty
+            const recommendedSection = tabPane.querySelector('.next-recomm-prog-container');
             recommendedSection.style.display = 'none';
         }
-
-        // Render sections that don't require current session
         this.renderRecentAnnouncements(tabPane, announcements);
         this.renderFutureClasses(tabPane, studentData);
         this.renderPastClasses(tabPane, studentData);
     }
     /**
-     * Renders the recommended level section for a student
-     * Shows next recommended program with countdown timer if applicable
+     * Renders the recommended level section with pre-registration and registration logic
+     * Handles bundle visibility, time-based registration periods, and button states
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
+     * @param {Object} studentData - Complete student data including future sessions
      */
-    renderRecommendedLevel(tabPane, student) {
-        const recommendedSection = tabPane.querySelector('.next-recomm-prog-info');
+    renderRecommendedLevel(tabPane, student, studentData) {
+        const recommendedSection = tabPane.querySelector('.next-recomm-prog-container');
         const programTitle = tabPane.querySelector('.next-recomm-prog-title');
-        if (!recommendedSection) return;
-
+        const bundleContainer = tabPane.querySelector('[data-pre-registration="container"]');
+        
+        if (!bundleContainer) return;
         const studentName = student.studentDetail.studentName || 'Student';
         if (programTitle) {
             programTitle.textContent = `Next Recommended Program for ${studentName}`;
@@ -401,24 +346,82 @@ class Portal {
 
         const recommendedLevel = student.recommendedLevel;
 
-        // Check if recommended level data is empty or invalid
-        const isEmpty = !recommendedLevel || Object.values(recommendedLevel).every(v => v === undefined || v === null || `${v}`.trim() === '');
-        if (isEmpty) {
-            recommendedSection.style.display = 'none';
+        // Check if recommended level is empty
+        const isRecommendedEmpty = !recommendedLevel.level;
+        
+        // Check if student has bundle
+        const hasBundle = this.checkHasBundle(studentData);
+        
+        // Get current time-based visibility status
+        const timeBasedVisibility = this.getTimeBasedVisibility(recommendedLevel, studentData);
+        
+        
+        // Hide entire bundle container if no bundle and no recommended program
+        if (!hasBundle && isRecommendedEmpty) {
+            if (bundleContainer) {
+                bundleContainer.style.display = 'none';
+            }
             return;
         }
+        
+        // Show bundle container if either has bundle or has recommended program
+        if (bundleContainer) {
+            bundleContainer.style.display = 'block';
+        }
 
-        // Show the recommended section
-        recommendedSection.style.display = '';
+        // Handle pre-reg-container visibility based on bundle status and pre-registration timing
+        const preRegContainer = tabPane.querySelector('.pre-reg-container');
+        let showPreRegContainer = false;
+        if (preRegContainer) {
+            if (hasBundle && timeBasedVisibility.showPreRegistration) {
+                preRegContainer.style.display = '';
+                showPreRegContainer = true;
+                
+                // Update pre-registration username dynamically
+                const preRegUserName = preRegContainer.querySelector('.pre-reg-user-name');
+                if (preRegUserName && studentName) {
+                    preRegUserName.textContent = studentName + "'s";
+                }
+                
+                // Start registration timer for pre-registration end date
+                this.startRegistrationTimer(preRegContainer, studentData);
+            } else {
+                preRegContainer.style.display = 'none';
+                showPreRegContainer = false;
+            }
+        }
 
-        // Update the display text with session/year and level information
-        const textEls = recommendedSection.querySelectorAll('.next-recomm-prog-text');
+        // Handle recommended program visibility based on registration timing
+        let showRecommendedSection = false;
+        if (isRecommendedEmpty) {
+            recommendedSection.style.display = 'none';
+            showRecommendedSection = false;
+        } else {
+            // Show recommended section only during registration period
+            if (timeBasedVisibility.showRegistration && hasBundle) {
+                recommendedSection.style.display = '';
+                showRecommendedSection = true;
+            } else {
+                recommendedSection.style.display = 'none';
+                showRecommendedSection = false;
+            }
+        }
+
+        // Hide entire bundle container if both sections are hidden
+        if (!showPreRegContainer && !showRecommendedSection) {
+            if (bundleContainer) {
+                bundleContainer.style.display = 'none';
+                return;
+            }
+        }
+
+        // Update the first next-recomm-prog-text (the line that shows session/year | level)
+        const textEls = recommendedSection.querySelectorAll('[data-portal="next-recomm-prog-text"]');
         if (!textEls || textEls.length === 0) return;
 
         const sessionYear = [recommendedLevel.session, recommendedLevel.year].filter(Boolean).join(' ');
         const levelLabel = recommendedLevel.level || '';
 
-        // Build display text with fallback options
         let displayText = '';
         if (sessionYear && levelLabel) displayText = `${sessionYear} | ${levelLabel}`;
         else if (sessionYear) displayText = sessionYear;
@@ -427,33 +430,159 @@ class Portal {
 
         if (!displayText) {
             recommendedSection.style.display = 'none';
-            return;
         }
 
-        // Update the first text element with the display text
+        // First element is the headline line we want to update
         textEls[0].textContent = displayText;
 
-        // Set up modal and click events for Learn More functionality
-        this.updateModalContent(student, recommendedLevel, tabPane);
-        this.addLearnMoreClickEvent(recommendedSection, student, recommendedLevel);
+        // Implement new button visibility logic
+        this.updateButtonVisibility(bundleContainer, student, recommendedLevel, timeBasedVisibility, studentData);
 
-        // Start countdown timer if early bird deadline exists
-        const earlyBirdDeadline = student?.classDetail?.earlyBirdDeadlineDate;
+        // Update modal content and add click event for Learn More button
+        this.updateModalContent(student, recommendedLevel, tabPane, studentData);
+        this.addLearnMoreClickEvent(bundleContainer, student, recommendedLevel, studentData);
+
+        // Start/Update countdown in the recommended section if deadline exists
+        const earlyBirdDeadline = student?.recommendedLevel?.earlyBirdDeadlineDate;
         if (earlyBirdDeadline) {
             this.startOfferCountdown(recommendedSection, earlyBirdDeadline);
         }
     }
     /**
-     * Shows a modal dialog
+     * Updates button visibility based on bundle status and registration timing
+     * @param {HTMLElement} recommendedSection - The recommended section element
+     * @param {Object} student - Current student data
+     * @param {Object} recommendedLevel - Recommended level data
+     * @param {Object} timeBasedVisibility - Time-based visibility status
+     * @param {Object} studentData - Complete student data
+     */
+    updateButtonVisibility(recommendedSection, student, recommendedLevel, timeBasedVisibility, studentData) {
+        // Get the buttons
+        const registerNowBtn = recommendedSection.querySelector('#enroll-now-btn-2');
+        const learnMoreBtn = recommendedSection.querySelector('[data-portal="next-recomm-learn-more"]');
+        
+        if (!registerNowBtn || !learnMoreBtn) return;
+
+        // Condition A: Check if student has bundle (pre-reg-container) in future sessions except Summer
+        const hasBundle = this.checkHasBundle(studentData);
+        
+        // Condition B: Check if returner conversion is published in recommendedLevel
+        const hasReturnerConversion = this.checkReturnerConversion(recommendedLevel);
+        
+        // Debug logging
+        
+        // Apply button visibility logic based on time-based visibility
+        if (timeBasedVisibility.showPreRegistration && timeBasedVisibility.showRegistration) {
+            // Both periods are active: Show both buttons
+            registerNowBtn.style.display = 'inline-block';
+            learnMoreBtn.style.display = 'inline-block';
+            recommendedSection.style.display = 'block';
+        } else if (hasBundle && timeBasedVisibility.showPreRegistration) {
+            // If A: Only show Register Now button during pre-registration
+            registerNowBtn.style.display = 'inline-block';
+            learnMoreBtn.style.display = 'none';
+            recommendedSection.style.display = 'block';
+        } else if (hasReturnerConversion && timeBasedVisibility.showRegistration) {
+            // If B: Show both buttons during registration period
+            registerNowBtn.style.display = 'inline-block';
+            learnMoreBtn.style.display = 'inline-block';
+            recommendedSection.style.display = 'block';
+        } else if (hasBundle && hasReturnerConversion && timeBasedVisibility.showRegistration) {
+            // If A & B: Show both buttons during registration period
+            registerNowBtn.style.display = 'inline-block';
+            learnMoreBtn.style.display = 'inline-block';
+            recommendedSection.style.display = 'block';
+        } else {
+            // Default: Hide both buttons
+            registerNowBtn.style.display = 'none';
+            learnMoreBtn.style.display = 'none';
+            recommendedSection.style.display = 'none';
+        }
+    }
+    /**
+     * Checks if student has bundle in future sessions (excluding Summer sessions)
+     * @param {Object} student - Student data object
+     * @returns {boolean} True if student has bundle, false otherwise
+     */
+    checkHasBundle(student) {
+        // Check if student has bundle in future sessions except Summer
+        if (!student.futureSession || !Array.isArray(student.futureSession)) {
+            return false;
+        }
+        
+        // Filter out futureSession objects that have classId
+        const filteredSessions = student.futureSession.filter(session => !session.classId);
+        if(filteredSessions.length == 0) {
+            return false;
+        }
+        // Check if any remaining sessions are not Summer sessions
+        const result = filteredSessions.some(session => {
+            return !session.sessionName.toLowerCase().includes('summer');
+        });
+        
+        return result;
+    }
+    /**
+     * Checks if returner conversion is available in recommended level
+     * @param {Object} recommendedLevel - Recommended level data
+     * @returns {boolean} True if returner conversion is available, false otherwise
+     */
+    checkReturnerConversion(recommendedLevel) {
+        // Check if returner conversion is published in recommendedLevel
+        const result = recommendedLevel && recommendedLevel.level;
+        return result;
+    }
+    /**
+     * Determines time-based visibility for pre-registration and registration periods
+     * @param {Object} recommendedLevel - Recommended level data
+     * @param {Object} studentData - Student data with future sessions
+     * @returns {Object} Object with showPreRegistration and showRegistration boolean flags
+     */
+    getTimeBasedVisibility(recommendedLevel, studentData) {
+        const now = new Date();
+        let showPreRegistration = false;
+        let showRegistration = false;
+        
+        // Check pre-registration period from future session
+        if (studentData.futureSession && Array.isArray(studentData.futureSession)) {
+            const futureSession = studentData.futureSession.find(session => 
+                session['pre-registrationDates'] && session['pre-registrationDates'].preRegStartDate
+            );
+            
+            if (futureSession && futureSession['pre-registrationDates']) {
+                const preRegStart = new Date(futureSession['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
+                const preRegEnd = new Date(futureSession['pre-registrationDates'].preRegEndDate.replace(' ', 'T'));
+                
+                showPreRegistration = now >= preRegStart && now <= preRegEnd;
+                
+            }
+        }
+        
+        // Check registration period from recommended level
+        if (recommendedLevel && recommendedLevel['pre-registrationDates'] && recommendedLevel['pre-registrationDates'].preRegStartDate && recommendedLevel.registrationStartDate) {
+            const regStart = new Date(recommendedLevel['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
+            const regEnd = new Date(recommendedLevel.registrationEndDate.replace(' ', 'T'));
+            
+            showRegistration = now >= regStart && now <= regEnd;
+            
+        }
+        
+        return {
+            showPreRegistration,
+            showRegistration
+        };
+    }
+    /**
+     * Shows a modal by adding show class and setting display to flex
      * @param {HTMLElement} modal - The modal element to show
      */
     showModal(modal) {
         modal.classList.add("show");
         modal.style.display = "flex";
     }
-
+    
     /**
-     * Hides a modal dialog
+     * Hides a modal by removing show class and setting display to none
      * @param {HTMLElement} modal - The modal element to hide
      */
     hideModal(modal) {
@@ -461,25 +590,26 @@ class Portal {
         modal.style.display = "none";
     }
     /**
-     * Updates the content of the recommendation modal with student-specific information
-     * @param {Object} student - Student data object
+     * Updates modal content with student and recommended level information
+     * @param {Object} student - Current student data
      * @param {Object} recommendedLevel - Recommended level data
      * @param {HTMLElement} tabPane - Tab pane element (optional)
+     * @param {Object} studentData - Complete student data
      */
-    updateModalContent(student, recommendedLevel, tabPane = "") {
+    updateModalContent(student, recommendedLevel, tabPane = "", studentData) {
         const modal = document.getElementById('next-recomm-modal');
         if (!modal) return;
 
         // Get student name (fallback to 'Student' if not available)
         const studentName = student.studentDetail.studentName || 'Student';
 
-        // Update modal title with student name
+        // Update modal title using the new ID
         const titleEl = document.getElementById('modal-student-name');
         if (titleEl) {
             titleEl.textContent = `Next Step for ${studentName}`;
         }
 
-        // Update recommended text with session/year and level information
+        // Update recommended text using the new ID
         const recommendedTextEl = document.getElementById('modal-recommended-text');
         if (recommendedTextEl) {
             const sessionYear = [recommendedLevel.session, recommendedLevel.year].filter(Boolean).join(' ');
@@ -500,16 +630,16 @@ class Portal {
             recommendedTextEl.textContent = recommendedText;
         }
 
-        // Update countdown timer in modal if deadline exists
-        const earlyBirdDeadline = student?.classDetail?.earlyBirdDeadlineDate;
+        // Update countdown in modal if deadline exists
+        const earlyBirdDeadline = student?.recommendedLevel?.earlyBirdDeadlineDate;
         if (earlyBirdDeadline) {
             this.startOfferCountdown(modal, earlyBirdDeadline);
         }
 
-        // Update enrollment links in the modal
-        this.updateEnrollNowLinks(modal, recommendedLevel, tabPane);
+        // Update modal's Enroll Now button link
+        this.updateEnrollNowLinks(modal, recommendedLevel, tabPane, studentData);
 
-        // Update "Why This Program" section with personalized text
+        // Update "Why This Program" section
         const whyProgramTextEl = modal.querySelector('.why-this-program-rounded-div .dm-sans.blue-text');
         if (whyProgramTextEl) {
             const levelLabel = recommendedLevel.level || recommendedLevel.grade || 'this level';
@@ -517,13 +647,13 @@ class Portal {
         }
     }
     /**
-     * Updates enrollment links based on recommended level
-     * Converts level names to URL-friendly format and updates button links
-     * @param {HTMLElement} contextEl - Context element to search for buttons
+     * Updates enrollment links based on recommended level and conditions
+     * @param {HTMLElement} contextEl - Context element containing enrollment buttons
      * @param {Object} recommendedLevel - Recommended level data
-     * @param {HTMLElement} tabPane - Tab pane element for additional button search
+     * @param {HTMLElement} tabPane - Tab pane element
+     * @param {Object} studentData - Complete student data
      */
-    updateEnrollNowLinks(contextEl, recommendedLevel, tabPane) {
+    updateEnrollNowLinks(contextEl, recommendedLevel, tabPane, studentData) {
         if (!contextEl || !recommendedLevel) return;
 
         // Get the level from recommendedLevel
@@ -535,8 +665,19 @@ class Portal {
             .replace(/\s+/g, '-')  // Replace spaces with hyphens
             .replace(/[^a-z0-9-]/g, ''); // Remove any other special characters
 
-        // Generate the enrollment URL
-        const enrollUrl = `https://www.bergendebate.com/programs/${levelUrl}`;
+        // Check if recommended condition matches (hasBundle or hasReturnerConversion)
+        // Use the same logic as updateButtonVisibility function
+        const hasReturnerConversion = this.checkReturnerConversion(recommendedLevel);
+        const timeBasedVisibility = this.getTimeBasedVisibility(recommendedLevel, studentData);
+        const hasRecommendedCondition = hasReturnerConversion && timeBasedVisibility.showRegistration;
+        
+        // Generate the enrollment URL based on condition
+        let enrollUrl;
+        if (hasRecommendedCondition) {
+            enrollUrl = `https://www.bergendebate.com/programs/${levelUrl}`;
+        } else {
+            enrollUrl = 'https://www.bergendebate.com/classes-overview';
+        }
 
         // Find and update all Enroll Now buttons in the context
         const enrollButtons = document.getElementById('enroll-now-btn');
@@ -551,14 +692,15 @@ class Portal {
         }
     }
     /**
-     * Adds click event listener to the Learn More button
+     * Adds click event listener to Learn More button
      * @param {HTMLElement} recommendedSection - The recommended section element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      * @param {Object} recommendedLevel - Recommended level data
+     * @param {Object} studentData - Complete student data
      */
-    addLearnMoreClickEvent(recommendedSection, student, recommendedLevel) {
+    addLearnMoreClickEvent(recommendedSection, student, recommendedLevel, studentData) {
         var $this = this
-        const learnMoreBtn = recommendedSection.querySelector('#next-recomm-learn-more');
+        const learnMoreBtn = recommendedSection.querySelector('[data-portal="next-recomm-learn-more"]');
         if (!learnMoreBtn) return;
 
         // Remove existing event listeners to prevent duplicates
@@ -568,14 +710,11 @@ class Portal {
         learnMoreBtn.addEventListener('click', (e) => {
             e.preventDefault();
             this.handleLearnMoreClick();
-            // Update modal content with current student and recommended level data
-            $this.updateModalContent(student, recommendedLevel);
+            $this.updateModalContent(student, recommendedLevel, studentData);
         });
     }
-
     /**
-     * Handles the Learn More button click event
-     * Shows the modal and sets up close events
+     * Handles Learn More button click - shows modal and adds close events
      */
     handleLearnMoreClick() {
         const modal = document.getElementById('next-recomm-modal');
@@ -585,8 +724,7 @@ class Portal {
         }
     }
     /**
-     * Starts a countdown timer for early bird offers
-     * Updates timer elements every second until deadline is reached
+     * Starts countdown timer for offer deadline
      * @param {HTMLElement} contextEl - Context element containing timer elements
      * @param {string} deadlineString - Deadline date string
      */
@@ -600,7 +738,7 @@ class Portal {
         const secondsEl = contextEl.querySelector('[data-timer="seconds"]');
         if (!daysEl || !hoursEl || !minutesEl) return;
 
-        // Clear any previous interval attached to this context to prevent duplicates
+        // Clear any previous interval attached to this context
         if (contextEl._countdownInterval) {
             clearInterval(contextEl._countdownInterval);
             contextEl._countdownInterval = null;
@@ -610,12 +748,9 @@ class Portal {
         const parsed = new Date(deadlineString.replace(' ', 'T'));
         if (isNaN(parsed.getTime())) return;
 
-        // Update function that calculates and displays remaining time
         const update = () => {
             const now = new Date();
             let totalSeconds = Math.floor((parsed.getTime() - now.getTime()) / 1000);
-
-            // If deadline has passed, stop the timer
             if (totalSeconds <= 0) {
                 daysEl.textContent = '0';
                 hoursEl.textContent = '00';
@@ -625,28 +760,101 @@ class Portal {
                 return;
             }
 
-            // Calculate days, hours, minutes, and seconds
             const days = Math.floor(totalSeconds / 86400);
             totalSeconds -= days * 86400;
             const hours = Math.floor(totalSeconds / 3600);
             totalSeconds -= hours * 3600;
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
-
-            // Update timer display elements
             daysEl.textContent = String(days);
             hoursEl.textContent = String(hours).padStart(2, '0');
             minutesEl.textContent = String(minutes).padStart(2, '0');
             secondsEl.textContent = String(seconds).padStart(2, '0');
         };
 
-        // Initial paint and start 1-second interval updates
+        // Initial paint and start 1s updates
         update();
         contextEl._countdownInterval = setInterval(update, 1000);
     }
     /**
-     * Adds event listeners for closing the modal
-     * Handles background click, close button, and Escape key
+     * Starts countdown timer for pre-registration end date
+     * @param {HTMLElement} contextEl - Context element containing timer elements
+     * @param {Object} studentData - Student data with future sessions
+     */
+    startRegistrationTimer(contextEl, studentData) {
+        if (!contextEl || !studentData) return;
+
+        // Find the pre-registration end date from future session
+        let preRegEndDate = null;
+        if (studentData.futureSession && Array.isArray(studentData.futureSession)) {
+            const futureSession = studentData.futureSession.find(session => 
+                session['pre-registrationDates'] && session['pre-registrationDates'].preRegEndDate
+            );
+            if (futureSession) {
+                preRegEndDate = futureSession['pre-registrationDates'].preRegEndDate;
+            }
+        }
+
+        if (!preRegEndDate) {
+            return;
+        }
+
+
+        // Locate timer elements within the provided context element
+        const daysEl = contextEl.querySelector('[data-registration-timer="day"]');
+        const hoursEl = contextEl.querySelector('[data-registration-timer="hour"]');
+        const minutesEl = contextEl.querySelector('[data-registration-timer="minutes"]');
+        const secondsEl = contextEl.querySelector('[data-registration-timer="seconds"]');
+        
+        if (!daysEl || !hoursEl || !minutesEl || !secondsEl) {
+            return;
+        }
+
+        // Clear any previous interval attached to this context
+        if (contextEl._registrationTimerInterval) {
+            clearInterval(contextEl._registrationTimerInterval);
+            contextEl._registrationTimerInterval = null;
+        }
+
+        // Parse deadline (treat provided string as local time)
+        const parsed = new Date(preRegEndDate.replace(' ', 'T'));
+        if (isNaN(parsed.getTime())) {
+            return;
+        }
+
+        const update = () => {
+            const now = new Date();
+            let totalSeconds = Math.floor((parsed.getTime() - now.getTime()) / 1000);
+            
+            if (totalSeconds <= 0) {
+                daysEl.textContent = '0';
+                hoursEl.textContent = '00';
+                minutesEl.textContent = '00';
+                secondsEl.textContent = '00';
+                clearInterval(contextEl._registrationTimerInterval);
+                contextEl._registrationTimerInterval = null;
+                return;
+            }
+
+            const days = Math.floor(totalSeconds / 86400);
+            totalSeconds -= days * 86400;
+            const hours = Math.floor(totalSeconds / 3600);
+            totalSeconds -= hours * 3600;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            
+            daysEl.textContent = String(days);
+            hoursEl.textContent = String(hours).padStart(2, '0');
+            minutesEl.textContent = String(minutes).padStart(2, '0');
+            secondsEl.textContent = String(seconds).padStart(2, '0');
+        };
+
+        // Initial paint and start 1s updates
+        update();
+        contextEl._registrationTimerInterval = setInterval(update, 1000);
+    }
+    /**
+     * Adds event listeners for modal close functionality
      * @param {HTMLElement} modal - The modal element
      */
     addModalCloseEvents(modal) {
@@ -665,7 +873,7 @@ class Portal {
             });
         }
 
-        // Close on Escape key press
+        // Close on Escape key
         const handleEscape = (e) => {
             if (e.key === 'Escape') {
                 this.hideModal(modal);
@@ -676,36 +884,26 @@ class Portal {
     }
     /**
      * Renders recent announcements in the tab pane
-     * Updates sidebar counts and displays announcement content
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} announcements - Announcements data object
+     * @param {Object} announcements - Announcements data
      */
     renderRecentAnnouncements(tabPane, announcements) {
-
-        // Update sidebar announcement count for unread announcements
+        
+        // update sidebar d)ata count data-announcements of is_read is false 
         const sidebarAnnouncementsCount = document.querySelectorAll('[data-announcements="counts"]');
         sidebarAnnouncementsCount.forEach(el => {
-            // Filter unread announcements for the current account email
-            el.textContent = announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail).length;
+            el.textContent = (announcements.announcement) ? announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail).length : 0;
             el.parentElement.style.display = 'block';
         });
 
         const announcementDiv = tabPane.querySelector('.recent-announcement-info-div');
-
-        if (!announcementDiv || !Array.isArray(announcements.announcement)) return;
-
-        // Update announcement count in the tab
         const countDiv = tabPane.querySelector('.recent-announcement-number');
-        const unreadAnnouncements = announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail);
+        const unreadAnnouncements = (announcements.announcement) ? announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail) : [];
         if (countDiv) countDiv.textContent = unreadAnnouncements.length;
 
-        // Get the 2 most recent announcements
-        const recent = announcements.announcement.slice(0, 2);
-
-        // Clear existing announcement content
+        const recent = (announcements.announcement) ? announcements.announcement.slice(0, 2) : [];
         announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
 
-        // Create announcement elements for each recent announcement
         recent.forEach(ann => {
             const container = document.createElement('div');
             container.className = 'recent-announcement-info-inner-div';
@@ -713,33 +911,30 @@ class Portal {
             const flex = document.createElement('div');
             flex.className = 'recent-announcement-info-flex';
 
-            // Create title element
             const title = document.createElement('p');
             title.className = 'dm-sans recent-announcement-sub-title';
             const titleText = ann.title || ann.subject || 'Announcement';
             const type = ann.type || '';
             title.textContent = type ? `${titleText}: ${type}` : titleText;
 
-            // Create date element
             const date = document.createElement('p');
             date.className = 'dm-sans medium';
             const dates = new Date(ann.created_on);
 
-            // Format date to "July 10" format
+            // Format to "July 10"
             const options = { month: "long", day: "numeric" };
             const formattedDate = dates.toLocaleDateString("en-US", options);
+
             date.textContent = formattedDate || '';
 
             flex.appendChild(title);
             flex.appendChild(date);
 
-            // Create message element with text truncation
             const message = document.createElement('p');
             message.className = 'dm-sans recent-announcement-info';
-            const plainText = ann.message ? ann.message.replace(/<[^>]*>/g, '') : '';
+            var plainText = ann.message ? ann.message.replace(/<[^>]*>/g, '') : '';
+            plainText = plainText.replace(/&nbsp;/g, " ");
             message.textContent = plainText;
-
-            // Apply CSS for text truncation (2 lines max)
             message.style.display = '-webkit-box';
             message.style.webkitBoxOrient = 'vertical';
             message.style.webkitLineClamp = '2';
@@ -752,9 +947,9 @@ class Portal {
         });
     }
     /**
-     * Renders future classes section for a student
+     * Renders future classes section in the tab pane
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} studentData - Student data object
+     * @param {Object} studentData - Student data with future sessions
      */
     renderFutureClasses(tabPane, studentData) {
         const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
@@ -765,27 +960,35 @@ class Portal {
         if (container) container.innerHTML = '';
 
         if (futureList.length > 0) {
-            // Show future classes section and populate with data
             futureClassesDiv.style.display = '';
             futureList.forEach(session => {
-                // Get session name from various possible sources
-                let text = session.sessionName || session.classDetail?.sessionName || session.summerProgramDetail?.programName || 'No details available';
+                let text = 'No details available';
+                if(session.classId){
+                    const hasClassDetail = session.classDetail && Object.keys(session.classDetail).length > 0;
+                    const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = session.classDetail;
+                    if(hasClassDetail){
+                        text = `${classLevel} | ${day} ${startTime} | ${location} | ${sessionName} ${currentYear}`;
+                    }else{
+                        text = 'No details available';
+                    }
+                }else{
+                    text = session.sessionName || session.classDetail?.sessionName || session.summerProgramDetail?.programName || 'No details available';
+                }
                 const div = document.createElement('div');
                 div.className = 'announcement-flex-wrapper';
                 div.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg" alt="" />\n<p class="poppins-para no-margin-bottom">${text}</p>`;
                 container?.appendChild(div);
             });
         } else {
-            // Hide section if no future classes
             futureClassesDiv.style.display = 'none';
             container.innerHTML = '<div>No future classes available</div>';
         }
     }
 
     /**
-     * Renders past classes section for a student
+     * Renders past classes section in the tab pane
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} studentData - Student data object
+     * @param {Object} studentData - Student data with past sessions
      */
     renderPastClasses(tabPane, studentData) {
         const pastClassesDiv = tabPane.querySelectorAll('.sem-classes-info-div')[1];
@@ -796,12 +999,9 @@ class Portal {
         if (container) container.innerHTML = '';
 
         if (pastList.length > 0) {
-            // Show past classes section and populate with data
             pastClassesDiv.style.display = '';
             pastList.forEach(session => {
                 let text = 'No details available';
-
-                // Build text from class detail or summer program detail
                 if (session.classDetail && Object.keys(session.classDetail).length > 0) {
                     const { sessionName = '', currentYear = '', classLevel = '', location = '' } = session.classDetail;
                     text = `${sessionName} ${currentYear} | ${classLevel} | ${location}`.replace(/\s+\|/g, '').trim();
@@ -809,35 +1009,29 @@ class Portal {
                     const { programName = 'Summer Program', currentYear = '', location = '' } = session.summerProgramDetail;
                     text = `Summer ${currentYear ? ' | ' + currentYear : ''} ${programName} ${location ? ' | ' + location : ''}`;
                 }
-
                 const div = document.createElement('div');
                 div.className = 'announcement-flex-wrapper';
                 div.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6875275c255155b046e482da_history.svg" alt="" />\n<p class="poppins-para no-margin-bottom">${text}</p>`;
                 container?.appendChild(div);
-
-                // Add refunded indicator if applicable
                 if (session.isRefunded) {
                     div.innerHTML += '<div class="refunded-rounded-div"><p class="poppins-para refunded-dark-gray-text">REFUNDED</p></div>';
                 }
             });
         } else {
-            // Hide section if no past classes
             pastClassesDiv.style.display = 'none';
             container.innerHTML = '<div>No past classes available</div>';
         }
     }
 
     /**
-     * Renders the current class section for a student
-     * Displays current program information including class details or summer program details
+     * Renders current class section in the tab pane
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderCurrentClassSection(tabPane, student) {
         const currentClassDiv = tabPane.querySelector('.recent-announcement-div.current-class');
         if (!currentClassDiv) return;
 
-        // Check if student has class detail or summer program detail
         const hasClassDetail = student.classDetail && Object.keys(student.classDetail).length > 0;
         const hasSummerProgram = student.summerProgramDetail && Object.keys(student.summerProgramDetail).length > 0;
 
@@ -845,29 +1039,25 @@ class Portal {
         const classInfoEl = currentClassDiv.querySelector('.poppins-para.current-class');
 
         if (hasClassDetail) {
-            // Display regular class information
             const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = student.classDetail;
             if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${sessionName} ${currentYear})</span>`;
             if (classInfoEl) classInfoEl.textContent = `${classLevel} | ${day} ${startTime} | ${location}`;
         } else if (hasSummerProgram) {
-            // Display summer program information
             const { programName = 'Summer Program', location = '', year, summerSessionId } = student.summerProgramDetail;
             let inferredYear = year || 'Summer ' + (student.summerProgramDetail?.currentYear) || (new Date().getFullYear() + ' Summer');
             const paren = [inferredYear].filter(Boolean).join(', ');
             if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
             if (classInfoEl) classInfoEl.textContent = programName + ' | ' + summerSessionId + ' | ' + location;
         } else {
-            // Display fallback message when no program data is available
             if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(No class or summer program data available)</span>`;
             if (classInfoEl) classInfoEl.textContent = '';
         }
     }
 
     /**
-     * Renders pending items section and controls visibility of related accordions
-     * Checks for pending forms and invoices and shows/hides appropriate sections
+     * Renders pending items section (forms and invoices)
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderPendingItems(tabPane, student) {
         const wrapper = tabPane.querySelector('.items-pending-flex-wrapper');
@@ -876,30 +1066,25 @@ class Portal {
         let hasPendingForm = false;
         let hasPendingInvoice = false;
 
-        // Check for pending forms
         if (Array.isArray(student.formList)) {
             let allForms = student.formList.flatMap(group => group.forms || []);
             hasPendingForm = allForms.some(form => !student.formCompletedList?.some(c => c.formId === form.formId));
         }
 
-        // Check for pending invoices
         if (Array.isArray(student.invoiceList)) {
             hasPendingInvoice = student.invoiceList.some(inv => !inv.is_completed);
         }
 
-        // Show/hide pending items wrapper based on pending items
         wrapper.style.display = (hasPendingForm || hasPendingInvoice) ? 'flex' : 'none';
-
-        // Hide registration form accordion if no pending forms
         if (!hasPendingForm) {
+            // hide registartion form
             const registrationFormDiv = tabPane.querySelector('.registration-form-accordian');
             if (registrationFormDiv) {
                 registrationFormDiv.style.display = 'none';
             }
         }
-
-        // Hide invoice accordion if no pending invoices
         if (!hasPendingInvoice) {
+            // hide invoice accordion
             const invoiceAccordion = tabPane.querySelector('.invoice-form-accordian');
             if (invoiceAccordion) {
                 invoiceAccordion.style.display = 'none';
@@ -908,33 +1093,31 @@ class Portal {
     }
 
     /**
-     * Renders the millions balance for a student
+     * Renders millions balance for the student
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
-     * @param {Array} millionsData - Millions transaction data array
+     * @param {Object} student - Current student data
+     * @param {Array} millionsData - Millions transaction data
      */
     renderMillions(tabPane, student, millionsData) {
         const millionsText = tabPane.querySelector('.million-price-text');
         if (!millionsText) return;
 
-        // Find the millions entry for this student
         const entry = millionsData.find(e => e.studentName === student.studentDetail.studentName);
         const millionsCount = entry?.earnAmount || 0;
         millionsText.innerHTML = `${millionsCount} <span class="million-text-gray">millions</span>`;
     }
 
     /**
-     * Renders all uploaded content sections for a student
-     * Orchestrates rendering of various content types and resources
+     * Renders all uploaded content sections for the student
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderUploadedContent(tabPane, student) {
         this.renderHomeworkLink(tabPane, student);
         this.renderInvoiceAccordionStyled(tabPane, student);
         this.renderFailedInvoiceNotification(tabPane, student);
         this.renderRegistrationForms(tabPane, student);
-        Webflow.require('tabs').redraw(); // Refresh Webflow tabs after content changes
+        Webflow.require('tabs').redraw();
         this.renderGoogleCalendar(tabPane, student);
         this.renderCalendarIframe(tabPane, student);
         this.renderMakeupLinks(tabPane, student);
@@ -945,18 +1128,16 @@ class Portal {
     /**
      * Renders calendar iframe from uploaded content
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderCalendarIframe(tabPane, student) {
         const calendarDiv = tabPane.querySelector('.calendar-white-rounded-div');
         if (!calendarDiv) return;
 
-        // Find Google Calendar content in uploaded content
         const googleCalendar = student.uploadedContent?.find(u => u.label === 'Google Calendar');
         const calendarLink = googleCalendar?.upload_content?.[0]?.link;
 
         if (calendarLink) {
-            // Create and configure iframe for calendar
             calendarDiv.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.src = calendarLink;
@@ -967,15 +1148,14 @@ class Portal {
             iframe.setAttribute('scrolling', 'no');
             calendarDiv.appendChild(iframe);
         } else {
-            // Show fallback message when no calendar link is available
             calendarDiv.innerHTML = '<p class="portal-node-title">Calendar Graph</p><div>No records available</div>';
         }
     }
 
     /**
-     * Renders makeup scheduling links from uploaded content
+     * Renders makeup scheduling links
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderMakeupLinks(tabPane, student) {
         const makeupDiv = tabPane.querySelector('.class-tools-quick-links-div');
@@ -984,22 +1164,18 @@ class Portal {
         if (!makeupSection) return;
         makeupSection.innerHTML = '';
 
-        // Find makeup links in uploaded content
         const makeupLink = student.uploadedContent?.find(u => u.label === 'Make-up Acuity Link');
         if (makeupLink?.upload_content?.length > 0) {
-            // Create makeup link elements for each available link
             makeupLink.upload_content.forEach(item => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'class-tools-quick-links-flex-wrapper';
 
-                // Create calendar icon
                 const icon = document.createElement('img');
                 icon.loading = 'lazy';
                 icon.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg';
                 icon.alt = '';
                 icon.className = 'inline-block-icon';
 
-                // Create text content container
                 const textDiv = document.createElement('div');
                 const titleDiv = document.createElement('div');
                 titleDiv.className = 'dm-sans title';
@@ -1013,7 +1189,6 @@ class Portal {
                 subtitleSpan.textContent = 'One-click redirect to Acuity';
                 subtitleDiv.appendChild(subtitleSpan);
 
-                // Create link container with external link icon
                 const linkDiv = document.createElement('div');
                 linkDiv.className = 'poppins-para scheduling';
                 const a = document.createElement('a');
@@ -1023,7 +1198,6 @@ class Portal {
                 a.target = '_blank';
                 a.style.marginRight = '8px';
 
-                // Create external link icon
                 const img = document.createElement('img');
                 img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68835aaecba0da532a6b3d19_Group%20(2).svg';
                 img.alt = 'click to open link';
@@ -1031,7 +1205,6 @@ class Portal {
                 img.style.width = '18px';
                 img.style.height = '18px';
 
-                // Add click behavior to open link in new tab
                 this.addTooltipCopyBehavior(img, item.link);
 
                 linkDiv.appendChild(a);
@@ -1047,39 +1220,32 @@ class Portal {
                 makeupSection.appendChild(textDiv);
             });
         } else {
-            // Show fallback message when no makeup links are available
             makeupSection.innerHTML = '<div>No records available</div>';
         }
     }
 
     /**
-     * Renders Zoom links from uploaded content
+     * Renders Zoom meeting links
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderZoomLinks(tabPane, student) {
         const zoomDiv = tabPane.querySelector('.zoom-links-info-wrapper');
         if (!zoomDiv) return;
-
-        // Clear existing zoom link elements
         zoomDiv.querySelectorAll('.zoom-links-info-div').forEach(el => el.remove());
 
-        // Find Zoom links in uploaded content
         const zoomLinks = student.uploadedContent?.find(u => u.label === 'Zoom links');
         if (zoomLinks?.upload_content?.length > 0) {
-            // Create zoom link elements for each available link
             zoomLinks.upload_content.forEach(item => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'zoom-links-info-div';
 
-                // Create title element
                 const titleDiv = document.createElement('div');
                 titleDiv.className = 'dm-sans title';
                 const titleSpan = document.createElement('span');
                 titleSpan.textContent = item.name || 'Zoom Link';
                 titleDiv.appendChild(titleSpan);
 
-                // Create external link icon
                 const img = document.createElement('img');
                 img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68835aaecba0da532a6b3d19_Group%20(2).svg';
                 img.alt = 'Copy link';
@@ -1088,17 +1254,14 @@ class Portal {
                 img.style.height = '18px';
                 img.style.marginLeft = '8px';
 
-                // Create subtitle element
                 const subtitleDiv = document.createElement('div');
                 subtitleDiv.className = 'poppins-para class-tools-quick-links';
                 const subtitleSpan = document.createElement('span');
                 subtitleSpan.textContent = item.resourceDesc || '';
                 subtitleDiv.appendChild(subtitleSpan);
 
-                // Add click behavior to open link in new tab
                 this.addTooltipCopyBehavior(img, item.link);
 
-                // Assemble the wrapper structure
                 const titleDescWrapper = document.createElement('div');
                 titleDescWrapper.appendChild(titleDiv);
                 titleDescWrapper.appendChild(subtitleDiv);
@@ -1111,33 +1274,27 @@ class Portal {
                 zoomDiv.appendChild(wrapper);
             });
         } else {
-            // Show fallback message when no zoom links are available
             const zoomSection = zoomDiv.querySelector('.zoom-links-info-div');
             if (zoomSection) zoomSection.innerHTML = '<div>No records available</div>';
         }
     }
 
     /**
-     * Renders general resources from uploaded content
+     * Renders general resources links
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderGeneralResources(tabPane, student) {
         const generalDiv = tabPane.querySelector('.general-resources-info-wrapper');
         if (!generalDiv) return;
-
-        // Clear existing general resource elements
         generalDiv.querySelectorAll('.general-resources-flex-wrapper').forEach(el => el.remove());
 
-        // Find general resources in uploaded content
         const generalResources = student.uploadedContent?.find(u => u.label === 'General resources');
         if (generalResources?.upload_content?.length > 0) {
-            // Create general resource elements for each available resource
             generalResources.upload_content.forEach(item => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'general-resources-flex-wrapper';
 
-                // Create left content container
                 const leftDiv = document.createElement('div');
                 const titleDiv = document.createElement('div');
                 titleDiv.className = 'dm-sans title';
@@ -1154,7 +1311,6 @@ class Portal {
                 leftDiv.appendChild(titleDiv);
                 leftDiv.appendChild(subtitleDiv);
 
-                // Create external link icon
                 const img = document.createElement('img');
                 img.loading = 'lazy';
                 img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68835aaecba0da532a6b3d19_Group%20(2).svg';
@@ -1164,20 +1320,17 @@ class Portal {
                 img.style.width = '18px';
                 img.style.height = '18px';
 
-                // Add click behavior to open link in new tab
                 this.addTooltipCopyBehavior(img, item.link);
 
-                // Assemble the wrapper structure
                 wrapper.appendChild(leftDiv);
                 var imgContainer = document.createElement('div');
                 imgContainer.classList.add("new-tab-icon-wrapper")
                 imgContainer.appendChild(img);
                 wrapper.appendChild(imgContainer);
-                wrapper.appendChild(imgContainer); // Note: This appears to be duplicated
+                wrapper.appendChild(imgContainer);
                 generalDiv.appendChild(wrapper);
             });
         } else {
-            // Show fallback message when no general resources are available
             const noDiv = document.createElement('div');
             noDiv.className = 'general-resources-flex-wrapper';
             noDiv.innerHTML = '<div><div class="dm-sans title"><span>No records available</span></div></div>';
@@ -1186,68 +1339,30 @@ class Portal {
     }
 
     /**
-     * Adds click behavior to open links in new tabs
-     * Previously included tooltip functionality (now commented out)
-     * @param {HTMLElement} img - The image element to add behavior to
-     * @param {string} link - The URL to open when clicked
+     * Adds tooltip and copy behavior to image elements
+     * @param {HTMLElement} img - Image element to add behavior to
+     * @param {string} link - Link to open when clicked
      */
     addTooltipCopyBehavior(img, link) {
-        // Open link in new tab when image is clicked
+        // open a new tab with the link
         img.addEventListener('click', () => {
             window.open(link, '_blank');
         });
 
-        // Commented out tooltip functionality - may be used in future
-        // let tooltip;
-        // const showTooltip = (text) => {
-        //     if (!tooltip) {
-        //         tooltip = document.createElement('div');
-        //         tooltip.className = 'copy-tooltip';
-        //         tooltip.style.position = 'absolute';
-        //         tooltip.style.background = '#222';
-        //         tooltip.style.color = '#fff';
-        //         tooltip.style.padding = '4px 10px';
-        //         tooltip.style.borderRadius = '4px';
-        //         tooltip.style.fontSize = '12px';
-        //         tooltip.style.zIndex = 10000;
-        //         document.body.appendChild(tooltip);
-        //     }
-        //     tooltip.textContent = text;
-        //     const rect = img.getBoundingClientRect();
-        //     tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-        //     tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
-        //     tooltip.style.display = 'block';
-        // };
-        // const hideTooltip = () => {
-        //     if (tooltip) tooltip.style.display = 'none';
-        // };
-        // img.addEventListener('mouseenter', () => showTooltip('Copy link'));
-        // img.addEventListener('mouseleave', hideTooltip);
-        // img.addEventListener('focus', () => showTooltip('Copy link'));
-        // img.addEventListener('blur', hideTooltip);
-        // img.addEventListener('click', () => {
-        //     navigator.clipboard.writeText(link).then(() => {
-        //         showTooltip('Copied!');
-        //         setTimeout(hideTooltip, 1200);
-        //     });
-        // });
     }
 
-
-
     /**
-     * Renders Google Calendar iframe using student's parent email
+     * Renders Google Calendar iframe using parent email
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderGoogleCalendar(tabPane, student) {
         const calendarDiv = tabPane.querySelector('.calendar-white-rounded-div');
         if (calendarDiv && student.studentDetail && student.studentDetail.parentEmail) {
-            // Remove any previous iframe to prevent duplicates
+            // Remove any previous iframe
             let oldIframe = calendarDiv.querySelector('iframe[data-google-calendar]');
             if (oldIframe) oldIframe.remove();
-
-            // Create new iframe for Google Calendar
+            // Create new iframe
             const iframe = document.createElement('iframe');
             iframe.setAttribute('data-google-calendar', '1');
             iframe.style.border = '0';
@@ -1255,8 +1370,7 @@ class Portal {
             iframe.height = '600';
             iframe.frameBorder = '0';
             iframe.scrolling = 'no';
-
-            // Use the student's parent email as the calendar source (must be public!)
+            // Use the student's email as the calendar src (must be public!)
             const calendarEmail = encodeURIComponent(student.studentDetail.parentEmail);
             iframe.src = `https://calendar.google.com/calendar/embed?src=${calendarEmail}&ctz=America%2FChicago`;
             calendarDiv.appendChild(iframe);
@@ -1266,80 +1380,43 @@ class Portal {
     /**
      * Renders homework link with lightbox functionality
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderHomeworkLink(tabPane, student) {
         const homeworkDiv = tabPane.querySelector('[data-portal="homework-link"]');
         const homeworkImg = homeworkDiv ? homeworkDiv.querySelector('[data-portal="homework-link-image"]') : null;
         const homeworkNewTabIcon = homeworkDiv ? homeworkDiv.querySelector('[data-portal="homework-new-tab-icon"]') : null;
-
         if (homeworkDiv) {
             if (student.studentDetail.home_work_link) {
-                // Show homework section if link exists
                 homeworkDiv.style.display = 'flex';
-
                 if (homeworkImg && !homeworkImg._copyHandlerAttached) {
-                    // Set up tooltip functionality (currently commented out)
-                    let tooltip;
-                    const showTooltip = (text) => {
-                        if (!tooltip) {
-                            tooltip = document.createElement('div');
-                            tooltip.className = 'copy-tooltip';
-                            tooltip.style.position = 'absolute';
-                            tooltip.style.background = '#222';
-                            tooltip.style.color = '#fff';
-                            tooltip.style.padding = '4px 10px';
-                            tooltip.style.borderRadius = '4px';
-                            tooltip.style.fontSize = '12px';
-                            tooltip.style.zIndex = 10000;
-                            document.body.appendChild(tooltip);
-                        }
-                        tooltip.textContent = text;
-                        const rect = homeworkImg.getBoundingClientRect();
-                        tooltip.style.left = (rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-                        tooltip.style.top = (rect.top + window.scrollY - 30) + 'px';
-                        tooltip.style.display = 'block';
-                    };
-                    const hideTooltip = () => {
-                        if (tooltip) tooltip.style.display = 'none';
-                    };
-
-                    // Configure homework image for lightbox functionality
                     homeworkImg.style.cursor = 'pointer';
                     homeworkImg.setAttribute('tabindex', '0');
                     homeworkImg.setAttribute('aria-label', 'Copy homework link');
-
-                    // Add click event to open homework in lightbox
                     homeworkImg.addEventListener('click', () => {
                         var lightbox = document.getElementById('lightbox');
                         var iframe = lightbox.querySelector('iframe');
                         iframe.src = student.studentDetail.home_work_link;
                         lightbox.style.display = 'block';
                     });
-
-                    // Mark handler as attached to prevent duplicates
                     homeworkImg._copyHandlerAttached = true;
-
-                    // Add click event to new tab icon to open homework in new tab
                     homeworkNewTabIcon.addEventListener('click', () => {
                         window.open(student.studentDetail.home_work_link, '_blank');
                     });
                 }
             } else {
-                // Hide homework section if no link exists
                 homeworkDiv.style.display = 'none';
             }
         }
     }
 
     /**
-     * Renders styled invoice accordion with payment functionality
+     * Renders styled invoice accordion with payment links
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderInvoiceAccordionStyled(tabPane, student) {
         var $this = this;
-
         // Find the placeholder for the invoice accordion
         const invoiceAccordion = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
         if (!invoiceAccordion) return;
@@ -1353,7 +1430,7 @@ class Portal {
             return;
         }
 
-        // Create accordion header with dynamic status
+        // Accordion header
         invoiceAccordion.className = 'invoice-form-accordian registration-form-accordian'; // reuse styles
         invoiceAccordion.innerHTML = `
             <div class="registration-form-accordion-header">
@@ -1384,17 +1461,16 @@ class Portal {
             </div>
         `;
 
-        // Fill in invoice data and progress information
+        // Fill in invoice data
         const body = invoiceAccordion.querySelector('.registration-form-accordion-body');
         const requiredDiv = body.querySelector('.required-forms-div');
         requiredDiv.innerHTML = '';
 
-        // Calculate completion statistics
         const completed = invoices.filter(inv => inv.is_completed).length;
         const total = invoices.length;
         const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
 
-        // Update progress display elements
+        // Progress text
         const progressText = body.querySelector('.medium-text-with-margin-auto span');
         if (progressText) progressText.textContent = `${completed} of ${total} invoices complete`;
         const percentText = body.querySelector('.bold-text-with-margin-auto span');
@@ -1402,22 +1478,18 @@ class Portal {
         const progressBar = body.querySelector('.progress-bar-red-fill');
         if (progressBar) progressBar.style.width = `${percent}%`;
 
-        // Create invoice list items
+        // List each invoice
         invoices.forEach(inv => {
             const div = document.createElement('div');
             div.className = 'required-forms-flex-wrapper bluish-gray-rounded-with-mt-10';
             const isCompleted = inv.is_completed;
-
-            // Create action links container for payment options
+            // Action links container
             const actionLinksContainer = document.createElement('span');
             actionLinksContainer.style.textDecoration = 'underline';
-
             if (!isCompleted && Array.isArray(inv.jotFormUrlLink)) {
-                // Create payment links for incomplete invoices
                 inv.jotFormUrlLink.forEach((link, idx) => {
                     let a;
                     if (link.paymentType === 'card' || link.paymentType === 'us_bank_account') {
-                        // Create Stripe payment link
                         a = document.createElement('a');
                         a.href = '#';
                         a.className = 'pay-link';
@@ -1427,8 +1499,7 @@ class Portal {
                         a.setAttribute('data-title', link.title);
                         a.setAttribute('data-payment-type', link.paymentType);
                         a.textContent = link.title;
-
-                        // Add event listener for Stripe payment processing
+                        // Add event listener for Stripe payment
                         a.addEventListener('click', (e) => {
                             e.preventDefault();
                             a.textContent = 'Processing...';
@@ -1446,7 +1517,6 @@ class Portal {
                             }
                         });
                     } else {
-                        // Create regular JotForm link
                         a = document.createElement('a');
                         a.href = link.jotFormUrl;
                         a.target = '_blank';
@@ -1454,17 +1524,14 @@ class Portal {
                         a.textContent = link.title;
                     }
                     actionLinksContainer.appendChild(a);
-
-                    // Add separator between multiple payment options
+                    // Add separator if not last
                     if (idx < inv.jotFormUrlLink.length - 1) {
                         actionLinksContainer.appendChild(document.createTextNode(' | '));
                     }
                 });
             } else if (isCompleted) {
-                // Show "Paid" status for completed invoices
                 actionLinksContainer.innerHTML = '<span class="invoice-paid">Paid</span>';
             }
-            // Create invoice item HTML structure
             div.innerHTML = `
                 <div class="required-forms-inner-flex-wrapper">
                     <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777aa573ccf80dbcfca9a0_svg1053.svg" alt="" class="inline-block-icon">
@@ -1483,8 +1550,7 @@ class Portal {
                     </div>
                 </div>
             `;
-
-            // Replace placeholder with action links container
+            // Replace placeholder with actionLinksContainer
             const placeholder = div.querySelector('.action-links-placeholder');
             if (placeholder) {
                 placeholder.replaceWith(actionLinksContainer);
@@ -1492,22 +1558,19 @@ class Portal {
             requiredDiv.appendChild(div);
         });
 
-        // Set up accordion open/close functionality
+        // Accordion open/close logic (reuse your FAQ/registration form logic)
         const header = invoiceAccordion.querySelector('.registration-form-accordion-header');
         header.addEventListener('click', function () {
             if (invoiceAccordion.classList.contains('open')) {
-                // Close the accordion
                 invoiceAccordion.classList.remove('open');
                 body.style.maxHeight = '0';
             } else {
-                // Close other open accordions in this tab first
+                // Close other open accordions in this tab
                 tabPane.querySelectorAll('.registration-form-accordian.open').forEach(faq => {
                     faq.classList.remove('open');
                     const b = faq.querySelector('.registration-form-accordion-body');
                     if (b) b.style.maxHeight = '0';
                 });
-
-                // Open the current accordion
                 invoiceAccordion.classList.add('open');
                 body.style.maxHeight = body.scrollHeight + 'px';
             }
@@ -1517,7 +1580,7 @@ class Portal {
     /**
      * Renders notification for failed invoice payments
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderFailedInvoiceNotification(tabPane, student) {
         if (student.invoiceList && student.invoiceList.some(inv => inv.status === 'Failed')) {
@@ -1531,7 +1594,7 @@ class Portal {
     /**
      * Renders registration forms accordion with completion tracking
      * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Student data object
+     * @param {Object} student - Current student data
      */
     renderRegistrationForms(tabPane, student) {
         const regFormAccordian = tabPane.querySelector('.registration-form-accordian');
@@ -1541,12 +1604,9 @@ class Portal {
                 const requiredFormsDiv = regFormBody.querySelector('.required-forms-div');
                 const progressDiv = regFormBody.querySelector('.completion-progress-div');
                 const needsToBeCompleted = regFormAccordian.querySelector('.dashboard-tag-text');
-
                 if (requiredFormsDiv) {
                     requiredFormsDiv.innerHTML = '';
                     let forms = [];
-
-                    // Flatten form groups into single array
                     if (student.formList && student.formList.length > 0) {
                         student.formList.forEach(formGroup => {
                             if (formGroup.forms && formGroup.forms.length > 0) {
@@ -1554,7 +1614,6 @@ class Portal {
                             }
                         });
                     }
-
                     // Hide registration form accordion if no forms
                     const regFormTitle = regFormAccordian.querySelector('.registration-form-title span');
                     if (regFormTitle && regFormTitle.textContent.trim() === 'Registration Forms') {
@@ -1565,14 +1624,12 @@ class Portal {
                             regFormAccordian.style.display = 'block';
                         }
                     }
-                    // Helper function to check if a form is completed
+                    // Helper: checkform (returns true if formId is in completed list)
                     const checkform = (formId) => {
                         if (!formId || !Array.isArray(student.formCompletedList)) return false;
                         return student.formCompletedList.some(el => el.formId == formId);
                     };
-
                     if (forms.length === 0) {
-                        // Hide progress elements and show no forms message
                         if (progressDiv) progressDiv.style.display = 'none';
                         requiredFormsDiv.style.display = 'none';
                         if (needsToBeCompleted) needsToBeCompleted.style.display = 'none';
@@ -1581,23 +1638,18 @@ class Portal {
                         noFormDiv.innerHTML = `<div class="required-forms-inner-flex-wrapper"><div><div class="poppins-para medium"><span>No registration forms available</span></div></div></div>`;
                         regFormBody.appendChild(noFormDiv);
                     } else {
-                        // Show progress elements and form list
                         if (progressDiv) progressDiv.style.display = '';
                         requiredFormsDiv.style.display = 'block';
                         if (needsToBeCompleted) needsToBeCompleted.style.display = '';
-
-                        // Create header for forms section
                         const header = document.createElement('div');
                         header.className = 'required-forms-flex-wrapper';
                         header.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/687776c15a20ab54ef82bb9b_receipt_long%20(1).svg" alt="" class="inline-block-icon"><div class="poppins-para no-margin-bottom"><span>Required Forms</span></div>`;
                         requiredFormsDiv.appendChild(header);
 
-                        // Calculate completion statistics
                         const completedForms = forms.filter(f => checkform(f.formId)).length;
                         const totalForms = forms.length;
                         const percent = totalForms === 0 ? 0 : Math.round((completedForms / totalForms) * 100);
 
-                        // Update progress display elements
                         const progressText = regFormBody.querySelector('.medium-text-with-margin-auto span');
                         if (progressText) {
                             progressText.textContent = `${completedForms} of ${totalForms} forms complete`;
@@ -1611,47 +1663,38 @@ class Portal {
                             progressBar.style.width = `${percent}%`;
                         }
 
-                        // Create form list items
                         forms.forEach(form => {
                             const editable = checkform(form.formId);
                             let actionText = '';
                             let formLinkHref = '';
                             const is_live = form.is_live;
-
                             if (is_live) {
                                 if (editable) {
-                                    // Form is completed - determine if editable or view-only
+                                    // Find completed form data for submissionId
                                     let dbData = (student.formCompletedList || []).find(o => o.formId == form.formId);
                                     if (form.is_editable) {
-                                        // Create edit link for completed form
                                         formLinkHref = (form.formId && dbData && dbData.submissionId) ?
                                             `https://www.jotform.com/edit/${dbData.submissionId}?memberId=${this.data.memberId || ''}&classId=${student.classDetail ? student.classDetail.classId : ''}&studentName=${encodeURIComponent(student.studentDetail.studentName)}&accountEmail=${encodeURIComponent(student.studentDetail.parentEmail)}&paymentId=${student.studentDetail.uniqueIdentification}` :
                                             '';
                                         actionText = 'Edit form';
                                     } else {
-                                        // Create view-only link for completed form
                                         formLinkHref = (dbData && dbData.submissionId) ?
                                             `https://www.jotform.com/submission/${dbData.submissionId}` : '';
                                         actionText = 'View Form';
                                     }
                                 } else {
-                                    // Form is not completed - create new form link
                                     formLinkHref = (form.formId) ?
                                         `https://form.jotform.com/${form.formId}?memberId=${this.data.memberId || ''}&classId=${student.classDetail ? student.classDetail.classId : ''}&studentName=${encodeURIComponent(student.studentDetail.studentName)}&accountEmail=${encodeURIComponent(student.studentDetail.parentEmail)}&paymentId=${student.studentDetail.uniqueIdentification}` :
                                         '';
                                     actionText = 'Go to form';
                                 }
                             } else {
-                                // Form is not live
                                 actionText = 'Go to form';
                                 formLinkHref = '';
                             }
-
-                            // Determine completion status and link class
+                            // Completed/Incompleted tag based on editable
                             const isCompleted = editable;
                             const linkClass = (is_live && window.innerWidth > 1200) ? 'iframe-lightbox-link dm-sans edit-form' : 'dm-sans edit-form';
-
-                            // Create form item HTML structure
                             const formDiv = document.createElement('div');
                             formDiv.className = 'required-forms-flex-wrapper bluish-gray-rounded-with-mt-10';
                             formDiv.innerHTML = `
@@ -1681,29 +1724,23 @@ class Portal {
     }
 
     /**
-     * Initializes tooltips for elements with [tip] attribute
-     * Creates and positions tooltips on mouse enter/leave
+     * Initializes tooltips for elements with tip attribute
      */
     initTooltips() {
         setTimeout(() => {
             document.querySelectorAll('[tip]').forEach(el => {
                 el.addEventListener('mouseenter', function (e) {
-                    // Create tooltip element
                     let tipDiv = document.createElement('div');
                     tipDiv.className = 'tooltip';
                     tipDiv.textContent = el.getAttribute('tip');
                     document.body.appendChild(tipDiv);
-
-                    // Position tooltip relative to element
                     const rect = el.getBoundingClientRect();
                     tipDiv.style.position = 'absolute';
                     tipDiv.style.left = (rect.left + window.scrollX + 20) + 'px';
                     tipDiv.style.top = (rect.top + window.scrollY - 10) + 'px';
                     el._tipDiv = tipDiv;
                 });
-
                 el.addEventListener('mouseleave', function (e) {
-                    // Remove tooltip on mouse leave
                     if (el._tipDiv) {
                         el._tipDiv.remove();
                         el._tipDiv = null;
@@ -1713,18 +1750,17 @@ class Portal {
         }, 0);
     }
     /**
-     * Initializes Stripe payment processing for invoices
+     * Initializes Stripe payment processing
      * @param {string} invoice_id - Invoice ID
      * @param {string} title - Payment title
      * @param {number} amount - Payment amount
-     * @param {string} paymentLinkId - Payment link ID
-     * @param {HTMLElement} span - Link element to update
+     * @param {string} paymentLinkId - Stripe payment link ID
+     * @param {HTMLElement} span - Span element for UI updates
      * @param {string} link_title - Link title text
      * @param {string} paymentType - Payment type (card, bank account, etc.)
-     * @param {Object} student - Student data object
+     * @param {Object} student - Student data
      */
     initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType, student) {
-        // Convert amount to cents for Stripe
         var centAmount = (amount * 100).toFixed(2);
         var data = {
             "email": student.studentDetail.parentEmail,
@@ -1739,102 +1775,28 @@ class Portal {
             "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
             "cancelUrl": "https://www.bergendebate.com/portal/dashboard",
         }
-
-        // Send payment request to API
         var xhr = new XMLHttpRequest()
         var $this = this;
         xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl", true)
         xhr.withCredentials = false
         xhr.send(JSON.stringify(data))
-
         xhr.onload = function () {
             let responseText = JSON.parse(xhr.responseText);
-            console.log('responseText', responseText)
             if (responseText.success) {
-                // Restore link text and redirect to Stripe checkout
                 span.innerHTML = link_title;
                 window.location.href = responseText.stripe_url;
             }
+
         }
     }
     /**
-     * Initializes Stripe payment links (currently commented out in main render)
-     * Alternative payment initialization method using fetch API
-     */
-    initStripePaymentLinks() {
-        setTimeout(() => {
-            document.querySelectorAll('.pay-link[data-invoice-id]').forEach(link => {
-                link.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const invoiceId = link.getAttribute('data-invoice-id');
-                    const amount = link.getAttribute('data-amount');
-                    const paymentLinkId = link.getAttribute('data-payment-link-id');
-                    const title = link.getAttribute('data-title');
-                    const paymentType = link.getAttribute('data-payment-type');
-
-                    // Send payment request using fetch API
-                    fetch('https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: '',
-                            name: '',
-                            label: title,
-                            paymentType: paymentType,
-                            amount: parseFloat(amount),
-                            invoiceId: invoiceId,
-                            paymentId: '',
-                            paymentLinkId: paymentLinkId,
-                            memberId: this.data.memberId,
-                            successUrl: window.location.href,
-                            cancelUrl: window.location.href
-                        })
-                    })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success && data.stripe_url) {
-                                window.location.href = data.stripe_url;
-                            } else {
-                                alert('Payment failed to initialize.');
-                            }
-                        })
-                        .catch(() => alert('Payment failed to initialize.'));
-                });
-            });
-        }, 0);
-    }
-    /**
-     * Check form's id in completedForm list (from MongoDB) and use to determine if form is editable
-     * @param {string} $formId - Jotform Id
-     * @returns {boolean} True if form is completed
-     */
-    checkform($formId) {
-        if ($formId) {
-            const found = this.$completedForm.some(el => el.formId == $formId);
-            return found;
-        }
-        return false;
-    }
-
-    /**
-     * Get form data for a specific form ID
-     * @param {string} $formId - Jotform Id
-     * @returns {Object} Form data object
-     */
-    getformData($formId) {
-        let data = this.$completedForm.find(o => o.formId == $formId);
-        return data;
-    }
-    /**
-     * Initializes lightbox functionality for iframe links
-     * Sets up lightbox with reload and tab restoration on close
+     * Initializes iframe lightbox functionality for form links
      */
     initiateLightbox() {
         var $this = this;
         [].forEach.call(document.getElementsByClassName("iframe-lightbox-link"), function (el) {
             el.lightbox = new IframeLightbox(el, {
                 onClosed: function () {
-                    // Reload page and restore active tab after lightbox closes
                     window.location.reload()
                     let activeTab = document.querySelector('.portal-tab-link.w--current');
                     let activeTabName = activeTab ? activeTab.querySelector('.portal-tab-text-semibold').textContent : null;
@@ -1862,7 +1824,6 @@ class Portal {
     }
     /**
      * Initializes FAQ accordion functionality
-     * Sets up click handlers for accordion headers with open/close behavior
      */
     initializeFAQAccordion() {
         const faqItems = document.querySelectorAll('.registration-form-accordian');
@@ -1873,16 +1834,14 @@ class Portal {
 
             header.addEventListener('click', function () {
                 if (item.classList.contains('open')) {
-                    // Close the current accordion
                     item.classList.remove('open');
                     body.style.maxHeight = '0';
                 } else {
-                    // Close any other open FAQ items first
+                    // Close any other open FAQ items
                     faqItems.forEach(faq => {
                         faq.classList.remove('open');
                         faq.querySelector('.registration-form-accordion-body').style.maxHeight = '0';
                     });
-
                     // Open the current FAQ item
                     item.classList.add('open');
                     body.style.maxHeight = body.scrollHeight + 'px'; // Set max-height dynamically based on content height
@@ -1893,7 +1852,6 @@ class Portal {
 
     /**
      * Initializes invoice accordion functionality
-     * Sets up click handlers for invoice accordion headers and lightbox close functionality
      */
     initializeInvoiceAccordion() {
         const invoiceItems = document.querySelectorAll('.invoice-form-accordian');
@@ -1902,20 +1860,17 @@ class Portal {
             const header = item.querySelector('.registration-form-accordion-header');
             const body = item.querySelector('.registration-form-accordion-body');
             if (!header || !body) return;
-
             header.addEventListener('click', function () {
                 if (item.classList.contains('open')) {
-                    // Close the current accordion
                     item.classList.remove('open');
                     body.style.maxHeight = '0';
                 } else {
-                    // Close any other open invoice accordions first
+                    // Close any other open invoice accordions
                     invoiceItems.forEach(inv => {
                         inv.classList.remove('open');
                         const b = inv.querySelector('.registration-form-accordion-body');
                         if (b) b.style.maxHeight = '0';
                     });
-
                     // Open the current invoice accordion
                     item.classList.add('open');
                     body.style.maxHeight = body.scrollHeight + 'px';
@@ -1923,7 +1878,7 @@ class Portal {
             });
         });
 
-        // Set up lightbox close functionality
+        // close event lightbox
         var closeLink = document.getElementById('closeLightbox');
         closeLink.addEventListener('click', function () {
             var lightbox = document.getElementById('lightbox');
@@ -1932,25 +1887,21 @@ class Portal {
     }
 
     /**
-     * Updates sidebar millions count for the specified student
-     * @param {Array} millionsData - Millions transaction data array
-     * @param {string} studentName - Name of the student to update count for
+     * Updates sidebar millions count for the current student
+     * @param {Array} millionsData - Millions transaction data
+     * @param {string} studentName - Name of the current student
      */
     updateSidebarMillionsCount(millionsData, studentName) {
         const sidebarCountEls = document.querySelectorAll('[data-millions="sidebarCount"]');
         if (!sidebarCountEls) return;
-
         sidebarCountEls.forEach(el => {
             // Find the entry for the current student
             const entry = millionsData.find(e => e.studentName === studentName);
             const millionsCount = entry?.earnAmount || 0;
             el.innerText = `${millionsCount}M`;
-
-            // Display the parent element of sidebar count
+            // display block parent element of sidebarCountEl
             el.parentElement.style.display = 'block';
         });
     }
 
 }
-
-
