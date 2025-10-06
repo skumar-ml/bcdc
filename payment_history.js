@@ -3,6 +3,7 @@ class PaymentHistory {
     constructor(data) {
         this.data = data;
         this.spinner = document.getElementById("half-circle-spinner");
+        this.no_record = document.querySelector('[data-container="no-record-found"]');
         this.render();
     }
 
@@ -57,19 +58,21 @@ class PaymentHistory {
         const paidResource = document.querySelector(".portal-info-wrapper");
         paidResource.style.display = "none";
         this.spinner.style.display = "block";
-        
+
         // Fetch all required data in parallel
         const [data, millionsData, announcements] = await Promise.all([
             this.fetchData(),
             this.fetchMillionsData(),
             this.fetchAnnouncements(),
         ]);
-        
+
         // Check if data exists
         if (data == "No data Found") {
+            this.spinner.style.display = "none";
+            this.no_record.style.display = "block";
             return false;
         }
-        
+
         // Setup tabs with the fetched data
         const millions_transactions = millionsData.millions_transactions;
         this.setupTabs(data);
@@ -88,7 +91,7 @@ class PaymentHistory {
                 ? currentTab.querySelector(".portal-tab-text-semibold").textContent
                 : "";
         };
-        
+
         // Update sidebar millions count for initially active tab
         this.updateSidebarMillionsCount(
             millions_transactions,
@@ -118,7 +121,7 @@ class PaymentHistory {
 
         // Use all students data
         var students = data;
-        
+
         // Clone first tab and pane as templates for new tabs
         const tabLinkTemplate = tabLinks[0].cloneNode(true);
         const tabPaneTemplate = tabPanes[0].cloneNode(true);
@@ -143,15 +146,15 @@ class PaymentHistory {
         students.sort((a, b) => {
             const aData = Object.values(a)[0];
             const bData = Object.values(b)[0];
-            
+
             // Get the first current session for comparison
             const aSession = aData.currentSession && aData.currentSession[0] ? aData.currentSession[0] : null;
             const bSession = bData.currentSession && bData.currentSession[0] ? bData.currentSession[0] : null;
-            
+
             // Convert creation dates to Date objects for comparison
             const aDate = aSession && aSession.createdOn ? new Date(aSession.createdOn) : new Date(0);
             const bDate = bSession && bSession.createdOn ? new Date(bSession.createdOn) : new Date(0);
-            
+
             // Sort by most recent first (descending order)
             return bDate - aDate;
         });
@@ -159,7 +162,7 @@ class PaymentHistory {
         // students = students.filter((student) => {
         //     const studentName = Object.keys(student)[0];
         //     const studentData = Object.values(student)[0];
-            
+
         //     // If student has past sessions, check if any are not refunded
         //     if (studentData.pastSession.length > 0 && studentData.currentSession.length == 0) {
         //         return studentData.pastSession.find((session) => !session.isRefunded);
@@ -203,12 +206,12 @@ class PaymentHistory {
                 tabLink.setAttribute("aria-selected", "false");
                 tabPane.classList.remove("w--tab-active");
             }
-            
+
             // Set student name as tab label
             if (tabLink.querySelector(".portal-tab-text-semibold")) {
                 tabLink.querySelector(".portal-tab-text-semibold").textContent = studentName;
             }
-            
+
             // Render student-specific content in the tab
             this.renderStudentTab(
                 tabPane,
@@ -252,7 +255,7 @@ class PaymentHistory {
                     const outstandingInvoices = session.invoiceList.filter(
                         (invoice) => !invoice.is_completed
                     );
-                    
+
                     // Add invoice with session context
                     outstandingInvoices.forEach((invoice) => {
                         allOutstandingInvoices.push({
@@ -336,7 +339,7 @@ class PaymentHistory {
             if (!invoice.is_completed && Array.isArray(invoice.jotFormUrlLink)) {
                 invoice.jotFormUrlLink.forEach((link, idx) => {
                     let paymentLink;
-                    
+
                     // Handle Stripe payment methods (card/bank)
                     if (
                         link.paymentType === "card" ||
@@ -427,7 +430,7 @@ class PaymentHistory {
     ) {
         // Convert amount to cents for Stripe
         var centAmount = (amount * 100).toFixed(2);
-        
+
         // Prepare payment data for API
         var data = {
             email: student.studentDetail.parentEmail,
@@ -456,7 +459,7 @@ class PaymentHistory {
         );
         xhr.withCredentials = false;
         xhr.send(JSON.stringify(data));
-        
+
         // Handle API response
         xhr.onload = function () {
             let responseText = JSON.parse(xhr.responseText);
@@ -536,7 +539,7 @@ class PaymentHistory {
                 "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/689dcf57a789344578fd6a2a_download_payment.svg";
             downloadImg.alt = "";
             downloadImg.style.cursor = "pointer";
-            
+
             // Add click handler for PDF generation
             downloadImg.addEventListener("click", () => {
                 this.generateInvoicePDF(
@@ -574,7 +577,7 @@ class PaymentHistory {
                         sessionData: session,
                     });
                 }
-                
+
                 // Add summer program detail sessions
                 if (
                     session.summerProgramDetail &&
@@ -605,7 +608,7 @@ class PaymentHistory {
                         sessionData: session,
                     });
                 }
-                
+
                 // Add past summer program detail sessions
                 if (
                     session.summerProgramDetail &&
@@ -636,12 +639,12 @@ class PaymentHistory {
             '[data-millions="sidebarCount"]'
         );
         if (!sidebarCountEls) return;
-        
+
         sidebarCountEls.forEach((el) => {
             // Find millions data for current student
             const entry = millionsData.find((e) => e.studentName === studentName);
             const millionsCount = entry?.earnAmount || 0;
-            
+
             // Update display with count
             el.innerText = `${millionsCount}M`;
             el.parentElement.style.display = "block";
