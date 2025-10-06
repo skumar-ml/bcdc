@@ -140,7 +140,6 @@ class Portal {
         Webflow.require('tabs').redraw();
         this.initializeFAQAccordion();
         this.initializeInvoiceAccordion();
-        this.hideRegistrationFormAccordion();
         this.checkReferralsAccess(data);
         paidResource.style.display = "block";
         setTimeout(() => {
@@ -165,14 +164,6 @@ class Portal {
         if (typeof this.onReady === 'function') {
             this.onReady();
         }
-    }
-
-    /**
-     * Hides registration form accordion elements
-     * Currently commented out - may be used for future functionality
-     */
-    hideRegistrationFormAccordion() {
-        // Method is currently empty - functionality may be added in the future
     }
     /**
      * Sets up dynamic tabs for each student
