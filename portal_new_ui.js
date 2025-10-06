@@ -1109,7 +1109,6 @@ class Portal {
         this.renderFailedInvoiceNotification(tabPane, student);
         this.renderRegistrationForms(tabPane, student);
         Webflow.require('tabs').redraw();
-        this.renderGoogleCalendar(tabPane, student);
         this.renderCalendarIframe(tabPane, student);
         this.renderMakeupLinks(tabPane, student);
         this.renderZoomLinks(tabPane, student);
@@ -1340,32 +1339,6 @@ class Portal {
             window.open(link, '_blank');
         });
 
-    }
-
-    /**
-     * Renders Google Calendar iframe using parent email
-     * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Current student data
-     */
-    renderGoogleCalendar(tabPane, student) {
-        const calendarDiv = tabPane.querySelector('.calendar-white-rounded-div');
-        if (calendarDiv && student.studentDetail && student.studentDetail.parentEmail) {
-            // Remove any previous iframe
-            let oldIframe = calendarDiv.querySelector('iframe[data-google-calendar]');
-            if (oldIframe) oldIframe.remove();
-            // Create new iframe
-            const iframe = document.createElement('iframe');
-            iframe.setAttribute('data-google-calendar', '1');
-            iframe.style.border = '0';
-            iframe.width = '800';
-            iframe.height = '600';
-            iframe.frameBorder = '0';
-            iframe.scrolling = 'no';
-            // Use the student's email as the calendar src (must be public!)
-            const calendarEmail = encodeURIComponent(student.studentDetail.parentEmail);
-            iframe.src = `https://calendar.google.com/calendar/embed?src=${calendarEmail}&ctz=America%2FChicago`;
-            calendarDiv.appendChild(iframe);
-        }
     }
 
     /**
