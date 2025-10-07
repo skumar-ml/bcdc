@@ -1658,10 +1658,8 @@ class classDetailsStripe {
 
               let sumOfSelectedPrograms = (
                 $this.$selectedProgram.reduce((total, program) => {
-                  if(!program.amount){
-                    return 0;
-                  }
-                  let ccp = $this.calculateCreditCardAmount(program.amount).toFixed(2);
+                  
+                  let ccp = ($this.calculateCreditCardAmount(program.amount)) ? $this.calculateCreditCardAmount(program.amount).toFixed(2) : 0;
                   let tA = parseFloat(total) + parseFloat(ccp)
                   return tA
                 }, 0)
