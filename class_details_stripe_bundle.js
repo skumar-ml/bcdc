@@ -2650,6 +2650,8 @@ class classDetailsStripe {
     }
     this.updateCheckOutData({ selectedBriefs: this.selectedBriefs });
     this.updateTotal();
+    let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+    paymentTab[0].click()
     //this.updatePriceForBriefs();
   }
   // Update briefs list in order details
