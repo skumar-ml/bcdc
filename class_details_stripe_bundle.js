@@ -101,6 +101,7 @@ class classDetailsStripe {
       registration.style.display = isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none";
     }
     if (isBundle == "Bundle-Purchase") {
+      this.updateDepositePriceForBundle()
       const checkout_student_container = document.getElementById("checkout_student_container");
       // for="existing-students" change label text to "Select Student Info"
       let existingStudentLabel = document.querySelector("label[for='existing-students']");
@@ -386,10 +387,10 @@ class classDetailsStripe {
         this.activeBreadCrumb("select-class");
         this.activateDiv("class-selection-container");
         this.displayStudentInfo("block");
-       // this.displayTopicData("block")
+        this.displayTopicData("block")
       } else {
         this.displayStudentInfo("block");
-       // this.displayTopicData("none")
+        this.displayTopicData("none")
       }
 
 
@@ -756,6 +757,7 @@ class classDetailsStripe {
       }, 3000);
       // check bundle purchase flow
       $this.checkBundlePurchaseFlow();
+      $this.updateDepositePriceForBundle();
       // existing-students required if this.$isCheckoutFlow is Bundle-Purchase
       let existingStudents = document.getElementById("existing-students");
       var studentEmail = document.getElementById("Student-Email");
@@ -802,7 +804,7 @@ class classDetailsStripe {
           $this.activeBreadCrumb("select-class");
           $this.activateDiv("class-selection-container");
           $this.displayStudentInfo("block");
-          //$this.displayTopicData("block")
+          $this.displayTopicData("block")
         } else {
           $this.activateDiv('pf_labs_error_message');
         }
@@ -814,7 +816,7 @@ class classDetailsStripe {
       $this.activeBreadCrumb("student-details");
       $this.activateDiv("checkout_student_details");
       $this.displayStudentInfo("none");
-      //$this.displayTopicData("none")
+      $this.displayTopicData("none")
     });
 
     let editStudentEl = document.querySelectorAll("[data-student-info='edit']")
@@ -833,7 +835,7 @@ class classDetailsStripe {
       $this.activeBreadCrumb("student-details");
       $this.activateDiv("checkout_student_details");
       $this.displayStudentInfo("none");
-      //$this.displayTopicData("none")
+      $this.displayTopicData("none")
     })
 
     // Coupon code event
@@ -859,7 +861,7 @@ class classDetailsStripe {
         $this.activeBreadCrumb("select-class");
         $this.activateDiv("class-selection-container");
         $this.displayStudentInfo("block");
-        //$this.displayTopicData("block");
+        $this.displayTopicData("block");
       }
     })
   }
@@ -1443,7 +1445,7 @@ class classDetailsStripe {
     const prev_student_checkbox = document.querySelector(
       ".prev_student_checkbox"
     );
-
+    this.updateDepositePriceForBundle();
     if (this.$selectedProgram.length > 0) {
       this.checkUncheckOldStudentCheckBox(true, "");
       defaultOrderSummary.forEach((el) => (el.style.display = "none"));
@@ -1934,6 +1936,9 @@ class classDetailsStripe {
   }
   displayStudentInfo(display) {
     document.querySelectorAll('.student-info-container').forEach(el => el.style.display = display)
+    if(this.isMobile()){
+      document.querySelectorAll('.student-info-container-mobile').forEach(el => el.style.display = display)
+    }
     var localCheckOutData = localStorage.getItem('checkOutBasicData')
     if (localCheckOutData != undefined) {
       localCheckOutData = JSON.parse(localCheckOutData);
@@ -2767,6 +2772,9 @@ class classDetailsStripe {
 
   displayTopicData(display = "none") {
     const topicContainer = document.querySelectorAll('.add-supplimental-pdf-container');
+    // if(this.isMobile()){
+     // topicContainer = document.querySelectorAll('.add-supplimental-pdf-container-mobile');
+    // }
     if (display == "none") {
       topicContainer.forEach(container => {
         container.style.display = 'none';
@@ -2777,5 +2785,27 @@ class classDetailsStripe {
       });
     }
   }
-
+  
+  updateDepositePriceForBundle() {
+    const defaultOrderSummary = document.querySelector('.bundle-order-details-old-div');
+    var total_price = defaultOrderSummary.querySelector('.total_price')
+    var totalStripePrice = defaultOrderSummary.querySelector('[data-stripe="totalDepositPrice"]')
+    var addonStripePrice = defaultOrderSummary.querySelector('[data-stripe="addon-deposit-price"]')
+    if(this.$isCheckoutFlow = "Bundle-Purchase") {
+      total_price.classList.add('order-details')
+      addonStripePrice.classList.add('order-details')
+      totalStripePrice.innerHTML = "Free";
+    }else{
+      total_price.classList.remove('order-details')
+      addonStripePrice.classList.remove('order-details')
+      totalStripePrice.innerHTML = totalStripePrice.getAttribute("data-stripe-price") ;
+    }
+  }
+  /**
+   * Check if the current viewport is mobile (width <= 766px)
+   * @returns {boolean} True if mobile viewport
+   */
+  static isMobile() {
+    return window.innerWidth <= 766;
+  }
 }
