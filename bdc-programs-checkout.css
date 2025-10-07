@@ -278,9 +278,9 @@ input.prev_student_checkbox {
     display: block;
   }
 }
-  .add-supplimental-pdf-container.mobile , .add-supplimental-pdf-container {
+  /* .add-supplimental-pdf-container.mobile , .add-supplimental-pdf-container {
     display: none !important;
-  }
+  } */
 @media screen and (max-width: 568px) {
   .add-supplimental-pdf-container.mobile {
     display: none !important;
@@ -295,3 +295,4 @@ input.prev_student_checkbox {
 [data-briefs-checkout="briefs-order-details"] .brief-flex-wrapper {
     margin-bottom: 3px !important;
 }
+
