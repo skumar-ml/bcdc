@@ -1008,7 +1008,7 @@ class classDetailsStripe {
       data.isBundleProgram = true;
       data.classUniqueId = classId;
     }
-    if (this.$isCheckoutFlow == "Bundle-Purchase" && upsellProgramIds.length > 0) {
+    if (this.$isCheckoutFlow == "Bundle-Purchase" && (upsellProgramIds.length > 0 || this.selectedBriefs.length > 0)) {
       // Add Briefs data if selected
       if (this.selectedBriefs.length > 0) {
         data.topics = this.selectedBriefs.map(brief => ({
@@ -1136,7 +1136,7 @@ class classDetailsStripe {
           pre_registration_btn.classList.remove("hide");
           // Hide payment methods for bundle purchase and not as supplementary program
           var upsellProgramIds = $this.getSelectedBundleProgram();
-          if (upsellProgramIds.length == 0) {
+          if (upsellProgramIds.length == 0 && $this.selectedBriefs.length == 0) {
             paymentMethodsDiv.classList.add("hide");
             submitClassPayment.style.display = "block";
           } else {
@@ -1488,6 +1488,9 @@ class classDetailsStripe {
         this.$selectedProgram.reduce((total, program) => total + (parseFloat(program.amount) || 0), 0)
       );
       var dataStripePrice = parseFloat(totalPriceText.getAttribute("data-stripe-price"));
+      if(this.$isCheckoutFlow == "Bundle-Purchase"){
+        dataStripePrice = 0;
+      }
       if (this.$selectedProgram.length > 0) {
         sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
       } else {
@@ -1497,8 +1500,13 @@ class classDetailsStripe {
       totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
 
     });
-    totalAmountInput.value =
+    if(this.$isCheckoutFlow == "Bundle-Purchase"){
+      totalAmountInput.value = parseFloat(amount);
+    }else {
+      totalAmountInput.value =
       parseFloat(totalAmountInput.value) + parseFloat(amount);
+    }
+    
     var suppProIdE = document.getElementById("suppProIds");
     var allSupIds = this.$selectedProgram.map(item => item.upsellProgramId);
     suppProIdE.value = JSON.stringify(allSupIds);
@@ -1687,10 +1695,13 @@ class classDetailsStripe {
             totalDepositPrice.forEach((deposit_price) => {
               let amountEl = deposit_price.getAttribute("data-stripe-price");
 
+
               let amount = parseFloat(
                 amountEl.replace(/,/g, "").replace(/\$/g, "")
               );
-
+              if($this.$isCheckoutFlow == "Bundle-Purchase"){
+               amount = 0;
+              }
               // Update deposit Price for addon program
               let addonDepositPrices = document.querySelectorAll(
                 "[data-stripe='addon-deposit-price']"
@@ -2650,6 +2661,7 @@ class classDetailsStripe {
     }
     this.updateCheckOutData({ selectedBriefs: this.selectedBriefs });
     this.updateTotal();
+    this.resetPaymentOption()
     let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
     paymentTab[0].click()
     //this.updatePriceForBriefs();
@@ -2804,11 +2816,16 @@ class classDetailsStripe {
   
       // ✅ Use comparison (== or ===) instead of assignment (=)
       if (this.$isCheckoutFlow === "Bundle-Purchase") {
-        total_price.classList.add('order-details');
-        addonStripePrice.classList.add('order-details');
+        total_price.classList.remove('order-details-price-no-strike');
+        total_price.classList.add('order-details-price');
+        addonStripePrice.classList.remove('order-details-price-no-strike');
+        addonStripePrice.classList.add('order-details-price');
         totalStripePrice.innerHTML = "Free";
       } else {
-        total_price.classList.remove('order-details');
+        total_price.classList.remove('order-details-price');
+        total_price.classList.add('order-details-price-no-strike');
+        addonStripePrice.classList.remove('order-details-price');
+        addonStripePrice.classList.add('order-details-price-no-strike');
         addonStripePrice.classList.remove('order-details');
         totalStripePrice.innerHTML = totalStripePrice.getAttribute("data-stripe-price");
       }
