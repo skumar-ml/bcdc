@@ -463,7 +463,7 @@ class BriefsCheckout {
                     source: "brief-checkout",
                     utm_source: (localUtmSource != null) ? localUtmSource : "",
                     paymentId: "",
-                    hasFee: false,
+                    has_fee: false,
                     paymentMethod: "credit_card" // Force credit card payment
                 };
 
@@ -528,4 +528,5 @@ class BriefsCheckout {
                 document.getElementById(activeId).classList.add('active')
             }
         }
+
 
