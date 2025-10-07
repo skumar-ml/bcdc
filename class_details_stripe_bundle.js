@@ -2788,20 +2788,26 @@ class classDetailsStripe {
   }
   
   updateDepositePriceForBundle() {
-    const defaultOrderSummary = document.querySelector('.bundle-order-details-old-div');
-    var total_price = defaultOrderSummary.querySelector('.total_price')
-    var totalStripePrice = defaultOrderSummary.querySelector('[data-stripe="totalDepositPrice"]')
-    var addonStripePrice = defaultOrderSummary.querySelector('[data-stripe="addon-deposit-price"]')
-    if(this.$isCheckoutFlow = "Bundle-Purchase") {
-      total_price.classList.add('order-details')
-      addonStripePrice.classList.add('order-details')
-      totalStripePrice.innerHTML = "Free";
-    }else{
-      total_price.classList.remove('order-details')
-      addonStripePrice.classList.remove('order-details')
-      totalStripePrice.innerHTML = totalStripePrice.getAttribute("data-stripe-price") ;
-    }
+    const defaultOrderSummaries = document.querySelectorAll('.bundle-order-details-old-div');
+  
+    defaultOrderSummaries.forEach(defaultOrderSummary => {
+      const total_price = defaultOrderSummary.querySelector('.total_price');
+      const totalStripePrice = defaultOrderSummary.querySelector('[data-stripe="totalDepositPrice"]');
+      const addonStripePrice = defaultOrderSummary.querySelector('[data-stripe="addon-deposit-price"]');
+  
+      // ✅ Use comparison (== or ===) instead of assignment (=)
+      if (this.$isCheckoutFlow === "Bundle-Purchase") {
+        total_price.classList.add('order-details');
+        addonStripePrice.classList.add('order-details');
+        totalStripePrice.innerHTML = "Free";
+      } else {
+        total_price.classList.remove('order-details');
+        addonStripePrice.classList.remove('order-details');
+        totalStripePrice.innerHTML = totalStripePrice.getAttribute("data-stripe-price");
+      }
+    });
   }
+  
   /**
    * Check if the current viewport is mobile (width <= 766px)
    * @returns {boolean} True if mobile viewport
