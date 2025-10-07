@@ -827,6 +827,7 @@ class classDetailsStripe {
           $this.activeBreadCrumb("student-details");
           $this.activateDiv("checkout_student_details");
           $this.displayStudentInfo("none");
+          $this.displayTopicData("none")
         })
       })
     }
