@@ -1936,7 +1936,7 @@ class classDetailsStripe {
   }
   displayStudentInfo(display) {
     document.querySelectorAll('.student-info-container').forEach(el => el.style.display = display)
-    if(this.isMobile()){
+    if(classDetailsStripe.isMobile()){
       document.querySelectorAll('.student-info-container-mobile').forEach(el => el.style.display = display)
     }
     var localCheckOutData = localStorage.getItem('checkOutBasicData')
