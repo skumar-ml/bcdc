@@ -1657,14 +1657,21 @@ class classDetailsStripe {
               }
 
               let sumOfSelectedPrograms = (
-                $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
+                $this.$selectedProgram.reduce((total, program) => {
+                  if(!program.amount){
+                    return 0;
+                  }
+                  let ccp = $this.calculateCreditCardAmount(program.amount).toFixed(2);
+                  let tA = parseFloat(total) + parseFloat(ccp)
+                  return tA
+                }, 0)
               ).toFixed(2);
 
               let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
                 let ccp = $this.calculateCreditCardAmount(brief.price).toFixed(2);
                 let tA = parseFloat(total) + parseFloat(ccp)
                 return tA
-              }, 0);
+              }, 0).toFixed(2);
 
               briefsTotal = (briefsTotal) ? briefsTotal : 0
               if ($this.$selectedProgram.length > 0) {
