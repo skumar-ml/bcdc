@@ -1656,9 +1656,9 @@ class classDetailsStripe {
                 })
               }
 
-              let sumOfSelectedPrograms = $this.trimToTwoDecimals(
-                $this.$selectedProgram.reduce((total, program) => total + (program.amount) ? ((parseFloat(program.amount) + 0.3) / 0.971) : 0, 0)
-              );
+              let sumOfSelectedPrograms = (
+                $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
+              ).toFixed(2);
 
               let briefsTotal = $this.selectedBriefs.reduce((total, brief) => {
                 let ccp = $this.calculateCreditCardAmount(brief.price).toFixed(2);
