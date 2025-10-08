@@ -2,55 +2,7 @@
 .class-time-flex-wrapper label.form-label.class-time {
     margin-bottom: 0;
 }
-.half-circle-spinner,
-.half-circle-spinner * {
-	-webkit-box-sizing: border-box;
-	box-sizing: border-box;
-  z-index:99999999;
-}
-.half-circle-spinner {
-	width: 80px;
-	height: 80px;
-	border-radius: 100%;
-	position: relative;
-	margin: 0;
-	position: fixed;
-	top: 50%;
-	left: 50%;
-	margin-right: -50%;
-	-webkit-transform: translate(-50%, -50%);
-	transform: translate(-50%, -50%);
-}
-.half-circle-spinner .circle {
-	content: "";
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	border-radius: 100%;
-	border: calc(60px / 10) solid transparent;
-}
-.half-circle-spinner .circle.circle-1 {
-	border-top-color: #000000;
-	-webkit-animation: half-circle-spinner-animation 1s infinite;
-	animation: half-circle-spinner-animation 1s infinite;
-}
-.half-circle-spinner .circle.circle-2 {
-	border-bottom-color: #000000;
-	-webkit-animation: half-circle-spinner-animation 1s infinite alternate;
-	animation: half-circle-spinner-animation 1s infinite alternate;
-}
-div.half-circle-spinner:after {
-    content: "Loading...";
-    color: #a51c30;
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 38%;
-    font-size: 12px;
-    bottom: 0;
-    text-align: center;
-    font-weight: 700;
-}
+
 .iframe-lightbox .backdrop {
     background-color: rgba(0, 0, 0, 0.4) !important;
 }
@@ -121,7 +73,6 @@ input.prev_student_checkbox {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.25);
- /* background: linear-gradient(to bottom, rgb(242, 211, 133) 0%, rgba(242, 211, 133, 0.1) 70%);*/
   z-index: 0; /* Keeps the gradient on top of the image */
   transition: transform 0.5s ease-out;
 }
@@ -266,27 +217,35 @@ input.prev_student_checkbox {
 .student-info-rounded-accordian.open .student-info-header-wrapper {
     border-bottom: 1px solid #ccc;
 }
-/* Add Supp. PDF*/
+
 @media screen and (width: 1024px) {
   .brief-title-black,
   .button.preview {
     margin-bottom: 10px;
   }
 
-  .brief-pricing-info-flex,
-  .brief-flex-wrapper {
+  .brief-pricing-info-flex {
     display: block;
   }
 }
-  /* .add-supplimental-pdf-container.mobile , .add-supplimental-pdf-container {
+/* Add Supp. PDF*/
+.add-supplimental-pdf-container.mobile , .add-supplimental-pdf-container {
+    display: none;
+} 
+.student-info-container-mobile {
+        display: none;
+ }
+.add-supplimental-pdf-container.mobile {
     display: none !important;
-  } */
-@media screen and (max-width: 568px) {
-  .add-supplimental-pdf-container.mobile {
-    display: block !important;
-  }
 }
-
+@media screen and (max-width: 768px) { 
+     .student-info-container-mobile.no-margin-bottom {
+        display: none;
+     }
+    .add-supplimental-pdf-container.mobile {
+      display: block !important;
+     }    
+}
 /* Tooltip visible on hover of wrapper or icon */
 .brief-info-wrapper:hover .dm-sans.brief-tooltip {
     opacity: 1;
@@ -295,7 +254,4 @@ input.prev_student_checkbox {
 [data-briefs-checkout="briefs-order-details"] .brief-flex-wrapper {
     margin-bottom: 3px !important;
 }
-
-
-
 
