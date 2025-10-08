@@ -989,7 +989,7 @@ class classDetailsStripe {
       memberId: this.webflowMemberId,
       //added id for up-sell program
       upsellProgramIds: upsellProgramIds,
-      has_fee: has_fee,
+      has_fee: true,
       source: "cart_page",
       amount: finalPrice,
       successUrl: encodeURI(
@@ -1680,7 +1680,7 @@ class classDetailsStripe {
               }, 0).toFixed(2);
 
               briefsTotal = (briefsTotal) ? briefsTotal : 0
-              if ($this.$selectedProgram.length > 0) {
+              if ($this.$selectedProgram.length > 0 || $this.selectedBriefs.length > 0) {
                 coreDepositPrice = parseFloat(sumOfSelectedPrograms) + parseFloat(briefsTotal);
               } else {
                 coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice + parseFloat(briefsTotal);
@@ -1699,9 +1699,7 @@ class classDetailsStripe {
               let amount = parseFloat(
                 amountEl.replace(/,/g, "").replace(/\$/g, "")
               );
-              if($this.$isCheckoutFlow == "Bundle-Purchase"){
-               amount = 0;
-              }
+              
               // Update deposit Price for addon program
               let addonDepositPrices = document.querySelectorAll(
                 "[data-stripe='addon-deposit-price']"
@@ -1710,6 +1708,10 @@ class classDetailsStripe {
                 addonDepositPrices.forEach(addonDepositPrice => {
                   addonDepositPrice.innerHTML = "$" + $this.numberWithCommas(amount.toFixed(2));
                 })
+              }
+              
+              if($this.$isCheckoutFlow == "Bundle-Purchase"){
+                amount = 0;
               }
 
               var sumOfSelectedPrograms = $this.trimToTwoDecimals(
@@ -1720,13 +1722,13 @@ class classDetailsStripe {
               }, 0);
 
               var finalPrice;
-              if ($this.$selectedProgram.length > 0) {
+              if ($this.$selectedProgram.length > 0 || $this.selectedBriefs.length > 0) {
                 finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0));
               } else {
                 finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + parseFloat(amount) + ((briefsTotal) ? parseFloat(briefsTotal) : 0));
               }
               deposit_price.innerHTML =
-                "$" + finalPrice;
+                (finalPrice == "0.00") ? "Free" : "$" + finalPrice;
             });
           }
         }
@@ -2710,8 +2712,6 @@ class classDetailsStripe {
     // Update order details sidebar
     this.updateBriefsListInOrderDetails();
 
-    // Update totalDepositPrice elements
-    //this.updateTotalDepositPrice(total);
     this.updateAmount(total)
 
   }
@@ -2731,36 +2731,7 @@ class classDetailsStripe {
   }
 
 
-  // Update totalDepositPrice elements
-  updateTotalDepositPrice(total) {
-    const totalDepositPriceElements = document.querySelectorAll('[data-stripe="totalDepositPrice"]');
-    if (totalDepositPriceElements.length > 0) {
-      totalDepositPriceElements.forEach(element => {
-        // Check if Tab 2 (card payment) is active
-        let activeTab = document.querySelector('.payment-cards-tab-link.w--current');
-        let isTab2 = activeTab && activeTab.getAttribute("data-w-tab") === "Tab 2";
-
-        // Calculate briefs total with or without percentage based on tab
-        let briefsTotal = this.selectedBriefs.reduce((sum, brief) => {
-          if (isTab2) {
-            // Apply percentage calculation for Tab 2 (card payment)
-            return sum + ((parseFloat(brief.price) + 0.3) / 0.971);
-          } else {
-            // Use base price for other tabs
-            return sum + (parseFloat(brief.price) || 0);
-          }
-        }, 0);
-
-        // Update the data-stripe-price attribute
-        //element.setAttribute('data-stripe-price', total.toFixed(2));
-        let coreDepositPrice = element.getAttribute("data-stripe-price");
-        // Update the text content if it exists
-        if (element.textContent) {
-          element.textContent = `$${this.trimToTwoDecimals(briefsTotal + parseFloat(coreDepositPrice))}`;
-        }
-      });
-    }
-  }
+  
   showLoading() {
     const container = document.querySelector('[data-briefs-checkout="select-briefs"]');
     if (container) {
