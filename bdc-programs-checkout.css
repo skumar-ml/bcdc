@@ -283,7 +283,7 @@ input.prev_student_checkbox {
   } */
 @media screen and (max-width: 568px) {
   .add-supplimental-pdf-container.mobile {
-    display: none !important;
+    display: block !important;
   }
 }
 
@@ -295,6 +295,7 @@ input.prev_student_checkbox {
 [data-briefs-checkout="briefs-order-details"] .brief-flex-wrapper {
     margin-bottom: 3px !important;
 }
+
 
 
 
