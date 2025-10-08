@@ -243,7 +243,7 @@ input.prev_student_checkbox {
         display: none;
      }
     .add-supplimental-pdf-container.mobile {
-      display: block !important;
+      display: none !important;
      }    
 }
 /* Tooltip visible on hover of wrapper or icon */
@@ -254,4 +254,5 @@ input.prev_student_checkbox {
 [data-briefs-checkout="briefs-order-details"] .brief-flex-wrapper {
     margin-bottom: 3px !important;
 }
+
 
