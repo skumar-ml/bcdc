@@ -466,6 +466,7 @@ class Portal {
                 
                 return result;
             }
+            
             checkReturnerConversion(recommendedLevel) {
                 // Check if returner conversion is published in recommendedLevel
                 const result = recommendedLevel && recommendedLevel.level;
@@ -849,11 +850,13 @@ class Portal {
                 const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
                 if (!futureClassesDiv) return;
 
-                const futureList = Array.isArray(studentData.futureSession) ? studentData.futureSession : [];
+                var futureList = Array.isArray(studentData.futureSession) ? studentData.futureSession : [];
                 const container = futureClassesDiv.querySelector('[data-portal="future-classe-list"]');
                 if (container) container.innerHTML = '';
 
                 if (futureList.length > 0) {
+                    // removed refunded future sessions
+                    futureList = futureList.filter(session => !session.isRefunded);
                     futureClassesDiv.style.display = '';
                     futureList.forEach(session => {
                         let text = 'No details available';
