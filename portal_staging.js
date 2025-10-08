@@ -7,10 +7,19 @@ class Portal {
             }
 
             async fetchData() {
-                const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
+                try {
+                    const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const apiData = await response.json();
                 return apiData;
+                } catch (error) {
+                    console.log(error);
+                    const portalMessage = document.querySelector('.portal-message')
+                    this.spinner.style.display = 'none';
+                    portalMessage.style.display = 'block';
+                    return; 
+                }
+                
             }
 
             async fetchMillionsData() {
@@ -446,7 +455,7 @@ class Portal {
                 }
                 
                 // Filter out futureSession objects that have classId
-                const filteredSessions = student.futureSession.filter(session => !session.classId);
+                const filteredSessions = student.futureSession.filter(session => !session.classId && session.earlyBirdDeadlineDate != "");
                 if(filteredSessions.length == 0) {
                     return false;
                 }
