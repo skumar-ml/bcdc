@@ -294,6 +294,7 @@ class classDetailsStripe {
   }
   // Setup back button for stripe back button and browser back button
   setUpBackButtonTab() {
+    return;
     this.spinner.style.display = "block";
     var query = window.location.search;
     var urlPar = new URLSearchParams(query);
