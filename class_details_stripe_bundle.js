@@ -1681,7 +1681,7 @@ class classDetailsStripe {
               }, 0).toFixed(2);
 
               briefsTotal = (briefsTotal) ? briefsTotal : 0
-              if ($this.$selectedProgram.length > 0 || $this.selectedBriefs.length > 0) {
+              if ($this.$selectedProgram.length > 0 ) {
                 coreDepositPrice = parseFloat(sumOfSelectedPrograms) + parseFloat(briefsTotal);
               } else {
                 coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice + parseFloat(briefsTotal);
@@ -1723,7 +1723,7 @@ class classDetailsStripe {
               }, 0);
 
               var finalPrice;
-              if ($this.$selectedProgram.length > 0 || $this.selectedBriefs.length > 0) {
+              if ($this.$selectedProgram.length > 0) {
                 finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0));
               } else {
                 finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + parseFloat(amount) + ((briefsTotal) ? parseFloat(briefsTotal) : 0));
