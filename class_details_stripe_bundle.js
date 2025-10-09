@@ -432,7 +432,7 @@ class classDetailsStripe {
   updateBundleProgram(paymentData) {
     if (paymentData.selectedProgram && paymentData.suppPro.length > 0) {
       this.updateSupplementaryProgramData(paymentData.suppPro);
-      this.$selectedProgram = paymentData.selectedProgram;
+      //this.$selectedProgram = paymentData.selectedProgram;
       this.displaySelectedSuppProgram(paymentData.upsellProgramIds);
       if (paymentData.selectedProgram.length > 0) {
         this.hideShowNewStudentFee("none");
@@ -764,6 +764,8 @@ class classDetailsStripe {
       var studentEmail = document.getElementById("Student-Email");
 
       $this.createBundlePrograms($this.$allSuppData);
+      var totalAmountInput = document.getElementById("totalAmount");
+      $this.updateAmount(totalAmountInput.value)
 
       if($this.$selectedProgram.length > 0){
         // Get local storage data for back button
@@ -1498,7 +1500,7 @@ class classDetailsStripe {
         sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice) + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
 
       }
-      totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
+      totalPriceText.innerHTML = (sumOfSelectedPrograms == "0.00" || sumOfSelectedPrograms == "0") ? "Free" : "$" + this.numberWithCommas(sumOfSelectedPrograms);
 
     });
     if(this.$isCheckoutFlow == "Bundle-Purchase"){
@@ -1729,7 +1731,7 @@ class classDetailsStripe {
                 finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms) + parseFloat(amount) + ((briefsTotal) ? parseFloat(briefsTotal) : 0));
               }
               deposit_price.innerHTML =
-                (finalPrice == "0.00") ? "Free" : "$" + finalPrice;
+                (finalPrice == "0.00" || finalPrice == "0") ? "Free" : "$" + finalPrice;
             });
           }
         }
