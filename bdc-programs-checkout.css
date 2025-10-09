@@ -236,7 +236,7 @@ input.prev_student_checkbox {
         display: none;
  }
 .add-supplimental-pdf-container.mobile {
-    display: none !important;
+    display: none;
 }
 @media screen and (max-width: 768px) { 
      .student-info-container-mobile.no-margin-bottom {
@@ -254,6 +254,7 @@ input.prev_student_checkbox {
 [data-briefs-checkout="briefs-order-details"] .brief-flex-wrapper {
     margin-bottom: 3px !important;
 }
+
 
 
 
