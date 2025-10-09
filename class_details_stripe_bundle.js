@@ -990,7 +990,7 @@ class classDetailsStripe {
       memberId: this.webflowMemberId,
       //added id for up-sell program
       upsellProgramIds: upsellProgramIds,
-      has_fee: true,
+      has_fee: has_fee,
       source: "cart_page",
       amount: finalPrice,
       successUrl: encodeURI(
