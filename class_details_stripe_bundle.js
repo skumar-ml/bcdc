@@ -1255,6 +1255,7 @@ class classDetailsStripe {
       //"cancelUrl": "https://www.bergendebate.com/payment-confirmation?programName=",
       memberId: this.webflowMemberId,
       amount: this.amount * 100,
+      source: "cart_page",
       utm_source: (localUtmSource != null) ? localUtmSource : "null",
       createdOn: new Date().toISOString(),
       isPreviousStudent: this.$isPrevStudent
