@@ -143,6 +143,9 @@
                     });
 
                     const data = await response.json();
+                    if(data._id){
+                        this.$currentStudent._id = data._id;
+                    }
                     return { message: "Success", data: data };
                 } catch (error) {
                     console.error('Error updating portal millions:', error);
@@ -793,3 +796,4 @@
                 return this.currentStudentsList.find(student => student.paymentId === studentId);
             }
         }
+
