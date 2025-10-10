@@ -99,7 +99,7 @@ class ReferralProgram {
         "[data-referrals='count']"
       );
       const count = data.referrals.filter(
-        (ref) => ref.referred_stage != "None"
+        (ref) => ref.referred_stage != "None" && ref.referred_stage != "Signed_Up"
       ).length;
 
       countElement.forEach((el) => {
@@ -147,7 +147,7 @@ class ReferralProgram {
       this.referralsTableBody.innerHTML = "";
       (data.referrals || []).forEach((ref) => {
         let pendingClass =
-          ref.referred_stage == "None" ? "pending-referral" : "";
+          ref.referred_stage == "None" || ref.referred_stage == "Signed_Up" ? "pending-referral" : "";
         const wrapper = document.createElement("div");
         wrapper.className =
           "my-referral-table-row-grid-wrapper " + pendingClass;
@@ -157,7 +157,7 @@ class ReferralProgram {
         statusFlex.className = "my-referral-status-flex-wrapper";
         const checkIcon = document.createElement("img");
         // Set the status icon based on referred_stage
-        if (ref.referred_stage == "None") {
+        if (ref.referred_stage == "None" || ref.referred_stage == "Signed_Up") {
           checkIcon.src =
             "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682b19d6917e60cb04ec4624_Rectangle%204630.svg";
           checkIcon.loading = "lazy";
@@ -180,13 +180,13 @@ class ReferralProgram {
         const statusDiv = document.createElement("div");
         statusDiv.className = "my-referral-table-row-text";
         statusDiv.textContent =
-          ref.referred_stage !== "None" ? "Enrolled" : "Pending";
+          ref.referred_stage == "Purchased" ? "Enrolled" : (ref.referred_stage == "Signed_Up" ? "Signed Up" : "Pending");
         statusFlex.appendChild(statusDiv);
 
         const pendingStatusIcon = document.createElement("img");
         pendingStatusIcon.classList.add("pending-icon");
         // Set the status icon based on referred_stage
-        if (ref.referred_stage == "None") {
+        if (ref.referred_stage == "None" || ref.referred_stage == "Signed_Up") {
           pendingStatusIcon.src =
             "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682fffc2c9964985fed5191a_Layer_1%20(7).svg";
           pendingStatusIcon.loading = "lazy";
