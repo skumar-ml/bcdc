@@ -1,4 +1,4 @@
-class Portal {
+ class Portal {
             constructor(data, onReady) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -354,7 +354,7 @@ class Portal {
                     showRecommendedSection = false;
                 } else {
                     // Show recommended section only during registration period
-                    if (timeBasedVisibility.showRegistration && hasBundle) {
+                    if (timeBasedVisibility.showRegistration) {
                         recommendedSection.style.display = '';
                         showRecommendedSection = true;
                     } else {
@@ -473,13 +473,13 @@ class Portal {
                 return result;
             }
             isPreRegistrationPeriod(recommendedLevel) {
-                if (!recommendedLevel || !recommendedLevel.pre_registrationDates) {
+                if (!recommendedLevel || !recommendedLevel.pre_registrationDates || !recommendedLevel.programDates) {
                     return false;
                 }
                 
                 const now = new Date();
                 const preRegStart = new Date(recommendedLevel.pre_registrationDates.preRegStartDate);
-                const preRegEnd = new Date(recommendedLevel.pre_registrationDates.preRegEndDate);
+                const preRegEnd = new Date(recommendedLevel.programDates.startDate);
                 
                 const result = now >= preRegStart && now <= preRegEnd;
                 return result;
@@ -497,7 +497,7 @@ class Portal {
                     
                     if (futureSession && futureSession['pre-registrationDates']) {
                         const preRegStart = new Date(futureSession['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
-                        const preRegEnd = new Date(futureSession['pre-registrationDates'].preRegEndDate.replace(' ', 'T'));
+                        const preRegEnd = new Date(futureSession.programDates.startDate.replace(' ', 'T'));
                         
                         showPreRegistration = now >= preRegStart && now <= preRegEnd;
                         
