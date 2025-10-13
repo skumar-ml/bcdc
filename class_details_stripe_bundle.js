@@ -2788,8 +2788,7 @@ class classDetailsStripe {
       const total_price = defaultOrderSummary.querySelector('.total_price');
       const totalStripePrice = defaultOrderSummary.querySelector('[data-stripe="totalDepositPrice"]');
       const addonStripePrice = defaultOrderSummary.querySelector('[data-stripe="addon-deposit-price"]');
-  
-      // ✅ Use comparison (== or ===) instead of assignment (=)
+
       if (this.$isCheckoutFlow === "Bundle-Purchase") {
         total_price.classList.remove('order-details-price-no-strike');
         total_price.classList.add('order-details-price');
@@ -2815,3 +2814,4 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
