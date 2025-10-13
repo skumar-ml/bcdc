@@ -20,10 +20,19 @@ class Portal {
      * @returns {Promise<Object>} Portal data containing student information
      */
     async fetchData() {
-        const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
+        try {
+            const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
         if (!response.ok) throw new Error('Network response was not ok');
         const apiData = await response.json();
         return apiData;
+        } catch (error) {
+            console.log(error);
+            const portalMessage = document.querySelector('.portal-message')
+            this.spinner.style.display = 'none';
+            portalMessage.style.display = 'block';
+            return; 
+        }
+        
     }
 
     /**
@@ -502,7 +511,7 @@ class Portal {
         }
         
         // Filter out futureSession objects that have classId
-        const filteredSessions = student.futureSession.filter(session => !session.classId);
+        const filteredSessions = student.futureSession.filter(session => !session.classId && session.earlyBirdDeadlineDate != "");
         if(filteredSessions.length == 0) {
             return false;
         }
@@ -542,7 +551,7 @@ class Portal {
             
             if (futureSession && futureSession['pre-registrationDates']) {
                 const preRegStart = new Date(futureSession['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
-                const preRegEnd = new Date(futureSession['pre-registrationDates'].preRegEndDate.replace(' ', 'T'));
+                const preRegEnd = new Date(futureSession.programDates.startDate.replace(' ', 'T'));
                 
                 showPreRegistration = now >= preRegStart && now <= preRegEnd;
                 
@@ -946,12 +955,14 @@ class Portal {
         const futureClassesDiv = tabPane.querySelector('.sem-classes-info-div.future-classes');
         if (!futureClassesDiv) return;
 
-        const futureList = Array.isArray(studentData.futureSession) ? studentData.futureSession : [];
+        var futureList = Array.isArray(studentData.futureSession) ? studentData.futureSession : [];
         const container = futureClassesDiv.querySelector('[data-portal="future-classe-list"]');
         if (container) container.innerHTML = '';
 
         if (futureList.length > 0) {
             futureClassesDiv.style.display = '';
+            // removed refunded future sessions
+            futureList = futureList.filter(session => !session.isRefunded);
             futureList.forEach(session => {
                 let text = 'No details available';
                 if(session.classId){
@@ -1109,6 +1120,7 @@ class Portal {
         this.renderFailedInvoiceNotification(tabPane, student);
         this.renderRegistrationForms(tabPane, student);
         Webflow.require('tabs').redraw();
+        this.renderGoogleCalendar(tabPane, student);
         this.renderCalendarIframe(tabPane, student);
         this.renderMakeupLinks(tabPane, student);
         this.renderZoomLinks(tabPane, student);
@@ -1339,6 +1351,32 @@ class Portal {
             window.open(link, '_blank');
         });
 
+    }
+
+    /**
+     * Renders Google Calendar iframe using parent email
+     * @param {HTMLElement} tabPane - The tab pane element
+     * @param {Object} student - Current student data
+     */
+    renderGoogleCalendar(tabPane, student) {
+        const calendarDiv = tabPane.querySelector('.calendar-white-rounded-div');
+        if (calendarDiv && student.studentDetail && student.studentDetail.parentEmail) {
+            // Remove any previous iframe
+            let oldIframe = calendarDiv.querySelector('iframe[data-google-calendar]');
+            if (oldIframe) oldIframe.remove();
+            // Create new iframe
+            const iframe = document.createElement('iframe');
+            iframe.setAttribute('data-google-calendar', '1');
+            iframe.style.border = '0';
+            iframe.width = '800';
+            iframe.height = '600';
+            iframe.frameBorder = '0';
+            iframe.scrolling = 'no';
+            // Use the student's email as the calendar src (must be public!)
+            const calendarEmail = encodeURIComponent(student.studentDetail.parentEmail);
+            iframe.src = `https://calendar.google.com/calendar/embed?src=${calendarEmail}&ctz=America%2FChicago`;
+            calendarDiv.appendChild(iframe);
+        }
     }
 
     /**
