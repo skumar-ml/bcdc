@@ -439,7 +439,7 @@ class Portal {
         this.updateButtonVisibility(bundleContainer, student, recommendedLevel, timeBasedVisibility, studentData);
 
         // Update modal content and add click event for Learn More button
-        this.updateModalContent(student, recommendedLevel, tabPane, studentData);
+        //this.updateModalContent(student, recommendedLevel, tabPane, studentData);
         this.addLearnMoreClickEvent(bundleContainer, student, recommendedLevel, studentData);
 
         // Start/Update countdown in the recommended section if deadline exists
@@ -484,11 +484,6 @@ class Portal {
             recommendedSection.style.display = 'block';
         } else if (hasReturnerConversion && timeBasedVisibility.showRegistration) {
             // If B: Show both buttons during registration period
-            registerNowBtn.style.display = 'inline-block';
-            learnMoreBtn.style.display = 'inline-block';
-            recommendedSection.style.display = 'block';
-        } else if (hasBundle && hasReturnerConversion && timeBasedVisibility.showRegistration) {
-            // If A & B: Show both buttons during registration period
             registerNowBtn.style.display = 'inline-block';
             learnMoreBtn.style.display = 'inline-block';
             recommendedSection.style.display = 'block';
