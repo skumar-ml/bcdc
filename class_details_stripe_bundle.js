@@ -47,7 +47,7 @@ class classDetailsStripe {
     this.modal = document.getElementById("briefs-preview-modal");
     this.iframe = document.getElementById("preview-frame");
     this.closeBtn = document.getElementById("close-preview");
-    this.checkBundleProgram();
+    //this.checkBundleProgram();
     this.checkBundleProgram();
     this.renderPortalData();
     this.initializeToolTips();
@@ -2814,4 +2814,5 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
