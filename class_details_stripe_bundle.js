@@ -53,7 +53,7 @@ class classDetailsStripe {
     this.closeBtn = document.getElementById("close-preview");
     //this.checkBundleProgram();
     this.checkBundleProgram();
-    this.renderPortalData();
+    this.renderCheckoutData();
     this.initializeToolTips();
     this.updatePriceForCardPayment();
     this.initiateLightbox();
@@ -889,7 +889,7 @@ class classDetailsStripe {
   }
   //----------------End new code for stripe payment integration---------------
   // get data from api and pass the data to classLocation class
-  async renderPortalData(memberId) {
+  async renderCheckoutData(memberId) {
     try {
       this.spinner.style.display = "block";
       // -------------Start new code for stripe payment integration--------------
@@ -2823,3 +2823,4 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
