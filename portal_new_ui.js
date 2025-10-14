@@ -100,7 +100,7 @@ class Portal {
      * @returns {Promise<Array>} Array of announcements or empty array if failed
      */
     async fetchAnnouncements() {
-        const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
+        const response = await fetch(`${this.data.typeBApiBaseURL}getAnnouncement/${this.data.memberId}`);
         if (!response.ok) {
             return [];
         }
@@ -339,7 +339,7 @@ class Portal {
         const bundleContainer = tabPane.querySelector('[data-pre-registration="container"]');
         
         if (!bundleContainer) return;
-        const studentName = student.studentDetail.studentName || 'Student';
+        const studentName = student.studentDetail.studentName;
         if (programTitle) {
             programTitle.textContent = `Next Recommended Program for ${studentName}`;
         }
@@ -436,7 +436,7 @@ class Portal {
         textEls[0].textContent = displayText;
 
         // Implement new button visibility logic
-        this.updateButtonVisibility(bundleContainer, student, recommendedLevel, timeBasedVisibility, studentData);
+        this.updateButtonVisibility(bundleContainer, recommendedLevel, timeBasedVisibility, studentData);
 
         // Update modal content and add click event for Learn More button
         //this.updateModalContent(student, recommendedLevel, tabPane, studentData);
@@ -456,7 +456,7 @@ class Portal {
      * @param {Object} timeBasedVisibility - Time-based visibility status
      * @param {Object} studentData - Complete student data
      */
-    updateButtonVisibility(recommendedSection, student, recommendedLevel, timeBasedVisibility, studentData) {
+    updateButtonVisibility(recommendedSection, recommendedLevel, timeBasedVisibility, studentData) {
         // Get the buttons
         const registerNowBtn = recommendedSection.querySelector('#enroll-now-btn-2');
         const learnMoreBtn = recommendedSection.querySelector('[data-portal="next-recomm-learn-more"]');
@@ -484,6 +484,11 @@ class Portal {
             recommendedSection.style.display = 'block';
         } else if (hasReturnerConversion && timeBasedVisibility.showRegistration) {
             // If B: Show both buttons during registration period
+            registerNowBtn.style.display = 'inline-block';
+            learnMoreBtn.style.display = 'inline-block';
+            recommendedSection.style.display = 'block';
+        } else if (hasBundle && hasReturnerConversion && timeBasedVisibility.showRegistration) {
+            // If A & B: Show both buttons during registration period
             registerNowBtn.style.display = 'inline-block';
             learnMoreBtn.style.display = 'inline-block';
             recommendedSection.style.display = 'block';
@@ -661,7 +666,6 @@ class Portal {
             .replace(/[^a-z0-9-]/g, ''); // Remove any other special characters
 
         // Check if recommended condition matches (hasBundle or hasReturnerConversion)
-        // Use the same logic as updateButtonVisibility function
         const hasReturnerConversion = this.checkReturnerConversion(recommendedLevel);
         const timeBasedVisibility = this.getTimeBasedVisibility(recommendedLevel, studentData);
         const hasRecommendedCondition = hasReturnerConversion && timeBasedVisibility.showRegistration;
@@ -1774,7 +1778,7 @@ class Portal {
         }
         var xhr = new XMLHttpRequest()
         var $this = this;
-        xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl", true)
+        xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl", true)
         xhr.withCredentials = false
         xhr.send(JSON.stringify(data))
         xhr.onload = function () {
