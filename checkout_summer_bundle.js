@@ -879,7 +879,7 @@ class CheckOutWebflow {
 	  this.disableEnableBuyNowButton();
     }
 	async displaySupplementaryProgram() {
-		var suppData = await this.fetchData("getUpsellProgram/", this.memberData.eTypeBaseUrl);
+		var suppData = await this.fetchData("getUpsellProgramV2", this.memberData.eTypeBaseUrl);
         // Check if there are any upsell programs
         var academicSuppData = suppData.find((item) => {
           return item.sessionId == 2;
@@ -1328,3 +1328,4 @@ class CheckOutWebflow {
       //data-stripe="totalDepositPrice"
     }
 }
+
