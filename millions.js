@@ -29,7 +29,7 @@
             }
             async fetchAnnouncementData() {
                 try {
-                    const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
+                    const response = await fetch(`${this.data.bTypeApiBaseURL}getAnnouncement/${this.data.memberId}`);
                     if (!response.ok) {
                       this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
                       this.noRecordDiv.style.display = 'block'; // Hide no record div initially
@@ -251,4 +251,5 @@
             }
         }
         
+
 
