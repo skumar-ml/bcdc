@@ -32,9 +32,9 @@ class DisplaySuppProgram {
     }
     return el;
   }
-  async fetchData(endpoint) {
+  async fetchData(endpoint, baseUrl) {
     try {
-      const response = await fetch(`${this.memberData.baseUrl}${endpoint}`);
+      const response = await fetch(`${baseUrl}${endpoint}`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
@@ -48,7 +48,7 @@ class DisplaySuppProgram {
   async displaySupplementaryProgram() {
     try {
       //this.spinner.style.display = "block";
-      this.$suppPro = await this.fetchData("getUpsellProgramTest/");
+      this.$suppPro = await this.fetchData("getUpsellProgramV2", this.memberData.baseUrl);
       this.handleClickEvents();
       this.closeIconEvent();
       if (this.$suppPro.length === 0) {
@@ -427,7 +427,8 @@ class DisplaySuppProgram {
     var $this = this;
     try {
       const data = await this.fetchData(
-        "getAllPreviousStudents/" + this.memberData.memberId + "/current"
+        "getAllPreviousStudents/" + this.memberData.memberId + "/current",
+        this.memberData.fTypeBaseUrl
       );
       if (data != "No data Found") {
         this.upSellEls.forEach((el) => {
@@ -495,7 +496,7 @@ class DisplaySuppProgram {
       memberId: this.memberData.memberId,
     };
     // Create the POST request
-    fetch(this.memberData.baseUrl + "checkoutUrlForUpsellProgram", {
+    fetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
       method: "POST", // Specify the method
       headers: {
         "Content-Type": "application/json", // Specify the content type
@@ -736,6 +737,3 @@ class DisplaySuppProgram {
     });
   }
 }
-
-
-
