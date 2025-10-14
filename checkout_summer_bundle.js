@@ -171,7 +171,7 @@ class CheckOutWebflow {
 			"lastName": studentLastName.value,
 			"memberId": this.memberData.memberId,
 		}
-		const rawResponse = await fetch('https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/validateUserForProgram', {
+		const rawResponse = await fetch('https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/validateUserForProgram', {
 			method: 'POST',
 			headers: {
 				'Accept': 'application/json',
@@ -187,9 +187,10 @@ class CheckOutWebflow {
 		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	}
 	// Get API data with the help of endpoint
-	async fetchData(endpoint) {
+	async fetchData(endpoint, baseUrl) {
 		try {
-			const response = await fetch(`${this.baseUrl}${endpoint}`);
+			baseUrl = baseUrl || this.baseUrl;
+			const response = await fetch(`${baseUrl}${endpoint}`);
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
 			}
@@ -255,7 +256,7 @@ class CheckOutWebflow {
 
 		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createNewProgramCheckoutUrls", true)
+		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createNewProgramCheckoutUrls", true)
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
@@ -305,7 +306,7 @@ class CheckOutWebflow {
 		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl", true)
+		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl", true)
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
@@ -878,7 +879,7 @@ class CheckOutWebflow {
 	  this.disableEnableBuyNowButton();
     }
 	async displaySupplementaryProgram() {
-		var suppData = await this.fetchData("getUpsellProgramTest/");
+		var suppData = await this.fetchData("getUpsellProgram/", this.memberData.eTypeBaseUrl);
         // Check if there are any upsell programs
         var academicSuppData = suppData.find((item) => {
           return item.sessionId == 2;
@@ -1327,4 +1328,3 @@ class CheckOutWebflow {
       //data-stripe="totalDepositPrice"
     }
 }
-
