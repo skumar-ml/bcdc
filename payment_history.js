@@ -1,4 +1,3 @@
-// Payment History Management Class
 class PaymentHistory {
     constructor(data) {
         this.data = data;
@@ -32,7 +31,7 @@ class PaymentHistory {
     // Fetch announcements and update UI
     async fetchAnnouncements() {
         const response = await fetch(
-            `${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`
+            `${this.data.bTypeApiBaseURL}getAnnouncement/${this.data.memberId}`
         );
         if (!response.ok) {
             return [];
@@ -452,7 +451,7 @@ class PaymentHistory {
         var xhr = new XMLHttpRequest();
         xhr.open(
             "POST",
-            "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl",
+            "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl",
             true
         );
         xhr.withCredentials = false;
@@ -661,7 +660,7 @@ class PaymentHistory {
 
             // Send PDF generation request to API
             const response = await fetch(
-                "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/generateInvoicePDF",
+                "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/generateInvoicePDF",
                 {
                     method: "POST",
                     headers: {
@@ -716,4 +715,3 @@ class PaymentHistory {
         }
     }
 }
-
