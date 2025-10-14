@@ -34,9 +34,13 @@ class classDetailsStripe {
     accountEmail,
     levelId,
     parentName,
-    amount
+    amount,
+    typeFBaseUrl,
+    typeEBaseUrl
   ) {
     this.baseUrl = baseUrl;
+    this.typeFBaseUrl = typeFBaseUrl;
+    this.typeEBaseUrl = typeEBaseUrl;
     this.webflowMemberId = webflowMemberId;
     this.accountEmail = accountEmail;
     this.levelId = levelId;
@@ -278,9 +282,13 @@ class classDetailsStripe {
   //-------------Start new code for stripe payment integration----------------
 
   // Call API url with this method and response as a json
-  async fetchData(endpoint) {
+  async fetchData(endpoint, baseUrl) {
+    var apiBaseUrl = this.baseUrl;
+    if(baseUrl){
+      apiBaseUrl = baseUrl
+    }
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`);
+      const response = await fetch(`${apiBaseUrl}${endpoint}`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
@@ -508,7 +516,7 @@ class classDetailsStripe {
       var $this = this;
       xhr.open(
         "POST",
-        "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/checkPreviousStudent",
+        "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/checkPreviousStudent",
         true
       );
       xhr.withCredentials = false;
@@ -902,7 +910,7 @@ class classDetailsStripe {
         this.webflowMemberId
       );
       this.viewClassLocations(data);
-      var suppData = await this.fetchData("getUpsellProgramTest/");
+      var suppData = await this.fetchData("getUpsellProgramV2", this.typeEBaseUrl);
       this.$allSuppData = suppData;
       // Check if there are any upsell programs
       var academicSuppData = suppData.find((item) => {
@@ -1035,7 +1043,7 @@ class classDetailsStripe {
       var $this = this;
       xhr.open(
         "POST",
-        this.baseUrl + "updateDataToCheckoutUrl",
+        "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl",
         true
       );
       xhr.withCredentials = false;
@@ -1069,7 +1077,7 @@ class classDetailsStripe {
 
   initSupplementaryPayment(data, type) {
     // Create the POST request
-    fetch(this.baseUrl + "checkoutUrlForUpsellProgram", {
+    fetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
       method: "POST", // Specify the method
       headers: {
         "Content-Type": "application/json", // Specify the content type
@@ -1268,7 +1276,7 @@ class classDetailsStripe {
     var $this = this;
     xhr.open(
       "POST",
-      "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForClasses",
+      "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForClasses",
       true
     );
     xhr.withCredentials = false;
@@ -1802,7 +1810,8 @@ class classDetailsStripe {
         data = $this.$allBundlePrograms;
       } else {
         data = await this.fetchData(
-          "getAllPreviousStudents/" + this.webflowMemberId + "/all"
+          "getAllPreviousStudents/" + this.webflowMemberId + "/all",
+          this.typeFBaseUrl
         );
       }
       //finding unique value and sorting by firstName
@@ -2814,5 +2823,3 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
-
-
