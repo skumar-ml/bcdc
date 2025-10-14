@@ -428,7 +428,7 @@ class checkInForm {
 		}
 		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateAttendance", true)
+		xhr.open("POST", "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/updateAttendance", true)
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function() {
@@ -476,7 +476,7 @@ class checkInForm {
 	getUpdatedClasssData(classId){
 		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("GET", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
+		xhr.open("GET", "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
 		xhr.withCredentials = false
 		xhr.send()
 		xhr.onload = function() {
@@ -515,7 +515,7 @@ class ClassData {
 		if ($this.spinner) {
 			$this.spinner.style.display = "block";
 		}
-		xhr.open("GET", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
+		xhr.open("GET", "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
 		xhr.withCredentials = false
 		xhr.send()
 		xhr.onload = function() {
@@ -532,7 +532,3 @@ class ClassData {
 		}
 	}
 }
-
-
-
-
