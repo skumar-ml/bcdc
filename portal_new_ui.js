@@ -1528,7 +1528,8 @@ class Portal {
                                     a, // pass the link element
                                     link.title,
                                     link.paymentType,
-                                    student
+                                    student,
+                                    inv.paymentId,
                                 );
                             }
                         });
@@ -1776,7 +1777,7 @@ class Portal {
      * @param {string} paymentType - Payment type (card, bank account, etc.)
      * @param {Object} student - Student data
      */
-    initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType, student) {
+    initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType, student, paymentId) {
         var centAmount = (amount * 100).toFixed(2);
         var data = {
             "email": student.studentDetail.parentEmail,
@@ -1785,7 +1786,7 @@ class Portal {
             "paymentType": paymentType,
             "amount": parseFloat(centAmount),
             "invoiceId": invoice_id,
-            "paymentId": student.studentDetail.uniqueIdentification,
+            "paymentId": paymentId,
             "paymentLinkId": paymentLinkId,
             "memberId": this.data.memberId,
             "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
