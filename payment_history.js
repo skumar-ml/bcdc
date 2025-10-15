@@ -1,4 +1,5 @@
-class PaymentHistory {
+// Payment History Management Class
+        class PaymentHistory {
     constructor(data) {
         this.data = data;
         this.spinner = document.getElementById("half-circle-spinner");
@@ -266,6 +267,25 @@ class PaymentHistory {
             });
         }
 
+        if (studentData.futureSession && studentData.futureSession.length > 0) {
+            studentData.futureSession.forEach((session) => {
+                if (session.invoiceList && session.invoiceList.length > 0) {
+                    // Filter for incomplete invoices only
+                    const outstandingInvoices = session.invoiceList.filter(
+                        (invoice) => !invoice.is_completed
+                    );
+
+                    // Add invoice with session context
+                    outstandingInvoices.forEach((invoice) => {
+                        allOutstandingInvoices.push({
+                            invoice: invoice,
+                            session: session,
+                        });
+                    });
+                }
+            });
+        }
+
         // Show message if no outstanding invoices
         if (allOutstandingInvoices.length === 0) {
             const noInvoicesRow = document.createElement("div");
@@ -282,8 +302,8 @@ class PaymentHistory {
 
         // Sort outstanding invoices by creation date (newest first)
         allOutstandingInvoices.sort((a, b) => {
-            const dateA = new Date(a.session.createdOn);
-            const dateB = new Date(b.session.createdOn);
+            const dateA = new Date(a.invoice.created_on);
+            const dateB = new Date(b.invoice.created_on);
             return dateB - dateA; // Newest first
         });
 
@@ -296,7 +316,7 @@ class PaymentHistory {
             invoiceRow.className = "invoices-table-row-grid-wrapper";
 
             // Format creation date for display
-            const createdDate = new Date(session.createdOn).toLocaleDateString(
+            const createdDate = new Date(invoice.created_on).toLocaleDateString(
                 "en-US",
                 {
                     month: "short",
@@ -370,7 +390,8 @@ class PaymentHistory {
                                 paymentLink,
                                 link.title,
                                 link.paymentType,
-                                session
+                                session,
+                                invoice.paymentId
                             );
                         });
                     } else {
@@ -425,7 +446,8 @@ class PaymentHistory {
         span,
         link_title,
         paymentType,
-        student
+        student,
+        paymentId
     ) {
         // Convert amount to cents for Stripe
         var centAmount = (amount * 100).toFixed(2);
@@ -438,7 +460,7 @@ class PaymentHistory {
             paymentType: paymentType,
             amount: parseFloat(centAmount),
             invoiceId: invoice_id,
-            paymentId: student.studentDetail.uniqueIdentification,
+            paymentId: paymentId,
             paymentLinkId: paymentLinkId,
             memberId: this.data.memberId,
             successUrl: encodeURI(
