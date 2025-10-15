@@ -1,4 +1,4 @@
-// Payment History Management Class
+ // Payment History Management Class
         class PaymentHistory {
     constructor(data) {
         this.data = data;
@@ -249,6 +249,7 @@
 
         // Process each current session to find outstanding invoices
         if (studentData.currentSession && studentData.currentSession.length > 0) {
+            var currentSessions = studentData.currentSession[0];
             studentData.currentSession.forEach((session) => {
                 if (session.invoiceList && session.invoiceList.length > 0) {
                     // Filter for incomplete invoices only
@@ -279,7 +280,7 @@
                     outstandingInvoices.forEach((invoice) => {
                         allOutstandingInvoices.push({
                             invoice: invoice,
-                            session: session,
+                            session: currentSessions || session,
                         });
                     });
                 }
