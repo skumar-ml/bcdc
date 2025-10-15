@@ -2,6 +2,10 @@
  * Portal Class - Main class for managing the student portal interface
  * Handles data fetching, rendering, and user interactions for the portal
  */
+/**
+ * Portal Class - Main class for managing the student portal interface
+ * Handles data fetching, rendering, and user interactions for the portal
+ */
 class Portal {
     /**
      * Constructor - Initializes the Portal instance
@@ -311,11 +315,11 @@ class Portal {
         if (student) {
             this.renderCurrentClassSection(tabPane, student);
             this.renderMillions(tabPane, student, millionsData);
-            this.renderUploadedContent(tabPane, student);
+            this.renderUploadedContent(tabPane, student, studentData);
             this.renderRecommendedLevel(tabPane, student, studentData)
 
             setTimeout(() => {
-                this.renderPendingItems(tabPane, student);
+                this.renderPendingItems(tabPane, student, studentData);
             }, 500);
         } else {
             // hide recommended section if student data is empty
@@ -1060,7 +1064,7 @@ class Portal {
      * @param {HTMLElement} tabPane - The tab pane element
      * @param {Object} student - Current student data
      */
-    renderPendingItems(tabPane, student) {
+    renderPendingItems(tabPane, student, studentData) {
         const wrapper = tabPane.querySelector('.items-pending-flex-wrapper');
         if (!wrapper) return;
 
@@ -1071,9 +1075,15 @@ class Portal {
             let allForms = student.formList.flatMap(group => group.forms || []);
             hasPendingForm = allForms.some(form => !student.formCompletedList?.some(c => c.formId === form.formId));
         }
+        var invoices = student.invoiceList || [];
+        if(studentData.futureSession.length > 0){
+            // include future session invoices
+            const futureInvoices = studentData.futureSession.flatMap(session => session.invoiceList || []);
+            invoices = invoices.concat(futureInvoices);
+        }
 
-        if (Array.isArray(student.invoiceList)) {
-            hasPendingInvoice = student.invoiceList.some(inv => !inv.is_completed);
+        if (Array.isArray(invoices)) {
+            hasPendingInvoice = invoices.some(inv => !inv.is_completed);
         }
 
         wrapper.style.display = (hasPendingForm || hasPendingInvoice) ? 'flex' : 'none';
@@ -1113,9 +1123,9 @@ class Portal {
      * @param {HTMLElement} tabPane - The tab pane element
      * @param {Object} student - Current student data
      */
-    renderUploadedContent(tabPane, student) {
+    renderUploadedContent(tabPane, student, studentData) {
         this.renderHomeworkLink(tabPane, student);
-        this.renderInvoiceAccordionStyled(tabPane, student);
+        this.renderInvoiceAccordionStyled(tabPane, student, studentData);
         this.renderFailedInvoiceNotification(tabPane, student);
         this.renderRegistrationForms(tabPane, student);
         Webflow.require('tabs').redraw();
@@ -1416,7 +1426,7 @@ class Portal {
      * @param {HTMLElement} tabPane - The tab pane element
      * @param {Object} student - Current student data
      */
-    renderInvoiceAccordionStyled(tabPane, student) {
+    renderInvoiceAccordionStyled(tabPane, student, studentData) {
         var $this = this;
         // Find the placeholder for the invoice accordion
         const invoiceAccordion = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
@@ -1424,8 +1434,13 @@ class Portal {
 
         // Remove any previous content
         invoiceAccordion.innerHTML = '';
-
-        const invoices = student.invoiceList || [];
+        
+        var invoices = student.invoiceList || [];
+        if(studentData.futureSession.length > 0){
+            // include future session invoices
+            const futureInvoices = studentData.futureSession.flatMap(session => session.invoiceList || []);
+            invoices = invoices.concat(futureInvoices);
+        }
         if (!Array.isArray(invoices) || invoices.length === 0) {
             // If no invoices, do not render the accordion, just clear
             return;
