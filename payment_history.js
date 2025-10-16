@@ -325,7 +325,7 @@
                     // Create invoice information display
                     const invoiceInfoDiv = document.createElement("div");
                     invoiceInfoDiv.className = "invoices-table-row-text";
-                    invoiceInfoDiv.textContent = `${invoice.invoiceName} (${location}, ${sessionName} ${year})`;
+                    invoiceInfoDiv.textContent = `${invoice.invoiceName} (${location})`;
 
                     // Create action buttons container
                     const actionButtonDiv = document.createElement("div");
@@ -715,3 +715,4 @@
             }
         }
         
+
