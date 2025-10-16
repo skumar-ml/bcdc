@@ -3,6 +3,8 @@ class Sidebar {
     this.data = data;
     this.init();
     this.updateAllPortalLinks();
+    // update count in sidebar
+    this.fetchAnnouncements();
   }
   async fetchData(endPoint) {
     try {
@@ -136,7 +138,32 @@ class Sidebar {
       }
     });
   }
+
+  // Fetch announcements and update UI
+  async fetchAnnouncements() {
+      const response = await fetch(
+          `${this.data.bTypeApiBaseURL}getAnnouncement/${this.data.memberId}`
+      );
+      if (!response.ok) {
+          return [];
+      }
+      const data = await response.json();
+      this.updateAnnouncement(data);
+      return data;
+  }
+  // Update announcement count badge
+  updateAnnouncement(announcementData) {
+      const announcementLength = announcementData.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail).length;
+      const announcementDiv = document.querySelectorAll('[data-announcements="counts"]');
+      if (announcementDiv) {
+          announcementDiv.forEach(div => {
+              div.textContent = announcementLength;
+              div.parentElement.style.display = 'block';
+          });
+      }
+  }
 }
+
 
 
 
