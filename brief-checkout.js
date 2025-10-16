@@ -76,7 +76,7 @@ class BriefsCheckout {
                     container.appendChild(briefCard);
                 });
 
-                // Update total if there are topics
+                // Update total if there are topics. TODO: Is this initializing price/sidebar?
                 if (sortedTopics.length > 0) {
                     this.updateTotal();
                 } else {

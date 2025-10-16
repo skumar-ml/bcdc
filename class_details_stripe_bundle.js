@@ -86,7 +86,10 @@ class classDetailsStripe {
         } else {
           isBundle = "Normal";
         }
+        // TODO: Explain what is tracked in allBundlePrograms
         this.$allBundlePrograms = data.data;
+
+        // TODO: Shouldn't we only be calling this if isBundle is Pre-Registration-Info?
         if (data.preRegistrationEndDate) {
           this.updateCountdown(data.preRegistrationEndDate);
           setInterval(() => {
@@ -98,6 +101,7 @@ class classDetailsStripe {
 
     this.$isCheckoutFlow = isBundle;
 
+    // TODO: I don't understand why we have if (preRegistration). Isn't this always true, since we are selecting the element? Ditto below with registration. Could be that I'm just not familiar with this design-pattern. Seems like we should just have if-else with isBundle instead.
     if (preRegistration) {
       preRegistration.style.display = isBundle == "Pre-Registration-Info" ? "block" : "none";
     }
@@ -111,7 +115,7 @@ class classDetailsStripe {
       let existingStudentLabel = document.querySelector("label[for='existing-students']");
       if (existingStudentLabel) {
         existingStudentLabel.innerText = "Select Student Info";
-      }
+      }      
       if (checkout_student_container) {
         checkout_student_container.style.display = "none";
       }

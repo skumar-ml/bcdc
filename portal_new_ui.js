@@ -2,10 +2,6 @@
  * Portal Class - Main class for managing the student portal interface
  * Handles data fetching, rendering, and user interactions for the portal
  */
-/**
- * Portal Class - Main class for managing the student portal interface
- * Handles data fetching, rendering, and user interactions for the portal
- */
 class Portal {
     /**
      * Constructor - Initializes the Portal instance
