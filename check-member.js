@@ -18,7 +18,7 @@ class checkMember {
 		}
 	}
 	async checkMemberData(){
-		var checkMember = await this.fetchData('https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/checkMemberExists/'+this.webflowMemberId)
+		var checkMember = await this.fetchData('https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/checkMemberExists/'+this.webflowMemberId)
 		if(checkMember){
 			var exists_in_memberstack = document.getElementById('exists_in_memberstack')
 			var exists_in_mongodb = document.getElementById('exists_in_mongodb')
@@ -29,3 +29,4 @@ class checkMember {
 		}
 	}
 }
+
