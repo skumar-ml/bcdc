@@ -1,4 +1,4 @@
-// Payment History Management Class
+ // Payment History Management Class
         class PaymentHistory {
             constructor(data) {
                 this.data = data;
@@ -37,10 +37,9 @@
                 this.spinner.style.display = "block";
 
                 // Fetch all required data in parallel
-                const [data, millionsData, announcements] = await Promise.all([
+                const [data, millionsData] = await Promise.all([
                     this.fetchData(),
                     this.fetchMillionsData(),
-                    this.fetchAnnouncements(),
                 ]);
 
                 // Check if data exists
