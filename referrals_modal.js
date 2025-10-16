@@ -212,7 +212,7 @@
 
             // Fetch referrer details and update display
             fetchReferrerDetails(memberId) {
-                fetch(`${this.data.baseUrl}getMemberDetails/${memberId}`)
+                fetch(`${this.data.memberBaseUrl}getMemberDetails/${memberId}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data && data.name) {
@@ -418,3 +418,4 @@
                 }
             }
         }
+
