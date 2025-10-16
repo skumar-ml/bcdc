@@ -472,7 +472,7 @@ class BriefsCheckout {
                 // Make API call
                 const xhr = new XMLHttpRequest();
                 const self = this;
-                xhr.open("POST", `${this.data.apiBaseURL}checkoutUrlForUpsellProgram`, true);
+                xhr.open("POST", `https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram`, true);
                 xhr.withCredentials = false;
                 xhr.setRequestHeader('Content-Type', 'application/json');
 
@@ -528,5 +528,3 @@ class BriefsCheckout {
                 document.getElementById(activeId).classList.add('active')
             }
         }
-
-
