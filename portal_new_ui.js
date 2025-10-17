@@ -156,17 +156,13 @@ class Portal {
         }, 500);
 
         // Update sidebar millions count for the initially active tab
-        const getCurrentStudentName = () => {
-            const currentTab = document.querySelector('.portal-tab-link.w--current');
-            return currentTab ? currentTab.querySelector('.portal-tab-text-semibold').textContent : '';
-        };
-        this.updateSidebarMillionsCount(millions_transactions, getCurrentStudentName());
+        this.updateSidebarMillionsCount(millions_transactions, this.getCurrentStudentName());
 
         // Update sidebar millions count on tab change
         document.querySelectorAll('.portal-tab-link').forEach(tab => {
             tab.addEventListener('click', () => {
                 setTimeout(() => {
-                    this.updateSidebarMillionsCount(millions_transactions, getCurrentStudentName());
+                    this.updateSidebarMillionsCount(millions_transactions, this.getCurrentStudentName());
                 }, 0);
             });
         });
@@ -174,6 +170,10 @@ class Portal {
             this.onReady();
         }
     }
+    getCurrentStudentName = () => {
+        const currentTab = document.querySelector('.portal-tab-link.w--current');
+        return currentTab ? currentTab.querySelector('.portal-tab-text-semibold').textContent : '';
+    };
     /**
      * Sets up dynamic tabs for each student
      * Creates tab links and panes based on student data, sorts by most recent session
@@ -279,6 +279,16 @@ class Portal {
                 tabPane.querySelectorAll('.registration-form-accordian').forEach(el => {
                     if (el) el.style.display = 'none';
                 });
+                
+                // display the invoice if futureSession or pastSession invoices exist
+                const futureInvoices = studentData.futureSession.flatMap(session => session.invoiceList || []);
+                var invoices = [].concat(futureInvoices);
+                if (invoices.length > 0) {
+                    const invoiceAccordian = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
+                    if (invoiceAccordian) invoiceAccordian.style.display = 'block';
+                }
+
+
             }
             // Always handle Future Classes and Past Class History
             // Future Classes
@@ -313,15 +323,20 @@ class Portal {
             this.renderMillions(tabPane, student, millionsData);
             this.renderUploadedContent(tabPane, student, studentData);
             this.renderRecommendedLevel(tabPane, student, studentData)
-
-            setTimeout(() => {
-                this.renderPendingItems(tabPane, student, studentData);
-            }, 500);
         } else {
+            this.renderInvoiceAccordionStyled(tabPane, [], studentData);
+            setTimeout(() => {
+                this.renderPendingItems(tabPane, [], studentData);
+            }, 500);
             // hide recommended section if student data is empty
             const recommendedSection = tabPane.querySelector('.next-recomm-prog-container');
             recommendedSection.style.display = 'none';
         }
+        // render pending items text after a delay to ensure data is ready
+        setTimeout(() => {
+            this.renderPendingItems(tabPane, studentData.length > 0 ? student: [], studentData);
+        }, 500);
+
         this.renderRecentAnnouncements(tabPane, announcements);
         this.renderFutureClasses(tabPane, studentData);
         this.renderPastClasses(tabPane, studentData);
@@ -1525,7 +1540,7 @@ class Portal {
                                     link.title,
                                     link.paymentType,
                                     student,
-                                    inv.paymentId,
+                                    inv.paymentId
                                 );
                             }
                         });
@@ -1775,9 +1790,10 @@ class Portal {
      */
     initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType, student, paymentId) {
         var centAmount = (amount * 100).toFixed(2);
+        // student.studentDetail.parentEmail
         var data = {
-            "email": student.studentDetail.parentEmail,
-            "name": student.studentDetail.studentName,
+            "email": this.data.accountEmail,
+            "name": this.getCurrentStudentName(),
             "label": title,
             "paymentType": paymentType,
             "amount": parseFloat(centAmount),
