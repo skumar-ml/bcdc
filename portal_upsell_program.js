@@ -427,7 +427,7 @@ class DisplaySuppProgram {
     var $this = this;
     try {
       const data = await this.fetchData(
-        "getAllPreviousStudents/" + this.memberData.memberId + "/current",
+        "getAllPreviousStudents/" + this.memberData.memberId + "/selling",
         this.memberData.fTypeBaseUrl
       );
       if (data != "No data Found") {
@@ -737,3 +737,4 @@ class DisplaySuppProgram {
     });
   }
 }
+
