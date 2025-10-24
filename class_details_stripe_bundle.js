@@ -383,7 +383,7 @@ class classDetailsStripe {
       // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram 
       if (this.$allBundlePrograms.length > 0) {
         const matchedProgram = this.$allBundlePrograms.find(
-          (program) => program.studentEmail == paymentData.studentEmail
+          (program) => program.studentName.replace(" ","").toLowerCase() === (paymentData.firstName.replace(" ","").toLowerCase() + paymentData.lastName.replace(" ","").toLowerCase())
         );
         if (matchedProgram) {
           this.$selectedBundleProgram = matchedProgram;
@@ -495,8 +495,9 @@ class classDetailsStripe {
     );
     // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram
     if (this.$allBundlePrograms.length > 0) {
+      // remove whitespace and convert to lowercase before compare
       const matchedProgram = this.$allBundlePrograms.find(
-        (program) => program.studentEmail === studentEmail.value
+        (program) => program.studentName.replace(" ","").toLowerCase() === (studentFirstName.value.replace(" ","").toLowerCase() + studentLastName.value.replace(" ","").toLowerCase())
       );
       if (matchedProgram) {
         this.$selectedBundleProgram = matchedProgram;
@@ -1824,6 +1825,7 @@ class classDetailsStripe {
         selectBox.innerHTML = '<option value="">No previous students found</option>';
         return;
       }
+      data = data.filter(i=>i.studentEmail != null && i.studentEmail != undefined && i.studentEmail != "");
       const filterData = data
         .filter(
           (item, index, self) =>
@@ -1866,7 +1868,7 @@ class classDetailsStripe {
         };
         // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram 
         const matchedProgram = $this.$allBundlePrograms.find(
-          (program) => program.studentEmail === data.studentEmail
+          (program) => program.studentName.replace(" ","").toLowerCase() === (data.firstName.replace(" ","").toLowerCase() + data.lastName.replace(" ","").toLowerCase())
         );
         if (matchedProgram) {
           $this.$selectedBundleProgram = matchedProgram;
@@ -1888,10 +1890,12 @@ class classDetailsStripe {
     }
   }
   checkBundlePurchaseFlow() {
+    var studentFirstName = document.getElementById("Student-First-Name").value;
+    var studentLastName = document.getElementById("Student-Last-Name").value;
     var studentEmail = document.getElementById("Student-Email").value;
     const matchedProgram = this.$allBundlePrograms.find(
-      (program) => program.studentEmail === studentEmail
-    );
+      (program) => program.studentName.replace(" ","").toLowerCase() === (studentEmail.replace(" ","").toLowerCase())
+    );studentFirstName.replace(" ","").toLowerCase() + studentLastName.replace(" ","").toLowerCase()
     if (matchedProgram) {
       this.$selectedBundleProgram = matchedProgram;
       this.$isCheckoutFlow = "Bundle-Purchase";
@@ -2827,4 +2831,3 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
-
