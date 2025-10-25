@@ -1846,7 +1846,7 @@ class classDetailsStripe {
       filterData.forEach((item, index) => {
         const option = document.createElement("option");
         option.value = index;
-        option.textContent = `${item.studentName}`;
+        option.textContent = `${item.studentName+" ("+item.studentEmail+")"}`;
         selectBox.appendChild(option);
       });
       selectBox.addEventListener("change", function (event) {
@@ -2831,3 +2831,4 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
