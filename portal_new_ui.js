@@ -1123,7 +1123,9 @@ class Portal {
     renderMillions(tabPane, student, millionsData) {
         const millionsText = tabPane.querySelector('.million-price-text');
         if (!millionsText) return;
-        if(!millionsData) return;
+        if(!millionsData){
+           millionsData =[];
+        }
         const entry = millionsData.find(e => e.studentName === student.studentDetail.studentName);
         const millionsCount = entry?.earnAmount || 0;
         millionsText.innerHTML = `${millionsCount} <span class="million-text-gray">millions</span>`;
@@ -1934,4 +1936,5 @@ class Portal {
     }
 
 }
+
 
