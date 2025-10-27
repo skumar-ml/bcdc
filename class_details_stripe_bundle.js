@@ -1830,7 +1830,8 @@ class classDetailsStripe {
         .filter(
           (item, index, self) =>
             index ===
-            self.findIndex((obj) => obj.studentName === item.studentName)
+            self.findIndex((obj) => obj.studentName === item.studentName &&
+            obj.studentEmail === item.studentEmail )
         )
         .sort(function (a, b) {
           return a.studentName.trim().localeCompare(b.studentName.trim());
@@ -2831,5 +2832,6 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
 
