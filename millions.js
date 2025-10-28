@@ -165,6 +165,12 @@ class MillionsRenderer {
              title.className = 'portal-node-title transactions';
              title.textContent = 'Transactions';
              tabPane.appendChild(title);
+             if(student.earnAmount == 0){
+                 const noRecord = document.createElement('p');
+                 noRecord.className = 'transactions-table-row-text no-record';
+                 noRecord.textContent = 'No Record Found';
+                 transactionsBanner.appendChild(noRecord);
+             }
              tabPane.appendChild(transactionsBanner);
 
              tabContent.appendChild(tabPane);
@@ -221,3 +227,4 @@ class MillionsRenderer {
      }
  }
         
+
