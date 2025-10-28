@@ -95,6 +95,12 @@ class MillionsRenderer {
 
              transactionsDiv.appendChild(row);
          });
+          if(student.transactions.length == 0){
+             const noRecordP = document.createElement('p');
+             noRecordP.className = 'transactions-table-row-text no-record';
+             noRecordP.textContent = 'No Record Found';
+             transactionsDiv.appendChild(noRecordP);
+         }
      }
 
      renderTabMenu(students) {
@@ -165,12 +171,6 @@ class MillionsRenderer {
              title.className = 'portal-node-title transactions';
              title.textContent = 'Transactions';
              tabPane.appendChild(title);
-             if(student.earnAmount == 0){
-                 const noRecord = document.createElement('p');
-                 noRecord.className = 'transactions-table-row-text no-record';
-                 noRecord.textContent = 'No Record Found';
-                 transactionsBanner.appendChild(noRecord);
-             }
              tabPane.appendChild(transactionsBanner);
 
              tabContent.appendChild(tabPane);
@@ -227,4 +227,5 @@ class MillionsRenderer {
      }
  }
         
+
 
