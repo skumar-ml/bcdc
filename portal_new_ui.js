@@ -1016,6 +1016,8 @@ class Portal {
 
         if (pastList.length > 0) {
             pastClassesDiv.style.display = '';
+            // sort desc by createdOn
+            pastList.sort((a, b) => new Date(b.createdOn) - new Date(a.createdOn));
             pastList.forEach(session => {
                 let text = 'No details available';
                 if (session.classDetail && Object.keys(session.classDetail).length > 0) {
@@ -1936,5 +1938,6 @@ class Portal {
     }
 
 }
+
 
 
