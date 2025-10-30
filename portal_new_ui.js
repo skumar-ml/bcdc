@@ -976,7 +976,7 @@ class Portal {
         if (futureList.length > 0) {
             futureClassesDiv.style.display = '';
             // removed refunded future sessions
-            futureList = futureList.filter(session => !session.isRefunded);
+            //futureList = futureList.filter(session => !session.isRefunded);
             futureList.forEach(session => {
                 let text = 'No details available';
                 if(session.classId){
@@ -1938,6 +1938,7 @@ class Portal {
     }
 
 }
+
 
 
 
