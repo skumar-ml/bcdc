@@ -994,6 +994,9 @@ class Portal {
                 div.className = 'announcement-flex-wrapper';
                 div.innerHTML = `<img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg" alt="" />\n<p class="poppins-para no-margin-bottom">${text}</p>`;
                 container?.appendChild(div);
+                if (session.isRefunded) {
+                    div.innerHTML += '<div class="refunded-rounded-div"><p class="poppins-para refunded-dark-gray-text">REFUNDED</p></div>';
+                }
             });
         } else {
             futureClassesDiv.style.display = 'none';
@@ -1938,6 +1941,7 @@ class Portal {
     }
 
 }
+
 
 
 
