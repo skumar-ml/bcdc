@@ -1844,9 +1844,12 @@ class classDetailsStripe {
       selectBox.appendChild(defaultOption);
       // Add new options from the API data
       filterData.forEach((item, index) => {
+        let checkBundle = this.checkStudentBundleProgram({firstName: item.studentName.split(" ")[0], lastName: item.studentName.split(" ")[1]});
+        let checkBundleLabel = (checkBundle)? "( Pre-registration available )" : "";
         const option = document.createElement("option");
         option.value = index;
-        option.textContent = `${item.studentName+" ("+item.studentEmail+")"}`;
+        //option.textContent = `${item.studentName+" ("+item.studentEmail+")"}`;
+        option.textContent = `${item.studentName+checkBundleLabel}`;
         selectBox.appendChild(option);
       });
       selectBox.addEventListener("change", function (event) {
@@ -1887,6 +1890,16 @@ class classDetailsStripe {
       // Handle errors (optional)
       selectBox.innerHTML =
         '<option value="">Student Details not available</option>';
+    }
+  }
+  checkStudentBundleProgram(data) {
+    const matchedProgram = this.$allBundlePrograms.find(
+      (program) => program.studentName.replace(" ","").toLowerCase() === (data.firstName.replace(" ","").toLowerCase() + data.lastName.replace(" ","").toLowerCase())
+    );
+    if (matchedProgram) {
+      return true;
+    } else {
+      return false;
     }
   }
   checkBundlePurchaseFlow() {
@@ -2831,6 +2844,7 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
 
 
