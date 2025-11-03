@@ -1907,8 +1907,8 @@ class classDetailsStripe {
     var studentLastName = document.getElementById("Student-Last-Name").value;
     var studentEmail = document.getElementById("Student-Email").value;
     const matchedProgram = this.$allBundlePrograms.find(
-      (program) => program.studentName.replace(" ","").toLowerCase() === (studentEmail.replace(" ","").toLowerCase())
-    );studentFirstName.replace(" ","").toLowerCase() + studentLastName.replace(" ","").toLowerCase()
+      (program) => program.studentName.replace(" ","").toLowerCase() === (studentFirstName.replace(" ","").toLowerCase() + studentLastName.replace(" ","").toLowerCase())
+    );
     if (matchedProgram) {
       this.$selectedBundleProgram = matchedProgram;
       this.$isCheckoutFlow = "Bundle-Purchase";
@@ -2844,6 +2844,7 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
 
 
