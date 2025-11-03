@@ -1873,12 +1873,15 @@ class classDetailsStripe {
         const matchedProgram = $this.$allBundlePrograms.find(
           (program) => program.studentName.replace(" ","").toLowerCase() === (data.firstName.replace(" ","").toLowerCase() + data.lastName.replace(" ","").toLowerCase())
         );
+        var preRegistrationTag = document.querySelectorAll(".pre-reg-tag")
         if (matchedProgram) {
           $this.$selectedBundleProgram = matchedProgram;
           $this.$isCheckoutFlow = "Bundle-Purchase";
+          preRegistrationTag.forEach(preRegistrationTagEl=>preRegistrationTagEl.style.display = "block");
         } else {
           $this.$selectedBundleProgram = null;
           $this.$isCheckoutFlow = "Normal";
+          preRegistrationTag.forEach(preRegistrationTagEl=>preRegistrationTagEl.style.display = "none");
         }
 
         localStorage.setItem("checkOutBasicData", JSON.stringify(data));
@@ -2847,6 +2850,7 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
 
 
