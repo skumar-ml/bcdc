@@ -1849,7 +1849,7 @@ class classDetailsStripe {
         const option = document.createElement("option");
         option.value = index;
         //option.textContent = `${item.studentName+" ("+item.studentEmail+")"}`;
-        option.textContent = `${item.studentName+checkBundleLabel}`;
+        option.textContent = `${item.studentName}`;
         selectBox.appendChild(option);
       });
       selectBox.addEventListener("change", function (event) {
@@ -1909,12 +1909,15 @@ class classDetailsStripe {
     const matchedProgram = this.$allBundlePrograms.find(
       (program) => program.studentName.replace(" ","").toLowerCase() === (studentFirstName.replace(" ","").toLowerCase() + studentLastName.replace(" ","").toLowerCase())
     );
+    var preRegistrationTag = document.querySelectorAll(".pre-reg-tag")
     if (matchedProgram) {
       this.$selectedBundleProgram = matchedProgram;
       this.$isCheckoutFlow = "Bundle-Purchase";
+      preRegistrationTag.forEach(preRegistrationTagEl=>preRegistrationTagEl.style.display = "block");
     } else {
       this.$selectedBundleProgram = null;
       this.$isCheckoutFlow = "Normal";
+      preRegistrationTag.forEach(preRegistrationTagEl=>preRegistrationTagEl.style.display = "none");
     }
   }
   updateAddonProgram() {
@@ -2844,6 +2847,7 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
 
 
