@@ -1845,11 +1845,14 @@ class classDetailsStripe {
       // Add new options from the API data
       filterData.forEach((item, index) => {
         let checkBundle = this.checkStudentBundleProgram({firstName: item.studentName.split(" ")[0], lastName: item.studentName.split(" ")[1]});
-        let checkBundleLabel = (checkBundle)? "( Pre-registration available )" : "";
+        let checkBundleLabel = (checkBundle)? " -Pre-registration available": "";
+        let checkBundleIcon = (checkBundle)? "🔴": "";
+        let checkBundleIconClass = (checkBundle)? "pre-reg-available" : "";
         const option = document.createElement("option");
         option.value = index;
+        option.classList.add(checkBundleIconClass);
         //option.textContent = `${item.studentName+" ("+item.studentEmail+")"}`;
-        option.textContent = `${item.studentName}`;
+        option.textContent = `${checkBundleIcon+" "+item.studentName+" "+checkBundleLabel}`;
         selectBox.appendChild(option);
       });
       selectBox.addEventListener("change", function (event) {
@@ -2850,6 +2853,7 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
 
 
