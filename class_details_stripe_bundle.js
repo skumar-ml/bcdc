@@ -1845,7 +1845,7 @@ class classDetailsStripe {
       // Add new options from the API data
       filterData.forEach((item, index) => {
         let checkBundle = this.checkStudentBundleProgram({firstName: item.studentName.split(" ")[0], lastName: item.studentName.split(" ")[1]});
-        let checkBundleLabel = (checkBundle)? " -Pre-registration available": "";
+        let checkBundleLabel = (checkBundle)? " - Pre-registration available": "";
         let checkBundleIcon = (checkBundle)? "🔴": "";
         let checkBundleIconClass = (checkBundle)? "pre-reg-available" : "normal-reg-available";
         const option = document.createElement("option");
@@ -2853,6 +2853,7 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
 
 
