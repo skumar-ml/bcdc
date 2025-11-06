@@ -1847,7 +1847,7 @@ class classDetailsStripe {
         let checkBundle = this.checkStudentBundleProgram({firstName: item.studentName.split(" ")[0], lastName: item.studentName.split(" ")[1]});
         let checkBundleLabel = (checkBundle)? " -Pre-registration available": "";
         let checkBundleIcon = (checkBundle)? "🔴": "";
-        let checkBundleIconClass = (checkBundle)? "pre-reg-available" : "";
+        let checkBundleIconClass = (checkBundle)? "pre-reg-available" : "normal-reg-available";
         const option = document.createElement("option");
         option.value = index;
         option.classList.add(checkBundleIconClass);
@@ -2853,6 +2853,7 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
 
 
