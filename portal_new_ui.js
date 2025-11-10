@@ -981,8 +981,8 @@ class Portal {
                 let text = 'No details available';
                 if(session.classId){
                     const hasClassDetail = session.classDetail && Object.keys(session.classDetail).length > 0;
-                    const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = session.classDetail;
                     if(hasClassDetail){
+                        const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = session.classDetail;
                         if(classLevel == 'Level competitivetrack'){
                             text = `Competitive Track | ${sessionName} ${currentYear}`;
                         }else{
@@ -1945,3 +1945,4 @@ class Portal {
     }
 
 }
+
