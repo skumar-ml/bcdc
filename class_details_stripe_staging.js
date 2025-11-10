@@ -1943,7 +1943,7 @@ class classDetailsStripe {
     const arrowIcon = document.createElement('span');
     arrowIcon.innerHTML = '▼';
     arrowIcon.style.fontSize = '10px';
-    arrowIcon.style.color = '#666';
+    arrowIcon.style.color = '#7c303e';
     arrowIcon.style.marginLeft = '8px';
     arrowIcon.style.transition = 'transform 0.2s';
     arrowIcon.style.flexShrink = '0';
