@@ -62,6 +62,106 @@ class classDetailsStripe {
     // check pre registered bundle program
 
   }
+  // Inject CSS styles into head section
+  injectCustomSelectStyles() {
+    // Check if styles already exist
+    if (document.getElementById('custom-select-styles')) {
+      return;
+    }
+    
+    const style = document.createElement('style');
+    style.id = 'custom-select-styles';
+    style.textContent = `
+      .custom-select-display-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+      }
+      
+      .custom-select-display {
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+        cursor: pointer;
+        min-height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      
+      .custom-select-display-text {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      
+      .custom-select-arrow {
+        font-size: 10px;
+        color: #7c303e;
+        margin-left: 8px;
+        transition: transform 0.2s;
+        flex-shrink: 0;
+      }
+      
+      .custom-select-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      .custom-select-dropdown.show {
+        display: block;
+      }
+      
+      .custom-select-arrow.rotated {
+        transform: rotate(180deg);
+      }
+      
+      .custom-select-option {
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      
+      .custom-select-option:hover {
+        background-color: #f5f5f5;
+      }
+      
+      .custom-select-option-default {
+        color: #999;
+      }
+      
+      .custom-select-display-placeholder {
+        color: #999;
+      }
+      
+      .custom-select-hidden {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        width: 1px;
+        height: 1px;
+      }
+      
+      .custom-select-bundle-label {
+        font-size: 0.75em;
+        color: #808080;
+        font-weight: normal;
+      }
+    `;
+    document.head.appendChild(style);
+  }
   // checkBundleProgram
   async checkBundleProgram() {
     let preRegistration = document.querySelector("[data-checkout='pre-registration']");
@@ -1906,6 +2006,9 @@ class classDetailsStripe {
     }
   }
   createCustomSelectDisplay(selectBox, filterData) {
+    // Inject CSS styles into head if not already present
+    this.injectCustomSelectStyles();
+    
     // Remove existing custom display wrapper if it exists
     const existingWrapper = selectBox.parentElement.querySelector('.custom-select-display-wrapper');
     if (existingWrapper) {
@@ -1915,62 +2018,26 @@ class classDetailsStripe {
     // Create wrapper div
     const wrapper = document.createElement('div');
     wrapper.className = 'custom-select-display-wrapper';
-    wrapper.style.position = 'relative';
-    wrapper.style.display = 'inline-block';
-    wrapper.style.width = '100%';
     
     // Create display div that shows the selected value
     const displayDiv = document.createElement('div');
     displayDiv.className = 'custom-select-display';
-    displayDiv.style.padding = '8px 12px';
-    displayDiv.style.border = '1px solid #ccc';
-    displayDiv.style.borderRadius = '4px';
-    displayDiv.style.backgroundColor = '#fff';
-    displayDiv.style.cursor = 'pointer';
-    displayDiv.style.minHeight = '20px';
-    displayDiv.style.display = 'flex';
-    displayDiv.style.alignItems = 'center';
-    displayDiv.style.justifyContent = 'space-between';
     
     // Create text container for the selected value
     const textContainer = document.createElement('span');
-    textContainer.style.flex = '1';
-    textContainer.style.overflow = 'hidden';
-    textContainer.style.textOverflow = 'ellipsis';
-    textContainer.style.whiteSpace = 'nowrap';
+    textContainer.className = 'custom-select-display-text';
     
     // Create arrow icon
     const arrowIcon = document.createElement('span');
+    arrowIcon.className = 'custom-select-arrow';
     arrowIcon.innerHTML = '▼';
-    arrowIcon.style.fontSize = '15px';
-    arrowIcon.style.color = '#7c303e';
-    arrowIcon.style.marginLeft = '8px';
-    arrowIcon.style.transition = 'transform 0.2s';
-    arrowIcon.style.flexShrink = '0';
     
     // Create dropdown options container
     const dropdownOptions = document.createElement('div');
     dropdownOptions.className = 'custom-select-dropdown';
-    dropdownOptions.style.position = 'absolute';
-    dropdownOptions.style.top = '100%';
-    dropdownOptions.style.left = '0';
-    dropdownOptions.style.right = '0';
-    dropdownOptions.style.backgroundColor = '#fff';
-    dropdownOptions.style.border = '1px solid #ccc';
-    dropdownOptions.style.borderTop = 'none';
-    dropdownOptions.style.borderRadius = '0 0 4px 4px';
-    dropdownOptions.style.maxHeight = '200px';
-    dropdownOptions.style.overflowY = 'auto';
-    dropdownOptions.style.display = 'none';
-    dropdownOptions.style.zIndex = '1000';
-    dropdownOptions.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
     
     // Hide the original select but keep it for form submission
-    selectBox.style.position = 'absolute';
-    selectBox.style.opacity = '0';
-    selectBox.style.pointerEvents = 'none';
-    selectBox.style.width = '1px';
-    selectBox.style.height = '1px';
+    selectBox.className = (selectBox.className ? selectBox.className + ' ' : '') + 'custom-select-hidden';
     
     // Wrap the select
     const parent = selectBox.parentElement;
@@ -1987,7 +2054,7 @@ class classDetailsStripe {
       const studentName = option.getAttribute('data-student-name') || option.textContent;
       
       if (hasCheckBundle) {
-        return `${studentName}<span style="font-size: 0.75em; color: #808080; font-weight: normal;"> - Pre-registration available</span>`;
+        return `${studentName}<span class="custom-select-bundle-label"> - Pre-registration available</span>`;
       } else {
         return studentName;
       }
@@ -1999,17 +2066,8 @@ class classDetailsStripe {
       
       // Add default option
       const defaultOptionDiv = document.createElement('div');
-      defaultOptionDiv.className = 'custom-select-option';
-      defaultOptionDiv.style.padding = '8px 12px';
-      defaultOptionDiv.style.cursor = 'pointer';
+      defaultOptionDiv.className = 'custom-select-option custom-select-option-default';
       defaultOptionDiv.textContent = 'Select Student Name';
-      defaultOptionDiv.style.color = '#999';
-      defaultOptionDiv.addEventListener('mouseenter', function() {
-        this.style.backgroundColor = '#f5f5f5';
-      });
-      defaultOptionDiv.addEventListener('mouseleave', function() {
-        this.style.backgroundColor = '#fff';
-      });
       defaultOptionDiv.addEventListener('click', function() {
         selectBox.selectedIndex = 0;
         selectBox.dispatchEvent(new Event('change'));
@@ -2022,17 +2080,9 @@ class classDetailsStripe {
         const option = selectBox.options[i];
         const optionDiv = document.createElement('div');
         optionDiv.className = 'custom-select-option';
-        optionDiv.style.padding = '8px 12px';
-        optionDiv.style.cursor = 'pointer';
         optionDiv.innerHTML = createOptionHTML(option);
         optionDiv.setAttribute('data-value', option.value);
         
-        optionDiv.addEventListener('mouseenter', function() {
-          this.style.backgroundColor = '#f5f5f5';
-        });
-        optionDiv.addEventListener('mouseleave', function() {
-          this.style.backgroundColor = '#fff';
-        });
         optionDiv.addEventListener('click', function() {
           selectBox.selectedIndex = parseInt(this.getAttribute('data-value')) + 1;
           selectBox.dispatchEvent(new Event('change'));
@@ -2045,14 +2095,14 @@ class classDetailsStripe {
     
     // Function to toggle dropdown
     const toggleDropdown = () => {
-      const isOpen = dropdownOptions.style.display !== 'none';
+      const isOpen = dropdownOptions.classList.contains('show');
       if (isOpen) {
-        dropdownOptions.style.display = 'none';
-        arrowIcon.style.transform = 'rotate(0deg)';
+        dropdownOptions.classList.remove('show');
+        arrowIcon.classList.remove('rotated');
       } else {
         buildDropdownOptions();
-        dropdownOptions.style.display = 'block';
-        arrowIcon.style.transform = 'rotate(180deg)';
+        dropdownOptions.classList.add('show');
+        arrowIcon.classList.add('rotated');
       }
     };
     
@@ -2061,10 +2111,10 @@ class classDetailsStripe {
       const selectedOption = selectBox.options[selectBox.selectedIndex];
       if (selectedOption && selectedOption.value !== '') {
         textContainer.innerHTML = createOptionHTML(selectedOption);
-        displayDiv.style.color = '';
+        displayDiv.classList.remove('custom-select-display-placeholder');
       } else {
         textContainer.textContent = 'Select Student Name';
-        displayDiv.style.color = '#999';
+        displayDiv.classList.add('custom-select-display-placeholder');
       }
     };
     
@@ -2077,8 +2127,8 @@ class classDetailsStripe {
     // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
       if (!wrapper.contains(e.target)) {
-        dropdownOptions.style.display = 'none';
-        arrowIcon.style.transform = 'rotate(0deg)';
+        dropdownOptions.classList.remove('show');
+        arrowIcon.classList.remove('rotated');
       }
     });
     
