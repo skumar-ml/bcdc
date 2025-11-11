@@ -1842,19 +1842,26 @@ class classDetailsStripe {
       defaultOption.value = "";
       defaultOption.textContent = "Select Student Name";
       selectBox.appendChild(defaultOption);
+      // Store filterData for use in custom dropdown
+      selectBox._filterData = filterData;
+      
       // Add new options from the API data
       filterData.forEach((item, index) => {
         let checkBundle = this.checkStudentBundleProgram({firstName: item.studentName.split(" ")[0], lastName: item.studentName.split(" ")[1]});
         let checkBundleLabel = (checkBundle)? " - Pre-registration available": "";
-        let checkBundleIcon = (checkBundle)? "🔴": "";
         let checkBundleIconClass = (checkBundle)? "pre-reg-available" : "normal-reg-available";
         const option = document.createElement("option");
         option.value = index;
         option.classList.add(checkBundleIconClass);
         //option.textContent = `${item.studentName+" ("+item.studentEmail+")"}`;
-        option.textContent = `${checkBundleIcon+" "+item.studentName+" "+checkBundleLabel}`;
+        option.textContent = `${item.studentName}${checkBundleLabel}`;
+        option.setAttribute("data-check-bundle", checkBundle ? "true" : "false");
+        option.setAttribute("data-student-name", item.studentName);
         selectBox.appendChild(option);
       });
+      
+      // Create custom styled dropdown with styled options
+      this.createCustomSelectDisplay(selectBox, filterData);
       selectBox.addEventListener("change", function (event) {
         var checkoutJson = localStorage.getItem("checkOutBasicData");
         let studentName = filterData[event.target.value].studentName.split(
@@ -1897,6 +1904,138 @@ class classDetailsStripe {
       selectBox.innerHTML =
         '<option value="">Student Details not available</option>';
     }
+  }
+  createCustomSelectDisplay(selectBox, filterData) {
+    // Inject CSS styles into head if not already present
+    
+    // Remove existing custom display wrapper if it exists
+    const existingWrapper = selectBox.parentElement.querySelector('.custom-select-display-wrapper');
+    if (existingWrapper) {
+      existingWrapper.remove();
+    }
+    
+    // Create wrapper div
+    const wrapper = document.createElement('div');
+    wrapper.className = 'custom-select-display-wrapper';
+    
+    // Create display div that shows the selected value
+    const displayDiv = document.createElement('div');
+    displayDiv.className = 'custom-select-display';
+    
+    // Create text container for the selected value
+    const textContainer = document.createElement('span');
+    textContainer.className = 'custom-select-display-text';
+    
+    // Create arrow icon
+    const arrowIcon = document.createElement('span');
+    arrowIcon.className = 'custom-select-arrow';
+    arrowIcon.innerHTML = '▼';
+    
+    // Create dropdown options container
+    const dropdownOptions = document.createElement('div');
+    dropdownOptions.className = 'custom-select-dropdown';
+    
+    // Hide the original select but keep it for form submission
+    selectBox.className = (selectBox.className ? selectBox.className + ' ' : '') + 'custom-select-hidden';
+    
+    // Wrap the select
+    const parent = selectBox.parentElement;
+    parent.insertBefore(wrapper, selectBox);
+    wrapper.appendChild(selectBox);
+    wrapper.appendChild(displayDiv);
+    displayDiv.appendChild(textContainer);
+    displayDiv.appendChild(arrowIcon);
+    wrapper.appendChild(dropdownOptions);
+    
+    // Function to create option HTML with styled checkBundleLabel
+    const createOptionHTML = (option) => {
+      const hasCheckBundle = option.getAttribute('data-check-bundle') === 'true';
+      const studentName = option.getAttribute('data-student-name') || option.textContent;
+      
+      if (hasCheckBundle) {
+        return `${studentName}<span class="custom-select-bundle-label"> - Pre-registration available</span>`;
+      } else {
+        return studentName;
+      }
+    };
+    
+    // Function to build dropdown options
+    const buildDropdownOptions = () => {
+      dropdownOptions.innerHTML = '';
+      
+      // Add default option
+      const defaultOptionDiv = document.createElement('div');
+      defaultOptionDiv.className = 'custom-select-option custom-select-option-default';
+      defaultOptionDiv.textContent = 'Select Student Name';
+      defaultOptionDiv.addEventListener('click', function() {
+        selectBox.selectedIndex = 0;
+        selectBox.dispatchEvent(new Event('change'));
+        toggleDropdown();
+      });
+      dropdownOptions.appendChild(defaultOptionDiv);
+      
+      // Add student options
+      for (let i = 1; i < selectBox.options.length; i++) {
+        const option = selectBox.options[i];
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'custom-select-option';
+        optionDiv.innerHTML = createOptionHTML(option);
+        optionDiv.setAttribute('data-value', option.value);
+        
+        optionDiv.addEventListener('click', function() {
+          selectBox.selectedIndex = parseInt(this.getAttribute('data-value')) + 1;
+          selectBox.dispatchEvent(new Event('change'));
+          toggleDropdown();
+        });
+        
+        dropdownOptions.appendChild(optionDiv);
+      }
+    };
+    
+    // Function to toggle dropdown
+    const toggleDropdown = () => {
+      const isOpen = dropdownOptions.classList.contains('show');
+      if (isOpen) {
+        dropdownOptions.classList.remove('show');
+        arrowIcon.classList.remove('rotated');
+      } else {
+        buildDropdownOptions();
+        dropdownOptions.classList.add('show');
+        arrowIcon.classList.add('rotated');
+      }
+    };
+    
+    // Function to update display
+    const updateDisplay = () => {
+      const selectedOption = selectBox.options[selectBox.selectedIndex];
+      if (selectedOption && selectedOption.value !== '') {
+        textContainer.innerHTML = createOptionHTML(selectedOption);
+        displayDiv.classList.remove('custom-select-display-placeholder');
+      } else {
+        textContainer.textContent = 'Select Student Name';
+        displayDiv.classList.add('custom-select-display-placeholder');
+      }
+    };
+    
+    // Event listeners
+    displayDiv.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleDropdown();
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!wrapper.contains(e.target)) {
+        dropdownOptions.classList.remove('show');
+        arrowIcon.classList.remove('rotated');
+      }
+    });
+    
+    // Update display on change
+    selectBox.addEventListener('change', updateDisplay);
+    
+    // Initial display update
+    updateDisplay();
   }
   checkStudentBundleProgram(data) {
     const matchedProgram = this.$allBundlePrograms.find(
@@ -2853,14 +2992,3 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
