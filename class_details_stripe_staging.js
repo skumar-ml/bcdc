@@ -2007,7 +2007,7 @@ class classDetailsStripe {
   }
   createCustomSelectDisplay(selectBox, filterData) {
     // Inject CSS styles into head if not already present
-    this.injectCustomSelectStyles();
+    //this.injectCustomSelectStyles();
     
     // Remove existing custom display wrapper if it exists
     const existingWrapper = selectBox.parentElement.querySelector('.custom-select-display-wrapper');
