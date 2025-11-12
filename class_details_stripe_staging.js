@@ -62,106 +62,7 @@ class classDetailsStripe {
     // check pre registered bundle program
 
   }
-  // Inject CSS styles into head section
-  injectCustomSelectStyles() {
-    // Check if styles already exist
-    if (document.getElementById('custom-select-styles')) {
-      return;
-    }
-    
-    const style = document.createElement('style');
-    style.id = 'custom-select-styles';
-    style.textContent = `
-      .custom-select-display-wrapper {
-        position: relative;
-        display: inline-block;
-        width: 100%;
-      }
-      
-      .custom-select-display {
-        padding: 8px 12px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background-color: #fff;
-        cursor: pointer;
-        min-height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      
-      .custom-select-display-text {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      
-      .custom-select-arrow {
-        font-size: 10px;
-        color: #7c303e;
-        margin-left: 8px;
-        transition: transform 0.2s;
-        flex-shrink: 0;
-      }
-      
-      .custom-select-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background-color: #fff;
-        border: 1px solid #ccc;
-        border-top: none;
-        border-radius: 0 0 4px 4px;
-        max-height: 200px;
-        overflow-y: auto;
-        display: none;
-        z-index: 1000;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      }
-      
-      .custom-select-dropdown.show {
-        display: block;
-      }
-      
-      .custom-select-arrow.rotated {
-        transform: rotate(180deg);
-      }
-      
-      .custom-select-option {
-        padding: 8px 12px;
-        cursor: pointer;
-      }
-      
-      .custom-select-option:hover {
-        background-color: #f5f5f5;
-      }
-      
-      .custom-select-option-default {
-        color: #999;
-      }
-      
-      .custom-select-display-placeholder {
-        color: #999;
-      }
-      
-      .custom-select-hidden {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-        width: 1px;
-        height: 1px;
-      }
-      
-      .custom-select-bundle-label {
-        font-size: 0.75em;
-        color: #808080;
-        font-weight: normal;
-      }
-    `;
-    document.head.appendChild(style);
-  }
+ 
   // checkBundleProgram
   async checkBundleProgram() {
     let preRegistration = document.querySelector("[data-checkout='pre-registration']");
@@ -346,7 +247,7 @@ class classDetailsStripe {
     // add event listener when  trying to payment
     // submitClassPayment
     [preRegistrationDiv, submitClassPayment].forEach((element) => {
-      element.addEventListener("click", function (event) {
+      element.addEventListener("click", async function (event) {
         event.preventDefault();
         submitClassPayment.style.pointerEvents = "none";
 
@@ -368,7 +269,7 @@ class classDetailsStripe {
         let paymentType =
           paymentTab.getAttribute("data-w-tab") == "Tab 1" ? "ach" : "card";
         let has_fee = paymentType == "card" ? true : false;
-        $this.initializeStripePayment(
+        await $this.initializeStripePayment(
           submitClassPayment,
           responseText,
           timingText,
@@ -1053,7 +954,7 @@ class classDetailsStripe {
     return upsellProgramIds;
   }
   // API call for stripe checkout URL
-  initializeStripePayment(
+  async initializeStripePayment(
     locationActionLink,
     responseText,
     timingText,
@@ -1064,6 +965,14 @@ class classDetailsStripe {
     levelName,
     preRegistrationDiv = null
   ) {
+
+    // Open Bergen credits modal and wait for user's decision
+    // This will show the modal, fetch credit data, and wait for user to choose apply/no
+    const applyCredit = await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
+    
+    // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
+    console.log("Apply credit:", applyCredit);
+      
     var label;
     if (responseText.locationName != "None") {
       label =
@@ -2006,8 +1915,6 @@ class classDetailsStripe {
     }
   }
   createCustomSelectDisplay(selectBox, filterData) {
-    // Inject CSS styles into head if not already present
-    //this.injectCustomSelectStyles();
     
     // Remove existing custom display wrapper if it exists
     const existingWrapper = selectBox.parentElement.querySelector('.custom-select-display-wrapper');
