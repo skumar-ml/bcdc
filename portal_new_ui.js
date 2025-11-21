@@ -983,7 +983,7 @@ class Portal {
                     const hasClassDetail = session.classDetail && Object.keys(session.classDetail).length > 0;
                     if(hasClassDetail){
                         const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = session.classDetail;
-                        if(classLevel == 'Level competitivetrack'){
+                        if(classLevel == 'Level customizedtrack'){
                             text = `Competitive Track | ${sessionName} ${currentYear}`;
                         }else{
                             text = `${classLevel} | ${day} ${startTime} | ${location} | ${sessionName} ${currentYear}`;
@@ -1066,7 +1066,7 @@ class Portal {
         if (hasClassDetail) {
             const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = student.classDetail;
             if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${sessionName} ${currentYear})</span>`;
-            if (classInfoEl) classInfoEl.textContent = (classLevel == 'Level competitivetrack') ? "Competitive Track" : `${classLevel} | ${day} ${startTime} | ${location}`;
+            if (classInfoEl) classInfoEl.textContent = (classLevel == 'Level customizedtrack') ? "Competitive Track" : `${classLevel} | ${day} ${startTime} | ${location}`;
         } else if (hasSummerProgram) {
             const { programName = 'Summer Program', location = '', year, summerSessionId } = student.summerProgramDetail;
             let inferredYear = year || 'Summer ' + (student.summerProgramDetail?.currentYear) || (new Date().getFullYear() + ' Summer');
@@ -1945,4 +1945,3 @@ class Portal {
     }
 
 }
-
