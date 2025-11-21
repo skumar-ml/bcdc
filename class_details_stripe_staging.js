@@ -210,7 +210,7 @@ class classDetailsStripe {
     classTimeDiv.classList.add("hide");
     paymentMethodsDiv.classList.add("hide");
 
-    if (this.levelId == "competitivetrack") {
+    if (this.levelId == "customizedtrack") {
       $this.updateClassTimes(
         "none",
         classTimesData,
@@ -814,7 +814,7 @@ class classDetailsStripe {
           $this.showSemesterBundleModal();
 
           // trigger change event to update class times, Removed world school condition
-          if ($this.levelId != 'competitivetrack') {
+          if ($this.levelId != 'customizedtrack') {
             selectField.value = "";
             selectField.dispatchEvent(new Event("change"));
           }
@@ -979,7 +979,7 @@ class classDetailsStripe {
         responseText.locationName + " | " + levelName + " | " + timingText;
     } else {
       // label = this.levelId == "worldschools" ? "World Schools" : "Competitive Track";
-      label = "Competitive Track";
+      label = "Customized Track";
     }
 
     var iBackButton = document.getElementById("backbuttonstate");
