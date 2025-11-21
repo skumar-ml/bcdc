@@ -969,8 +969,8 @@ class classDetailsStripe {
       label =
         responseText.locationName + " | " + levelName + " | " + timingText;
     } else {
-      // label = this.levelId == "worldschools" ? "World Schools" : "Competitive Track";
-      label = "Competitive Track";
+      // label = this.levelId == "worldschools" ? "World Schools" : "Customized Track";
+      label = "Customized Track";
     }
 
     var iBackButton = document.getElementById("backbuttonstate");
@@ -2992,4 +2992,5 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
 
