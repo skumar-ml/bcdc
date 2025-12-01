@@ -130,20 +130,7 @@ class PaymentConfirmation {
         }
     }
 
-    // async displaySupplementaryProgram() {
-    //     let apiData = await this.fetchData("getSupplementaryProgram/" + this.programId);
-    //     // Added in our Local Data
-    //     this.$suppPro = apiData;
-    //     let prep_week_searchText = "topic prep week";
-    //     let tutoring_week_searchText = "5 hours";
-    //     //let variant_type = _vwo_exp[_vwo_exp_ids[0]].combination_chosen;
-    //     // let variant_type = this.memberData.variant_type
-    //     // variant_type = variant_type != undefined || variant_type != null ? variant_type : "";
-    //     let prep_week_data = apiData.filter(i => i.label.toLowerCase().includes(prep_week_searchText.toLowerCase()))
-    //     let tutoring_data = apiData.filter(i => i.label.toLowerCase().includes(tutoring_week_searchText.toLowerCase()))
-    //     this.updateUpSellModal(prep_week_data, tutoring_data)
-
-    // }
+    
 
     updateUpSellModal(prep_week_data, tutoring_data) {
 

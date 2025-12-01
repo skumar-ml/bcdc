@@ -218,10 +218,7 @@ class CheckOutWebflow {
 		var prevStudent = document.getElementById('prevStudent-2');
 		var suppProIdE = document.getElementById('suppProIds');
 		var core_product_price = document.getElementById('core_product_price');
-		// var fort_lee_location = document.getElementById('fort_lee_location');
-		// var glen_rock_location = document.getElementById('glen_rock_location');
-		// var summerSessionId = document.querySelector('input[name = checkbox]:checked').value;
-
+		
 		//Utm Source
 		let localUtmSource = localStorage.getItem("utm_source");
 		
@@ -230,13 +227,10 @@ class CheckOutWebflow {
 		next_page_2.innerHTML ="Processing..."
 		
 		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
-		//var cancelUrl = new URL(window.location.href);
-		console.log(window.location.href)
 		// Check if the URL already has a query string returnType based on the current URL
 		if (!cancelUrl.searchParams.has('returnType')) {
 			cancelUrl.searchParams.set('returnType', 'back');
 		}
-		//console.log(cancelUrl)
 		var data = {
 			"email": this.memberData.email,
 			"studentEmail": studentEmail.value,
@@ -792,18 +786,6 @@ class CheckOutWebflow {
       suppIds.some((d) => d == item.upsellProgramId)
     );
     
-    
-    // Deposit price considered as single program
-      // let cartGridWrapper2 = creEl("div", "cart-grid-wrapper");
-      // let depositLabel = creEl("p", "main-text order-details-no-strike");
-      // depositLabel.innerHTML = "Deposit (Due Now)";
-      // let depositPrice = creEl("p", "main-text order-details-price-no-strike");
-      // depositPrice.innerHTML = "$300";
-      // depositPrice.setAttribute("data-stripe", "addon-deposit-price");
-      // cartGridWrapper2.prepend(depositLabel, depositPrice);
-      // selectedSuppPro.append( cartGridWrapper2);
-
-
       selectedData.forEach((sup) => {
         let mainGridWrapper = creEl("div", "cart-grid-wrapper");
       // bundle label and remove 
@@ -822,10 +804,6 @@ class CheckOutWebflow {
      }
      mainGridWrapper.appendChild(cartGridWrapper1)
       
-      // bundle amount considered as single program
-      //let cartGridWrapper3 = creEl("div", "cart-grid-wrapper");
-      // let bundleLabel = creEl("p", "main-text order-details-no-strike");
-      // bundleLabel.innerHTML = "Bundle Price";
       let bundlePrice = creEl("div","main-text order-details-price-no-strike");
       bundlePrice.innerHTML = "$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2));
       bundlePrice.setAttribute("data-stripe", "addon_price");
@@ -859,27 +837,10 @@ class CheckOutWebflow {
               this.updateAmount(checkbox.value);
             //}
   
-            // Find the corresponding "add-to-card" button inside the same parent div
-            // var addToCardButton = parentDiv.querySelector(".add-to-card");
-            // if (addToCardButton != undefined) {
-            //   addToCardButton.innerHTML = "Add to Cart";
-            //   addToCardButton.classList.remove("disabled");
-            //   addToCardButton.style.pointerEvents = "auto";
-            //   addToCardButton.style.color = "";
-            // }
+            
           }
         });
-        // Update tab
-        // let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
-        // paymentTab[0].click();
         
-        //this.updateCheckOutData({upsellProgramIds: arrayIds, selectedProgram: this.$selectedProgram});
-        // Hide and show new student fee
-        // if(this.$selectedProgram.length > 0){
-        //   this.hideShowNewStudentFee("none");
-        // }else{
-        //   this.hideShowNewStudentFee("grid");
-        // }
 		
       }
 	  this.disableEnableBuyNowButton();
@@ -931,13 +892,7 @@ class CheckOutWebflow {
 
       academicData.forEach((item) => {
         var currentSessionId = item.sessionId;
-        // remove current Session Data based on summerSessionId item.
-        // var bundleData = item.upsellPrograms.filter(
-        //   (bundle) => bundle.sessionId != currentSessionId && bundle.yearId != item.yearId
-        // );
-        // var coreData = item.upsellPrograms.find(
-        //   (bundle) => bundle.sessionId == currentSessionId
-        // );
+        
 		var bundleData = item.upsellPrograms;
 
 		if (this.memberData.achAmount && typeof this.memberData.achAmount === "string") {
@@ -1115,18 +1070,9 @@ class CheckOutWebflow {
         });
 
         
-        // If this is a bundle (upsell), manage coreData in $selectedProgram
-        //$this.updateCoreData(type);
-       // $this.disableEnableBuyNowButton(false)
-        //console.log("Final pop selected program", this.$selectedProgram)
-        // Update the cart
+        
         $this.updateAmount(event.target.value);
-        // let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
-        // paymentTab[0].click(); 
-        //$this.hideShowNewStudentFee("none");
-        //window.scrollTo({ top: 0, behavior: "smooth" });
-        //$this.updateCheckOutData({upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram});
-        ///$this.$oldSelectedProgram = $this.$selectedProgram;
+        
       });
       if (input.checked) {
         flexContainer.classList.add("border-brown-red");

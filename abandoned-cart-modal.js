@@ -71,9 +71,6 @@ class AbandonedCartModal {
       window.location.pathname.includes("/cart/") ||
       window.location.pathname.includes("log-in")
     ) {
-      // console.log(
-      //   "User is on the cart page or login page, not displaying modal."
-      // );
       return;
     }
     
@@ -86,7 +83,6 @@ class AbandonedCartModal {
       $this.displayCartMenuData()
       const parsedCartData = JSON.parse(cartData);
       if (parsedCartData.createdOn) {
-        //parsedCartData.createdOn = new Date(parsedCartData.createdOn).toLocaleString();
         $this.checkAndDisplayModals(parsedCartData).then((result) => { 
           $this.openModal();
           $this.addLinkTOViewCartBtn();
@@ -98,13 +94,10 @@ class AbandonedCartModal {
       this.fetchCartDataFromAPI()
       .then((data) => {
         if (data.createdOn) {
-          //data.createdOn = new Date(data.createdOn).toLocaleString();
-          //console.log('checkOutData from database', JSON.stringify(data))
           localStorage.setItem("checkOutData", JSON.stringify(data));
           $this.displayCartMenuData()
           return $this.checkAndDisplayModals(data);
         }else{
-          // console.log("No createdOn or programStartDate found in the response.");
           return Promise.reject("No createdOn found in the response.");
         }
       }).then((result) => {
@@ -123,11 +116,6 @@ class AbandonedCartModal {
       if (createdOnDate > sixHoursAgo) {
           reject(`Fetched cart data is less than ${this.data.hour} hours old, not displaying modal.`);
         return;
-      }else{
-        // console.log(
-        //   "Condition 1", 
-        //   createdOnDate, 
-        //   sixHoursAgo)
       }
 
       const fiveMonthsAgo = new Date();
@@ -135,35 +123,10 @@ class AbandonedCartModal {
 
       // Condition 2: If abandoned cart happened 5 months ago
       if (createdOnDate < fiveMonthsAgo) {
-        // console.log(
-        //   "Fetched cart data is older than 5 months, not displaying modal.",
-        //   createdOnDate
-        // );
         reject("Fetched cart data is older than 5 months, not displaying modal.");
         return;
-      } else {
-        // console.log(
-        //   "Condition 2",
-        //   createdOnDate,
-        //   fiveMonthsAgo
-        // )
       }
       
-      // Condition 3: If it is after the programStartDate for an abandoned cart
-      // if (data.programStartDate) {
-      //   const programStartDate = new Date(data.programStartDate);
-      //   const now = new Date();
-      //   if (programStartDate <= now) {
-      //     reject("Program start date is before or equal to the current date, not displaying modal.");
-      //     return;
-      //   } else {
-      //     console.log(
-      //       "Condition 3",
-      //       data.programStartDate
-      //     )
-      //   }
-      // }
-
       // Condition 4: If user closes pop-up with “Continue Browsing” or cross button, show it again after 7 days
       const isAbandonedModalOpen = localStorage.getItem("isAbandonedModalOpen");
       if (isAbandonedModalOpen === "true") {
@@ -175,28 +138,10 @@ class AbandonedCartModal {
         if (now < sevenDaysLater) {
           reject("Modal was closed less than 7 days ago, not displaying modal.");
           return;
-        } else {
-          // console.log(
-          //   "Condition 4",
-          //   now,
-          //   sevenDaysLater
-          // )
         }
       }
 
-      // Condition: If user has an abandoned cart before a purchase
-      // No need to check has purchase
-      //const hasPurchased = localStorage.getItem("hasPurchased");
-      // if (hasPurchased === "true") {
-      //   console.log(
-      //     "User has made a purchase after the abandoned cart, not displaying modal."
-      //   );
-      //   reject("User has made a purchase after the abandoned cart, not displaying modal.");
-      //   return;
-      // }
-
       // If all conditions pass, resolve to display the modal
-      //console.log("All conditions passed, displaying modal.");
       resolve("All conditions passed, displaying modal.");
     });
   }
@@ -219,7 +164,6 @@ class AbandonedCartModal {
       }
       return await response.json();
     } catch (error) {
-      //console.error("Failed to fetch cart data:", error);
       throw error;
     }
   }

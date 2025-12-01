@@ -400,9 +400,6 @@ class BriefsCheckout {
                         if (!brief) return;
 
                         const originalText = button.textContent;
-                        // show spinner while PDF is loading
-                        //this.showLoading();
-
                         // Determine which PDF to use (full_version preferred)
                         const pdfUrl = brief.full_version?.preview_pdf_url || brief.light_version?.preview_pdf_url;
 
@@ -414,14 +411,12 @@ class BriefsCheckout {
                             this.iframe.onload = () => {
                                 button.textContent = originalText;
                                 button.disabled = false;
-                                //this.hideLoading(); // hide spinner after PDF loads
                             };
                         } else {
                             button.textContent = "Not Available";
                             setTimeout(() => {
                                 button.textContent = originalText;
                                 button.disabled = false;
-                                //this.hideLoading(); // hide spinner after PDF loads
                             }, 2000);
                         }
                     });

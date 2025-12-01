@@ -583,24 +583,7 @@ class classDetailsStripe {
           prevStudentCheckBox[i].click();
         }
       }
-      //if (!isPreviousStudent) {
-      //Update total price
-      // console.log("prevStudentCheckBox[i]", prevStudentCheckBox[i])
-      // prevStudentCheckBox[i].click();
-      //   if (!prevStudentCheckBox[i].checked) {
-      //     total_price[i].innerHTML =
-      //       "$" + $this.numberWithCommas(totalAmount + 100);
-      //   }
-      //   prevStudentCheckBox[i].setAttribute("checked", true);
-      // } else {
-      //   if (prevStudentCheckBox[i].checked) {
-      //     total_price[i].innerHTML =
-      //       "$" + $this.numberWithCommas(totalAmount - 100);
-      //       console.log(prevStudentCheckBox[i], prevStudentCheckBox[i].checked)
-      //     prevStudentCheckBox[i].removeAttribute("checked");
-      //     console.log("2", prevStudentCheckBox[i].checked)
-      //   }
-      // }
+      
     }
   }
   eventUpdateTotalAmountPrice() {
@@ -1401,22 +1384,7 @@ class classDetailsStripe {
     return isOpen;
   }
 
-  // Update amount when checkbox selected
-  // handleUpSellSelection(){
-  //   var upSellCheckbox = document.querySelectorAll('.bundleProgram');
-  //   upSellCheckbox.forEach((checkbox) => {
-  //     checkbox.addEventListener('change', (event) => {
-  //       const programId = checkbox.getAttribute('programDetailId');
-  //       if (checkbox.checked) {
-  //         this.updateAmount(checkbox, checkbox.value);
-  //        // this.updateAllSameProduct(programId, true);
-  //       } else {
-  //         this.updateAmount(checkbox, checkbox.value);
-  //         // this.updateAllSameProduct(programId, false);
-  //       }
-  //     });
-  //   });
-  // }
+  
 
   addToCart() {
     const addToCartButtons = document.querySelectorAll(".add-to-cart");
@@ -1570,15 +1538,7 @@ class classDetailsStripe {
     );
 
 
-    // Deposit price considered as single program
-    // let cartGridWrapper2 = creEl("div", "cart-grid-wrapper");
-    // let depositLabel = creEl("p", "main-text order-details-no-strike");
-    // depositLabel.innerHTML = "Deposit (Due Now)";
-    // let depositPrice = creEl("p", "main-text order-details-price-no-strike");
-    // depositPrice.innerHTML = "$300";
-    // depositPrice.setAttribute("data-stripe", "addon-deposit-price");
-    // cartGridWrapper2.prepend(depositLabel, depositPrice);
-    // selectedSuppPro.append( cartGridWrapper2);
+    
 
 
     selectedData.forEach((sup) => {

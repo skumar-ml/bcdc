@@ -51,8 +51,6 @@ class ReferralProgram {
     }
     // Load referral data on page load
     this.loadReferralData();
-    //this.showEnrolled.addEventListener("change", () => this.loadReferralData());
-    //this.showPending.addEventListener("change", () => this.loadReferralData());
   }
   copyLink(){
     this.referralLinkInput.select();
@@ -115,30 +113,9 @@ class ReferralProgram {
         el.textContent = count;
       });
 
-      // const activeReferrals = count; // Set how many referrals are completed
-      // const totalReferrals = 7;
-      // const fill = document.getElementById("progress-fill");
-      // if (count < 7) {
-      //   fill.style.width = `${(activeReferrals / totalReferrals) * 100}%`;
-      // } else {
-      //   fill.style.width = "100%";
-      // }
-
       this.createTracker(count);
       this.createMobileTracker(count)
-
-      // display showEnrolled and showPending based on referred_stage None or else
-      // if (this.showEnrolled.checked && this.showPending.checked) {
-      //   data.referrals = data.referrals;
-      // } else if (this.showEnrolled.checked && !this.showPending.checked) {
-      //   data.referrals = data.referrals.filter(
-      //     (ref) => ref.referred_stage != "None"
-      //   );
-      // } else if (this.showPending.checked && !this.showEnrolled.checked) {
-      //   data.referrals = data.referrals.filter(
-      //     (ref) => ref.referred_stage == "None"
-      //   );
-      // }
+      
       // Sort referrals by date_referred in descending order
       data.referrals = (data.referrals || []).sort((a, b) => {
         const dateA = new Date(a.date_referred || 0);
@@ -146,10 +123,8 @@ class ReferralProgram {
         return dateB - dateA;
       });
       if(data.referrals.length == 0) {
-        //this.referralsTableBody.classList.add("no-record");
         document.querySelector(".no-record-div").style.display = "block";
       }else {
-        //this.referralsTableBody.classList.remove("no-record");
         document.querySelector(".no-record-div").style.display = "none";
       }
       // Populate referrals table
@@ -312,10 +287,6 @@ class ReferralProgram {
       const isCurrent = referralCount + 1 === i + 1;
 
       let textPositionClass = isEven ? "top-text" : "bottom-text";
-      // let rewardText =
-      //   i === this.maxReferrals - 1 && referralCount > this.maxReferrals
-      //     ? "7+ Referrals"
-      //     : `${i + 1} ${i==0 ? 'Referral': 'Referrals'}`;
       let rewardText =
         i >= this.maxReferrals - 1
           ? "7+ Referrals"
@@ -371,10 +342,6 @@ class ReferralProgram {
     const isLeft = i % 2 === 0;
     const isCompleted = referralCount > i;
     const isCurrent = referralCount + 1 === i + 1;
-
-    // const rewardText = i === this.maxReferrals - 1 && referralCount > this.maxReferrals
-    //   ? "7+ Referrals"
-    //   : `${i + 1} ${i==0 ? 'Referral': 'Referrals'}`;
     const rewardText = i >= this.maxReferrals - 1
       ? "7+ Referrals"
       : `${i + 1} ${i==0 ? 'Referral': 'Referrals'}`;

@@ -142,19 +142,7 @@ Are there any dependent JS files: No
                     // Sort by most recent first (descending order)
                     return bDate - aDate;
                 });
-                // Filter out students with only refunded past sessions
-                // students = students.filter((student) => {
-                //     const studentName = Object.keys(student)[0];
-                //     const studentData = Object.values(student)[0];
-
-                //     // If student has past sessions, check if any are not refunded
-                //     if (studentData.pastSession.length > 0 && studentData.currentSession.length == 0) {
-                //         return studentData.pastSession.find((session) => !session.isRefunded);
-                //     } else {
-                //         // Keep students with no past sessions
-                //         return true;
-                //     }
-                // });
+                
                 // Create tabs for each student
                 students.forEach((student, idx) => {
                     // Extract student name and data from object

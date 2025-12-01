@@ -84,12 +84,6 @@ class MillionsRenderer {
              dateDiv.textContent = this.formatDate(tx.lastEarnDate);
              row.appendChild(dateDiv);
 
-             // Type
-             // const typeDiv = document.createElement('div');
-             // typeDiv.className = 'transactions-table-row-text';
-             // typeDiv.innerHTML = tx.amount >= 0 ? 'Reward<br>' : 'Purchase<br>';
-             // row.appendChild(typeDiv);
-
              // Description
              const descDiv = document.createElement('div');
              descDiv.className = 'transactions-table-row-text';
