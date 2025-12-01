@@ -1,3 +1,13 @@
+/*
+
+Purpose: Manages class detail page for bundle purchases with Stripe payment processing. Handles pre-registration flow, bundle program selection, location selection, supplementary programs, and briefs integration.
+
+Brief Logic: Checks if program is a bundle and determines checkout flow (Normal, Pre-Registration-Info, or Bundle-Purchase). Fetches class details, handles location and session selection, manages supplementary programs and briefs, calculates pricing with discounts, and processes payment through Stripe.
+
+Are there any dependent JS files: No
+
+*/
+
 /**
  *
  * @param name - HTML element name
@@ -15,9 +25,7 @@ function creEl(name, className, idName) {
   return el;
 }
 
-/*
- * This Class used to get class details based on location and pass the data to classLocation class
- */
+
 class classDetailsStripe {
   $suppPro = [];
   $isPrevStudent = false;

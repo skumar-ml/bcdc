@@ -1,3 +1,12 @@
+/*
+
+Purpose: Displays a modal to prompt users to recover abandoned checkout carts. Validates cart age, program start dates, and respects user dismissal preferences before showing the modal. Also updates cart menu display with cart information.
+
+Brief Logic: Checks localStorage or fetches cart data from API. Validates that cart is older than configured hours but less than 5 months, program hasn't started, and 7-day cooldown period has passed. If all conditions pass, displays modal and updates cart menu with program details.
+
+Are there any dependent JS files: No
+
+*/
 class AbandonedCartModal {
   constructor(data) {
     this.data = data;

@@ -1,3 +1,13 @@
+/*
+
+Purpose: Success-page logic that reads query params, shows supplementary upsells, and resets checkout UI states. Handles payment confirmation display and upsell modal management.
+
+Brief Logic: Extracts programId and transactionID from URL parameters, displays payment confirmation, shows upsell modal based on A/B test variant, handles modal interactions, and redirects to portal home after user actions.
+
+Are there any dependent JS files: No
+
+*/
+
 /**
  *
  * @param name - HTML element name
@@ -14,6 +24,7 @@ function creEl(name, className, idName) {
 	}
 	return el;
 }
+
 class PaymentConfirmation {
     constructor(webFlowMemberId, apiBaseUrl, site_url) {
         this.apiBaseUrl = apiBaseUrl;

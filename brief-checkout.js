@@ -1,3 +1,12 @@
+/*
+
+Purpose: Manages the briefs checkout flow that allows users to select briefs, preview PDFs, choose between full and light versions, and process payments through Stripe.
+
+Brief Logic: Fetches available briefs from API, renders brief cards with version selection (full/light), handles preview modal for PDFs, tracks selected briefs and calculates totals, and processes payment through checkout API with credit card payment method.
+
+Are there any dependent JS files: No
+
+*/
 class BriefsCheckout {
             constructor(data) {
                 this.modal = document.getElementById("briefs-preview-modal");

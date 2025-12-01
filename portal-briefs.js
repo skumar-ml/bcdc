@@ -1,3 +1,12 @@
+/*
+
+Purpose: Portal component for managing brief downloads, previews, and subscription upsells from API data. Handles brief selection, PDF preview, and download functionality.
+
+Brief Logic: Fetches briefs/topics from API, populates dropdown selectors, handles brief selection, displays PDF preview in iframe, manages download links for PDF and Word versions, and handles empty state when no briefs are available.
+
+Are there any dependent JS files: No
+
+*/
  class BriefManager {
             constructor(data) {
                 // Store the data object

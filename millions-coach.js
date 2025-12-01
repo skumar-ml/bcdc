@@ -1,16 +1,11 @@
-/**
-* MillionsCoach Class
-* 
-* This class manages the millions coach functionality for displaying and managing student data.
-* It handles:
-* - Fetching and displaying students from the API
-* - Pagination for large datasets
-* - Search functionality for filtering students
-* - Adding/removing millions amounts for students
-* - Modal interactions for data entry
-* - Real-time updates and error handling
-* 
-* @param {Object} data - Configuration object containing API base URL and member ID
+/*
+
+Purpose: Coach-facing interface for managing millions program transactions and data. Allows coaches to view students, search/filter, add or remove millions amounts, and manage student balances.
+
+Brief Logic: Fetches students data from API with pagination, displays student list with search functionality, shows modal for adding/removing millions, processes API calls to update student balances, and handles pagination and filtering.
+
+Are there any dependent JS files: No
+
 */
         class MillionsCoach {
             $currentStudent = null;

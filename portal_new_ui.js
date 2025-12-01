@@ -1,7 +1,12 @@
-/**
- * Portal Class - Main class for managing the student portal interface
- * Handles data fetching, rendering, and user interactions for the portal
- */
+/*
+
+Purpose: Primary BCDC portal experience that aggregates forms, invoices, briefs, class details, and supplementary data with modern UI. Manages the complete student portal interface.
+
+Brief Logic: Fetches portal data, announcements, and millions data from multiple APIs. Creates tabs for each student, displays invoices, briefs, supplementary programs, class details, and millions transactions. Handles referrals access control, updates sidebar counts, and manages all portal interactions.
+
+Are there any dependent JS files: No
+
+*/
 class Portal {
     /**
      * Constructor - Initializes the Portal instance

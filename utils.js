@@ -1,3 +1,12 @@
+/*
+
+Purpose: Utility functions and helper methods used across BCDC scripts. Provides common functionality for modal management, credit data fetching, and API calls.
+
+Brief Logic: Provides static methods for showing/closing modals, fetching credit balance data, handling Bergen credits modal interactions, and general utility functions for API calls and DOM manipulation.
+
+Are there any dependent JS files: No
+
+*/
 class Utils {
     
     constructor() {

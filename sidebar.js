@@ -1,3 +1,12 @@
+/*
+
+Purpose: Sidebar navigation component for portal menu and navigation controls. Manages sidebar links, referrals access control, and announcement count updates.
+
+Brief Logic: Checks referrals access based on localStorage and API data, shows/hides referral links accordingly, updates all portal links with test parameters if present, fetches announcements and updates count badge, and manages sidebar menu visibility.
+
+Are there any dependent JS files: No
+
+*/
 class Sidebar {
   constructor(data) {
     this.data = data;

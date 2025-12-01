@@ -1,5 +1,11 @@
 /*
-* Using this class On the webflow class list page, we demonstrate dynamic time using the API
+
+Purpose: Displays dynamic class listings on the Webflow class list page by fetching class details from API and rendering times, days, and locations for each class level.
+
+Brief Logic: Fetches class details from API endpoint, filters classes by level and location, dynamically updates timing information in DOM elements, and shows/hides class cards based on availability.
+
+Are there any dependent JS files: No
+
 */
 class classLists {
 	constructor(baseUrl) {

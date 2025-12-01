@@ -1,3 +1,12 @@
+/*
+
+Purpose: Notification center that fetches notification data from the API and displays it in a grid. Handles notification filtering, marking as read, and pagination.
+
+Brief Logic: Receives notification data, sorts by creation date, applies filters (type, read/unread), paginates results, displays notifications in grid format, and handles marking notifications as read/unread through API calls.
+
+Are there any dependent JS files: No
+
+*/
 
 /**
  * 	
@@ -15,11 +24,7 @@ function creEl(name,className,idName){
 	}
 	return el;
 }
-/**
- * Class for handling Notification List
- * @param webflowMemberId - memberId
- * @param messageData - notification data by API
- */
+
 class Notification {
 	constructor(webflowMemberId, messageData){
 		this.webflowMemberId = webflowMemberId;

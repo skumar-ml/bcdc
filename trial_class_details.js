@@ -1,14 +1,11 @@
-/**
-* TrialClassDetails Class
-* 
-* This class manages the trial class details functionality including:
-* - Fetching and displaying appointment types from the API
-* - Displaying student lists for selected appointment types
-* - Pagination for large datasets
-* - Attendance tracking and notes functionality
-* - Real-time updates and error handling
-* 
-* @param {Object} data - Configuration object containing API base URL and member ID
+/*
+
+Purpose: Trial class detail page handler that displays trial class information and handles registration. Manages appointment types, student lists, attendance tracking, and notes.
+
+Brief Logic: Fetches trial class appointment types from API with pagination, displays appointment type list, shows students for selected appointment type, handles attendance marking and notes, manages pagination for appointment types and students, and processes attendance updates through API.
+
+Are there any dependent JS files: No
+
 */
         class TrialClassDetails {
             currentAppointmentType = null;

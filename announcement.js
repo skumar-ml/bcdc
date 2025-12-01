@@ -1,8 +1,12 @@
-/**
-  * AnnouncementUI Class
-  * Handles the display and interaction of announcements in the portal
-  * Manages filtering, searching, and mobile responsiveness
-  */
+/*
+
+Purpose: Handles the display and interaction of announcements in the portal. Manages filtering, searching, mobile responsiveness, and read/unread status tracking.
+
+Brief Logic: Fetches announcements from API, displays them in a list with filtering by search term, student, type, and read/unread status. Supports mobile and desktop views with responsive layout. Allows marking individual or all announcements as read/unread.
+
+Are there any dependent JS files: No
+
+*/
         class AnnouncementUI {
             /**
              * Check if the current viewport is mobile (width <= 766px)

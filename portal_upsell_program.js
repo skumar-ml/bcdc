@@ -1,3 +1,12 @@
+/*
+
+Purpose: Supplementary program carousel/slider that fetches offerings, handles payments, and updates student pricing. Displays upsell programs and manages bundle program selection.
+
+Brief Logic: Fetches supplementary programs from API, displays programs in carousel/slider format, handles program selection, calculates pricing with discounts for old students, processes payment through checkout API, and manages bundle program creation.
+
+Are there any dependent JS files: No
+
+*/
 class DisplaySuppProgram {
   $selectedProgram = [];
   $suppPro = [];

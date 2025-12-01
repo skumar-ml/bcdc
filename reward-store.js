@@ -1,3 +1,12 @@
+/*
+
+Purpose: Reward store interface that displays millions transactions and redeemable items with filtering and pagination. Allows students to view their millions balance and available rewards.
+
+Brief Logic: Fetches millions transaction data and reward items from API, creates tabs for each student showing their balance, displays reward items in grid format, handles item selection and redemption, and manages pagination for large datasets.
+
+Are there any dependent JS files: No
+
+*/
 class RewardStore {
             $millions_transactions = []
             $items = [];

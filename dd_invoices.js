@@ -1,3 +1,12 @@
+/*
+
+Purpose: Manages direct debit invoices and payment processing. Displays invoice data in tabs, handles invoice details, program information, and student details for each invoice.
+
+Brief Logic: Fetches invoice data from API, creates tabs for each student/invoice, displays invoice list with program details, handles tab switching, and manages invoice status and payment information.
+
+Are there any dependent JS files: No
+
+*/
 class DDInvoices {
     $completedForm = [];
     $invoiceList = [];

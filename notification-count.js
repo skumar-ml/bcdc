@@ -1,5 +1,11 @@
 /*
-* With this script, we are showing a notification count in the menu section. Please find the method description below
+
+Purpose: Fetches unread notifications and injects the badge count beside the bell icon in the menu section.
+
+Brief Logic: Calls notification API to get all notifications, filters unread notifications, calculates count, and updates the notification badge element in the menu with the unread count.
+
+Are there any dependent JS files: No
+
 */
 class NotificationCount {
 	constructor(webflowMemberId){

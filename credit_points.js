@@ -1,3 +1,12 @@
+/*
+
+Purpose: Manages and displays member credit balance and transaction history. Shows credit balance amount and lists all credit transactions with dates and descriptions.
+
+Brief Logic: Fetches credit balance data from API, displays current balance amount, renders transaction history table sorted by date in descending order, and handles empty state when no credits are available.
+
+Are there any dependent JS files: No
+
+*/
 class CreditBalance {
             $creditData = {};
             constructor(data) {

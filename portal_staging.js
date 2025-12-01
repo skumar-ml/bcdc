@@ -1,3 +1,12 @@
+/*
+
+Purpose: Staging version of the portal for testing new features and updates. Primary portal experience that aggregates forms, invoices, briefs, and supplementary data.
+
+Brief Logic: Fetches portal data, announcements, and millions data from APIs. Creates tabs for each student, displays invoices, briefs, supplementary programs, and millions transactions. Handles referrals access control and manages portal interactions. This is the staging version for testing.
+
+Are there any dependent JS files: No
+
+*/
  class Portal {
             constructor(data, onReady) {
                 this.data = data;

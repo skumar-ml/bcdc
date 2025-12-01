@@ -1,3 +1,12 @@
+/*
+
+Purpose: Referral program manager that displays referral codes, tracks referrals, and manages referral rewards. Handles referral code copying and referral list display.
+
+Brief Logic: Fetches referral data from API, displays referral code and link, handles copy functionality for code and link, displays referral list with status (enrolled/pending), tracks referral count and rewards, and handles form submission for new referrals.
+
+Are there any dependent JS files: No
+
+*/
 class ReferralProgram {
   constructor(data) {
     this.referralCount = data.referralCount;

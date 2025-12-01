@@ -1,3 +1,14 @@
+/*
+
+Purpose: Full checkout experience for summer bundle programs with session selection, location filtering, supplementary program upsells, and Stripe payment integration.
+
+Brief Logic: Fetches summer session data and supplementary programs from API. Displays session list with checkboxes, handles location selection, manages supplementary program selection, calculates totals with discounts, and processes payment through Stripe checkout URL.
+
+Are there any dependent JS files: No
+
+*/
+
+
 /**
  * 	
  * @param name - HTML element name
@@ -14,11 +25,6 @@ function creEl(name, className, idName) {
 	}
 	return el;
 }
-/**
- * CheckOutWebflow Class is used to intigrate with stripe payment.
- * In this API we pass baseUrl, memberData.
- * In this class we are manipulating student form and member data
- */
 
 class CheckOutWebflow {
 	$sessionData = [];

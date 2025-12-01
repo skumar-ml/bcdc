@@ -1,3 +1,12 @@
+/*
+
+Purpose: Modal handler for referral program interactions and code sharing. Manages referral modal display, form submission, and modal suppression logic.
+
+Brief Logic: Checks URL parameters for referral code and ID, displays modal when user arrives via referral link or based on suppression rules, handles form submission to claim referral discount, manages modal suppression for 1 hour after dismissal, and processes referral flow.
+
+Are there any dependent JS files: No
+
+*/
  class ReferralModal {
             constructor(data) {
                 this.data = data;

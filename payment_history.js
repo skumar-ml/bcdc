@@ -1,4 +1,12 @@
- // Payment History Management Class
+/*
+
+Purpose: Displays member payment history with transaction details and status. Shows invoices and millions transactions in tabs for each student.
+
+Brief Logic: Fetches portal detail and millions transaction data from API, creates tabs for each student, displays invoice list with payment details, shows millions transactions, updates sidebar with millions count, and handles tab switching.
+
+Are there any dependent JS files: No
+
+*/
         class PaymentHistory {
             constructor(data) {
                 this.data = data;

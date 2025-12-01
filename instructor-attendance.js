@@ -1,3 +1,13 @@
+/*
+
+Purpose: Instructor-facing attendance tracking system for managing student check-ins. Displays class sessions, student lists, and allows instructors to mark attendance and add notes.
+
+Brief Logic: Fetches class and student data from API, displays classes in a filterable list, shows students for selected class with pagination, allows marking attendance status, and handles filtering by student name and attendance status.
+
+Are there any dependent JS files: No
+
+*/
+
 /**
  * 	
  * @param name - HTML element name
@@ -14,11 +24,7 @@ function creEl(name,className,idName){
 	}
 	return el;
 }
-/**
- * Class for handling instructor checkInForm form
- * @param webflowMemberId - memberId
- * @param messageData - instructor checkInForm data by API
- */
+
 class checkInForm {
 	$currentClass = {};
 	$currentClassStudent = {};

@@ -1,3 +1,13 @@
+/*
+
+Purpose: Manages make-up session scheduling and availability for students. Creates links to Acuity scheduling system for students to book make-up sessions.
+
+Brief Logic: Fetches student and class data from API, displays student list with class details, generates Acuity scheduling links with student information pre-filled, and handles empty state when no students are available.
+
+Are there any dependent JS files: No
+
+*/
+
 /**
  * 	
  * @param name - HTML element name
@@ -14,11 +24,7 @@ function creEl(name,className,idName){
 	}
 	return el;
 }
-/**
- * Used PortalTabs class name to integrate with portal js easily.
- * In this API we pass apiBaseUrl, webflowMemberId, accountEmail.
- * In this class we are manipulating student data and creating makeup session links for students
- */
+
 class PortalTabs {
 	
 	constructor(apiBaseUrl, webflowMemberId,accountEmail) {

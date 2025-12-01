@@ -1,5 +1,11 @@
 /*
-* Inserting member sign-in record in the database. It is based on a 1-day sign-in count.
+
+Purpose: Simple logger that posts member sign-in activity to the backend. Tracks daily sign-in counts for analytics.
+
+Brief Logic: Sends POST request to signInActivity API endpoint with member ID to record sign-in event. Based on 1-day sign-in count tracking.
+
+Are there any dependent JS files: No
+
 */
 class SigninActivity {
 	constructor(webflowMemberId){

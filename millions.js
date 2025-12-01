@@ -1,3 +1,12 @@
+/*
+
+Purpose: Renders millions transaction data, displays transaction history, and manages millions program UI. Shows student balances and transaction details in tabs.
+
+Brief Logic: Fetches millions transaction data from API, creates tabs for each student, displays current balance and transaction history sorted by date, updates sidebar with millions count, and handles empty state when no data is available.
+
+Are there any dependent JS files: No
+
+*/
 class MillionsRenderer {
      constructor(data) {
          this.data = data;
