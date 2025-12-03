@@ -85,6 +85,39 @@ class Utils {
             console.error("Error fetching credits data:", error);
         }
     }
+   
+    static calculateDiscountPrice() {
+        const creditPriceEl = document.querySelector('[data-credit="amount"]');
+        const totalDepositPriceEl = document.querySelector(".current-price-gray");
+        const totalCurrentPriceEl = document.querySelector(".current-price-text-red");
+
+        if (!creditPriceEl || !totalDepositPriceEl || !totalCurrentPriceEl) return;
+
+        // Credit amount
+        const creditPrice = parseFloat(
+            creditPriceEl.textContent.replace(/[^0-9.]/g, "")
+        );
+        console.log("Credit price:", creditPrice);
+
+         if (isNaN(creditPrice)) creditPrice = 0;
+
+        // Format & update UI for credit price
+        creditPriceEl.textContent = `$${creditPrice.toFixed(2)}`;
+        //console.log("Credit price:", creditPrice);
+
+        // Total price amount
+        const depositPrice = parseFloat(
+            totalDepositPriceEl.textContent.replace(/[^0-9.]/g, "")
+        );
+        console.log("Total Deposit price:", depositPrice);
+
+        // Discount
+        const finalPrice = depositPrice - creditPrice;
+
+        // Set discounted value
+        totalCurrentPriceEl.textContent = `$${finalPrice.toFixed(2)}`;
+    }
+
 
     /**
      * Updates the credit amount displayed in the UI
@@ -109,8 +142,17 @@ class Utils {
         creditAmountElements.forEach(element => {
             element.textContent = creditsData.creditBalance.creditBalance;
         });
-    }
 
+       /* requestAnimationFrame(() => {
+            this.calculateDiscountPrice();
+        });*/
+
+         // Fix: allow Webflow to update totalDepositPrice first
+        setTimeout(() => {
+            this.calculateDiscountPrice();
+        }, 50);
+
+        }
     /**
      * Private method to fetch credits data from the API
      * @param {string} webflowMemberId - The Webflow member ID to fetch credits for

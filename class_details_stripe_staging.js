@@ -1,8 +1,8 @@
 /*
 
-Purpose: Staging version of class details page with Stripe integration for testing. Manages class detail page for bundle purchases with payment processing, pre-registration flow, and supplementary programs.
+Purpose: Manages class detail page for bundle purchases with Stripe payment processing. Handles pre-registration flow, bundle program selection, location selection, supplementary programs, and briefs integration.
 
-Brief Logic: Checks if program is a bundle and determines checkout flow. Fetches class details, handles location and session selection, manages supplementary programs and briefs, calculates pricing, and processes payment through Stripe. This is the staging version for testing purposes.
+Brief Logic: Checks if program is a bundle and determines checkout flow (Normal, Pre-Registration-Info, or Bundle-Purchase). Fetches class details, handles location and session selection, manages supplementary programs and briefs, calculates pricing with discounts, and processes payment through Stripe.
 
 Are there any dependent JS files: No
 
@@ -70,7 +70,6 @@ class classDetailsStripe {
     // check pre registered bundle program
 
   }
- 
   // checkBundleProgram
   async checkBundleProgram() {
     let preRegistration = document.querySelector("[data-checkout='pre-registration']");
@@ -584,24 +583,7 @@ class classDetailsStripe {
           prevStudentCheckBox[i].click();
         }
       }
-      //if (!isPreviousStudent) {
-      //Update total price
-      // console.log("prevStudentCheckBox[i]", prevStudentCheckBox[i])
-      // prevStudentCheckBox[i].click();
-      //   if (!prevStudentCheckBox[i].checked) {
-      //     total_price[i].innerHTML =
-      //       "$" + $this.numberWithCommas(totalAmount + 100);
-      //   }
-      //   prevStudentCheckBox[i].setAttribute("checked", true);
-      // } else {
-      //   if (prevStudentCheckBox[i].checked) {
-      //     total_price[i].innerHTML =
-      //       "$" + $this.numberWithCommas(totalAmount - 100);
-      //       console.log(prevStudentCheckBox[i], prevStudentCheckBox[i].checked)
-      //     prevStudentCheckBox[i].removeAttribute("checked");
-      //     console.log("2", prevStudentCheckBox[i].checked)
-      //   }
-      // }
+      
     }
   }
   eventUpdateTotalAmountPrice() {
@@ -986,7 +968,7 @@ class classDetailsStripe {
       label =
         responseText.locationName + " | " + levelName + " | " + timingText;
     } else {
-      // label = this.levelId == "worldschools" ? "World Schools" : "Competitive Track";
+      // label = this.levelId == "worldschools" ? "World Schools" : "Customized Track";
       label = "Customized Track";
     }
 
@@ -1025,6 +1007,7 @@ class classDetailsStripe {
       has_fee: has_fee,
       source: "cart_page",
       amount: finalPrice,
+      applyCredit: applyCredit,
       successUrl: encodeURI(
         "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
         label +
@@ -1410,22 +1393,7 @@ class classDetailsStripe {
     return isOpen;
   }
 
-  // Update amount when checkbox selected
-  // handleUpSellSelection(){
-  //   var upSellCheckbox = document.querySelectorAll('.bundleProgram');
-  //   upSellCheckbox.forEach((checkbox) => {
-  //     checkbox.addEventListener('change', (event) => {
-  //       const programId = checkbox.getAttribute('programDetailId');
-  //       if (checkbox.checked) {
-  //         this.updateAmount(checkbox, checkbox.value);
-  //        // this.updateAllSameProduct(programId, true);
-  //       } else {
-  //         this.updateAmount(checkbox, checkbox.value);
-  //         // this.updateAllSameProduct(programId, false);
-  //       }
-  //     });
-  //   });
-  // }
+  
 
   addToCart() {
     const addToCartButtons = document.querySelectorAll(".add-to-cart");
@@ -1515,26 +1483,39 @@ class classDetailsStripe {
       return sum + (parseFloat(brief.price) || 0);
     }, 0);
 
-    totalPriceAllText.forEach(totalPriceText => {
-      var sumOfSelectedPrograms = 0;
-      // Use amount (discounted price) for the total calculation
-      sumOfSelectedPrograms = this.trimToTwoDecimals(
-        this.$selectedProgram.reduce((total, program) => total + (parseFloat(program.amount) || 0), 0)
-      );
-      var dataStripePrice = parseFloat(totalPriceText.getAttribute("data-stripe-price"));
-      if(this.$isCheckoutFlow == "Bundle-Purchase"){
-        dataStripePrice = 0;
-      }
-      if (this.$selectedProgram.length > 0) {
-        sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
-      } else {
-        sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice) + ((briefsTotal) ? parseFloat(briefsTotal) : 0);
+  totalPriceAllText.forEach(totalPriceText => {
+    var sumOfSelectedPrograms = 0;
 
-      }
-      totalPriceText.innerHTML = (sumOfSelectedPrograms == "0.00" || sumOfSelectedPrograms == "0") ? "Free" : "$" + this.numberWithCommas(sumOfSelectedPrograms);
+    sumOfSelectedPrograms = this.trimToTwoDecimals(
+      this.$selectedProgram.reduce((total, program) => total + (parseFloat(program.amount) || 0), 0)
+    );
 
-    });
-    if(this.$isCheckoutFlow == "Bundle-Purchase"){
+    var dataStripePrice = parseFloat(totalPriceText.getAttribute("data-stripe-price"));
+    if (this.$isCheckoutFlow == "Bundle-Purchase") {
+      dataStripePrice = 0;
+    }
+
+    if (this.$selectedProgram.length > 0) {
+      sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + (briefsTotal ? parseFloat(briefsTotal) : 0);
+    } else {
+      sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice) + (briefsTotal ? parseFloat(briefsTotal) : 0);
+    }
+
+    const formattedValue =
+      (sumOfSelectedPrograms == "0.00" || sumOfSelectedPrograms == "0")
+        ? "Free"
+        : "$" + this.numberWithCommas(sumOfSelectedPrograms);
+
+    totalPriceText.innerHTML = formattedValue;
+
+    // NEW — update .current-price-gray without changing any logic
+    const grayElem = document.querySelector(".current-price-gray");
+    if (grayElem) grayElem.innerHTML = formattedValue;
+
+  });
+
+
+   if(this.$isCheckoutFlow == "Bundle-Purchase"){
       totalAmountInput.value = parseFloat(amount);
     }else {
       totalAmountInput.value =
@@ -1579,15 +1560,7 @@ class classDetailsStripe {
     );
 
 
-    // Deposit price considered as single program
-    // let cartGridWrapper2 = creEl("div", "cart-grid-wrapper");
-    // let depositLabel = creEl("p", "main-text order-details-no-strike");
-    // depositLabel.innerHTML = "Deposit (Due Now)";
-    // let depositPrice = creEl("p", "main-text order-details-price-no-strike");
-    // depositPrice.innerHTML = "$300";
-    // depositPrice.setAttribute("data-stripe", "addon-deposit-price");
-    // cartGridWrapper2.prepend(depositLabel, depositPrice);
-    // selectedSuppPro.append( cartGridWrapper2);
+    
 
 
     selectedData.forEach((sup) => {
@@ -1722,6 +1695,12 @@ class classDetailsStripe {
 
               deposit_price.innerHTML =
                 "$" + $this.numberWithCommas(coreDepositPrice);
+                // NEW — update .current-price-gray
+                const grayElem = document.querySelector(".current-price-gray");
+                if (grayElem) {
+                  grayElem.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+                }
+
             });
           }
         } else {
@@ -1763,6 +1742,13 @@ class classDetailsStripe {
               }
               deposit_price.innerHTML =
                 (finalPrice == "0.00" || finalPrice == "0") ? "Free" : "$" + finalPrice;
+                // NEW — update .current-price-gray
+               const grayElem = document.querySelector(".current-price-gray");
+                if (grayElem) {
+                  grayElem.innerHTML =
+                    (finalPrice == "0.00" || finalPrice == "0") ? "Free" : "$" + finalPrice;
+                }
+
             });
           }
         }
@@ -1816,6 +1802,8 @@ class classDetailsStripe {
             });
           }
         }
+       // After deposit price is updated, now recalc the discount
+     Utils.calculateDiscountPrice();
       });
     }
     //data-stripe="totalDepositPrice"
@@ -1923,6 +1911,7 @@ class classDetailsStripe {
     }
   }
   createCustomSelectDisplay(selectBox, filterData) {
+    // Inject CSS styles into head if not already present
     
     // Remove existing custom display wrapper if it exists
     const existingWrapper = selectBox.parentElement.querySelector('.custom-select-display-wrapper');
@@ -3008,3 +2997,5 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
+
+
