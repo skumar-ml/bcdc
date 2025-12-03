@@ -185,6 +185,30 @@ class Utils {
      */
     static async waitForCreditApplicationChoice(webflowMemberId = null) {
         
+        // If webflowMemberId is provided, check credits data before showing modal
+        if (webflowMemberId) {
+            try {
+                const instance = new Utils();
+                const creditsData = await instance.#getCreditsData(webflowMemberId);
+                
+                // Check if creditBalance is 0 or invalid
+                if (!creditsData || 
+                    !creditsData.creditBalance || 
+                    creditsData.creditBalance.creditBalance === undefined || 
+                    creditsData.creditBalance.creditBalance === null ||
+                    creditsData.creditBalance.creditBalance === 0) {
+                    console.log("Credit balance is 0 or invalid, not showing modal");
+                    return false;
+                }
+                
+                // Update the UI with the fetched credit data
+                Utils.updateCreditData(creditsData);
+            } catch (error) {
+                console.error("Error fetching credits data, not showing modal:", error);
+                return false;
+            }
+        }
+        
         Utils.showBergenCreditsModal();
         // Wait for user to click either "apply" or "no" button
         const applyCredit = await new Promise((resolve) => {
