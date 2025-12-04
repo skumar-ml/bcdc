@@ -4,8 +4,7 @@ Purpose: Primary BCDC portal experience that aggregates forms, invoices, briefs,
 
 Brief Logic: Fetches portal data, announcements, and millions data from multiple APIs. Creates tabs for each student, displays invoices, briefs, supplementary programs, class details, and millions transactions. Handles referrals access control, updates sidebar counts, and manages all portal interactions.
 
-Are there any dependent JS files: Yes
-Utils.js provides common functionality for modal management, credit data fetching, and API calls.
+Are there any dependent JS files: No
 
 */
 class Portal {
@@ -1818,7 +1817,6 @@ class Portal {
             "paymentId": paymentId,
             "paymentLinkId": paymentLinkId,
             "memberId": this.data.memberId,
-            "applyCredit": applyCredit,
             "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
             "cancelUrl": "https://www.bergendebate.com/portal/dashboard",
         }
