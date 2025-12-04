@@ -372,6 +372,8 @@ class BriefsCheckout {
             // NEW — update .current-price-gray without changing any logic
             const grayElem = document.querySelector(".current-price-gray");
             if (grayElem) grayElem.innerHTML = `$${total.toFixed(2)}`;
+             // After deposit price is updated, now recalc the discount
+            Utils.calculateDiscountPrice();
         }
     }
 
