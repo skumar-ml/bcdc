@@ -1806,13 +1806,6 @@ class Portal {
      * @param {Object} student - Student data
      */
     async initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType, student, paymentId) {
-        // Open Bergen credits modal and wait for user's decision
-        // This will show the modal, fetch credit data, and wait for user to choose apply/no
-        const applyCredit = await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
-        
-        // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
-        console.log("Apply credit:", applyCredit);
-        
         var centAmount = (amount * 100).toFixed(2);
         // student.studentDetail.parentEmail
         var data = {

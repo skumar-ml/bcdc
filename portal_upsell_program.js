@@ -4,7 +4,8 @@ Purpose: Supplementary program carousel/slider that fetches offerings, handles p
 
 Brief Logic: Fetches supplementary programs from API, displays programs in carousel/slider format, handles program selection, calculates pricing with discounts for old students, processes payment through checkout API, and manages bundle program creation.
 
-Are there any dependent JS files: No
+Are there any dependent JS files: Yes
+Utils.js provides common functionality for modal management, credit data fetching, and API calls.
 
 */
 class DisplaySuppProgram {
@@ -154,12 +155,14 @@ class DisplaySuppProgram {
         upSellAmount.forEach((up_Sell_price) => {
           if (this.$selectedProgram.length === 0) {
             up_Sell_price.innerHTML = "$0";
+            $this.updateCreditModalAmount(0.00);
           } else {
             const totalAmount = this.$selectedProgram.reduce(
               (acc, program) => acc + program.portal_amount,
               0
             );
             up_Sell_price.innerHTML = "$" + this.numberWithCommas(totalAmount);
+            $this.updateCreditModalAmount(totalAmount);
           }
         });
       }
@@ -263,12 +266,14 @@ class DisplaySuppProgram {
         upSellAmount.forEach((up_Sell_price) => {
           if (this.$selectedProgram.length === 0) {
             up_Sell_price.innerHTML = "$0";
+            $this.updateCreditModalAmount(0.00);
           } else {
             const totalAmount = this.$selectedProgram.reduce(
               (acc, program) => acc + program.portal_amount,
               0
             );
             up_Sell_price.innerHTML = "$" + this.numberWithCommas(totalAmount);
+            $this.updateCreditModalAmount(totalAmount);
           }
         });
       }
@@ -486,7 +491,14 @@ class DisplaySuppProgram {
     }
   }
 
-  initSupplementaryPayment(paymentId, upsellProgramId, programName, amount) {
+  async initSupplementaryPayment(paymentId, upsellProgramId, programName, amount) {
+
+    // Open Bergen credits modal and wait for user's decision
+    // This will show the modal, fetch credit data, and wait for user to choose apply/no
+    const applyCredit = await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
+    
+    // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
+    console.log("Apply credit:", applyCredit);
     // Define the data to be sent in the POST request
     const data = {
       sessionId: "",
@@ -503,6 +515,7 @@ class DisplaySuppProgram {
       source: "portal_page",
       has_fee: false,
       memberId: this.memberData.memberId,
+      applyCredit: applyCredit,
     };
     // Create the POST request
     fetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
@@ -744,6 +757,15 @@ class DisplaySuppProgram {
       const card = this.createPayNowModalCard(program);
       payNowContainer.appendChild(card);
     });
+  }
+
+  updateCreditModalAmount(amount) {
+     // For the credit modal amount update
+    // NEW — update .current-price-gray without changing any logic
+    const grayElem = document.querySelector(".current-price-gray");
+    if (grayElem) grayElem.innerHTML = `$${amount.toFixed(2)}`;
+      // After deposit price is updated, now recalc the discount
+    Utils.calculateDiscountPrice();
   }
 }
 
