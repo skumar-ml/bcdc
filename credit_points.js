@@ -118,8 +118,7 @@ class CreditBalance {
                         </div>
                         <div class="transactions-table-row-text">${transaction.sessionName || "N/A"}
                         ${transaction.year || "N/A"}</div>
-                        <div class="transactions-table-row-text">${transaction.description || "N/A"}
-                        }</div>
+                        <div class="transactions-table-row-text">${transaction.description || "N/A"}</div>
                         <div class="transactions-table-row-text ${transaction.type === "credit" ? "green-semi-bold" : "red-semi-bold"
                         }">${transaction.type === "credit"
                             ? `+${transaction.amount}`
