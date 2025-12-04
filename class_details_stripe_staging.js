@@ -4,7 +4,9 @@ Purpose: Manages class detail page for bundle purchases with Stripe payment proc
 
 Brief Logic: Checks if program is a bundle and determines checkout flow (Normal, Pre-Registration-Info, or Bundle-Purchase). Fetches class details, handles location and session selection, manages supplementary programs and briefs, calculates pricing with discounts, and processes payment through Stripe.
 
-Are there any dependent JS files: No
+Are there any dependent JS files: Yes, Utils.js
+Utils.js provides common functionality for modal management, credit data fetching, and API calls.
+
 
 */
 
@@ -123,7 +125,7 @@ class classDetailsStripe {
       let existingStudentLabel = document.querySelector("label[for='existing-students']");
       if (existingStudentLabel) {
         existingStudentLabel.innerText = "Select Student Info";
-      }      
+      }
       if (checkout_student_container) {
         checkout_student_container.style.display = "none";
       }
@@ -296,7 +298,7 @@ class classDetailsStripe {
   // Call API url with this method and response as a json
   async fetchData(endpoint, baseUrl) {
     var apiBaseUrl = this.baseUrl;
-    if(baseUrl){
+    if (baseUrl) {
       apiBaseUrl = baseUrl
     }
     try {
@@ -391,7 +393,7 @@ class classDetailsStripe {
       // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram 
       if (this.$allBundlePrograms.length > 0) {
         const matchedProgram = this.$allBundlePrograms.find(
-          (program) => program.studentName.replace(" ","").toLowerCase() === (paymentData.firstName.replace(" ","").toLowerCase() + paymentData.lastName.replace(" ","").toLowerCase())
+          (program) => program.studentName.replace(" ", "").toLowerCase() === (paymentData.firstName.replace(" ", "").toLowerCase() + paymentData.lastName.replace(" ", "").toLowerCase())
         );
         if (matchedProgram) {
           this.$selectedBundleProgram = matchedProgram;
@@ -505,7 +507,7 @@ class classDetailsStripe {
     if (this.$allBundlePrograms.length > 0) {
       // remove whitespace and convert to lowercase before compare
       const matchedProgram = this.$allBundlePrograms.find(
-        (program) => program.studentName.replace(" ","").toLowerCase() === (studentFirstName.value.replace(" ","").toLowerCase() + studentLastName.value.replace(" ","").toLowerCase())
+        (program) => program.studentName.replace(" ", "").toLowerCase() === (studentFirstName.value.replace(" ", "").toLowerCase() + studentLastName.value.replace(" ", "").toLowerCase())
       );
       if (matchedProgram) {
         this.$selectedBundleProgram = matchedProgram;
@@ -583,7 +585,7 @@ class classDetailsStripe {
           prevStudentCheckBox[i].click();
         }
       }
-      
+
     }
   }
   eventUpdateTotalAmountPrice() {
@@ -771,7 +773,7 @@ class classDetailsStripe {
       var totalAmountInput = document.getElementById("totalAmount");
       $this.updateAmount(totalAmountInput.value)
 
-      if($this.$selectedProgram.length > 0){
+      if ($this.$selectedProgram.length > 0) {
         // Get local storage data for back button
         var checkoutJson = localStorage.getItem("checkOutData");
         if (checkoutJson != undefined) {
@@ -959,10 +961,10 @@ class classDetailsStripe {
     // Open Bergen credits modal and wait for user's decision
     // This will show the modal, fetch credit data, and wait for user to choose apply/no
     const applyCredit = await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
-    
+
     // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
     console.log("Apply credit:", applyCredit);
-      
+
     var label;
     if (responseText.locationName != "None") {
       label =
@@ -1393,7 +1395,7 @@ class classDetailsStripe {
     return isOpen;
   }
 
-  
+
 
   addToCart() {
     const addToCartButtons = document.querySelectorAll(".add-to-cart");
@@ -1483,45 +1485,45 @@ class classDetailsStripe {
       return sum + (parseFloat(brief.price) || 0);
     }, 0);
 
-  totalPriceAllText.forEach(totalPriceText => {
-    var sumOfSelectedPrograms = 0;
+    totalPriceAllText.forEach(totalPriceText => {
+      var sumOfSelectedPrograms = 0;
 
-    sumOfSelectedPrograms = this.trimToTwoDecimals(
-      this.$selectedProgram.reduce((total, program) => total + (parseFloat(program.amount) || 0), 0)
-    );
+      sumOfSelectedPrograms = this.trimToTwoDecimals(
+        this.$selectedProgram.reduce((total, program) => total + (parseFloat(program.amount) || 0), 0)
+      );
 
-    var dataStripePrice = parseFloat(totalPriceText.getAttribute("data-stripe-price"));
+      var dataStripePrice = parseFloat(totalPriceText.getAttribute("data-stripe-price"));
+      if (this.$isCheckoutFlow == "Bundle-Purchase") {
+        dataStripePrice = 0;
+      }
+
+      if (this.$selectedProgram.length > 0) {
+        sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + (briefsTotal ? parseFloat(briefsTotal) : 0);
+      } else {
+        sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice) + (briefsTotal ? parseFloat(briefsTotal) : 0);
+      }
+
+      const formattedValue =
+        (sumOfSelectedPrograms == "0.00" || sumOfSelectedPrograms == "0")
+          ? "Free"
+          : "$" + this.numberWithCommas(sumOfSelectedPrograms);
+
+      totalPriceText.innerHTML = formattedValue;
+
+      // NEW — update .current-price-gray without changing any logic
+      const grayElem = document.querySelector(".current-price-gray");
+      if (grayElem) grayElem.innerHTML = formattedValue;
+
+    });
+
+
     if (this.$isCheckoutFlow == "Bundle-Purchase") {
-      dataStripePrice = 0;
-    }
-
-    if (this.$selectedProgram.length > 0) {
-      sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + (briefsTotal ? parseFloat(briefsTotal) : 0);
-    } else {
-      sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice) + (briefsTotal ? parseFloat(briefsTotal) : 0);
-    }
-
-    const formattedValue =
-      (sumOfSelectedPrograms == "0.00" || sumOfSelectedPrograms == "0")
-        ? "Free"
-        : "$" + this.numberWithCommas(sumOfSelectedPrograms);
-
-    totalPriceText.innerHTML = formattedValue;
-
-    // NEW — update .current-price-gray without changing any logic
-    const grayElem = document.querySelector(".current-price-gray");
-    if (grayElem) grayElem.innerHTML = formattedValue;
-
-  });
-
-
-   if(this.$isCheckoutFlow == "Bundle-Purchase"){
       totalAmountInput.value = parseFloat(amount);
-    }else {
+    } else {
       totalAmountInput.value =
-      parseFloat(totalAmountInput.value) + parseFloat(amount);
+        parseFloat(totalAmountInput.value) + parseFloat(amount);
     }
-    
+
     var suppProIdE = document.getElementById("suppProIds");
     var allSupIds = this.$selectedProgram.map(item => item.upsellProgramId);
     suppProIdE.value = JSON.stringify(allSupIds);
@@ -1560,7 +1562,7 @@ class classDetailsStripe {
     );
 
 
-    
+
 
 
     selectedData.forEach((sup) => {
@@ -1673,7 +1675,7 @@ class classDetailsStripe {
 
               let sumOfSelectedPrograms = (
                 $this.$selectedProgram.reduce((total, program) => {
-                  
+
                   let ccp = (program.amount) ? $this.calculateCreditCardAmount(program.amount).toFixed(2) : 0;
                   let tA = parseFloat(total) + parseFloat(ccp)
                   return tA
@@ -1687,7 +1689,7 @@ class classDetailsStripe {
               }, 0).toFixed(2);
 
               briefsTotal = (briefsTotal) ? briefsTotal : 0
-              if ($this.$selectedProgram.length > 0 ) {
+              if ($this.$selectedProgram.length > 0) {
                 coreDepositPrice = parseFloat(sumOfSelectedPrograms) + parseFloat(briefsTotal);
               } else {
                 coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice + parseFloat(briefsTotal);
@@ -1695,11 +1697,11 @@ class classDetailsStripe {
 
               deposit_price.innerHTML =
                 "$" + $this.numberWithCommas(coreDepositPrice);
-                // NEW — update .current-price-gray
-                const grayElem = document.querySelector(".current-price-gray");
-                if (grayElem) {
-                  grayElem.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
-                }
+              // NEW — update .current-price-gray
+              const grayElem = document.querySelector(".current-price-gray");
+              if (grayElem) {
+                grayElem.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+              }
 
             });
           }
@@ -1712,7 +1714,7 @@ class classDetailsStripe {
               let amount = parseFloat(
                 amountEl.replace(/,/g, "").replace(/\$/g, "")
               );
-              
+
               // Update deposit Price for addon program
               let addonDepositPrices = document.querySelectorAll(
                 "[data-stripe='addon-deposit-price']"
@@ -1722,8 +1724,8 @@ class classDetailsStripe {
                   addonDepositPrice.innerHTML = "$" + $this.numberWithCommas(amount.toFixed(2));
                 })
               }
-              
-              if($this.$isCheckoutFlow == "Bundle-Purchase"){
+
+              if ($this.$isCheckoutFlow == "Bundle-Purchase") {
                 amount = 0;
               }
 
@@ -1742,12 +1744,12 @@ class classDetailsStripe {
               }
               deposit_price.innerHTML =
                 (finalPrice == "0.00" || finalPrice == "0") ? "Free" : "$" + finalPrice;
-                // NEW — update .current-price-gray
-               const grayElem = document.querySelector(".current-price-gray");
-                if (grayElem) {
-                  grayElem.innerHTML =
-                    (finalPrice == "0.00" || finalPrice == "0") ? "Free" : "$" + finalPrice;
-                }
+              // NEW — update .current-price-gray
+              const grayElem = document.querySelector(".current-price-gray");
+              if (grayElem) {
+                grayElem.innerHTML =
+                  (finalPrice == "0.00" || finalPrice == "0") ? "Free" : "$" + finalPrice;
+              }
 
             });
           }
@@ -1802,8 +1804,8 @@ class classDetailsStripe {
             });
           }
         }
-       // After deposit price is updated, now recalc the discount
-     Utils.calculateDiscountPrice();
+        // After deposit price is updated, now recalc the discount
+        Utils.calculateDiscountPrice();
       });
     }
     //data-stripe="totalDepositPrice"
@@ -1830,12 +1832,12 @@ class classDetailsStripe {
         selectBox.innerHTML = '<option value="">No previous students found</option>';
         return;
       }
-      data = data.filter(i=>i.studentEmail != null && i.studentEmail != undefined && i.studentEmail != "");
+      data = data.filter(i => i.studentEmail != null && i.studentEmail != undefined && i.studentEmail != "");
       const filterData = data
         .filter(
           (item, index, self) =>
             index ===
-            self.findIndex((obj) => obj.studentName === item.studentName )
+            self.findIndex((obj) => obj.studentName === item.studentName)
         )
         .sort(function (a, b) {
           return a.studentName.trim().localeCompare(b.studentName.trim());
@@ -1849,12 +1851,12 @@ class classDetailsStripe {
       selectBox.appendChild(defaultOption);
       // Store filterData for use in custom dropdown
       selectBox._filterData = filterData;
-      
+
       // Add new options from the API data
       filterData.forEach((item, index) => {
-        let checkBundle = this.checkStudentBundleProgram({firstName: item.studentName.split(" ")[0], lastName: item.studentName.split(" ")[1]});
-        let checkBundleLabel = (checkBundle)? " - Pre-registration available": "";
-        let checkBundleIconClass = (checkBundle)? "pre-reg-available" : "normal-reg-available";
+        let checkBundle = this.checkStudentBundleProgram({ firstName: item.studentName.split(" ")[0], lastName: item.studentName.split(" ")[1] });
+        let checkBundleLabel = (checkBundle) ? " - Pre-registration available" : "";
+        let checkBundleIconClass = (checkBundle) ? "pre-reg-available" : "normal-reg-available";
         const option = document.createElement("option");
         option.value = index;
         option.classList.add(checkBundleIconClass);
@@ -1864,7 +1866,7 @@ class classDetailsStripe {
         option.setAttribute("data-student-name", item.studentName);
         selectBox.appendChild(option);
       });
-      
+
       // Create custom styled dropdown with styled options
       this.createCustomSelectDisplay(selectBox, filterData);
       selectBox.addEventListener("change", function (event) {
@@ -1886,17 +1888,17 @@ class classDetailsStripe {
         };
         // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram 
         const matchedProgram = $this.$allBundlePrograms.find(
-          (program) => program.studentName.replace(" ","").toLowerCase() === (data.firstName.replace(" ","").toLowerCase() + data.lastName.replace(" ","").toLowerCase())
+          (program) => program.studentName.replace(" ", "").toLowerCase() === (data.firstName.replace(" ", "").toLowerCase() + data.lastName.replace(" ", "").toLowerCase())
         );
         var preRegistrationTag = document.querySelectorAll(".pre-reg-tag")
         if (matchedProgram) {
           $this.$selectedBundleProgram = matchedProgram;
           $this.$isCheckoutFlow = "Bundle-Purchase";
-          preRegistrationTag.forEach(preRegistrationTagEl=>preRegistrationTagEl.style.display = "block");
+          preRegistrationTag.forEach(preRegistrationTagEl => preRegistrationTagEl.style.display = "block");
         } else {
           $this.$selectedBundleProgram = null;
           $this.$isCheckoutFlow = "Normal";
-          preRegistrationTag.forEach(preRegistrationTagEl=>preRegistrationTagEl.style.display = "none");
+          preRegistrationTag.forEach(preRegistrationTagEl => preRegistrationTagEl.style.display = "none");
         }
 
         localStorage.setItem("checkOutBasicData", JSON.stringify(data));
@@ -1912,37 +1914,37 @@ class classDetailsStripe {
   }
   createCustomSelectDisplay(selectBox, filterData) {
     // Inject CSS styles into head if not already present
-    
+
     // Remove existing custom display wrapper if it exists
     const existingWrapper = selectBox.parentElement.querySelector('.custom-select-display-wrapper');
     if (existingWrapper) {
       existingWrapper.remove();
     }
-    
+
     // Create wrapper div
     const wrapper = document.createElement('div');
     wrapper.className = 'custom-select-display-wrapper';
-    
+
     // Create display div that shows the selected value
     const displayDiv = document.createElement('div');
     displayDiv.className = 'custom-select-display';
-    
+
     // Create text container for the selected value
     const textContainer = document.createElement('span');
     textContainer.className = 'custom-select-display-text';
-    
+
     // Create arrow icon
     const arrowIcon = document.createElement('span');
     arrowIcon.className = 'custom-select-arrow';
     arrowIcon.innerHTML = '▼';
-    
+
     // Create dropdown options container
     const dropdownOptions = document.createElement('div');
     dropdownOptions.className = 'custom-select-dropdown';
-    
+
     // Hide the original select but keep it for form submission
     selectBox.className = (selectBox.className ? selectBox.className + ' ' : '') + 'custom-select-hidden';
-    
+
     // Wrap the select
     const parent = selectBox.parentElement;
     parent.insertBefore(wrapper, selectBox);
@@ -1951,34 +1953,34 @@ class classDetailsStripe {
     displayDiv.appendChild(textContainer);
     displayDiv.appendChild(arrowIcon);
     wrapper.appendChild(dropdownOptions);
-    
+
     // Function to create option HTML with styled checkBundleLabel
     const createOptionHTML = (option) => {
       const hasCheckBundle = option.getAttribute('data-check-bundle') === 'true';
       const studentName = option.getAttribute('data-student-name') || option.textContent;
-      
+
       if (hasCheckBundle) {
         return `${studentName}<span class="custom-select-bundle-label"> - Pre-registration available</span>`;
       } else {
         return studentName;
       }
     };
-    
+
     // Function to build dropdown options
     const buildDropdownOptions = () => {
       dropdownOptions.innerHTML = '';
-      
+
       // Add default option
       const defaultOptionDiv = document.createElement('div');
       defaultOptionDiv.className = 'custom-select-option custom-select-option-default';
       defaultOptionDiv.textContent = 'Select Student Name';
-      defaultOptionDiv.addEventListener('click', function() {
+      defaultOptionDiv.addEventListener('click', function () {
         selectBox.selectedIndex = 0;
         selectBox.dispatchEvent(new Event('change'));
         toggleDropdown();
       });
       dropdownOptions.appendChild(defaultOptionDiv);
-      
+
       // Add student options
       for (let i = 1; i < selectBox.options.length; i++) {
         const option = selectBox.options[i];
@@ -1986,17 +1988,17 @@ class classDetailsStripe {
         optionDiv.className = 'custom-select-option';
         optionDiv.innerHTML = createOptionHTML(option);
         optionDiv.setAttribute('data-value', option.value);
-        
-        optionDiv.addEventListener('click', function() {
+
+        optionDiv.addEventListener('click', function () {
           selectBox.selectedIndex = parseInt(this.getAttribute('data-value')) + 1;
           selectBox.dispatchEvent(new Event('change'));
           toggleDropdown();
         });
-        
+
         dropdownOptions.appendChild(optionDiv);
       }
     };
-    
+
     // Function to toggle dropdown
     const toggleDropdown = () => {
       const isOpen = dropdownOptions.classList.contains('show');
@@ -2009,7 +2011,7 @@ class classDetailsStripe {
         arrowIcon.classList.add('rotated');
       }
     };
-    
+
     // Function to update display
     const updateDisplay = () => {
       const selectedOption = selectBox.options[selectBox.selectedIndex];
@@ -2021,30 +2023,30 @@ class classDetailsStripe {
         displayDiv.classList.add('custom-select-display-placeholder');
       }
     };
-    
+
     // Event listeners
-    displayDiv.addEventListener('click', function(e) {
+    displayDiv.addEventListener('click', function (e) {
       e.stopPropagation();
       toggleDropdown();
     });
-    
+
     // Close dropdown when clicking outside
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       if (!wrapper.contains(e.target)) {
         dropdownOptions.classList.remove('show');
         arrowIcon.classList.remove('rotated');
       }
     });
-    
+
     // Update display on change
     selectBox.addEventListener('change', updateDisplay);
-    
+
     // Initial display update
     updateDisplay();
   }
   checkStudentBundleProgram(data) {
     const matchedProgram = this.$allBundlePrograms.find(
-      (program) => program.studentName.replace(" ","").toLowerCase() === (data.firstName.replace(" ","").toLowerCase() + data.lastName.replace(" ","").toLowerCase())
+      (program) => program.studentName.replace(" ", "").toLowerCase() === (data.firstName.replace(" ", "").toLowerCase() + data.lastName.replace(" ", "").toLowerCase())
     );
     if (matchedProgram) {
       return true;
@@ -2057,17 +2059,17 @@ class classDetailsStripe {
     var studentLastName = document.getElementById("Student-Last-Name").value;
     var studentEmail = document.getElementById("Student-Email").value;
     const matchedProgram = this.$allBundlePrograms.find(
-      (program) => program.studentName.replace(" ","").toLowerCase() === (studentFirstName.replace(" ","").toLowerCase() + studentLastName.replace(" ","").toLowerCase())
+      (program) => program.studentName.replace(" ", "").toLowerCase() === (studentFirstName.replace(" ", "").toLowerCase() + studentLastName.replace(" ", "").toLowerCase())
     );
     var preRegistrationTag = document.querySelectorAll(".pre-reg-tag")
     if (matchedProgram) {
       this.$selectedBundleProgram = matchedProgram;
       this.$isCheckoutFlow = "Bundle-Purchase";
-      preRegistrationTag.forEach(preRegistrationTagEl=>preRegistrationTagEl.style.display = "block");
+      preRegistrationTag.forEach(preRegistrationTagEl => preRegistrationTagEl.style.display = "block");
     } else {
       this.$selectedBundleProgram = null;
       this.$isCheckoutFlow = "Normal";
-      preRegistrationTag.forEach(preRegistrationTagEl=>preRegistrationTagEl.style.display = "none");
+      preRegistrationTag.forEach(preRegistrationTagEl => preRegistrationTagEl.style.display = "none");
     }
   }
   updateAddonProgram() {
@@ -2142,7 +2144,7 @@ class classDetailsStripe {
   }
   displayStudentInfo(display) {
     document.querySelectorAll('.student-info-container').forEach(el => el.style.display = display)
-    if(classDetailsStripe.isMobile()){
+    if (classDetailsStripe.isMobile()) {
       document.querySelectorAll('.student-info-container-mobile').forEach(el => el.style.display = display)
     }
     var localCheckOutData = localStorage.getItem('checkOutBasicData')
@@ -2425,7 +2427,7 @@ class classDetailsStripe {
       $this.updateCheckOutData({ upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram });
       $this.$oldSelectedProgram = $this.$selectedProgram;
       $this.resetPaymentOption();
-      
+
     });
     if (input.checked) {
       flexContainer.classList.add("border-brown-red");
@@ -2434,17 +2436,17 @@ class classDetailsStripe {
     return flexContainer;
   }
 
-  resetPaymentOption(){
+  resetPaymentOption() {
     // Trigger click event for payment class tab
-      //if(this.$selectedProgram.length - 1 > 0){
-      // trigger click event class name class-time-with-brown-white-style
-      let paymentClassTab = document.querySelectorAll(".class-time-with-brown-white-style");
-      if (paymentClassTab.length > 0) {
-        paymentClassTab[0].click();
-        // event trigger click event
-        paymentClassTab[0].dispatchEvent(new Event('click'));
-      }
-      //}
+    //if(this.$selectedProgram.length - 1 > 0){
+    // trigger click event class name class-time-with-brown-white-style
+    let paymentClassTab = document.querySelectorAll(".class-time-with-brown-white-style");
+    if (paymentClassTab.length > 0) {
+      paymentClassTab[0].click();
+      // event trigger click event
+      paymentClassTab[0].dispatchEvent(new Event('click'));
+    }
+    //}
   }
 
   updateCoreData(type = "upsell") {
@@ -2918,7 +2920,7 @@ class classDetailsStripe {
   }
 
 
-  
+
   showLoading() {
     const container = document.querySelector('[data-briefs-checkout="select-briefs"]');
     if (container) {
@@ -2951,7 +2953,7 @@ class classDetailsStripe {
   displayTopicData(display = "none") {
     const topicContainer = document.querySelectorAll('.add-supplimental-pdf-container');
     // if(this.isMobile()){
-     // topicContainer = document.querySelectorAll('.add-supplimental-pdf-container-mobile');
+    // topicContainer = document.querySelectorAll('.add-supplimental-pdf-container-mobile');
     // }
     if (display == "none") {
       topicContainer.forEach(container => {
@@ -2963,10 +2965,10 @@ class classDetailsStripe {
       });
     }
   }
-  
+
   updateDepositePriceForBundle() {
     const defaultOrderSummaries = document.querySelectorAll('.bundle-order-details-old-div');
-  
+
     defaultOrderSummaries.forEach(defaultOrderSummary => {
       const total_price = defaultOrderSummary.querySelector('.total_price');
       const totalStripePrice = defaultOrderSummary.querySelector('[data-stripe="totalDepositPrice"]');
@@ -2988,7 +2990,7 @@ class classDetailsStripe {
       }
     });
   }
-  
+
   /**
    * Check if the current viewport is mobile (width <= 766px)
    * @returns {boolean} True if mobile viewport

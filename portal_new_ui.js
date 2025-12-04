@@ -4,7 +4,8 @@ Purpose: Primary BCDC portal experience that aggregates forms, invoices, briefs,
 
 Brief Logic: Fetches portal data, announcements, and millions data from multiple APIs. Creates tabs for each student, displays invoices, briefs, supplementary programs, class details, and millions transactions. Handles referrals access control, updates sidebar counts, and manages all portal interactions.
 
-Are there any dependent JS files: No
+Are there any dependent JS files: Yes
+Utils.js provides common functionality for modal management, credit data fetching, and API calls.
 
 */
 class Portal {
@@ -1804,7 +1805,14 @@ class Portal {
      * @param {string} paymentType - Payment type (card, bank account, etc.)
      * @param {Object} student - Student data
      */
-    initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType, student, paymentId) {
+    async initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType, student, paymentId) {
+        // Open Bergen credits modal and wait for user's decision
+        // This will show the modal, fetch credit data, and wait for user to choose apply/no
+        const applyCredit = await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
+        
+        // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
+        console.log("Apply credit:", applyCredit);
+        
         var centAmount = (amount * 100).toFixed(2);
         // student.studentDetail.parentEmail
         var data = {
@@ -1817,6 +1825,7 @@ class Portal {
             "paymentId": paymentId,
             "paymentLinkId": paymentLinkId,
             "memberId": this.data.memberId,
+            "applyCredit": applyCredit,
             "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
             "cancelUrl": "https://www.bergendebate.com/portal/dashboard",
         }
