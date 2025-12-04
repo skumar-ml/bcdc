@@ -112,10 +112,12 @@ class Utils {
         console.log("Total Deposit price:", depositPrice);
 
         // Discount
-        const finalPrice = depositPrice - creditPrice;
+        var finalPrice = depositPrice - creditPrice;
+        finalPrice = (finalPrice < 0) ? 0 : finalPrice;
+        finalPrice = finalPrice.toFixed(2);
 
         // Set discounted value
-        totalCurrentPriceEl.textContent = `$${finalPrice.toFixed(2)}`;
+        totalCurrentPriceEl.textContent = `$${finalPrice}`;
     }
 
 
