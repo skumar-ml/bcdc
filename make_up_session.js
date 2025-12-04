@@ -14,6 +14,7 @@ Are there any dependent JS files: No
  * @param className - HTML element class attribute
  * @param idName - HTML element id attribute
  */
+// Helper function to create a DOM element with optional class and ID
 function creEl(name,className,idName){
   var el = document.createElement(name);
 	if(className){
@@ -27,13 +28,14 @@ function creEl(name,className,idName){
 
 class PortalTabs {
 	
+	// Initializes the class with API URL, member ID, and email
 	constructor(apiBaseUrl, webflowMemberId,accountEmail) {
 		this.baseUrl = apiBaseUrl;
 		this.webflowMemberId = webflowMemberId;
 		this.accountEmail = accountEmail;
 		this.renderPortalData();
 	}
-	// Passing all student data and creating student link
+	// Creates student make-up session links from provided data
 	createMakeUpSession(data){
 		// Getting main dom element object to add student list with link
 		var studentList = document.getElementById('make_up_session');
@@ -44,7 +46,7 @@ class PortalTabs {
 				studentList.appendChild(sList);
 		})
 	}
-	// Manipulating single student list
+	// Manipulates a single student's data to create a list item with a scheduling link
 	createStudentList(studentData){
 		var wLayoutGrid = creEl('div', 'w-layout-grid make-student-data');
 		var sName = creEl('h4')
@@ -64,7 +66,7 @@ class PortalTabs {
 		wLayoutGrid.appendChild(btnSection)
 		return wLayoutGrid;
 	}
-	// Get API data with the help of an endpoint
+	// Fetches data from the specified API endpoint
 	async fetchData(endpoint) {
 		var infoMessage = document.getElementById('info-message');
 		try {
@@ -80,7 +82,7 @@ class PortalTabs {
 			throw error;
 		}
 	}
-	// After the API response we call the createMakeUpSession method to manipulate student data
+	// Fetches student data and renders make-up session links
 	async renderPortalData(memberId) {
 		try {
 		  var data = await this.fetchData('getInvoiceDetail/'+this.webflowMemberId);

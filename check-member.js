@@ -8,11 +8,12 @@ Are there any dependent JS files: No
 
 */
 class checkMember {
+	// Initializes the checkMember class with Webflow member ID
 	constructor(webflowMemberId){
 		this.webflowMemberId = webflowMemberId;
 		this.checkMemberData();
 	}
-	// Get API data with the help of endpoint
+	// Fetches data from the specified API endpoint
 	async fetchData(url) {
 		try {
 			const response = await fetch(`${url}`);
@@ -26,6 +27,7 @@ class checkMember {
 			return false;
 		}
 	}
+	// Checks member existence across systems and updates UI fields
 	async checkMemberData(){
 		var checkMember = await this.fetchData('https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/checkMemberExists/'+this.webflowMemberId)
 		if(checkMember){

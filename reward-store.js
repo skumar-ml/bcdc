@@ -10,6 +10,7 @@ Are there any dependent JS files: No
 class RewardStore {
             $millions_transactions = []
             $items = [];
+            // Initializes the RewardStore instance
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -20,6 +21,7 @@ class RewardStore {
                 this.init()
 
             }
+            // Initializes the UI, fetches data, and renders items
             async init() {
                 this.spinner.style.display = "block";
                 const millionsTab = document.querySelector('[data-rewards="millions"]');
@@ -35,6 +37,7 @@ class RewardStore {
                 //this.renderTabs()
                 this.renderItems()
             }
+            // Fetches millions transaction data and reward items from the API
             async fetchData() {
                 try {
                     const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
@@ -54,10 +57,12 @@ class RewardStore {
                     console.error('Fetch error:', error);
                 }
             }
+            // Formats millions amounts with commas
             formatMillions(amount) {
                 return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
 
+            // Builds the HTML for the student tabs
             buildTabs() {
                 let tabMenu = '';
                 let tabContent = '';
@@ -93,6 +98,7 @@ class RewardStore {
                     `;
             }
 
+            // Renders the student tabs
             renderTabs() {
                 const tabsHtml = this.buildTabs();
                 const container = document.querySelector('[data-rewards="millions"');
@@ -118,6 +124,7 @@ class RewardStore {
                     });
                 });
             }
+            // Renders the redeemable reward items
             renderItems() {
                 const container = document.querySelector('[data-rewards="items"]');
                 if (!container) return;

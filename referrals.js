@@ -8,6 +8,7 @@ Are there any dependent JS files: No
 
 */
 class ReferralProgram {
+  // Initializes the ReferralProgram instance
   constructor(data) {
     this.referralCount = data.referralCount;
     this.maxReferrals = data.maxReferrals;
@@ -52,6 +53,7 @@ class ReferralProgram {
     // Load referral data on page load
     this.loadReferralData();
   }
+  // Copies the referral link to the clipboard
   copyLink(){
     this.referralLinkInput.select();
     this.referralLinkInput.setSelectionRange(0, 99999);
@@ -59,6 +61,7 @@ class ReferralProgram {
     this.copyTextBtn.style.display = "block";
     setTimeout(() => (this.copyTextBtn.style.display = "none"), 1500);
   }
+  // Copies the referral code to the clipboard
   copyCode() {
     this.referralCodeInput.select();
     this.referralCodeInput.setSelectionRange(0, 99999);
@@ -67,6 +70,7 @@ class ReferralProgram {
     setTimeout(() => (this.copyMsg.style.display = "none"), 1500);
   }
 
+  // Loads referral data from the API and updates the UI
   async loadReferralData() {
     this.spinner.style.display = "block";
     try {
@@ -200,11 +204,13 @@ class ReferralProgram {
       console.error(err);
     }
   }
+  // Formats a date string for display
   formatDate(dateString) {
     const options = { year: "numeric", month: "long", day: "numeric" };
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", options);
   }
+  // Handles the submission of the referral form
   async handleFormSubmit(e) {
     e.preventDefault();
     this.spinner.style.display = "block";
@@ -271,6 +277,7 @@ class ReferralProgram {
     }
   }
 
+  // Creates the desktop progress tracker for referrals
   createTracker(referralCount) {
     const container = document.querySelector(".progress-tracker-rounded-div.desktop");
     container.innerHTML = ""; // Clear existing content
@@ -329,6 +336,7 @@ class ReferralProgram {
     container.innerHTML = html;
   }
 
+  // Creates the mobile progress tracker for referrals
   createMobileTracker(referralCount) {
   const container = document.querySelector(".progress-tracker-rounded-div.mobile");
   container.innerHTML = ""; // Clear existing content

@@ -8,11 +8,12 @@ Are there any dependent JS files: No
 
 */
 class NotificationCount {
+	// Initializes the class with the member ID
 	constructor(webflowMemberId){
 		this.webflowMemberId = webflowMemberId;
 		this.getNotificationData();
 	}
-	// Manipulating notification count data in dom element based on dom class attribute.
+	// Updates the notification count badge in the DOM
 	displayUnreadMessage(messageData){
 		var notificationBudge = document.getElementsByClassName("notification-budge")[0];
 		var notificationCount = document.getElementsByClassName("notification-count")[0];
@@ -27,7 +28,7 @@ class NotificationCount {
 			notificationBudge.appendChild(notificationMessage)
 		}
 	}
-	// Calling notification API and passing data in displayUnreadMessage method
+	// Calls the notification API and passes data to displayUnreadMessage
 	getNotificationData(){
 		var xhr = new XMLHttpRequest()
 		var $this = this;

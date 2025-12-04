@@ -12,6 +12,7 @@ class DisplaySuppProgram {
   $selectedProgram = [];
   $suppPro = [];
   $bundleData = [];
+  // Initializes the class with member data
   constructor(memberData) {
     this.spinner = document.getElementById("half-circle-spinner");
     this.upSellEls = document.querySelectorAll(".bundle-sem-rounded-red-div");
@@ -32,6 +33,7 @@ class DisplaySuppProgram {
    * @param className - HTML element class attribute
    * @param idName - HTML element id attribute
    */
+  // Helper function to create a DOM element with optional class and ID
   creEl(name, className, idName) {
     var el = document.createElement(name);
     if (className) {
@@ -42,6 +44,7 @@ class DisplaySuppProgram {
     }
     return el;
   }
+  // Fetches data from the specified API endpoint
   async fetchData(endpoint, baseUrl) {
     try {
       const response = await fetch(`${baseUrl}${endpoint}`);
@@ -55,6 +58,7 @@ class DisplaySuppProgram {
       throw error;
     }
   }
+  // Fetches and displays supplementary programs
   async displaySupplementaryProgram() {
     try {
       //this.spinner.style.display = "block";
@@ -72,6 +76,7 @@ class DisplaySuppProgram {
       //this.spinner.style.display = "none";
     }
   }
+  // Creates bundle program cards
   createBundleProgram() {
     const cardContainer = document.querySelector(
       "[data-upSell='card-container']"
@@ -110,6 +115,7 @@ class DisplaySuppProgram {
     });
     this.disableEnableBuyNowButton();
   }
+  // Displays the total discount amount
   displayTotalDiscount(bundleData){
     const totalDiscount = bundleData.reduce((acc, bundle) => {
         const amount = Number(bundle.portal_amount) || 0;
@@ -121,6 +127,7 @@ class DisplaySuppProgram {
       el.innerHTML = "$"+this.numberWithCommas(totalDiscount);
     })
   }
+  // Creates a single bundle program card for the main display
   createBundleCard(singleBundleData) {
     var $this = this;
     const upSellAmount = document.querySelectorAll(
@@ -233,6 +240,7 @@ class DisplaySuppProgram {
     return label;
   }
 
+   // Creates a single bundle program card for the modal display
    createModelBundleCard(singleBundleData) {
     var $this = this;
     const upSellAmount = document.querySelectorAll(
@@ -338,6 +346,7 @@ class DisplaySuppProgram {
 
     return grid;
   }
+  // Sets up event listeners for modal interactions
   handleClickEvents() {
     var $this = this;
     const semesterBundleModal = document.getElementById(

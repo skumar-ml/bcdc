@@ -8,6 +8,7 @@ Are there any dependent JS files: No
 
 */
  class ReferralModal {
+            // Initializes the ReferralModal instance
             constructor(data) {
                 this.data = data;
                 this.referredMemberId = null;
@@ -15,12 +16,14 @@ Are there any dependent JS files: No
                 this.init();
             }
 
+            // Initializes the modal, checks empty state, handles events, and processes the referral flow
             init() {
                 this.checkEmptyState();
                 this.handleModalEvents();
                 this.processReferralFlow();
             }
 
+            // Checks and caches DOM elements
             checkEmptyState() {
                 this.formContainer = document.querySelector(".referral-claim-discount-form");
                 this.referralForm = document.getElementById("referral-form-modal");
@@ -33,6 +36,7 @@ Are there any dependent JS files: No
                 this.emailEl = this.referralForm.querySelector("[data-name='referral-email']");
             }
 
+            // Sets up event listeners for modal interactions
             handleModalEvents() {
                 const $this = this;
                 this.closeModalBtn?.addEventListener('click', function () {
@@ -81,7 +85,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Handle user coming via referral link
+            // Handles user visits via a referral link
             handleReferralLinkVisit(codeParam, idParam, existingReferralData) {
                 try {
                     // Set UTM source tracking for referral links
@@ -163,7 +167,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Handle user coming without referral link
+            // Handles user visits without a referral link
             handleNonReferralVisit(existingReferralData) {
                 if (existingReferralData) {
                     if (existingReferralData.name && existingReferralData.email) {
@@ -180,18 +184,18 @@ Are there any dependent JS files: No
                 // If no existing referral data, do nothing
             }
 
-            // Get referral data from localStorage
+            // Retrieves referral data from local storage
             getReferralData() {
                 const referralData = localStorage.getItem('referralCode');
                 return referralData ? JSON.parse(referralData) : null;
             }
 
-            // Save referral data to localStorage
+            // Saves referral data to local storage
             saveReferralData(data) {
                 localStorage.setItem('referralCode', JSON.stringify(data));
             }
 
-            // Check if modal should be suppressed (1 hour after dismissal)
+            // Checks if the modal should be suppressed
             shouldSuppressModal() {
                 const suppressionTimestamp = localStorage.getItem('referralModalSuppressed');
                 if (!suppressionTimestamp) {
@@ -205,13 +209,13 @@ Are there any dependent JS files: No
                 return (now - suppressionTime) < oneHourInMs;
             }
 
-            // Set modal suppression timestamp
+            // Sets the modal suppression timestamp
             setModalSuppression() {
                 const now = new Date().getTime();
                 localStorage.setItem('referralModalSuppressed', now.toString());
             }
 
-            // Update discount code display
+            // Updates the discount code display
             updateDiscountCodeDisplay(code) {
                 const discountCodeElement = document.querySelector('.discount-code-red');
                 if (discountCodeElement) {
@@ -219,7 +223,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Fetch referrer details and update display
+            // Fetches referrer details and updates the display
             fetchReferrerDetails(memberId) {
                 fetch(`${this.data.memberBaseUrl}getMemberDetails/${memberId}`)
                     .then(response => response.json())
@@ -236,7 +240,7 @@ Are there any dependent JS files: No
                     });
             }
 
-            // Show referral modal
+            // Displays the referral modal
             showReferralModal() {
                 const modal = document.getElementById('referral-modal');
                 modal.classList.add('show');
@@ -250,13 +254,13 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Close referral modal
+            // Closes the referral modal
             closeReferralModal() {
                 const modal = document.getElementById('referral-modal');
                 modal.classList.remove('show');
             }
 
-            // Handle form submission
+            // Handles form submission for claiming a discount
             async handleFormSubmit(e) {
                 e.preventDefault();
                 //this.spinner.style.display = "block";
@@ -342,7 +346,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Reset form
+            // Resets the referral form
             resetForm() {
                 this.referralForm.reset();
                 this.nameEl.value = "";
@@ -354,7 +358,7 @@ Are there any dependent JS files: No
                 formFail.style.display = "none";
             }
 
-            // Method to handle checkout flow (to be called from checkout page)
+            // Handles checkout flow (returns referral code)
             handleCheckout() {
                 const referralData = this.getReferralData();
                 if (referralData && referralData.code) {
@@ -366,7 +370,7 @@ Are there any dependent JS files: No
                 return null;
             }
 
-            // Auto-submit referral data if user is logged in and localStorage lacks name/email
+            // Auto-submits referral data if the user is logged in and details are missing
             async autoSubmitIfEligible() {
                 try {
                     // Check if current URL contains /programs/ or /summer/

@@ -8,11 +8,12 @@ Are there any dependent JS files: No
 
 */
 class classLists {
+	// Initializes the classLists class with base URL
 	constructor(baseUrl) {
 		this.baseUrl = baseUrl;
 		this.renderPortalData();
 	}
-	// Calling API to get all class details like times, days and locations
+	// Fetches class data from the API endpoint
 	async fetchData(endpoint) {
 		try {
 			const response = await fetch(`${this.baseUrl}${endpoint}`);
@@ -27,7 +28,7 @@ class classLists {
 			throw error;
 		}
 	}
-	// Manipulating class timing from API data and rendering in the web page.
+	// Renders class timing data from API into the web page
 	viewClassLocations(classData){
 		var timingElement = document.getElementsByClassName('location-dropdown-day-time');
 		var detailsLinkElement = document.getElementsByClassName('main-button w-button');
@@ -72,7 +73,7 @@ class classLists {
 		var spinner = document.getElementById('half-circle-spinner');
 		spinner.style.display = 'none';
 	}
-	// Passing every class data to the viewClassLocations method and manipulating data there.
+	// Fetches class data and renders it using viewClassLocations
 	async renderPortalData() {
 		try {
 		  var spinner = document.getElementById('half-circle-spinner');

@@ -8,6 +8,7 @@ Are there any dependent JS files: No
 
 */
 class Sidebar {
+  // Initializes the Sidebar instance
   constructor(data) {
     this.data = data;
     this.init();
@@ -15,6 +16,7 @@ class Sidebar {
     // update count in sidebar
     this.fetchAnnouncements();
   }
+  // Fetches data from the specified API endpoint
   async fetchData(endPoint) {
     try {
       const response = await fetch(
@@ -28,6 +30,7 @@ class Sidebar {
       console.error("Fetch error:", error);
     }
   }
+  // Initializes sidebar access checks
   init() {
     // add condition url doesn't contain "members"
     if (!window.location.href.includes("dashboard")) {
@@ -36,6 +39,7 @@ class Sidebar {
       this.checkOtherAccess();
     }
   }
+  // Checks and controls access to referral links
   checkReferralsAccess() {
     // get hasReferralSession localstorage data and check for date should be > 1 hours and hasCurrentSession should false
     const hasReferralSession = JSON.parse(
@@ -106,6 +110,7 @@ class Sidebar {
       });
     }
   }
+  // Updates all portal links with test parameters if present
   updateAllPortalLinks() {
     const urlParams = new URLSearchParams(window.location.search);
     const testMemberId = urlParams.get('testMemberId');
@@ -148,7 +153,7 @@ class Sidebar {
     });
   }
 
-  // Fetch announcements and update UI
+  // Fetches announcements and updates the count
   async fetchAnnouncements() {
       const response = await fetch(
           `${this.data.bTypeApiBaseURL}getAnnouncement/${this.data.memberId}`
@@ -160,7 +165,7 @@ class Sidebar {
       this.updateAnnouncement(data);
       return data;
   }
-  // Update announcement count badge
+  // Updates the announcement count badge in the sidebar
   updateAnnouncement(announcementData) {
       const announcementLength = announcementData.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail).length;
       const announcementDiv = document.querySelectorAll('[data-announcements="counts"]');

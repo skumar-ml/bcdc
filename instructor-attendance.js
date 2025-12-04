@@ -14,6 +14,7 @@ Are there any dependent JS files: No
  * @param className - HTML element class attribute
  * @param idName - HTML element id attribute
  */
+// Helper function to create a DOM element with optional class and ID
 function creEl(name,className,idName){
   var el = document.createElement(name);
 	if(className){
@@ -29,12 +30,13 @@ class checkInForm {
 	$currentClass = {};
 	$currentClassStudent = {};
 	$incheckIn = false;
+	// Initializes the checkInForm with member ID and class data
 	constructor(webflowMemberId, classData){
 		this.webflowMemberId = webflowMemberId;
 		this.classData = classData;
 		this.view();
 	}
-	/*Creating pagination array object*/
+	// Creates a paginated list from an array of items
 	paginatorList(items, page, per_page) {
 		
 		//Alphabetical order sorting
@@ -64,7 +66,7 @@ class checkInForm {
 			data: paginatedItems
 		};
 	}
-	// clear filter select box data
+	// Clears filter select box data
 	resetFilter(){
 		var studentData = this.$currentClass.studentDetails;
 		
@@ -76,7 +78,7 @@ class checkInForm {
 		
 		
 	}
-	/* Creating the DOM element for instructor checked in */
+	// Creates the DOM element for the instructor check-in filter
 	createInstructorCheckInFilter(){
 		var $this = this;
 		var col = creEl("div", 'col');
@@ -106,7 +108,7 @@ class checkInForm {
 		return col;
 	}
 	
-	/* Creating dom element for search filter*/
+	// Creates the DOM element for the student search filter
 	createSearchFilter(){
 		var $this = this;
 		var col = creEl("div", 'col');
@@ -129,7 +131,7 @@ class checkInForm {
 		col.appendChild(searchFilter)
 		return col;
 	}
-	/* Creating dom element for filter header */
+	// Creates the filter header for attendance
 	makeAttendanceFilter(){
 		//var attendanceFilter = document.getElementById("attendance-filter");
 		/*Filter*/
@@ -141,7 +143,7 @@ class checkInForm {
 		//attendanceFilter.appendChild(attendanceHeader);
 		return attendanceHeader;
 	}
-	/*Filter api response based on current seleted filter value*/
+	// Filters student data based on selected filter values
 	filterstudentData(){
 		//this.studentData = this.filterData;
 		var studentData = this.$currentClass.studentDetails;
@@ -170,7 +172,7 @@ class checkInForm {
 		this.$currentClassStudent = this.paginatorList(studentData)
 		this.refreshData();
 	}
-	/* Creating dom element for column based on column width*/
+	// Creates a column DOM element with specified message and width
 	createCol(message, col_width){
 		var col_width = (col_width) ? col_width : 3;
 		var col = creEl("div", 'w-col w-col-'+col_width);
@@ -179,7 +181,7 @@ class checkInForm {
 		}
 		return col;
 	}
-	/*Creating Read and unread icon for list page*/
+	// Returns the appropriate icon for checked-in status
 	getCheckedIcon(status){
 		var img = creEl('img', 'is_read_icon')
 		if(status){
@@ -190,7 +192,7 @@ class checkInForm {
 		img.src = src;
 		return img
 	}
-	/* Display Classs select box for instructor */
+	// Displays the class selection box and student list UI
 	view(){
 		var accordionDiv = document.getElementById("instructor-attendance");
 		var row = creEl('div', 'w-row ');
@@ -225,7 +227,7 @@ class checkInForm {
 		row.appendChild(col)
 		accordionDiv.appendChild(row);
 	}
-	/* Get Class select box dom element */
+	// Returns the class selection box DOM element
 	getClasss(){
 		
 		var $this = this;
@@ -254,6 +256,7 @@ class checkInForm {
 		
 		return classSelectBox;
 	}
+	// Hides or shows UI elements
 	hideShowUI(){
 		var studentlist = document.getElementById('student-list');
 		var btn = document.getElementsByClassName('student-list-head')[0];
@@ -265,7 +268,7 @@ class checkInForm {
 		studentlistfilter.style.display = "none";
 		paginationStudentList.style.opacity = 0;
 	}
-	// Create Class select box html element 
+	// Creates the timezones select box HTML element
 	getTimeZones(){
 		var $this = this;
 		// Get all Class data
@@ -290,7 +293,7 @@ class checkInForm {
 		
 		return classSelectBox;
 	}
-	/*Creating dom element message list header*/
+	// Creates the DOM element for the attendance list header
 	createAttendanceTitle(){
 		var title = ['Student Name', 'Coach Check-In']
 		//var title = ['Student Name', 'Check-in']
@@ -307,7 +310,7 @@ class checkInForm {
 		})
 		return row;
 	}
-	// New Ribbon html created
+	// Creates a "New" ribbon HTML element
 	newRibbon(){
 		let newRibbon = creEl('div', 'new-ribbon')
 		let newRibbonText = creEl('span')
@@ -315,7 +318,7 @@ class checkInForm {
 		newRibbon.appendChild(newRibbonText)
 		return newRibbon;
 	}
-	/*Creating DOM element for student list*/
+	// Creates DOM elements for the student list
 	displayStudentList(classId, type=''){
 		
 		if(!classId){
@@ -410,17 +413,17 @@ class checkInForm {
 		
 		//return studentlist;
 	}
-	/*Update current attendance data*/
+	// Updates current attendance data
 	updateAttendanceData(studentId, attendanceId, paymentId){
 		this.callCheckedInApi(studentId, attendanceId, paymentId);
 	}
-	/*Get tick icon for checked in*/
+	// Returns the tick icon for checked-in status
 	getCheckInIcon(){
 		var img = creEl('img', 'checkedInIcon')
 		img.src = 'https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/6437ec2c6bc4131717b36b93_checkin.svg';
 		return img
 	}
-	/*API call for checked in*/
+	// Makes an API call to update check-in status
 	callCheckedInApi(studentId, attendanceId, paymentId){
 		var currentClass = this.$currentClass;
 		var data = {
@@ -443,7 +446,7 @@ class checkInForm {
 		}
 		
 	}
-	/* Creating dom element pagination */
+	// Creates the DOM element for pagination
 	createPagination(){
 		var $this = this;
 		var pagination = creEl('div', 'w-pagination-wrapper', 'notification-body');
@@ -470,7 +473,7 @@ class checkInForm {
 		
 		return pagination;
 	}
-	/*Refresh currrnt student list data*/
+	// Refreshes the current student list data
 	refreshData(){
 		var studentlist = document.getElementById('student-list');
 		var paginationStuList = document.getElementById('pagination-student-list');
@@ -479,6 +482,7 @@ class checkInForm {
 		var classSelectBox = document.getElementById('select-Class');
 		this.displayStudentList(classSelectBox.value);
 	}
+	// Fetches updated class data from the API
 	getUpdatedClasssData(classId){
 		var xhr = new XMLHttpRequest()
 		var $this = this;
@@ -503,6 +507,7 @@ class checkInForm {
 class ClassData {
 	$isLoading = true;
 	$studentData = '';
+	// Initializes the ClassData class
 	constructor(webflowMemberId){
 		this.webflowMemberId = webflowMemberId;
 		// element for handling api responce message message
@@ -512,6 +517,7 @@ class ClassData {
 		
 		this.getClasssData();
 	}
+	// Fetches class data from the API and initializes checkInForm
 	getClasssData(){
 		var xhr = new XMLHttpRequest()
 		var $this = this;

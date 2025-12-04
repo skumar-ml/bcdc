@@ -14,6 +14,7 @@ Are there any dependent JS files: No
  * @param className - HTML element class attribute
  * @param idName - HTML element id attribute
  */
+// Helper function to create a DOM element with optional class and ID
 function creEl(name,className,idName){
   var el = document.createElement(name);
 	if(className){
@@ -26,6 +27,7 @@ function creEl(name,className,idName){
 }
 
 class Notification {
+	// Initializes the Notification class with member ID and message data
 	constructor(webflowMemberId, messageData){
 		this.webflowMemberId = webflowMemberId;
 		messageData.sort(function(a,b){
@@ -40,7 +42,7 @@ class Notification {
 		this.displayUnreadMessage();
 		
 	}
-	/*Creating pagination array object*/
+	// Creates a paginated list from an array of items
 	paginatorList(items, page, per_page) {
 		var page = page || 1,
 		per_page = per_page || 20,
@@ -58,7 +60,7 @@ class Notification {
 			data: paginatedItems
 		};
 	}
-	/*display notification message count based notification-budge class*/
+	// Displays the unread notification message count
 	displayUnreadMessage(){
 		var notificationBudge = document.getElementsByClassName("notification-budge")[0];
 		var notificationCount = document.getElementsByClassName("notification-count")[0];
@@ -72,14 +74,14 @@ class Notification {
 		notificationBudge.appendChild(notificationMessage)
 		//console.log('notificationBudge', notificationBudge)
 	}
-	/*Get message type from api response*/
+	// Retrieves unique message types from the filtered data
 	getMessageType(){
 		return this.filterData.filter(
 		  (obj, index) =>
 			this.filterData.findIndex((item) => item.type == obj.type) === index
 		);
 	}
-	/*Filter api response based on current seleted filter value*/
+	// Filters message data based on selected filter values
 	filterMessageData(){
 		//this.messageData = this.filterData;
 		var messageData = this.filterData;
@@ -116,7 +118,7 @@ class Notification {
 		this.paginateData = this.paginatorList(messageData);
 		this.refreshData();
 	}
-	/*Creating the dom element for message type filter*/
+	// Creates the DOM element for the message type filter
 	createMessageTypeFilter(){
 		var col = creEl("div", 'col');
 		var $this = this;
@@ -140,7 +142,7 @@ class Notification {
 		col.appendChild(messagetype)
 		return col;
 	}
-	/* Creating the DOM element for date filter like new and old */
+	// Creates the DOM element for the date filter (newest/oldest)
 	createDateFilter(){
 		var $this = this;
 		var col = creEl("div", 'col');
@@ -165,7 +167,7 @@ class Notification {
 		})
 		return col;
 	}
-	/* Creating dom element for search filter*/
+	// Creates the DOM element for the search filter
 	createSearchFilter(){
 		var $this = this;
 		var col = creEl("div", 'col');
@@ -182,7 +184,7 @@ class Notification {
 		col.appendChild(searchFilter)
 		return col;
 	}
-	/* Creating dom element for column based on column width*/
+	// Creates a column DOM element
 	createCol(message, col_width){
 		var col_width = (col_width) ? col_width : 3;
 		var col = creEl("div", 'w-col w-col-'+col_width);
@@ -191,13 +193,13 @@ class Notification {
 		}
 		return col;
 	}
-	/*Creating bold text dom element*/
+	// Creates a bold text DOM element
 	creBoldText(text){
 		var boldText = creEl('b', 'bold-text');
 		boldText.innerHTML = text;
 		return boldText;
 	}
-	/*Creating Read and unread icon for list page*/
+	// Returns the appropriate icon for read/unread status
 	getCheckedIcon(status){
 		var img = creEl('img', 'is_read_icon')
 		if(status){
@@ -208,7 +210,7 @@ class Notification {
 		img.src = src;
 		return img
 	}
-	/*Download the file with the help of file url*/
+	// Downloads a file from a given URL
 	download(fileLink, fileName){
 		fetch(fileLink)
 		  .then(resp => resp.blob())
@@ -226,7 +228,7 @@ class Notification {
 		  })
 		  .catch(() => alert('File not found'));
 	}
-	/*Display download file icon for detail and listing page*/
+	// Displays a download file icon
 	downLoadLinkIcon(fileLink, type=''){
 		var $this = this;
 		var fileName = fileLink
@@ -247,7 +249,7 @@ class Notification {
 		})
 		return a;
 	}
-	/*Iframe view icon*/
+	// Displays an iframe view icon for downloaded files
 	viewDownLoadedFile(fileLink){
 		var $this = this;
 		var fileName = fileLink
@@ -260,7 +262,7 @@ class Notification {
 		
 		return a;
 	}
-	/*Creating dom element for message list*/
+	// Creates the DOM elements for the message list
 	craeteMessageList(){
 		var $this = this;
 		var messageList = creEl('div', 'message-list');
@@ -309,7 +311,7 @@ class Notification {
 		
 		return messageList;
 	}
-	/*Creating dom element message list header*/
+	// Creates the DOM element for the message list header
 	createMessageTitle(){
 		var title = ['', 'Title', 'Type', 'From', 'Message', 'Date']
 		var row = creEl('div', 'w-row')
@@ -331,14 +333,14 @@ class Notification {
 		})
 		return row;
 	}
-	/*Refreshing the message list*/
+	// Refreshes the message list
 	refreshData(){
 		var notification = document.getElementById("notification");
 		notification.innerHTML = "";
 		this.makeMessageList();
 		
 	}
-	/*hide and show message list and details page*/
+	// Shows the message list page and hides details
 	showListPage(){
 		var notificationFilter = document.getElementById("notification-filter");
 		var notification = document.getElementById("notification");
@@ -349,7 +351,7 @@ class Notification {
 		notificationDetails.style.display = 'none';
 		notificationHeading.style.display = 'block';
 	}
-	/*Creating back button dom element for */
+	// Creates a back button DOM element for the detail page
 	detailPageBackButton(className){
 		var $this = this;
 		var backButton = creEl('a', 'w-previous '+className)
@@ -366,7 +368,7 @@ class Notification {
 		return backButton;
 	}
 	
-	/*Foramated date for list and details page*/
+	// Formats a date for display
 	formatedDate(dateString, type=''){
 		const monthText = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 		var date = new Date(dateString);
@@ -379,7 +381,7 @@ class Notification {
 		}
 		return newDate;
 	}
-	/* Creating DOM element for detail page */
+	// Creates the DOM element for the detail page content
 	detailPageContain(item){
 		var contain = creEl('div', 'detail-contain  w-row', 'detail-contain');
 		
@@ -470,7 +472,7 @@ class Notification {
 		
 		return contain;
 	}
-	/* API for make message unread to read */
+	// Makes an API call to mark a message as read
 	readApiCall(messageId){
 		var data = {
 			 "objectId" : messageId
@@ -485,7 +487,7 @@ class Notification {
 			//console.log('responseText', responseText)
 		}
 	}
-	/* Calling readAPI and manupulating current message data*/
+	// Marks a message as read and updates the UI
 	makeRead(item){
 		/*API Call for read unread API*/
 		if(!item.is_read){
@@ -502,7 +504,7 @@ class Notification {
 		this.displayUnreadMessage();
 		this.refreshData();
 	}
-	/* Hide and show detail page and append the content */
+	// Displays the message details page
 	displayDetailsPage(item){
 		var $this = this;
 		/*hide and show detail and list page*/
@@ -537,7 +539,7 @@ class Notification {
 
 		
 	}
-	/* Creating dom element pagination */
+	// Creates the DOM element for pagination
 	createPagination(){
 		var $this = this;
 		var pagination = creEl('div', 'w-pagination-wrapper', 'notification-body');
@@ -564,7 +566,7 @@ class Notification {
 		
 		return pagination;
 	}
-	/* Creating dom element for filter header */
+	// Creates the filter header for messages
 	makeMessageFilter(){
 		var notificationFilter = document.getElementById("notification-filter");
 		/*Filter*/
@@ -577,7 +579,7 @@ class Notification {
 		notificationHeader.appendChild(searchFilter);
 		notificationFilter.appendChild(notificationHeader);
 	}
-	/* Creating dom element for message list */
+	// Creates the DOM elements for the message list
 	makeMessageList(){
 		var notification = document.getElementById("notification");
 		
@@ -598,7 +600,7 @@ class Notification {
 		notification.appendChild(pagination);
 		
 	}
-	/* Initialize iframe for view button */
+	// Initializes iframe lightbox functionality
 	initiateLightbox(){
 		//console.log('testing');
 		[].forEach.call(document.getElementsByClassName("iframe-lightbox-link"), function (el) {
@@ -619,10 +621,12 @@ class Notification {
 class NotificationApi {
 	$isLoading = true;
 	$messageData = '';
+	// Initializes the NotificationApi class
 	constructor(webflowMemberId){
 		this.webflowMemberId = webflowMemberId;
 		this.getNotificationData();
 	}
+	// Fetches notification data from the API and initializes Notification
 	getNotificationData(){
 		var xhr = new XMLHttpRequest()
 		var $this = this;

@@ -9,6 +9,7 @@ Are there any dependent JS files: No
 */
 class CreditBalance {
             $creditData = {};
+            // Initializes the CreditBalance class with data and DOM elements
             constructor(data) {
                 this.data = data;
                 this.balance = 0.0; // Initial balance
@@ -23,6 +24,7 @@ class CreditBalance {
                 // Check if elements are found
                 this.init();
             }
+            // Fetches credit balance data from the API
             async fetchCreditData() {
                 try {
                     const response = await fetch(
@@ -37,6 +39,7 @@ class CreditBalance {
                     console.error("Fetch error:", error);
                 }
             }
+            // Initializes the UI, fetches credit data, and updates display
             async init() {
                 this.spinner.style.display = "block"; // Show spinner
                 this.balanceElement.style.display = "none"; // Hide balance element initially
@@ -72,6 +75,7 @@ class CreditBalance {
                 
                 
             }
+            // Updates the displayed credit balance amount
             updateCreditBalanceDisplay() {
                 if (this.balanceElement) {
                     this.balanceElement.textContent = `$${this.balance.toFixed(2)}`;
@@ -80,6 +84,7 @@ class CreditBalance {
                 }
                 this.updateTransactionTable();
             }
+            // Populates and sorts the transaction history table
             updateTransactionTable() {
                 if (!this.tableElement) {
                     console.error("Transaction table element not found");

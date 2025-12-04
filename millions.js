@@ -8,6 +8,7 @@ Are there any dependent JS files: No
 
 */
 class MillionsRenderer {
+     // Initializes the MillionsRenderer instance
      constructor(data) {
          this.data = data;
          this.spinner = document.getElementById("half-circle-spinner");
@@ -16,6 +17,7 @@ class MillionsRenderer {
          this.init();
      }
 
+     // Fetches millions transaction data from the API
      async fetchData() {
          try {
              const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
@@ -36,12 +38,14 @@ class MillionsRenderer {
          }
      }
      
+     // Formats a date string for display
      formatDate(dateStr) {
          const d = new Date(dateStr);
          const options = { year: 'numeric', month: 'short', day: 'numeric' };
          return d.toLocaleDateString('en-US', options);
      }
 
+     // Updates the millions count in the sidebar
      updateSideBarAmount(earnAmount){
          const sidebarCountDiv = document.querySelectorAll('[data-millions="sidebarCount"]');
          sidebarCountDiv.forEach(div => {
@@ -51,6 +55,7 @@ class MillionsRenderer {
          });
      }
 
+     // Renders the content for a specific student tab (balance and transactions)
      renderTab(tabIndex, student, link="") {
          // Current Balance
          const balanceDiv = document.querySelectorAll('.million-price-text')[tabIndex];
@@ -106,6 +111,7 @@ class MillionsRenderer {
          }
      }
 
+     // Renders the tab menu for each student
      renderTabMenu(students) {
          const tabMenu = document.querySelector('.portal-tab-menus');
          if (!tabMenu) return;
@@ -128,6 +134,7 @@ class MillionsRenderer {
          });
      }
 
+     // Renders the content panes for each student tab
      renderTabContent(students) {
          const tabContent = document.querySelector('.portal-tab-content');
          if (!tabContent) return;
@@ -180,6 +187,7 @@ class MillionsRenderer {
          });
      }
 
+     // Sets up event listeners for tab switching
      setupTabSwitching(students) {
          
          const tabLinks = document.querySelectorAll('.portal-tab-link');
@@ -203,6 +211,7 @@ class MillionsRenderer {
          });
      }
 
+     // Initializes the UI, fetches data, and renders tabs and content
      async init() {
          this.spinner.style.display = "block";
          const portalTab = document.querySelector('.portal-tab');
@@ -225,6 +234,7 @@ class MillionsRenderer {
          apiData.millions_transactions.forEach((student, idx) => this.renderTab(idx, student));
          this.setupTabSwitching(apiData.millions_transactions);
      }
+     // Formats a number with commas
      numberWithCommas(x) {
          return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
      }

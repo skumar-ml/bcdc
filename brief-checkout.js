@@ -10,6 +10,7 @@ Utils.js provides common functionality for modal management, credit data fetchin
 
 */
 class BriefsCheckout {
+    // Initializes the briefs checkout with modal and data
     constructor(data) {
         this.modal = document.getElementById("briefs-preview-modal");
         this.iframe = document.getElementById("preview-frame");
@@ -20,6 +21,7 @@ class BriefsCheckout {
         this.getBriefs();
         this.addCloseModalHandler();
     }
+    // Adds event listener to close button for preview modal
     addCloseModalHandler() {
         if (this.closeBtn) {
             this.closeBtn.addEventListener("click", () => {
@@ -28,6 +30,7 @@ class BriefsCheckout {
             });
         }
     }
+    // Fetches data from API endpoint with optional member ID parameter
     async fetchData(endpoint, memberId = null) {
         try {
             let url = `${this.data.apiBaseURL}${endpoint}`;
@@ -46,6 +49,7 @@ class BriefsCheckout {
         }
     }
 
+    // Fetches available briefs from API and renders them
     async getBriefs() {
         this.showLoading();
         try {
@@ -68,6 +72,7 @@ class BriefsCheckout {
         }
     }
 
+    // Renders brief cards in the grid container sorted by topic order
     renderBriefs(topics) {
         const container = document.querySelector('[data-briefs-checkout="select-briefs"] .briefs-grid-wrapper');
         if (!container) {
@@ -96,6 +101,7 @@ class BriefsCheckout {
         }
     }
 
+    // Displays loading spinner in the briefs container
     showLoading() {
         const container = document.querySelector('[data-briefs-checkout="select-briefs"] .briefs-grid-wrapper');
         if (container) {
@@ -114,6 +120,7 @@ class BriefsCheckout {
         }
     }
 
+    // Creates a DOM element for a single brief card with version selection
     createBriefCard(topic, isSelected = false) {
         const card = document.createElement('div');
         card.className = `brief-card ${isSelected ? 'brown-red-border' : ''}`;
@@ -200,6 +207,7 @@ class BriefsCheckout {
         return card;
     }
 
+    // Handles version selection (full/light) for a brief and updates UI
     selectVersion(topic, version, card) {
         const fullVersionDiv = card.querySelector('[data-briefs-checkout="full-version"]');
         const lightVersionDiv = card.querySelector('[data-briefs-checkout="light-version"]');
@@ -260,6 +268,7 @@ class BriefsCheckout {
         this.updateTotal();
     }
 
+    // Calculates total price from selected briefs and updates order details
     updateTotal() {
         // Calculate total from selected briefs
         const total = this.selectedBriefs.reduce((sum, brief) => {
@@ -273,6 +282,7 @@ class BriefsCheckout {
         console.log('Total amount:', total);
     }
 
+    // Displays error message in the briefs container
     showError(message) {
         const container = document.querySelector('[data-briefs-checkout="select-briefs"] .briefs-grid-wrapper');
         if (container) {
@@ -284,6 +294,7 @@ class BriefsCheckout {
         }
     }
 
+    // Shows the pay now button by removing hide class
     showPayNowButton() {
         const payNowButtonDiv = document.querySelector('.button-div.align-end-with-margin-top-0');
         if (payNowButtonDiv) {
@@ -291,12 +302,14 @@ class BriefsCheckout {
         }
     }
 
+    // Initializes the briefs checkout component
     init() {
         console.log('BriefsCheckout initialized');
         this.setInitialState();
         this.setupPayNowButton();
     }
 
+    // Sets initial UI state by ensuring briefs section is visible
     setInitialState() {
         // Ensure briefs selection is visible
         const briefsSection = document.querySelector('[data-briefs-checkout="select-briefs"]');
@@ -305,6 +318,7 @@ class BriefsCheckout {
         }
     }
 
+    // Sets up click event listener for the pay now button
     setupPayNowButton() {
         const payNowButton = document.querySelector('[data-briefs-checkout="pay-now"]');
         if (payNowButton) {
@@ -315,6 +329,7 @@ class BriefsCheckout {
         }
     }
 
+    // Updates order details sidebar to show selected briefs or empty state
     updateOrderDetails() {
         const emptyOrderDetails = document.querySelector('[data-briefs-checkout="empty-order-details"]');
         const briefsOrderDetails = document.querySelector('[data-briefs-checkout="briefs-order-details"]');
@@ -333,6 +348,7 @@ class BriefsCheckout {
         }
     }
 
+    // Updates the briefs list displayed in the order details sidebar
     updateBriefsListInOrderDetails() {
         const briefsContainer = document.querySelector('[data-briefs-checkout="briefs-order-details"] .brief-flex-wrapper');
         if (!briefsContainer) return;
@@ -360,6 +376,7 @@ class BriefsCheckout {
         this.updateOrderTotal();
     }
 
+    // Updates the total price display in order details and credit modal
     updateOrderTotal() {
         const totalElement = document.querySelector('[data-briefs-checkout="briefs-order-details"] .total-price-bold');
         if (totalElement) {
@@ -377,6 +394,7 @@ class BriefsCheckout {
         }
     }
 
+    // Validates that required payment data (member ID and email) is available
     validatePaymentData() {
         // Check if member ID is available
         if (!this.data.memberId) {
@@ -393,6 +411,7 @@ class BriefsCheckout {
         return true;
     }
 
+    // Attaches click handlers to preview buttons for PDF viewing
     attachPreviewHandlers(briefs) {
         document.querySelectorAll(".button.view-brief").forEach((button) => {
             console.log("Modal:", this.modal);
@@ -434,6 +453,7 @@ class BriefsCheckout {
     }
 
 
+    // Processes payment by creating checkout data and redirecting to Stripe
     async payNow() {
         // Validate that at least one brief is selected
         if (this.selectedBriefs.length === 0) {
@@ -544,6 +564,7 @@ class BriefsCheckout {
         xhr.send(JSON.stringify(checkoutData));
     }
 
+    // Updates breadcrumb navigation to show active step
     activeBreadCrumb(activeId) {
         let breadCrumbList = document.querySelectorAll('.stepper-container ul li');
         breadCrumbList.forEach(element => element.classList.remove('active'))

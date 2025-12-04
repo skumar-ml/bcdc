@@ -8,11 +8,12 @@ Are there any dependent JS files: No
 
 */
 class SigninActivity {
+	// Initializes the class with the Webflow member ID
 	constructor(webflowMemberId){
 		this.webflowMemberId = webflowMemberId;
 		this.InsertSignInData();
 	}
-	// Inserting Sign In record in the database
+	// Sends a POST request to record sign-in activity
 	InsertSignInData(){
 		var data = {
 			 "memberId" : this.webflowMemberId

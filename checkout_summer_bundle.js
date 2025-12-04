@@ -15,6 +15,7 @@ Are there any dependent JS files: No
  * @param className - HTML element class attribute
  * @param idName - HTML element id attribute
  */
+// Helper function to create a DOM element with optional class and ID
 function creEl(name, className, idName) {
 	var el = document.createElement(name);
 	if (className) {
@@ -31,6 +32,7 @@ class CheckOutWebflow {
 	$checkoutData = "";
 	$suppPro = [];
 	$selectedProgram = [];
+	// Initializes the checkout process with API URL and member data
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
 		this.memberData = memberData;
@@ -40,7 +42,7 @@ class CheckOutWebflow {
 		
 	}
 
-	// Passing all summer session data and creating a cart list
+	// Displays summer session data with checkboxes
 	displaySessionsData(data) {
 		this.$sessionData = data.summerSessionData;
 		// Getting main dom elment object to add summer session list with checkbox
@@ -67,7 +69,7 @@ class CheckOutWebflow {
 			})
 		}
 	}
-	// Manipulating a single summer session list
+	// Creates a single summer session list item with a checkbox
 	createSessionList(sessionProData, i) {
 		var coreProductContainer = creEl('div', 'core-session-container core-product-container'+ (i ? ' margin-top' : ''));
 		var $this = this;
@@ -110,7 +112,7 @@ class CheckOutWebflow {
 
 		return coreProductContainer;
 	}
-	// Based on session selection we are showing location
+	// Updates the displayed locations based on session selection
 	updateLocation(sessionData) {
 
 		var location = sessionData.location;
@@ -168,7 +170,7 @@ class CheckOutWebflow {
 			}
 		}
 	}
-	// API Call for validate user for program for level 2A
+	// Validates the user for a specific program (e.g., Level 2A) via API
 	async validateUserForProgram() {
 		var studentFirstName = document.getElementById('Student-First-Name');
 		var studentLastName = document.getElementById('Student-Last-Name');
@@ -188,11 +190,11 @@ class CheckOutWebflow {
 		const content = await rawResponse.json();
 		return content;
 	}
-	// formatting price in comma based value
+	// Formats a number with commas
 	numberWithCommas(x) {
 		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	}
-	// Get API data with the help of endpoint
+	// Fetches data from the specified API endpoint
 	async fetchData(endpoint, baseUrl) {
 		try {
 			baseUrl = baseUrl || this.baseUrl;
@@ -207,7 +209,7 @@ class CheckOutWebflow {
 			throw error;
 		}
 	}
-	// API call for stripe checkout URL 
+	// Initiates the Stripe payment process by calling an API to get checkout URLs
 	initializeStripePayment() {
 		var studentFirstName = document.getElementById('Student-First-Name');
 		var studentLastName = document.getElementById('Student-Last-Name');
@@ -276,6 +278,7 @@ class CheckOutWebflow {
 		}
 	}
 
+	// Updates student data in the database after location and session selection
 	updateStudentDataInDB(){
 		let checkOutData = localStorage.getItem('checkOutData')
 		if(checkOutData == undefined){
@@ -322,6 +325,7 @@ class CheckOutWebflow {
 		}
 	}
 
+	// Updates click events in the database and redirects to the checkout URL
 	updateClickEventInDB(checkOutUrl, paymentType) {
 		let checkOutData = localStorage.getItem('checkOutData')
     var ach_payment = document.getElementById('ach_payment');
@@ -384,7 +388,7 @@ class CheckOutWebflow {
 	}
   
 	
-	// Hide and show tab for program selection, student info and checkout payment
+	// Shows a specific checkout tab and hides others
 	activateDiv(divId) {
 		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment', 'pf_labs_error_message'];
 		// Remove the active class from all div elements
@@ -392,7 +396,7 @@ class CheckOutWebflow {
 		// Add the active class to the div with the specified id
 		document.getElementById(divId).classList.add('active_checkout_tab');
 	}
-	// Managing next and previous button 
+	// Sets up event listeners for "Next" and "Previous" buttons in the checkout flow
 	addEventForPrevNaxt() {
 		var next_page_1 = document.getElementById('next_page_1');
 		var next_page_2 = document.getElementById('next_page_2');
@@ -477,7 +481,7 @@ class CheckOutWebflow {
 			}
 		})
 	}
-	// store basic student form data in local storage
+	// Stores basic student form data in local storage
 	storeBasicData() {
 		var studentFirstName = document.getElementById('Student-First-Name');
 		var studentLastName = document.getElementById('Student-Last-Name');
@@ -500,7 +504,7 @@ class CheckOutWebflow {
 		studentName.innerHTML = studentFirstName.value + ' ' + studentLastName.value;
 		localStorage.setItem("checkOutBasicData", JSON.stringify(data));
 	}
-	// update basic student form data from local storage
+	// Retrieves and updates basic student form data from local storage
 	updateBasicData() {
 		var checkoutJson = localStorage.getItem("checkOutBasicData");
 		if (checkoutJson != undefined) {
@@ -535,7 +539,7 @@ class CheckOutWebflow {
 			}
 		}
 	}
-	// handle payment button click like ach, card and pay later
+	// Handles click events for different payment options (ACH, card, pay later)
 	handlePaymentEvent() {
 		var ach_payment = document.getElementById('ach_payment');
 		var card_payment = document.getElementById('card_payment');
@@ -566,7 +570,7 @@ class CheckOutWebflow {
 		})
 	}
 
-	// Setup back button for stripe back button and browser back button
+	// Handles browser and Stripe back button functionality to restore checkout state
 	setUpBackButtonTab() {
 		var query = window.location.search;
 		var urlPar = new URLSearchParams(query);
@@ -635,7 +639,7 @@ class CheckOutWebflow {
 			localStorage.removeItem("checkOutData");
 		}
 	}
-	// After API response we call the displaySessionsData method to manipulate session data 
+	// Orchestrates the rendering of summer session data and initializes event handlers
 	async renderPortalData(memberId) {
 		try {
 			// Handle checkout button
@@ -662,7 +666,7 @@ class CheckOutWebflow {
 			console.error('Error rendering random number:', error);
 		}
 	}
-	// Progress Bar
+	// Highlights the active step in the breadcrumb navigation
 	activeBreadCrumb(activeId) {
 		let breadCrumbList = document.querySelectorAll(" ul.c-stepper li");
 		breadCrumbList.forEach((element) => element.classList.remove("active"));
@@ -670,8 +674,7 @@ class CheckOutWebflow {
 	}
 
 
-	// Add modal related code
-
+	// Handles adding supplementary programs to the cart
 	addToCart() {
       // Select all 'add-to-card' buttons
       const addToCartButtons = document.querySelectorAll(".add-to-cart");
@@ -712,6 +715,7 @@ class CheckOutWebflow {
       });
     }
 
+	// Updates the total amount displayed in the cart
 	updateAmount(amount){
       var totalAmountInput = document.getElementById("totalAmount");
       var totalPriceAllText = document.querySelectorAll(
@@ -752,6 +756,7 @@ class CheckOutWebflow {
       // Update selected supplementary program ids
       this.displaySelectedSuppProgram(allSupIds);
     }
+	// Displays selected supplementary programs in the sidebar
 	displaySelectedSuppProgram(selectedIds) {
       var selectedSuppPro = document.getElementById("add-on-program-desktop");
       var selectedSuppProMob = document.getElementById("add-on-program-mobile");
@@ -778,7 +783,7 @@ class CheckOutWebflow {
         }
       }
     }
-    // This method use to display selected supplementary program in sidebar
+    // Helper to render selected supplementary programs
    displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
     var $this = this;
     // Filtering selected Supplementary program id from all Supplementary program data
@@ -815,6 +820,7 @@ class CheckOutWebflow {
       selectedSuppPro.appendChild(mainGridWrapper);
     });
   }
+    // Removes a supplementary program from the selected list
     removeSuppProgram(suppId) {
       var suppProIdE = document.getElementById("suppProIds");
       var arrayIds = JSON.parse(suppProIdE.value);
@@ -845,6 +851,7 @@ class CheckOutWebflow {
       }
 	  this.disableEnableBuyNowButton();
     }
+	// Fetches and displays supplementary programs
 	async displaySupplementaryProgram() {
 		var suppData = await this.fetchData("getUpsellProgramV2", this.memberData.eTypeBaseUrl);
         // Check if there are any upsell programs
@@ -858,6 +865,7 @@ class CheckOutWebflow {
 		this.noThanksEvent();
 	}	
 
+	// Updates the internal list of supplementary program data
 	updateSupplementaryProgramData(suppProData) {
       if (suppProData != null && suppProData.length > 0) {
         // this.$suppPro, Update unique supplementary program data based on upsellProgramId
@@ -870,6 +878,7 @@ class CheckOutWebflow {
       }
     }
 
+	// Creates bundle program cards for display
 	createBundlePrograms(academicData) {
       const cardContainer = document.querySelector(
         "[data-upSell='card-container']"
@@ -955,6 +964,7 @@ class CheckOutWebflow {
       this.disableEnableBuyNowButton();
     }
 
+	// Displays the total discount amount
 	displayTotalDiscount(bundleData, discAmount){
       var totalDiscount = bundleData.reduce((acc, bundle) => {
           const amount = Number(bundle.portal_amount) || 0;
@@ -970,6 +980,7 @@ class CheckOutWebflow {
       })
     }
 
+	// Creates a single bundle program card
 	createBundleCard(singleBundleData, type="upsell", position="", coreData) {
       var $this = this;
       var flexContainer = creEl("div", "bundle-sem-content-flex-container");
@@ -1081,6 +1092,7 @@ class CheckOutWebflow {
       return flexContainer;
     }
 
+    // Disables or enables the "Add to Cart" / "Update Cart" button
     disableEnableBuyNowButton() {
       // is selected program is empty then disable the buy now button
       const buyNowButton = document.querySelectorAll(".add-to-cart, .bundle-add-to-cart");
@@ -1095,6 +1107,7 @@ class CheckOutWebflow {
       } 
     }
 
+	// Displays the semester bundle modal
 	showSemesterBundleModal() {
       const check_semester_bundle = this.checkSemesterBundleModalOpen();
       if (check_semester_bundle) {
@@ -1107,6 +1120,7 @@ class CheckOutWebflow {
       semesterBundleModal.classList.add("show");
       semesterBundleModal.style.display = "flex";
     }
+    // Sets up event listeners for "No Thanks" and close buttons on the modal
     noThanksEvent() {
       var $this = this;
       const closeLinks = document.querySelectorAll(".upsell-close-link");
@@ -1144,6 +1158,7 @@ class CheckOutWebflow {
       //$this.addToCart();
       //$this.handleUpSellSelection();
     }
+    // Closes a given modal
     closeModal(modal) {
       if (modal) {
         document.cookie = "bundleModalClosed=" + encodeURIComponent(new Date().toISOString()) + "; path=/";
@@ -1152,6 +1167,7 @@ class CheckOutWebflow {
       }
     }
   
+    // Checks if the semester bundle modal should be open based on cookies
     checkSemesterBundleModalOpen() {
       let isOpen = false;
       // Direct check with checkbox with bundleProgram class
@@ -1176,6 +1192,7 @@ class CheckOutWebflow {
       return isOpen;
     }
 
+	// Updates prices for card payments to include fees
 	updatePriceForCardPayment() {
       var $this = this;
       let paymentTab = document.querySelectorAll(".checkout-tab-link");

@@ -8,6 +8,7 @@ Are there any dependent JS files: No
 
 */
         class PaymentHistory {
+            // Initializes the PaymentHistory instance
             constructor(data) {
                 this.data = data;
                 this.spinner = document.getElementById("half-circle-spinner");
@@ -15,7 +16,7 @@ Are there any dependent JS files: No
                 this.render();
             }
 
-            // Fetch invoice data using the portal api for the member
+            // Fetches portal detail data from the API
             async fetchData() {
                 const response = await fetch(
                     `${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`
@@ -25,7 +26,7 @@ Are there any dependent JS files: No
                 return apiData;
             }
 
-            // Fetch millions transaction data
+            // Fetches millions transaction data from the API
             async fetchMillionsData() {
                 const response = await fetch(
                     `${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`
@@ -37,7 +38,7 @@ Are there any dependent JS files: No
                 return millionsData;
             }
             
-            // Main render method - orchestrates the entire UI setup
+            // Main render method to orchestrate UI setup
             async render() {
                 // Hide content and show loading spinner
                 const paidResource = document.querySelector(".portal-info-wrapper");
@@ -95,7 +96,7 @@ Are there any dependent JS files: No
                 });
             }
 
-            // Setup dynamic tabs for each student
+            // Sets up dynamic tabs for each student
             setupTabs(data) {
                 // Get DOM references for tab elements
                 const tabMenu = document.querySelector(".portal-tab-menus");
@@ -193,7 +194,7 @@ Are there any dependent JS files: No
                 });
             }
 
-            // Render content for a specific student tab
+            // Renders content for a specific student tab
             renderStudentTab(
                 tabPane,
                 studentData,
@@ -206,7 +207,7 @@ Are there any dependent JS files: No
                 this.renderPaymentHistory(tabPane, studentData, studentName);
             }
 
-            // Render outstanding invoices for a student
+            // Renders outstanding invoices for a student
             renderOutstandingInvoices(tabPane, studentData, studentName) {
                 const outstandingInvoiceContainer = tabPane.querySelector(
                     '[data-payment="outstanding-invoice"]'
@@ -410,7 +411,7 @@ Are there any dependent JS files: No
                 });
             }
 
-            // Initialize Stripe payment process
+            // Initiates Stripe payment for an invoice
             initializeStripePayment(
                 invoice_id,
                 title,
@@ -462,7 +463,7 @@ Are there any dependent JS files: No
                 };
             }
 
-            // Render payment history for a student
+            // Renders payment history for a student
             renderPaymentHistory(tabPane, studentData, studentName) {
                 const paymentHistoryContainer = tabPane.querySelector(
                     '[data-payment="payment-history"]'
@@ -550,7 +551,7 @@ Are there any dependent JS files: No
                 });
             }
 
-            // Get all sessions (current and past) for a student
+            // Retrieves all sessions (current and past) for a student
             getAllSessions(studentData) {
                 const sessions = [];
 
@@ -619,13 +620,13 @@ Are there any dependent JS files: No
                 return sessions;
             }
 
-            // Format session display name
+            // Formats the session display name
             getSessionDisplayName(session) {
                 const year = session.currentYear || session.yearId || "";
                 return `Jan 1 - Dec 31, ${year}`;
             }
 
-            // Update sidebar millions count display
+            // Updates the sidebar millions count
             updateSidebarMillionsCount(millionsData, studentName) {
                 const sidebarCountEls = document.querySelectorAll(
                     '[data-millions="sidebarCount"]'
@@ -642,7 +643,7 @@ Are there any dependent JS files: No
                     el.parentElement.style.display = "block";
                 });
             }
-            // Generate and download invoice PDF
+            // Generates and downloads an invoice PDF
             async generateInvoicePDF(memberId, name, yearId, imgElement = null) {
                 try {
                     // Show loading spinner if image element provided

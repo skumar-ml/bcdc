@@ -18,6 +18,7 @@ class DDInvoices {
     $startDate = '';
     $endDate = '';
     $completedInvoice = 0;
+    // Initializes the DDInvoices class with member ID, email, and API URL
     constructor(webflowMemberId, accountEmail, apiBaseUrl) {
         this.webflowMemberId = webflowMemberId;
         this.accountEmail = accountEmail;
@@ -26,7 +27,7 @@ class DDInvoices {
         this.tabContent = document.getElementById('tab-content');
         this.getPortalData();
     }
-    // Get API data with the help of endpoint
+    // Fetches data from the specified API endpoint
     async fetchData(endpoint) {
         try {
             const response = await fetch(`${this.baseUrl}${endpoint}`);
@@ -40,6 +41,7 @@ class DDInvoices {
             //throw error;
         }
     }
+    // Fetches invoice data from API and initializes the UI
     async getPortalData() {
         // API call
         const curr_dashboard_title = document.getElementById('curr_dashboard_title');
@@ -58,6 +60,7 @@ class DDInvoices {
         // Re initialize webflow tabs after API call 
         Webflow.require('tabs').redraw();
     }
+    // Updates internal class variables with data from a given tab
     updateGlobalVariable(tab) {
         this.$completedForm = tab.formCompletedList;
         this.$invoiceList = tab.invoiceList;
@@ -69,7 +72,7 @@ class DDInvoices {
         this.$startDate = new Date(this.$programDetail.startDate);
         this.$endDate = new Date(this.$programDetail.endDate);
     }
-    // Hide free and paid resources after api response data
+    // Controls visibility of free/paid resources based on API response
     hidePortalData(responseText) {
         if (responseText == "No data Found") {
             document.getElementById("free-resources").style.display = "block";
@@ -82,6 +85,7 @@ class DDInvoices {
             document.getElementById("paid-resources").style.display = "block";
         }
     }
+    // Sets up event listeners for cross icons to remove selected tabs
     crossEvent() {
         var crossIcon = document.querySelectorAll('.cross-icon')
         var $this = this;
@@ -93,6 +97,7 @@ class DDInvoices {
             });
         })
     }
+    // Removes the default active state from all tabs
     removeByDefaultSelectedTab() {
         const panLink = document.querySelectorAll('.w-tab-link');
         panLink.forEach(element => {
@@ -104,11 +109,13 @@ class DDInvoices {
         });
         Webflow.require('tabs').redraw();
     }
+    // Initializes tab creation and content rendering
     init(data) {
         this.createTabs(data);
         this.createTabContent(data);
     }
 
+    // Creates the tab menu elements for each invoice
     createTabs(tabData) {
         console.log('data', tabData)
         tabData.forEach((tab, index) => {
@@ -142,6 +149,7 @@ class DDInvoices {
         });
     }
 
+    // Creates the content panes for each tab with invoice details
     createTabContent(tabData) {
         var $this = this;
         tabData.forEach((tab, index) => {
@@ -295,6 +303,7 @@ class DDInvoices {
             this.tabContent.appendChild(tabPane);
         });
     }
+    // Initiates Stripe payment for an invoice
     initializeStripePayment(invoice_id, title, amount, paymentLinkId, span, link_title, paymentType) {
         var centAmount = (amount * 100).toFixed(2);
         var data = {
@@ -328,6 +337,7 @@ class DDInvoices {
     /**
      * Get Checkbox icon for form complete or complete
      */
+    // Returns the appropriate icon based on invoice status
     getCheckedIcon(status, failed, processing) {
 
         if (processing) {

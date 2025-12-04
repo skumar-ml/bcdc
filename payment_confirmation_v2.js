@@ -14,6 +14,7 @@ Are there any dependent JS files: No
  * @param className - HTML element class attribute
  * @param idName - HTML element id attribute
  */
+// Helper function to create a DOM element with optional class and ID
 function creEl(name, className, idName) {
 	var el = document.createElement(name);
 	if (className) {
@@ -26,6 +27,7 @@ function creEl(name, className, idName) {
 }
 
 class PaymentConfirmation {
+    // Initializes the class with member ID, API URL, and site URL
     constructor(webFlowMemberId, apiBaseUrl, site_url) {
         this.apiBaseUrl = apiBaseUrl;
         this.site_url = site_url;
@@ -43,6 +45,7 @@ class PaymentConfirmation {
         
     }
 
+    // Sets up event handlers for the upsell modal
     eventHandlerForUpSellModal() {
         let upSellModalBtn = document.getElementById('upsellModalBtn1')
         var $this = this;
@@ -70,6 +73,7 @@ class PaymentConfirmation {
         }
     }
     
+    // Displays the upsell modal
     displayUpSellModal() {
         const modal = document.getElementById('upsell-modal-1');
         var $this = this;
@@ -103,19 +107,21 @@ class PaymentConfirmation {
         //$this.buyNow()
     }
 
+    // Shows a given modal
     showUpSellModal(modal) {
         modal.classList.add('show');
         modal.style.display = 'flex';
         document.querySelector('.upsell-modal-bg').setAttribute('aria-hidden', 'false');
     }
 
+    // Hides a given modal
     hideUpSellModal(modal) {
         modal.classList.remove('show');
         modal.style.display = 'none';
         document.querySelector('.upsell-modal-bg').removeAttribute('aria-hidden');
     }
 
-    // Get API data with the help of endpoint
+    // Fetches data from the specified API endpoint
     async fetchData(endpoint) {
         try {
             const response = await fetch(`${this.apiBaseUrl}${endpoint}`);
@@ -132,6 +138,7 @@ class PaymentConfirmation {
 
     
 
+    // Updates the content of the upsell modal
     updateUpSellModal(prep_week_data, tutoring_data) {
 
         if (prep_week_data.length > 0) {
@@ -216,6 +223,7 @@ class PaymentConfirmation {
         }
     }
 
+    // Handles "Buy Now" button clicks for upsell programs
     buyNow() {
         // Select all 'add-to-card' buttons
         const addToCartButtons = document.querySelectorAll(".add-to-card");
@@ -253,6 +261,7 @@ class PaymentConfirmation {
         });
     }
 
+    // Retrieves a URL parameter by name
     getURLParam(name) {
         //transactionID
         const queryString = window.location.search;
@@ -261,6 +270,7 @@ class PaymentConfirmation {
 
 
     }
+    // Calls an API to get a payment URL for supplementary programs
     getPaymentUrl(programId, programName, amount) {
         // Define the data to be sent in the POST request
         const data = {
@@ -299,6 +309,7 @@ class PaymentConfirmation {
             });
     }
 
+    // Fetches and displays supplementary programs
     async displaySupplementaryProgram() {
 		let container2 = document.getElementById("checkout-supplimentary-data-2");
 		let swiperSlideWrapper = container2.querySelector('.you-might_slick-slider')
@@ -347,6 +358,7 @@ class PaymentConfirmation {
         this.initSlickSlider();
         this.buyNow();
 	}
+	// Initializes the Slick Slider for supplementary programs
 	initSlickSlider() {
 		var $slider = $('.you-might_slick-slider');
 		// Check if the slider is already initialized
@@ -391,7 +403,7 @@ class PaymentConfirmation {
 		}
 
 	}
-    // New UpSell Program / Supplementary
+    // Displays a single supplementary program card
 	displaySingleSuppProgram(item, size, slideDiv) {
 		var $this = this;
 		// Create the outer-shadow div

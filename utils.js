@@ -9,10 +9,12 @@ Are there any dependent JS files: No
 */
 class Utils {
     
+    // Initializes the Utils class
     constructor() {
         console.log("Utils constructor");
     }
 
+    // Fetches data from an API endpoint
     /**
      * Fetches data from an API endpoint and returns the JSON response
      * @param {string} endpoint - The API endpoint to call
@@ -34,6 +36,7 @@ class Utils {
         }
     }
 
+    // Handles the Bergen credits modal functionality
     /**
      * Handles the Bergen credits modal functionality
      * Sets up event listeners for closing the modal and fetches credit data
@@ -86,6 +89,7 @@ class Utils {
         }
     }
    
+    // Calculates and updates the discounted price
     static calculateDiscountPrice() {
         const creditPriceEl = document.querySelector('[data-credit="amount"]');
         const totalDepositPriceEl = document.querySelector(".current-price-gray");
@@ -121,6 +125,7 @@ class Utils {
     }
 
 
+    // Updates the credit amount displayed in the UI
     /**
      * Updates the credit amount displayed in the UI
      * Finds all elements with data-credit="amount" and updates their text content
@@ -155,6 +160,7 @@ class Utils {
         }, 50);
 
         }
+    // Private method to fetch credits data from the API
     /**
      * Private method to fetch credits data from the API
      * @param {string} webflowMemberId - The Webflow member ID to fetch credits for
@@ -167,6 +173,7 @@ class Utils {
         return this.fetchData(endpoint, apiBaseUrl);
     }
     
+    // Shows the Bergen credits modal
     /**
      * Shows the Bergen credits modal
      * Displays the modal by adding the 'show' class and setting display to flex
@@ -180,6 +187,7 @@ class Utils {
         }
     }
 
+    // Shows the modal and waits for user choice on applying credits
     /**
      * Shows the Bergen credits modal and waits for user to choose whether to apply credits
      * @param {string} webflowMemberId - Optional Webflow member ID to fetch and display credit data
@@ -268,6 +276,7 @@ class Utils {
         return applyCredit;
     }
 
+    // Shows a modal
     /**
      * Shows a modal by adding the 'show' class and setting display to flex
      * @param {HTMLElement} modal - The modal element to show
@@ -285,6 +294,7 @@ class Utils {
         }
     }
 
+    // Closes a modal
     /**
      * Closes a modal by removing the 'show' class and setting display to none
      * @param {HTMLElement} modal - The modal element to close
