@@ -90,10 +90,10 @@ class CreditBalance {
                 this.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
                 // Populate the table with transactions
                 // sessionName should not be empty
-                this.transactions = this.transactions.filter(
-                    (transaction) =>
-                        transaction.sessionName && transaction.sessionName.trim() !== ""
-                );
+                // this.transactions = this.transactions.filter(
+                //     (transaction) =>
+                //         transaction.sessionName && transaction.sessionName.trim() !== ""
+                // );
                 this.transactions.forEach((transaction) => {
                     const row = document.createElement("div");
                     row.className = "transactions-table-row-grid-wrapper columns-5";
@@ -116,9 +116,9 @@ class CreditBalance {
                             : "Debit"
                         }</p>
                         </div>
-                        <div class="transactions-table-row-text">${transaction.sessionName
-                        } ${transaction.year}</div>
-                        <div class="transactions-table-row-text">${transaction.description
+                        <div class="transactions-table-row-text">${transaction.sessionName || "N/A"}
+                        ${transaction.year || "N/A"}</div>
+                        <div class="transactions-table-row-text">${transaction.description || "N/A"}    
                         }</div>
                         <div class="transactions-table-row-text ${transaction.type === "credit" ? "green-semi-bold" : "red-semi-bold"
                         }">${transaction.type === "credit"
