@@ -367,6 +367,11 @@ class BriefsCheckout {
                 return sum + (parseFloat(brief.price) || 0);
             }, 0);
             totalElement.textContent = `$${total.toFixed(2)}`;
+
+            // For the credit modal amount update
+            // NEW — update .current-price-gray without changing any logic
+            const grayElem = document.querySelector(".current-price-gray");
+            if (grayElem) grayElem.innerHTML = `$${total.toFixed(2)}`;
         }
     }
 
