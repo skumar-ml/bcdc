@@ -30,13 +30,6 @@ class AbandonedCartModal {
       });
       this.checkAndDisplayModal();
     }
-
-    const viewCartBtn = document.getElementById("view-cart-btn");
-    if (viewCartBtn) {
-      viewCartBtn.addEventListener("click", () => {
-        //this.setModelDisplay();
-      });
-    }
   }
   isWithinAWeek(dateString) {
     const date = new Date(dateString);

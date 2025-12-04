@@ -194,11 +194,13 @@ class Utils {
                 const creditsData = await instance.#getCreditsData(webflowMemberId);
                 
                 // Check if creditBalance is 0 or invalid
+                const creditBalance = creditsData?.creditBalance?.creditBalance;
                 if (!creditsData || 
                     !creditsData.creditBalance || 
-                    creditsData.creditBalance.creditBalance === undefined || 
-                    creditsData.creditBalance.creditBalance === null ||
-                    creditsData.creditBalance.creditBalance === 0) {
+                    creditBalance === undefined || 
+                    creditBalance === null ||
+                    creditBalance === 0 ||
+                    Number(creditBalance) === 0) {
                     console.log("Credit balance is 0 or invalid, not showing modal");
                     return false;
                 }
