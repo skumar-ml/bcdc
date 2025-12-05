@@ -79,7 +79,7 @@ Are there any dependent JS files: No
              */
             async fetchTrialClassDetails(offset = 0, limit = 5) {
                 try {
-                    const url = `${this.data.apiBaseURL}getTrialClassDetails/${this.data.memberId}?offset=${offset}&limit=${limit}`;
+                    const url = `https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getTrialClassDetails/${this.data.memberId}?offset=${offset}&limit=${limit}`;
 
                     const response = await fetch(url, {
                         method: 'GET',

@@ -468,8 +468,7 @@ class BriefsCheckout {
 
         // Open Bergen credits modal and wait for user's decision
         // This will show the modal, fetch credit data, and wait for user to choose apply/no
-        //const applyCredit = await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
-        const applyCredit = false;
+        const applyCredit = await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
         
         // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
         console.log("Apply credit:", applyCredit);
