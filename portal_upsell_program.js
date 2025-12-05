@@ -719,12 +719,14 @@ class DisplaySuppProgram {
           upSellAmount.forEach((up_Sell_price) => {
             if (this.$selectedProgram.length === 0) {
               up_Sell_price.innerHTML = "$0";
+              this.updateCreditModalAmount(0.00);
             } else {
               const totalAmount = this.$selectedProgram.reduce(
                 (acc, program) => acc + program.portal_amount,
                 0
               );
               up_Sell_price.innerHTML = "$" + this.numberWithCommas(totalAmount);
+              this.updateCreditModalAmount(totalAmount);
             }
           });
         }
