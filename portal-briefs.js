@@ -31,7 +31,6 @@ Are there any dependent JS files: No
 
                 this.init();
             }
-            // Fetches data from the API
             /**
              * Fetch data from the API
              */
@@ -65,7 +64,6 @@ Are there any dependent JS files: No
                     this.elements.productInfoWrapper.style.display = 'block';
                 }
             }
-            // Initializes the manager, caches DOM, binds events, and updates the UI
             /**
              * Initialize the manager: cache DOM, handle empty state, bind events, update UI
              */
@@ -79,7 +77,6 @@ Are there any dependent JS files: No
                 this.elements.spinner.style.display = 'none';
             }
 
-            // Caches DOM elements for reuse
             /**
              * Cache DOM elements into this.elements for reuse
              */
@@ -93,7 +90,6 @@ Are there any dependent JS files: No
                 this.elements.productInfoWrapper = document.querySelector('.product-info-wrapper');
             }
 
-            // Handles empty state by hiding/showing containers
             /**
              * Handle empty state: hide containers if no briefs
              */
@@ -115,7 +111,6 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Binds events to DOM elements
             /**
              * Bind events to DOM elements
              */
@@ -130,7 +125,6 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Sets the current brief index and updates the UI
             /**
              * Set the current brief index and update UI
              */
@@ -141,7 +135,6 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Returns the currently selected brief object
             /**
              * Get the currently selected brief object
              */
@@ -149,7 +142,6 @@ Are there any dependent JS files: No
                 return this.$briefs[this.currentBriefIndex];
             }
 
-            // Updates dropdowns with the list of briefs
             /**
              * Update dropdowns with list of briefs
              */
@@ -240,7 +232,6 @@ Are there any dependent JS files: No
                 });
             }
 
-            // Updates PDF download links
             /**
              * Update PDF download links with current brief
              */
@@ -256,7 +247,6 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Updates the PDF preview iframe
             /**
              * Update PDF preview iframe with current brief
              */
@@ -272,7 +262,6 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Updates all UI elements
             /**
              * Update all UI elements (dropdown, downloads, previews)
              */

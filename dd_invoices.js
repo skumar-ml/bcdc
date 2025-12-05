@@ -334,9 +334,6 @@ class DDInvoices {
 
         }
     }
-    /**
-     * Get Checkbox icon for form complete or complete
-     */
     // Returns the appropriate icon based on invoice status
     getCheckedIcon(status, failed, processing) {
 

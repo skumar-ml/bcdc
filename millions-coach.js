@@ -9,7 +9,7 @@ Are there any dependent JS files: No
 */
         class MillionsCoach {
             $currentStudent = null;
-            // Initializes the MillionsCoach instance
+            
             /**
              * Constructor for MillionsCoach class
              * @param {Object} data - Configuration object containing API base URL and member ID
@@ -29,7 +29,7 @@ Are there any dependent JS files: No
                 this.setupEventListeners();
             }
 
-            // Renders the initial students list and pagination
+            
             /**
              * Renders the initial students list and pagination
              * Fetches data from API and displays it on the page
@@ -76,7 +76,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Fetches student data from the API with optional search and pagination
+            
             /**
              * Fetches students data from the API with optional search and pagination
              * @param {string} searchText - Search term to filter students
@@ -114,7 +114,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Updates the millions amount for a student via API
+            
             /**
              * Updates the millions amount for a specific student via API
              * @param {string} description - Description of the update
@@ -152,7 +152,6 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Displays the list of students in the UI
             /**
              * Displays the list of students in the UI
              * @param {Array} studentsList - Array of student objects to display
@@ -190,7 +189,6 @@ Are there any dependent JS files: No
                 });
             }
 
-            // Shows a "no records found" message
             /**
              * Shows a no records found message
              * @param {string} message - Message to display
@@ -219,7 +217,6 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Hides the "no records found" message
             /**
              * Hides the no records found message
              */
@@ -280,7 +277,7 @@ Are there any dependent JS files: No
                 return row;
             }
 
-            // Displays pagination controls
+            
             /**
              * Displays pagination controls for navigating through student pages
              */
@@ -359,9 +356,6 @@ Are there any dependent JS files: No
                     }
                 });
             }
-
-
-            // Generates pagination page numbers with ellipsis
             /**
              * Generates pagination page numbers with smart ellipsis for large page counts
              * @param {number} totalPages - Total number of pages
@@ -407,8 +401,6 @@ Are there any dependent JS files: No
 
                 return pageNumbers.join('');
             }
-
-            // Creates a single pagination page button
             /**
              * Creates a single pagination page button
              * @param {number} pageNumber - Page number to display
@@ -422,8 +414,6 @@ Are there any dependent JS files: No
                     return `<button class="pagination-btn page-number" data-page="${pageNumber - 1}">${pageNumber}</button>`;
                 }
             }
-
-            // Navigates to a specific page and loads student data
             /**
              * Navigates to a specific page and loads the corresponding student data
              * @param {number} page - Page number to navigate to (0-based)
@@ -445,8 +435,6 @@ Are there any dependent JS files: No
                     this.displayError('Failed to load page');
                 }
             }
-
-            // Searches for students based on text input
             /**
              * Searches for students based on the provided search text
              * @param {string} searchText - Text to search for in student names/emails
@@ -479,8 +467,6 @@ Are there any dependent JS files: No
                 // Handle search form display
                 this.handleSearchFormDisplay();
             }
-
-            // Handles search form display and hides messages
             /**
              * Handles search form display and hides success/error messages
              */
@@ -499,7 +485,6 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Clears the current search and returns to the original list
             /**
              * Clears the current search and returns to the original student list
              */
@@ -535,7 +520,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Opens the modal for adding millions to a student's balance
+            
             /**
              * Opens the modal for adding amount to a student's millions
              * @param {string} studentId - ID of the student to add amount for
@@ -574,7 +559,7 @@ Are there any dependent JS files: No
                 modal.style.display = "flex";
             }
 
-            // Opens the modal for removing millions from a student's balance
+            
             /**
              * Opens the modal for removing amount from a student's millions
              * @param {string} studentId - ID of the student to remove amount from
@@ -613,7 +598,7 @@ Are there any dependent JS files: No
                 modal.classList.add("show");
             }
 
-            // Displays an error message in the student list area
+            
             /**
              * Displays an error message in the students list area
              * @param {string} message - Error message to display
@@ -629,7 +614,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Shows a loading spinner
+           
             /**
              * Shows a loading spinner with optional message
              * @param {string} message - Loading message to display (default: 'Loading...')
@@ -648,7 +633,7 @@ Are there any dependent JS files: No
 
 
 
-            // Sets up all event listeners for search, pagination, and modal
+            
             /**
              * Sets up all event listeners for search, pagination, and modal interactions
              */
@@ -686,7 +671,7 @@ Are there any dependent JS files: No
                 this.setupModalEventListeners();
             }
 
-            // Sets up event listeners specifically for modal interactions
+            
             /**
              * Sets up event listeners specifically for modal interactions
              */
@@ -719,7 +704,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Handles the submission of the modal form
+            
             /**
              * Handles the submission of the modal form for adding/removing amounts
              */
@@ -788,7 +773,7 @@ Are there any dependent JS files: No
                 }
             }
 
-            // Closes the modal and clears current student data
+            
             /**
              * Closes the modal and clears current student data
              */
@@ -804,8 +789,6 @@ Are there any dependent JS files: No
                 this.currentAction = null;
                 this.$currentStudent = null;
             }
-
-            // Finds a student by ID in the current list
             /**
              * Finds a student by their ID in the current students list
              * @param {string} studentId - ID of the student to find
