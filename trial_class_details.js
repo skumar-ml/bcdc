@@ -309,54 +309,71 @@ class TrialClassDetails {
      * @param {Object} student - Student object containing name, email, attended, and _id
      * @returns {HTMLElement} DOM element representing the student row
      */
-    createStudentRow(student) {
-        const row = document.createElement('div');
-        row.className = `trial-class-details-row-grid ${student.attended ? 'checked-attendance-bg-bluish-white' : ''}`;
-        row.setAttribute('data-student-id', student._id);
 
-        const attendanceIcon = student.attended
-            ? 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682ecd5b8bc5ccc9aff51d85_checked-icon.svg'
-            : 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682b19d6917e60cb04ec4624_Rectangle%204630.svg';
+     createStudentRow(student) {
+                const row = document.createElement('div');
+                row.className = `trial-class-details-row-grid ${student.attended ? 'checked-attendance-bg-bluish-white' : ''}`;
+                row.setAttribute('data-student-id', student._id);
 
-        const attendanceClass = student.attended ? 'attendance-checked' : 'attendance-uncheck';
+                const attendanceIcon = student.attended
+                    ? 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682ecd5b8bc5ccc9aff51d85_checked-icon.svg'
+                    : 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/682b19d6917e60cb04ec4624_Rectangle%204630.svg';
 
-        // Determine button text based on whether notes exist
-        const notesButtonText = student.notes && student.notes.trim() ? 'Update Notes' : 'Add Notes';
+                const attendanceClass = student.attended ? 'attendance-checked' : 'attendance-uncheck';
 
-        row.innerHTML = `
-    <div class="trail-class-details-row-text">${student.name || 'N/A'}</div>
-    <div class="trail-class-details-row-text">${student.email || 'N/A'}</div>
-    <img src="${attendanceIcon}" 
-         loading="lazy" 
-         alt="" 
-         class="${attendanceClass}"
-         data-student-id="${student._id}"
-         data-action="toggle-attendance">
-    <a href="#" 
-       class="button wine-red add-notes w-button"
-       data-student-id="${student._id}"
-       data-action="add-notes">${notesButtonText}</a>
-`;
+                // Determine button text based on whether notes exist
+                const notesButtonText = student.notes && student.notes.trim() ? 'Update Notes' : 'Add Notes';
 
-        // Add event listeners
-        const attendanceToggle = row.querySelector('[data-action="toggle-attendance"]');
-        const addNotesButton = row.querySelector('[data-action="add-notes"]');
+                row.innerHTML = `
+                <div>
+                    <div data-parent="parent-name" class="trail-class-details-row-text">
+                        ${student.parentName || 'N/A'}
+                    </div>
+                    <div data-parent="parent-email" class="trail-class-details-row-email-text">
+                        ${student.parentEmail || 'N/A'}
+                    </div>
+                </div>
 
-        if (attendanceToggle) {
-            attendanceToggle.addEventListener('click', () => {
-                this.toggleAttendance(student._id);
-            });
-        }
+                <div>
+                    <div data-parent="student-name" class="trail-class-details-row-text">
+                        ${student.studentName || 'N/A'}
+                    </div>
+                    <div data-parent="student-email" class="trail-class-details-row-email-text">
+                        ${student.studentEmail || 'N/A'}
+                    </div>
+                </div>
+                <img src="${attendanceIcon}" 
+                    loading="lazy" 
+                    alt="" 
+                    class="${attendanceClass}"
+                    data-student-id="${student._id}"
+                    data-action="toggle-attendance">
+                <a href="#" 
+                class="button wine-red add-notes w-button"
+                data-student-id="${student._id}"
+                data-action="add-notes">${notesButtonText}</a>
+            `;
 
-        if (addNotesButton) {
-            addNotesButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.addNotes(student._id);
-            });
-        }
+                // Add event listeners
+                const attendanceToggle = row.querySelector('[data-action="toggle-attendance"]');
+                const addNotesButton = row.querySelector('[data-action="add-notes"]');
 
-        return row;
-    }
+                if (attendanceToggle) {
+                    attendanceToggle.addEventListener('click', () => {
+                        this.toggleAttendance(student._id);
+                    });
+                }
+
+                if (addNotesButton) {
+                    addNotesButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.addNotes(student._id);
+                    });
+                }
+
+                return row;
+            }
+
 
     /**
      * Toggles attendance for a student
