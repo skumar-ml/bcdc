@@ -29,8 +29,6 @@ function creEl(name, className, idName) {
 
 class parentLogin {
   parentInfoSelector = "[data-parent-info='container']";
-  parentLoginUrl = "/login";
-  parentSignupUrl = "/signup";
   parentApiBaseUrl = parentDataApiBaseUrl;
 
   getParentUrlParams() {
@@ -40,80 +38,21 @@ class parentLogin {
       name: params.get("name"),
       email: params.get("email"),
       parentPhoneNumber: params.get("parentPhoneNumber"),
-      loginUrl: params.get("loginUrl"),
-      signupUrl: params.get("signupUrl"),
     };
   }
 
-  setRedirectUrls(container, params) {
-    this.parentLoginUrl =
-      (container && container.getAttribute("data-parent-login-url")) ||
-      params.loginUrl ||
-      "/login";
-    this.parentSignupUrl =
-      (container && container.getAttribute("data-parent-signup-url")) ||
-      params.signupUrl ||
-      "/signup";
-  }
-
-  buildLoginHref(email) {
-    var loginUrl = new URL(this.parentLoginUrl, window.location.origin);
-    if (email) {
-      loginUrl.searchParams.set("email", email);
-    }
-    return loginUrl.toString();
-  }
-
-  buildSignupHref(parent, defaults = {}) {
-    var signupUrl = new URL(this.parentSignupUrl, window.location.origin);
-    var name = (parent && parent.name) || defaults.name;
-    var email = (parent && parent.email) || defaults.email;
-    var phone =
-      (parent && parent.parentPhoneNumber) || defaults.parentPhoneNumber;
-
-    if (name) {
-      signupUrl.searchParams.set("name", name);
-    }
-    if (email) {
-      signupUrl.searchParams.set("email", email);
-    }
-    if (phone) {
-      signupUrl.searchParams.set("parentPhoneNumber", phone);
-    }
-    return signupUrl.toString();
-  }
-
-  buildRedirectUrl(parent, defaults = {}) {
-    var hasMemberId = !!parent.memberId;
-    var basePath = hasMemberId ? "log-in" : "sign-up";
-    var redirectUrl = new URL(basePath, window.location.origin);
-    
-    var name = (parent && parent.name) || defaults.name;
-    var email = (parent && parent.email) || defaults.email;
-    var phone =
-      (parent && parent.parentPhoneNumber) || defaults.parentPhoneNumber;
-
-    if (email) {
-      redirectUrl.searchParams.set("email", email);
-    }
-    if (name) {
-      redirectUrl.searchParams.set("name", name);
-    }
-    if (phone) {
-      redirectUrl.searchParams.set("parentPhoneNumber", phone);
-    }
-    
-    return redirectUrl.toString();
-  }
-
   handleParentSelection(parent, defaults = {}) {
-    // Build redirect URL
-    var redirectUrl = this.buildRedirectUrl(parent, defaults);
+    // Get parent data
+    var name = (parent && parent.name) || defaults.name || "";
+    var email = (parent && parent.email) || defaults.email || "";
+    var phone = (parent && parent.parentPhoneNumber) || defaults.parentPhoneNumber || "";
     
     // Store parent info in localStorage
     var parentData = {
       logout_redirect: true,
-      redirect_url: redirectUrl
+      email: email,
+      name: name,
+      phone: phone
     };
     localStorage.setItem("selectedParentData", JSON.stringify(parentData));
     
@@ -211,8 +150,6 @@ class parentLogin {
     }
 
     var urlParams = this.getParentUrlParams();
-    this.setRedirectUrls(container, urlParams);
-
     var memberId =
       options.memberId || urlParams.memberId || this.webflowMemberId || null;
     if (!memberId) {
