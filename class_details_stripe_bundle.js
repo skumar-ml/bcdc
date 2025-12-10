@@ -633,9 +633,9 @@ class classDetailsStripe {
       message.type = "filling_fast";
       message.class = "brown-info-text";
       message.message =
-        "Hurry! Register now. Seats filling up fast! only <b>" +
-        leftSpots +
-        " spot left</b>";
+        "Hurry! Register now. Seats filling up fast! Only <b>" +
+        leftSpots + (parseInt(leftSpots) > 1 ? " spots" : " spot") +
+        " left</b>";
     }
     return message;
   }
