@@ -27,8 +27,212 @@ function creEl(name, className, idName) {
   return el;
 }
 
+class parentLogin {
+  parentInfoSelector = "[data-parent-info='container']";
+  parentLoginUrl = "/login";
+  parentSignupUrl = "/signup";
+  parentApiBaseUrl = parentDataApiBaseUrl;
 
-class classDetailsStripe {
+  getParentUrlParams() {
+    var params = new URLSearchParams(window.location.search);
+    return {
+      memberId: params.get("memberId"),
+      name: params.get("name"),
+      email: params.get("email"),
+      parentPhoneNumber: params.get("parentPhoneNumber"),
+      loginUrl: params.get("loginUrl"),
+      signupUrl: params.get("signupUrl"),
+    };
+  }
+
+  setRedirectUrls(container, params) {
+    this.parentLoginUrl =
+      (container && container.getAttribute("data-parent-login-url")) ||
+      params.loginUrl ||
+      "/login";
+    this.parentSignupUrl =
+      (container && container.getAttribute("data-parent-signup-url")) ||
+      params.signupUrl ||
+      "/signup";
+  }
+
+  buildLoginHref(email) {
+    var loginUrl = new URL(this.parentLoginUrl, window.location.origin);
+    if (email) {
+      loginUrl.searchParams.set("email", email);
+    }
+    return loginUrl.toString();
+  }
+
+  buildSignupHref(parent, defaults = {}) {
+    var signupUrl = new URL(this.parentSignupUrl, window.location.origin);
+    var name = (parent && parent.name) || defaults.name;
+    var email = (parent && parent.email) || defaults.email;
+    var phone =
+      (parent && parent.parentPhoneNumber) || defaults.parentPhoneNumber;
+
+    if (name) {
+      signupUrl.searchParams.set("name", name);
+    }
+    if (email) {
+      signupUrl.searchParams.set("email", email);
+    }
+    if (phone) {
+      signupUrl.searchParams.set("parentPhoneNumber", phone);
+    }
+    return signupUrl.toString();
+  }
+
+  buildRedirectUrl(parent, defaults = {}) {
+    var hasMemberId = !!parent.memberId;
+    var basePath = hasMemberId ? "log-in" : "sign-up";
+    var redirectUrl = new URL(basePath, window.location.origin);
+    
+    var name = (parent && parent.name) || defaults.name;
+    var email = (parent && parent.email) || defaults.email;
+    var phone =
+      (parent && parent.parentPhoneNumber) || defaults.parentPhoneNumber;
+
+    if (email) {
+      redirectUrl.searchParams.set("email", email);
+    }
+    if (name) {
+      redirectUrl.searchParams.set("name", name);
+    }
+    if (phone) {
+      redirectUrl.searchParams.set("parentPhoneNumber", phone);
+    }
+    
+    return redirectUrl.toString();
+  }
+
+  handleParentSelection(parent, defaults = {}) {
+    // Build redirect URL
+    var redirectUrl = this.buildRedirectUrl(parent, defaults);
+    
+    // Store parent info in localStorage
+    var parentData = {
+      logout_redirect: true,
+      redirect_url: redirectUrl
+    };
+    localStorage.setItem("selectedParentData", JSON.stringify(parentData));
+    
+    // Logout from MemberStack
+    if (window.MemberStack && typeof window.MemberStack.logout === "function") {
+      window.MemberStack.logout();
+    } else {
+      console.warn("MemberStack.logout() is not available");
+    }
+  }
+
+  renderParentContainer(parents, defaults = {}) {
+    var container = document.querySelector(this.parentInfoSelector);
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "";
+
+    if (!Array.isArray(parents) || parents.length === 0) {
+      var emptyMessage = creEl("p", "parent-email");
+      emptyMessage.innerHTML = "No parent data found.";
+      container.appendChild(emptyMessage);
+      return;
+    }
+
+    var $this = this;
+    parents.forEach((parent) => {
+      var hasMemberId = !!parent.memberId;
+      var card = creEl("div", "parent-info-flex-container");
+      var left = creEl("div");
+      var header = creEl("div", "parent-info-flex-wrapper");
+      var nameEl = creEl("p", "parent-name");
+      nameEl.innerHTML = parent.name || "Parent";
+      var statusEl = creEl(
+        "p",
+        hasMemberId ? "account-created-tag" : "account-does-not-exist"
+      );
+      statusEl.innerHTML = hasMemberId
+        ? "Account Created"
+        : "Account Does Not Exist";
+      header.appendChild(nameEl);
+      header.appendChild(statusEl);
+
+      var emailWrapper = creEl("div", "parent-info-flex-wrapper");
+      var emailIcon = creEl("img");
+      emailIcon.src =
+        "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/69391152b76e867848893a38_Icon.svg";
+      emailIcon.loading = "lazy";
+      var emailEl = creEl("div", "parent-email");
+      emailEl.innerHTML = parent.email || "Email not available";
+      emailWrapper.appendChild(emailIcon);
+      emailWrapper.appendChild(emailEl);
+
+      left.appendChild(header);
+      left.appendChild(emailWrapper);
+
+      var actionWrapper = creEl("div", "use-parent-button-div");
+      var btn = creEl(
+        "a",
+        hasMemberId
+          ? "main-button use-parent w-button"
+          : "main-button white-rounded create-account w-button"
+      );
+      btn.href = "#";
+      btn.innerHTML = hasMemberId ? "Use this Parent" : "Create Account";
+      
+      // Add click event listener to handle logout and store parent data
+      btn.addEventListener("click", function(event) {
+        event.preventDefault();
+        $this.handleParentSelection(parent, defaults);
+      });
+      
+      var arrowIcon = creEl(
+        "img",
+        hasMemberId ? "use-parent-btn-icon" : "use-parent-btn-icon"
+      );
+      arrowIcon.src = hasMemberId
+        ? "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/69391444bd79330bfbc120f2_arrow-right.svg"
+        : "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/69391444b7d0563db55eedde_arrow-right%20(1).svg";
+      arrowIcon.loading = "lazy";
+      actionWrapper.appendChild(btn);
+      actionWrapper.appendChild(arrowIcon);
+
+      card.appendChild(left);
+      card.appendChild(actionWrapper);
+      container.appendChild(card);
+    });
+  }
+
+  async initializeParentLogin(options = {}) {
+    var container = document.querySelector(this.parentInfoSelector);
+    if (!container) {
+      return;
+    }
+
+    var urlParams = this.getParentUrlParams();
+    this.setRedirectUrls(container, urlParams);
+
+    var memberId =
+      options.memberId || urlParams.memberId || this.webflowMemberId || null;
+    if (!memberId) {
+      this.renderParentContainer([], urlParams);
+      return;
+    }
+
+    try {
+      var parents = await this.fetchData(
+        "getAllParentDataByMemberId/" + memberId,
+        this.parentApiBaseUrl
+      );
+      this.renderParentContainer(parents, urlParams);
+    } catch (error) {
+      console.error("Error fetching parent login data:", error);
+    }
+  }
+}
+
+class classDetailsStripe extends parentLogin {
   $suppPro = [];
   $isPrevStudent = false;
   $selectedProgram = [];
@@ -46,11 +250,14 @@ class classDetailsStripe {
     parentName,
     amount,
     typeFBaseUrl,
-    typeEBaseUrl
+    typeEBaseUrl,
+    accountType
   ) {
+    super();
     this.baseUrl = baseUrl;
     this.typeFBaseUrl = typeFBaseUrl;
     this.typeEBaseUrl = typeEBaseUrl;
+    this.accountType = accountType;
     this.webflowMemberId = webflowMemberId;
     this.accountEmail = accountEmail;
     this.levelId = levelId;
@@ -61,6 +268,7 @@ class classDetailsStripe {
     this.modal = document.getElementById("briefs-preview-modal");
     this.iframe = document.getElementById("preview-frame");
     this.closeBtn = document.getElementById("close-preview");
+    this.initializeParentLogin();
     //this.checkBundleProgram();
     this.checkBundleProgram();
     this.renderCheckoutData();
@@ -234,7 +442,11 @@ class classDetailsStripe {
         ".node-title.margin-bottom-20.margin-top-0"
       );
       //select-class-time-div
-      paymentMethodsDiv.classList.remove("hide");
+      if($this.accountType != "student") {
+        paymentMethodsDiv.classList.remove("hide");
+      }else{
+        paymentMethodsDiv.classList.add("hide");
+      }
       locationForm.style.display = "none";
       if (label) {
         label.classList.add("class-time-with-brown-white-style");
@@ -633,9 +845,9 @@ class classDetailsStripe {
       message.type = "filling_fast";
       message.class = "brown-info-text";
       message.message =
-        "Hurry! Register now. Seats filling up fast! only <b>" +
-        leftSpots +
-        " spot left</b>";
+        "Hurry! Register now. Seats filling up fast! Only <b>" +
+        leftSpots + (parseInt(leftSpots) > 1 ? " spots" : " spot") +
+        " left</b>";
     }
     return message;
   }
@@ -753,6 +965,7 @@ class classDetailsStripe {
     var prev_page_1 = document.getElementById("prev_page_1");
     var pflabs_prev_page_1 = document.getElementById("pflabs_prev_page_1");
     const selectField = document.getElementById("location-select-field");
+    const viewClassesAndLocationsButton = document.getElementById("view-classes-and-locations-button");
 
     var $this = this;
     var form = $("#checkout-form");
@@ -820,12 +1033,23 @@ class classDetailsStripe {
 
       }
     });
-
-    prev_page_1.addEventListener("click", function () {
-      $this.activeBreadCrumb("student-details");
-      $this.activateDiv("checkout_student_details");
+    viewClassesAndLocationsButton.addEventListener("click", function () {
+      $this.activeBreadCrumb("select-class");
+      $this.activateDiv("class-selection-container");
       $this.displayStudentInfo("none");
-      $this.displayTopicData("none")
+      $this.displayTopicData("block")
+    });
+    prev_page_1.addEventListener("click", function () {
+      if($this.accountType != "student") {
+        $this.activeBreadCrumb("student-details");
+        $this.activateDiv("checkout_student_details");
+        $this.displayStudentInfo("none");
+        $this.displayTopicData("none")
+      }else{
+        $this.activateDiv("login-parent-account-div");
+        $this.displayStudentInfo("none");
+        $this.displayTopicData("none")
+      }
     });
 
     let editStudentEl = document.querySelectorAll("[data-student-info='edit']")
@@ -877,7 +1101,7 @@ class classDetailsStripe {
   }
   // Hide and show tab for program selection, student info and checkout payment
   activateDiv(divId) {
-    var divIds = ["checkout_student_details", "pf_labs_error_message", "class-selection-container"];
+    var divIds = ["checkout_student_details", "pf_labs_error_message", "class-selection-container", "login-parent-account-div"];
     // Remove the active class from all div elements
     divIds.forEach((id) =>
       document.getElementById(id).classList.remove("active_checkout_tab")
@@ -896,7 +1120,12 @@ class classDetailsStripe {
       // Handle previous and next button
       this.addEventForPrevNaxt();
       // New Code Added
-      this.activateDiv("checkout_student_details");
+      if(this.accountType == "student") {
+        this.activateDiv("login-parent-account-div");
+      }else{
+        this.activateDiv("checkout_student_details");
+      }
+      
       // Update basic data
       this.updateBasicData();
 
@@ -1150,7 +1379,10 @@ class classDetailsStripe {
           ); // Remove red from others
 
         label.classList.add("class-time-with-brown-white-style"); // Make selected red
-        if ($this.$isCheckoutFlow == "Bundle-Purchase") {
+        // Hide payment methods if account type is student
+        if ($this.accountType === "student") {
+          paymentMethodsDiv.classList.add("hide");
+        } else if ($this.$isCheckoutFlow == "Bundle-Purchase") {
           pre_registration_btn.classList.remove("hide");
           // Hide payment methods for bundle purchase and not as supplementary program
           var upsellProgramIds = $this.getSelectedBundleProgram();
@@ -1171,7 +1403,12 @@ class classDetailsStripe {
         let actionType = timingTextElement.getAttribute("action-type");
         let payment_option = document.querySelector('.payment_option')
         if (actionType == "waitlist") {
-          paymentMethodsDiv.classList.remove("hide");
+          // Hide payment methods if account type is student
+          if ($this.accountType === "student") {
+            paymentMethodsDiv.classList.add("hide");
+          } else {
+            paymentMethodsDiv.classList.remove("hide");
+          }
           pre_registration_btn.classList.add("hide");
           payment_option.classList.add("hide"); // Show payment methods
         } else {
@@ -2999,5 +3236,3 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
-
-
