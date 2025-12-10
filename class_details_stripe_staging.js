@@ -92,7 +92,7 @@ function handleSelectedParentData(){
     }
 
     // Clear the localStorage after using it
-    localStorage.removeItem("selectedParentData");
+    //localStorage.removeItem("selectedParentData");
   } catch (error) {
     console.error("Error handling selected parent data:", error);
   }
