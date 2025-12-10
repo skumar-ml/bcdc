@@ -27,6 +27,77 @@ function creEl(name, className, idName) {
   return el;
 }
 
+function handleSelectedParentData(){
+  try {
+    // Check if selectedParentData exists in localStorage
+    var selectedParentDataStr = localStorage.getItem("selectedParentData");
+    if (!selectedParentDataStr) {
+      return;
+    }
+
+    var parentData = JSON.parse(selectedParentDataStr);
+    
+    // Check if logout_redirect is true (indicates this is from a logout redirect)
+    if (!parentData.logout_redirect) {
+      return;
+    }
+
+    // Split name into first and last name
+    var firstName = "";
+    var lastName = "";
+    if (parentData.name) {
+      var nameParts = parentData.name.trim().split(/\s+/);
+      firstName = nameParts[0] || "";
+      lastName = nameParts.slice(1).join(" ") || "";
+    }
+
+    // Fill first name - handle multiple elements
+    var firstNameEls = document.querySelectorAll('[data-ms-member="first-name"]');
+    if (firstNameEls.length > 0 && firstName) {
+      firstNameEls.forEach(function(el) {
+        el.value = firstName;
+      });
+    }
+
+    // Fill last name - handle multiple elements
+    var lastNameEls = document.querySelectorAll('[data-ms-member="last-name"]');
+    if (lastNameEls.length > 0 && lastName) {
+      lastNameEls.forEach(function(el) {
+        el.value = lastName;
+      });
+    }
+
+    // Fill email - handle multiple elements
+    var emailEls = document.querySelectorAll('[data-ms-member="email"]');
+    if (emailEls.length > 0 && parentData.email) {
+      emailEls.forEach(function(el) {
+        el.value = parentData.email;
+      });
+    }
+
+    // Fill parent phone number - handle multiple elements
+    var phoneEls = document.querySelectorAll('[data-ms-member="parent-phone-number"]');
+    if (phoneEls.length > 0 && parentData.phone) {
+      phoneEls.forEach(function(el) {
+        el.value = parentData.phone;
+      });
+    }
+
+    // If type is login, click the login button
+    if (parentData.type === "login") {
+      var loginButton = document.getElementById("loginButton");
+      if (loginButton) {
+        loginButton.click();
+      }
+    }
+
+    // Clear the localStorage after using it
+    localStorage.removeItem("selectedParentData");
+  } catch (error) {
+    console.error("Error handling selected parent data:", error);
+  }
+}
+
 class parentLogin {
   parentInfoSelector = "[data-parent-info='container']";
   parentApiBaseUrl = parentDataApiBaseUrl;
@@ -46,13 +117,16 @@ class parentLogin {
     var name = (parent && parent.name) || defaults.name || "";
     var email = (parent && parent.email) || defaults.email || "";
     var phone = (parent && parent.parentPhoneNumber) || defaults.parentPhoneNumber || "";
+    var hasMemberId = !!(parent && parent.memberId);
+    var type = hasMemberId ? "login" : "signup";
     
     // Store parent info in localStorage
     var parentData = {
       logout_redirect: true,
       email: email,
       name: name,
-      phone: phone
+      phone: phone,
+      type: type
     };
     localStorage.setItem("selectedParentData", JSON.stringify(parentData));
     
