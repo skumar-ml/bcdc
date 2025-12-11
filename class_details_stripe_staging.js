@@ -1048,7 +1048,11 @@ class classDetailsStripe extends parentLogin {
       $this.activeBreadCrumb("select-class");
       $this.activateDiv("class-selection-container");
       $this.displayStudentInfo("none");
-      $this.displayTopicData("block")
+      $this.displayTopicData("none")
+      const paymentGatewayBanner = document.querySelectorAll(".payment-gateway-banner");
+      paymentGatewayBanner.forEach(banner => {
+        banner.style.display = "none";
+      });
     });
     prev_page_1.addEventListener("click", function () {
       if($this.accountType != "student") {
