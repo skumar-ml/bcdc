@@ -69,18 +69,11 @@ Are there any dependent JS files: No
                     this.spinner.style.display = "none";
                 }, 500);
 
-                // Helper function to get current student name from active tab
-                const getCurrentStudentName = () => {
-                    const currentTab = document.querySelector(".portal-tab-link.w--current");
-                    return currentTab
-                        ? currentTab.querySelector(".portal-tab-text-semibold").textContent
-                        : "";
-                };
 
                 // Update sidebar millions count for initially active tab
                 this.updateSidebarMillionsCount(
                     millions_transactions,
-                    getCurrentStudentName()
+                    this.getCurrentStudentName()
                 );
 
                 // Add event listeners for tab changes to update millions count
@@ -89,13 +82,18 @@ Are there any dependent JS files: No
                         setTimeout(() => {
                             this.updateSidebarMillionsCount(
                                 millions_transactions,
-                                getCurrentStudentName()
+                                this.getCurrentStudentName()
                             );
                         }, 0);
                     });
                 });
             }
-
+            getCurrentStudentName = () => {
+                const currentTab = document.querySelector(".portal-tab-link.w--current");
+                return currentTab
+                    ? currentTab.querySelector(".portal-tab-text-semibold").textContent
+                    : "";
+            };
             // Sets up dynamic tabs for each student
             setupTabs(data) {
                 // Get DOM references for tab elements
