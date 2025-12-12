@@ -427,9 +427,9 @@ Are there any dependent JS files: No
                 var centAmount = (amount * 100).toFixed(2);
 
                 // Prepare payment data for API
-                var data = {
-                    email: student.studentDetail.parentEmail,
-                    name: student.studentDetail.studentName,
+                var apiData = {
+                    email: this.data.accountEmail,
+                    name: this.getCurrentStudentName(),
                     label: title,
                     paymentType: paymentType,
                     amount: parseFloat(centAmount),
@@ -451,7 +451,7 @@ Are there any dependent JS files: No
                     true
                 );
                 xhr.withCredentials = false;
-                xhr.send(JSON.stringify(data));
+                xhr.send(JSON.stringify(apiData));
 
                 // Handle API response
                 xhr.onload = function () {
