@@ -148,8 +148,31 @@ class parentLogin {
 
     if (!Array.isArray(parents) || parents.length === 0) {
       var emptyMessage = creEl("p", "parent-email");
-      emptyMessage.innerHTML = "No parent data found.";
+      emptyMessage.innerHTML = "No parent data found. Please create an account";
       container.appendChild(emptyMessage);
+      
+      // Create Account button
+      var createAccountBtn = creEl("button", "create-account-btn");
+      createAccountBtn.innerHTML = "Create Account";
+      createAccountBtn.classList.add("button","main-button", "wine-red", "create-account", "w-button");
+      createAccountBtn.href = "#";
+      
+      // Add click handler to log out and clear localStorage
+      createAccountBtn.addEventListener("click", function() {
+        // Clear selectedParentData from localStorage if available
+        if (localStorage.getItem("selectedParentData")) {
+          localStorage.removeItem("selectedParentData");
+        }
+        
+        // Logout from MemberStack
+        if (window.MemberStack && typeof window.MemberStack.logout === "function") {
+          window.MemberStack.logout();
+        } else {
+          console.warn("MemberStack.logout() is not available");
+        }
+      });
+      
+      container.appendChild(createAccountBtn);
       return;
     }
 
