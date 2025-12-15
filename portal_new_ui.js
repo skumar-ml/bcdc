@@ -276,12 +276,6 @@ class Portal {
                     if (regFormAccordian) regFormAccordian.style.display = 'none';
                 }
 
-                // display the invoice if currentSession invoices exist
-                const currentInvoices = studentData.currentSession  .flatMap(session => session.invoiceList || []);
-                if (currentInvoices.length > 0) {
-                    const invoiceAccordian = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
-                    if (invoiceAccordian) invoiceAccordian.style.display = 'block';
-                }
 
             } else {
                 // Hide all main sections if no currentSession
@@ -292,14 +286,6 @@ class Portal {
                 tabPane.querySelectorAll('.registration-form-accordian').forEach(el => {
                     if (el) el.style.display = 'none';
                 });
-                
-                // display the invoice if futureSession or pastSession invoices exist
-                const futureInvoices = studentData.futureSession.flatMap(session => session.invoiceList || []);
-                var invoices = [].concat(futureInvoices);
-                if (invoices.length > 0) {
-                    const invoiceAccordian = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
-                    if (invoiceAccordian) invoiceAccordian.style.display = 'block';
-                }
 
             }
             // Always handle Future Classes and Past Class History
@@ -316,6 +302,15 @@ class Portal {
                 if (pastClassesDiv) pastClassesDiv.style.display = '';
             } else {
                 if (pastClassesDiv) pastClassesDiv.style.display = 'none';
+            }
+            // display the invoice if futureSession or pastSession invoices exist
+            const futureInvoices = studentData.futureSession.flatMap(session => session.invoiceList || []);
+            const currentInvoices = studentData.currentSession.flatMap(session => session.invoiceList || []);
+            var invoices = [].concat(futureInvoices);
+            invoices = invoices.concat(currentInvoices);
+            if (invoices.length > 0) {
+                const invoiceAccordian = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
+                if (invoiceAccordian) invoiceAccordian.style.display = 'block';
             }
         });
     }
