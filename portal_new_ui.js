@@ -1188,7 +1188,7 @@ class Portal {
             iframe.setAttribute('scrolling', 'no');
             calendarDiv.appendChild(iframe);
         } else {
-            calendarDiv.innerHTML = '<p class="portal-node-title">Calendar Graph</p><div>No records available</div>';
+            calendarDiv.innerHTML = '<p class="portal-node-title">Calendar Graph</p><div>Coming Soon...</div>';
         }
     }
 
@@ -1260,7 +1260,7 @@ class Portal {
                 makeupSection.appendChild(textDiv);
             });
         } else {
-            makeupSection.innerHTML = '<div>No records available</div>';
+            makeupSection.innerHTML = '<div>Coming Soon...</div>';
         }
     }
 
@@ -1315,7 +1315,7 @@ class Portal {
             });
         } else {
             const zoomSection = zoomDiv.querySelector('.zoom-links-info-div');
-            if (zoomSection) zoomSection.innerHTML = '<div>No records available</div>';
+            if (zoomSection) zoomSection.innerHTML = '<div>Coming Soon...</div>';
         }
     }
 
@@ -1373,7 +1373,7 @@ class Portal {
         } else {
             const noDiv = document.createElement('div');
             noDiv.className = 'general-resources-flex-wrapper';
-            noDiv.innerHTML = '<div><div class="dm-sans title"><span>No records available</span></div></div>';
+            noDiv.innerHTML = '<div><div class="dm-sans title"><span>Coming Soon...</span></div></div>';
             generalDiv.appendChild(noDiv);
         }
     }
