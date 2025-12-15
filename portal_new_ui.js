@@ -926,8 +926,8 @@ class Portal {
         const countDiv = tabPane.querySelector('.recent-announcement-number');
         const unreadAnnouncements = (announcements.announcement) ? announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail) : [];
         if (countDiv) countDiv.textContent = unreadAnnouncements.length;
-        announcements = announcements.announcement.filter(ann.emailId === this.data.accountEmail);
-        const recent = (announcements.announcement) ? announcements.announcement.slice(0, 2) : [];
+        announcements = announcements.announcement.filter(a => a.emailId === this.data.accountEmail);
+        const recent = (announcements) ? announcements.slice(0, 2) : [];
         announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
 
         recent.forEach(ann => {
