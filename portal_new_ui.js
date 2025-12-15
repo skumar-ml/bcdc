@@ -293,6 +293,12 @@ class Portal {
                     if (invoiceAccordian) invoiceAccordian.style.display = 'block';
                 }
 
+                 // display the invoice if currentSession invoices exist
+                 const currentInvoices = studentData.currentSession  .flatMap(session => session.invoiceList || []);
+                 if (currentInvoices.length > 0) {
+                     const invoiceAccordian = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
+                     if (invoiceAccordian) invoiceAccordian.style.display = 'block';
+                 }
 
             }
             // Always handle Future Classes and Past Class History
