@@ -275,6 +275,14 @@ class Portal {
                 } else {
                     if (regFormAccordian) regFormAccordian.style.display = 'none';
                 }
+
+                // display the invoice if currentSession invoices exist
+                const currentInvoices = studentData.currentSession  .flatMap(session => session.invoiceList || []);
+                if (currentInvoices.length > 0) {
+                    const invoiceAccordian = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
+                    if (invoiceAccordian) invoiceAccordian.style.display = 'block';
+                }
+
             } else {
                 // Hide all main sections if no currentSession
                 tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .class-tools-quick-links-div, .millions-balance-flex-wrapper').forEach(el => {
@@ -292,13 +300,6 @@ class Portal {
                     const invoiceAccordian = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
                     if (invoiceAccordian) invoiceAccordian.style.display = 'block';
                 }
-
-                 // display the invoice if currentSession invoices exist
-                 const currentInvoices = studentData.currentSession  .flatMap(session => session.invoiceList || []);
-                 if (currentInvoices.length > 0) {
-                     const invoiceAccordian = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
-                     if (invoiceAccordian) invoiceAccordian.style.display = 'block';
-                 }
 
             }
             // Always handle Future Classes and Past Class History
@@ -925,7 +926,7 @@ class Portal {
         const countDiv = tabPane.querySelector('.recent-announcement-number');
         const unreadAnnouncements = (announcements.announcement) ? announcements.announcement.filter(ann => !ann.is_read && ann.emailId === this.data.accountEmail) : [];
         if (countDiv) countDiv.textContent = unreadAnnouncements.length;
-
+        announcements = announcements.announcement.filter(ann.emailId === this.data.accountEmail);
         const recent = (announcements.announcement) ? announcements.announcement.slice(0, 2) : [];
         announcementDiv.querySelectorAll('.recent-announcement-info-inner-div, .recent-announcement-info-flex, .dm-sans.recent-announcement-info').forEach(el => el.remove());
 
