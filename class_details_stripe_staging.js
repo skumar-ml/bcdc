@@ -102,6 +102,7 @@ class parentLogin {
   parentInfoSelector = "[data-parent-info='container']";
   parentApiBaseUrl = parentDataApiBaseUrl;
 
+  // Extract parent-related params from the current URL query string
   getParentUrlParams() {
     var params = new URLSearchParams(window.location.search);
     return {
@@ -112,6 +113,7 @@ class parentLogin {
     };
   }
 
+  // Persist selected parent info, set auth intent, and trigger logout
   handleParentSelection(parent, defaults = {}) {
     // Get parent data
     var name = (parent && parent.name) || defaults.name || "";
@@ -138,6 +140,7 @@ class parentLogin {
     }
   }
 
+  // Render parent selection cards or fallback UI into the container
   renderParentContainer(parents, defaults = {}) {
     var container = document.querySelector(this.parentInfoSelector);
     if (!container) {
@@ -240,6 +243,7 @@ class parentLogin {
     });
   }
 
+  // Entry point to load parent data and render login options
   async initializeParentLogin(options = {}) {
     var container = document.querySelector(this.parentInfoSelector);
     if (!container) {

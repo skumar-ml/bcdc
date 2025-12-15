@@ -27,8 +27,250 @@ function creEl(name, className, idName) {
   return el;
 }
 
+function handleSelectedParentData(){
+  try {
+    // Check if selectedParentData exists in localStorage
+    var selectedParentDataStr = localStorage.getItem("selectedParentData");
+    if (!selectedParentDataStr) {
+      return;
+    }
 
-class classDetailsStripe {
+    var parentData = JSON.parse(selectedParentDataStr);
+    
+    // Check if logout_redirect is true (indicates this is from a logout redirect)
+    if (!parentData.logout_redirect) {
+      return;
+    }
+
+    // Split name into first and last name
+    var firstName = "";
+    var lastName = "";
+    if (parentData.name) {
+      var nameParts = parentData.name.trim().split(/\s+/);
+      firstName = nameParts[0] || "";
+      lastName = nameParts.slice(1).join(" ") || "";
+    }
+
+    // Fill first name - handle multiple elements
+    var firstNameEls = document.querySelectorAll('[data-ms-member="first-name"]');
+    if (firstNameEls.length > 0 && firstName) {
+      firstNameEls.forEach(function(el) {
+        el.value = firstName;
+      });
+    }
+
+    // Fill last name - handle multiple elements
+    var lastNameEls = document.querySelectorAll('[data-ms-member="last-name"]');
+    if (lastNameEls.length > 0 && lastName) {
+      lastNameEls.forEach(function(el) {
+        el.value = lastName;
+      });
+    }
+
+    // Fill email - handle multiple elements
+    var emailEls = document.querySelectorAll('[data-ms-member="email"]');
+    if (emailEls.length > 0 && parentData.email) {
+      emailEls.forEach(function(el) {
+        el.value = parentData.email;
+      });
+    }
+
+    // Fill parent phone number - handle multiple elements
+    var phoneEls = document.querySelectorAll('[data-ms-member="parent-phone-number"]');
+    if (phoneEls.length > 0 && parentData.phone) {
+      phoneEls.forEach(function(el) {
+        el.value = parentData.phone;
+      });
+    }
+
+    // If type is login, click the login button
+    if (parentData.type === "login") {
+      var loginButton = document.getElementById("loginButton");
+      if (loginButton) {
+        loginButton.click();
+      }
+    }
+
+    // Clear the localStorage after using it
+    //localStorage.removeItem("selectedParentData");
+  } catch (error) {
+    console.error("Error handling selected parent data:", error);
+  }
+}
+
+class parentLogin {
+  parentInfoSelector = "[data-parent-info='container']";
+  parentApiBaseUrl = parentDataApiBaseUrl;
+
+  // Extract parent-related params from the current URL query string
+  getParentUrlParams() {
+    var params = new URLSearchParams(window.location.search);
+    return {
+      memberId: params.get("memberId"),
+      name: params.get("name"),
+      email: params.get("email"),
+      parentPhoneNumber: params.get("parentPhoneNumber"),
+    };
+  }
+
+  // Persist selected parent info, set auth intent, and trigger logout
+  handleParentSelection(parent, defaults = {}) {
+    // Get parent data
+    var name = (parent && parent.name) || defaults.name || "";
+    var email = (parent && parent.email) || defaults.email || "";
+    var phone = (parent && parent.parentPhoneNumber) || defaults.parentPhoneNumber || "";
+    var hasMemberId = !!(parent && parent.memberId);
+    var type = hasMemberId ? "login" : "signup";
+    
+    // Store parent info in localStorage
+    var parentData = {
+      logout_redirect: true,
+      email: email,
+      name: name,
+      phone: phone,
+      type: type
+    };
+    localStorage.setItem("selectedParentData", JSON.stringify(parentData));
+    
+    // Logout from MemberStack
+    if (window.MemberStack && typeof window.MemberStack.logout === "function") {
+      window.MemberStack.logout();
+    } else {
+      console.warn("MemberStack.logout() is not available");
+    }
+  }
+
+  // Render parent selection cards or fallback UI into the container
+  renderParentContainer(parents, defaults = {}) {
+    var container = document.querySelector(this.parentInfoSelector);
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "";
+
+    if (!Array.isArray(parents) || parents.length === 0) {
+      var emptyMessage = creEl("p", "parent-email");
+      emptyMessage.innerHTML = "No parent data found. Please create an account";
+      container.appendChild(emptyMessage);
+      
+      // Create Account button
+      var createAccountBtn = creEl("button", "create-account-btn");
+      createAccountBtn.innerHTML = "Create Account";
+      createAccountBtn.classList.add("button","main-button", "wine-red", "create-account", "w-button");
+      createAccountBtn.href = "#";
+      
+      // Add click handler to log out and clear localStorage
+      createAccountBtn.addEventListener("click", function() {
+        // Clear selectedParentData from localStorage if available
+        if (localStorage.getItem("selectedParentData")) {
+          localStorage.removeItem("selectedParentData");
+        }
+        
+        // Logout from MemberStack
+        if (window.MemberStack && typeof window.MemberStack.logout === "function") {
+          window.MemberStack.logout();
+        } else {
+          console.warn("MemberStack.logout() is not available");
+        }
+      });
+      
+      container.appendChild(createAccountBtn);
+      return;
+    }
+
+    var $this = this;
+    parents.forEach((parent) => {
+      var hasMemberId = !!parent.memberId;
+      var card = creEl("div", "parent-info-flex-container");
+      var left = creEl("div");
+      var header = creEl("div", "parent-info-flex-wrapper");
+      var nameEl = creEl("p", "parent-name");
+      nameEl.innerHTML = parent.name || "Parent";
+      var statusEl = creEl(
+        "p",
+        hasMemberId ? "account-created-tag" : "account-does-not-exist"
+      );
+      statusEl.innerHTML = hasMemberId
+        ? "Account Created"
+        : "Account Does Not Exist";
+      header.appendChild(nameEl);
+      header.appendChild(statusEl);
+
+      var emailWrapper = creEl("div", "parent-info-flex-wrapper");
+      var emailIcon = creEl("img");
+      emailIcon.src =
+        "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/69391152b76e867848893a38_Icon.svg";
+      emailIcon.loading = "lazy";
+      var emailEl = creEl("div", "parent-email");
+      emailEl.innerHTML = parent.email || "Email not available";
+      emailWrapper.appendChild(emailIcon);
+      emailWrapper.appendChild(emailEl);
+
+      left.appendChild(header);
+      left.appendChild(emailWrapper);
+
+      var actionWrapper = creEl("div", "use-parent-button-div");
+      var btn = creEl(
+        "a",
+        hasMemberId
+          ? "main-button use-parent w-button"
+          : "main-button white-rounded create-account w-button"
+      );
+      btn.href = "#";
+      btn.innerHTML = hasMemberId ? "Use this Parent" : "Create Account";
+      
+      // Add click event listener to handle logout and store parent data
+      btn.addEventListener("click", function(event) {
+        event.preventDefault();
+        $this.handleParentSelection(parent, defaults);
+      });
+      
+      var arrowIcon = creEl(
+        "img",
+        hasMemberId ? "use-parent-btn-icon" : "use-parent-btn-icon"
+      );
+      arrowIcon.src = hasMemberId
+        ? "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/69391444bd79330bfbc120f2_arrow-right.svg"
+        : "https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/69391444b7d0563db55eedde_arrow-right%20(1).svg";
+      arrowIcon.loading = "lazy";
+      actionWrapper.appendChild(btn);
+      actionWrapper.appendChild(arrowIcon);
+
+      card.appendChild(left);
+      card.appendChild(actionWrapper);
+      container.appendChild(card);
+    });
+  }
+
+  // Entry point to load parent data and render login options
+  async initializeParentLogin(options = {}) {
+    var container = document.querySelector(this.parentInfoSelector);
+    if (!container) {
+      return;
+    }
+
+    var urlParams = this.getParentUrlParams();
+    var memberId =
+      options.memberId || urlParams.memberId || this.webflowMemberId || null;
+    if (!memberId) {
+      this.renderParentContainer([], urlParams);
+      return;
+    }
+
+    try {
+      var parents = await this.fetchData(
+        "getAllParentDataByMemberId/" + memberId,
+        this.parentApiBaseUrl
+      );
+      this.renderParentContainer(parents, urlParams);
+    } catch (error) {
+      console.error("Error fetching parent login data:", error);
+    }
+  }
+}
+
+class classDetailsStripe extends parentLogin {
   $suppPro = [];
   $isPrevStudent = false;
   $selectedProgram = [];
@@ -46,11 +288,14 @@ class classDetailsStripe {
     parentName,
     amount,
     typeFBaseUrl,
-    typeEBaseUrl
+    typeEBaseUrl,
+    accountType
   ) {
+    super();
     this.baseUrl = baseUrl;
     this.typeFBaseUrl = typeFBaseUrl;
     this.typeEBaseUrl = typeEBaseUrl;
+    this.accountType = accountType;
     this.webflowMemberId = webflowMemberId;
     this.accountEmail = accountEmail;
     this.levelId = levelId;
@@ -61,6 +306,7 @@ class classDetailsStripe {
     this.modal = document.getElementById("briefs-preview-modal");
     this.iframe = document.getElementById("preview-frame");
     this.closeBtn = document.getElementById("close-preview");
+    this.initializeParentLogin();
     //this.checkBundleProgram();
     this.checkBundleProgram();
     this.renderCheckoutData();
@@ -234,7 +480,11 @@ class classDetailsStripe {
         ".node-title.margin-bottom-20.margin-top-0"
       );
       //select-class-time-div
-      paymentMethodsDiv.classList.remove("hide");
+      if($this.accountType != "student") {
+        paymentMethodsDiv.classList.remove("hide");
+      }else{
+        paymentMethodsDiv.classList.add("hide");
+      }
       locationForm.style.display = "none";
       if (label) {
         label.classList.add("class-time-with-brown-white-style");
@@ -753,6 +1003,7 @@ class classDetailsStripe {
     var prev_page_1 = document.getElementById("prev_page_1");
     var pflabs_prev_page_1 = document.getElementById("pflabs_prev_page_1");
     const selectField = document.getElementById("location-select-field");
+    const viewClassesAndLocationsButton = document.getElementById("view-classes-and-locations-button");
 
     var $this = this;
     var form = $("#checkout-form");
@@ -820,12 +1071,27 @@ class classDetailsStripe {
 
       }
     });
-
-    prev_page_1.addEventListener("click", function () {
-      $this.activeBreadCrumb("student-details");
-      $this.activateDiv("checkout_student_details");
+    viewClassesAndLocationsButton.addEventListener("click", function () {
+      $this.activeBreadCrumb("select-class");
+      $this.activateDiv("class-selection-container");
       $this.displayStudentInfo("none");
       $this.displayTopicData("none")
+      const paymentGatewayBanner = document.querySelectorAll(".payment-gateway-banner");
+      paymentGatewayBanner.forEach(banner => {
+        banner.style.display = "none";
+      });
+    });
+    prev_page_1.addEventListener("click", function () {
+      if($this.accountType != "student") {
+        $this.activeBreadCrumb("student-details");
+        $this.activateDiv("checkout_student_details");
+        $this.displayStudentInfo("none");
+        $this.displayTopicData("none")
+      }else{
+        $this.activateDiv("login-parent-account-div");
+        $this.displayStudentInfo("none");
+        $this.displayTopicData("none")
+      }
     });
 
     let editStudentEl = document.querySelectorAll("[data-student-info='edit']")
@@ -877,7 +1143,7 @@ class classDetailsStripe {
   }
   // Hide and show tab for program selection, student info and checkout payment
   activateDiv(divId) {
-    var divIds = ["checkout_student_details", "pf_labs_error_message", "class-selection-container"];
+    var divIds = ["checkout_student_details", "pf_labs_error_message", "class-selection-container", "login-parent-account-div"];
     // Remove the active class from all div elements
     divIds.forEach((id) =>
       document.getElementById(id).classList.remove("active_checkout_tab")
@@ -896,7 +1162,12 @@ class classDetailsStripe {
       // Handle previous and next button
       this.addEventForPrevNaxt();
       // New Code Added
-      this.activateDiv("checkout_student_details");
+      if(this.accountType == "student") {
+        this.activateDiv("login-parent-account-div");
+      }else{
+        this.activateDiv("checkout_student_details");
+      }
+      
       // Update basic data
       this.updateBasicData();
 
@@ -1150,7 +1421,10 @@ class classDetailsStripe {
           ); // Remove red from others
 
         label.classList.add("class-time-with-brown-white-style"); // Make selected red
-        if ($this.$isCheckoutFlow == "Bundle-Purchase") {
+        // Hide payment methods if account type is student
+        if ($this.accountType === "student") {
+          paymentMethodsDiv.classList.add("hide");
+        } else if ($this.$isCheckoutFlow == "Bundle-Purchase") {
           pre_registration_btn.classList.remove("hide");
           // Hide payment methods for bundle purchase and not as supplementary program
           var upsellProgramIds = $this.getSelectedBundleProgram();
@@ -1171,7 +1445,12 @@ class classDetailsStripe {
         let actionType = timingTextElement.getAttribute("action-type");
         let payment_option = document.querySelector('.payment_option')
         if (actionType == "waitlist") {
-          paymentMethodsDiv.classList.remove("hide");
+          // Hide payment methods if account type is student
+          if ($this.accountType === "student") {
+            paymentMethodsDiv.classList.add("hide");
+          } else {
+            paymentMethodsDiv.classList.remove("hide");
+          }
           pre_registration_btn.classList.add("hide");
           payment_option.classList.add("hide"); // Show payment methods
         } else {
@@ -2999,5 +3278,3 @@ class classDetailsStripe {
     return window.innerWidth <= 766;
   }
 }
-
-
