@@ -156,7 +156,7 @@ class parentLogin {
       
       // Create Account button
       var createAccountBtn = creEl("button", "create-account-btn");
-      createAccountBtn.innerHTML = "Create Account";
+      createAccountBtn.innerHTML = "Create Parent Account";
       createAccountBtn.classList.add("button","main-button", "wine-red", "create-account", "w-button");
       createAccountBtn.href = "#";
       
