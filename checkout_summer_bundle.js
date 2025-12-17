@@ -922,7 +922,7 @@ class CheckOutWebflow {
 			"label": "Summer",
 			"sessionId": 2,
 			"upsellProgramId": 99,
-			"yearId": 2025
+			"yearId": item.yearId
 		}
         // Select  [data-stripe='totalDepositPrice'] and get data-stripe-price attribute value
         var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
