@@ -1016,7 +1016,7 @@ class CheckOutWebflow {
       const titleP = creEl("p", "bundle-sem-title");
       titleP.textContent = type === "upsell"
         ? `${singleBundleData.label} (${singleBundleData.yearId})`
-        : "Summer (2025)";
+        : "Summer ("+coreData.yearId+")";
       const infoP = creEl("p", "bundle-sem-info");
       infoP.textContent = (singleBundleData.desc )
         ? (singleBundleData.desc || "")
