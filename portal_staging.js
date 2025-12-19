@@ -1617,7 +1617,7 @@ class Portal {
                                 paymentLink.setAttribute('data-payment-link-id', link.paymentLinkId);
                                 paymentLink.setAttribute('data-title', link.title);
                                 paymentLink.setAttribute('data-payment-type', link.paymentType);
-                                paymentLink.innerHTML = '<div>Credit Card</div>';
+                                paymentLink.innerHTML = '<div>'+link.title+'</div>';
 
                                 // Add event listener for Stripe payment
                                 paymentLink.addEventListener('click', (e) => {
