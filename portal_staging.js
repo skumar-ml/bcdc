@@ -1891,7 +1891,7 @@ class Portal {
             // Update Early Bird
             const earlyBirdEl = modal.querySelector('[invoice-breakdown-data="EarlyBird"]');
             if (earlyBirdEl && breakdown['Early Bird'] !== undefined) {
-                earlyBirdEl.textContent = formatCurrency(breakdown['Early Bird']);
+                earlyBirdEl.textContent = "-"+formatCurrency(breakdown['Early Bird']);
             }
 
             // Update New Student Fee
