@@ -1878,7 +1878,7 @@ class Portal {
             // Format currency helper
             const formatCurrency = (amount) => {
                 const num = parseFloat(amount) || 0;
-                const sign = num >= 0 ? '+' : '';
+                const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
                 return `${sign}$${Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
             };
 
@@ -1891,7 +1891,7 @@ class Portal {
             // Update Early Bird
             const earlyBirdEl = modal.querySelector('[invoice-breakdown-data="EarlyBird"]');
             if (earlyBirdEl && breakdown['Early Bird'] !== undefined) {
-                earlyBirdEl.textContent = "-"+formatCurrency(breakdown['Early Bird']);
+                earlyBirdEl.textContent = formatCurrency(breakdown['Early Bird']);
             }
 
             // Update New Student Fee
