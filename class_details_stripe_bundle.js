@@ -343,10 +343,12 @@ class classDetailsStripe extends parentLogin {
           isBundle = "Normal";
         }
         // TODO: Explain what is tracked in allBundlePrograms
+        // it's all available bundle programs for this member
         this.$allBundlePrograms = data.data;
 
         // TODO: Shouldn't we only be calling this if isBundle is Pre-Registration-Info?
-        if (data.preRegistrationEndDate) {
+        // Updated condition to check isBundle value
+        if (data.preRegistrationEndDate && isBundle == "Pre-Registration-Info") {
           this.updateCountdown(data.preRegistrationEndDate);
           setInterval(() => {
             this.updateCountdown(data.preRegistrationEndDate);
@@ -358,6 +360,7 @@ class classDetailsStripe extends parentLogin {
     this.$isCheckoutFlow = isBundle;
 
     // TODO: I don't understand why we have if (preRegistration). Isn't this always true, since we are selecting the element? Ditto below with registration. Could be that I'm just not familiar with this design-pattern. Seems like we should just have if-else with isBundle instead.
+    // Yes, it's always true, since we are selecting the element. But we need to check if it's there first. 
     if (preRegistration) {
       preRegistration.style.display = isBundle == "Pre-Registration-Info" ? "block" : "none";
     }
@@ -542,8 +545,6 @@ class classDetailsStripe extends parentLogin {
       });
     });
   }
-
-  //-------------Start new code for stripe payment integration----------------
 
   // Call API url with this method and response as a json
   async fetchData(endpoint, baseUrl) {
@@ -946,7 +947,7 @@ class classDetailsStripe extends parentLogin {
       };
     }
     this.eventUpdateTotalAmountPrice();
-  } t
+  }
   // update basic student form data from local storage
   updateBasicData(old_student = false) {
     var checkoutJson = localStorage.getItem("checkOutBasicData");
@@ -1151,12 +1152,11 @@ class classDetailsStripe extends parentLogin {
     // Add the active class to the div with the specified id
     document.getElementById(divId).classList.add("active_checkout_tab");
   }
-  //----------------End new code for stripe payment integration---------------
+  
   // get data from api and pass the data to classLocation class
   async renderCheckoutData(memberId) {
     try {
       this.spinner.style.display = "block";
-      // -------------Start new code for stripe payment integration--------------
       // Modal No thanks events
       this.noThanksEvent();
       // Handle previous and next button
@@ -1171,7 +1171,6 @@ class classDetailsStripe extends parentLogin {
       // Update basic data
       this.updateBasicData();
 
-      // -------------End new code for stripe payment integration---------------
       const data = await this.fetchData(
         "getClassDetailByMemberIdAndLevelId?levelId=" +
         this.levelId +
@@ -1652,9 +1651,9 @@ class classDetailsStripe extends parentLogin {
 
   checkSemesterBundleModalOpen() {
     let isOpen = false;
-    // Direct check with checkbox with bundleProgram class
-    const bundleCheckbox = document.querySelector(".bundleProgram");
-    if (bundleCheckbox && bundleCheckbox.checked) {
+    // check for core program checkbox and upsell program checkbox checked. selected leanght should be greater than 2.
+    const checkedBundleCheckboxes = Array.from(document.querySelectorAll(".bundleProgram:checked"));
+    if (checkedBundleCheckboxes.length > 1) {
       isOpen = true;
     }
     // check bundleModalClosed cookie date time for 1 hour. no need to show if less then 1 hour
