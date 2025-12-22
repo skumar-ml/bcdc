@@ -1653,7 +1653,7 @@ class classDetailsStripe extends parentLogin {
     let isOpen = false;
     // check for core program checkbox and upsell program checkbox checked. selected leanght should be greater than 2.
     const checkedBundleCheckboxes = Array.from(document.querySelectorAll(".bundleProgram:checked"));
-    if (checkedBundleCheckboxes.length > 1) {
+    if (checkedBundleCheckboxes.length > 2) {
       isOpen = true;
     }
     // check bundleModalClosed cookie date time for 1 hour. no need to show if less then 1 hour
