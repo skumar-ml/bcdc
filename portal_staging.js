@@ -1886,18 +1886,33 @@ class Portal {
             const semesterTuitionEl = modal.querySelector('[invoice-breakdown-data="SemesterTuition"]');
             if (semesterTuitionEl && breakdown['Semester Tuition'] !== undefined) {
                 semesterTuitionEl.textContent = formatCurrency(breakdown['Semester Tuition']);
+                if(breakdown['Semester Tuition'] == 0){
+                    semesterTuitionEl.parentElement.style.display = 'none';
+                } else {
+                    semesterTuitionEl.parentElement.style.display = 'flex';
+                }
             }
 
             // Update Early Bird
             const earlyBirdEl = modal.querySelector('[invoice-breakdown-data="EarlyBird"]');
             if (earlyBirdEl && breakdown['Early Bird'] !== undefined) {
                 earlyBirdEl.textContent = formatCurrency(breakdown['Early Bird']);
+                if(breakdown['Early Bird'] == 0){
+                    earlyBirdEl.parentElement.style.display = 'none';
+                } else {
+                    earlyBirdEl.parentElement.style.display = 'flex';
+                }
             }
 
             // Update New Student Fee
             const newStudentFeeEl = modal.querySelector('[invoice-breakdown-data="NewStudentFee"]');
             if (newStudentFeeEl && breakdown['New Student Fee'] !== undefined) {
                 newStudentFeeEl.textContent = formatCurrency(breakdown['New Student Fee']);
+                if(breakdown['New Student Fee'] == 0){
+                    newStudentFeeEl.parentElement.style.display = 'none';
+                } else {
+                    newStudentFeeEl.parentElement.style.display = 'flex';
+                }
             }
 
             // Update Deposit Title with date
@@ -1921,6 +1936,11 @@ class Portal {
                     }
                 }
                 depositTitleEl.textContent = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
+                if(breakdown['Deposit'] == 0){
+                    depositTitleEl.parentElement.style.display = 'none';
+                } else {
+                    depositTitleEl.parentElement.style.display = 'flex';
+                }
             }
 
             // Update Deposit amount
@@ -2333,3 +2353,4 @@ class Portal {
     }
 
 }
+
