@@ -749,6 +749,17 @@ class PaymentHistory {
                 }
             }
 
+            // invoice-breakdown-data="sibling-discount"
+            const siblingDiscountEl = modal.querySelector('[invoice-breakdown-data="sibling-discount"]');
+            if (siblingDiscountEl && breakdown['Sibling Discount'] !== undefined) {
+                siblingDiscountEl.textContent = formatCurrency(breakdown['Sibling Discount']);
+                if(breakdown['Sibling Discount'] == 0){
+                    siblingDiscountEl.parentElement.style.display = 'none';
+                } else {
+                    siblingDiscountEl.parentElement.style.display = 'flex';
+                }
+            }
+
             // Update Deposit Title with date
             const depositTitleEl = modal.querySelector('[invoice-breakdown-data="DepositTitle"]');
             if (depositTitleEl && breakdown['Deposit'] !== undefined) {
