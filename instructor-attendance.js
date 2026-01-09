@@ -229,9 +229,78 @@ class checkInForm {
 	}
 	// Returns the class selection box DOM element
 	getClasss(){
-		
+		  
 		var $this = this;
 		var Class = this.classData;
+		
+		// Helper function to convert time string to minutes since midnight for sorting
+		function timeToMinutes(timeStr) {
+			if (!timeStr) return 0;
+			var timeMatch = timeStr.match(/(\d+):(\d+)(AM|PM)/i);
+			if (!timeMatch) return 0;
+			
+			var hours = parseInt(timeMatch[1]);
+			var minutes = parseInt(timeMatch[2]);
+			var period = timeMatch[3].toUpperCase();
+			
+			// Convert to 24-hour format
+			if (period === 'PM' && hours !== 12) {
+				hours += 12;
+			} else if (period === 'AM' && hours === 12) {
+				hours = 0;
+			}
+			
+			return hours * 60 + minutes;
+		}
+		
+		// Helper function to parse classLevelId for sorting (e.g., "1A" -> {num: 1, letter: "A"})
+		function parseClassLevelId(levelId) {
+			if (!levelId) return {num: 0, letter: '', isX: false};
+			var levelStr = levelId.toString().toUpperCase();
+			
+			// Check if level is "X" - should come last
+			if (levelStr === 'X' || levelStr.includes('X')) {
+				return {num: 999999, letter: '', isX: true};
+			}
+			
+			var match = levelStr.match(/(\d+)([A-Za-z]*)/);
+			if (!match) return {num: 0, letter: '', isX: false};
+			return {
+				num: parseInt(match[1]) || 0,
+				letter: (match[2] || '').toUpperCase(),
+				isX: false
+			};
+		}
+		
+		// sort class by startTime(4:00PM, 5:00PM, 6:00AM) and classLevelId(1A, 1B, 2A, 2B)
+		Class.sort(function(a, b) {
+			// First sort by startTime
+			var timeA = timeToMinutes(a.startTime);
+			var timeB = timeToMinutes(b.startTime);
+			
+			if (timeA !== timeB) {
+				return timeA - timeB;
+			}
+			
+			// If times are equal, sort by classLevelId
+			var levelA = parseClassLevelId(a.classLevelId);
+			var levelB = parseClassLevelId(b.classLevelId);
+			
+			// If one is X and the other is not, X comes last
+			if (levelA.isX && !levelB.isX) return 1;
+			if (!levelA.isX && levelB.isX) return -1;
+			
+			// Compare numeric part first
+			if (levelA.num !== levelB.num) {
+				return levelA.num - levelB.num;
+			}
+			
+			// If numeric parts are equal, compare letter part
+			if (levelA.letter < levelB.letter) return -1;
+			if (levelA.letter > levelB.letter) return 1;
+			return 0;
+		});
+		
 		var classSelectBox = creEl('select', 'select-Class w-select', 'select-Class')
 		/*Added by default first class and removed select Class option*/
 		var defaultoption = creEl("option");
@@ -256,6 +325,34 @@ class checkInForm {
 		
 		return classSelectBox;
 	}
+	// getClasss(){
+		
+	// 	var $this = this;
+	// 	var Class = this.classData;
+	// 	var classSelectBox = creEl('select', 'select-Class w-select', 'select-Class')
+	// 	/*Added by default first class and removed select Class option*/
+	// 	var defaultoption = creEl("option");
+	// 	defaultoption.value = "";
+	// 	defaultoption.text = "Select Class";
+	// 	classSelectBox.appendChild(defaultoption);
+	// 	Class.forEach(item => {
+	// 		if(item.classId){
+	// 				var option = creEl("option");
+	// 				option.value = item.classId;
+	// 				option.text = item.className;
+	// 				classSelectBox.appendChild(option);
+	// 		}
+	// 	})
+	// 	classSelectBox.addEventListener('change', function () {
+	// 		$this.displayStudentList(this.value, 'init');
+	// 		$this.resetFilter();
+	// 		if(!this.value){
+	// 			$this.hideShowUI();
+	// 		}
+	// 	})
+		
+	// 	return classSelectBox;
+	// }
 	// Hides or shows UI elements
 	hideShowUI(){
 		var studentlist = document.getElementById('student-list');
