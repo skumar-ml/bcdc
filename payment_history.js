@@ -924,6 +924,7 @@ class PaymentHistory {
                 if (result.pdfUrl) {
                     const link = document.createElement("a");
                     link.href = result.pdfUrl;
+                    link.target = "_blank";
                     link.download = `invoice_${name}_${yearId}.pdf`;
                     document.body.appendChild(link);
                     link.click();
