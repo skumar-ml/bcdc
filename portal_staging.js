@@ -1879,7 +1879,7 @@ class Portal {
             const formatCurrency = (amount) => {
                 const num = parseFloat(amount) || 0;
                 const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
-                return `${sign}$${Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+                return `${sign}$${Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             };
 
             // Update Semester Tuition
@@ -1971,7 +1971,7 @@ class Portal {
                 if (breakdown['Sibling Discount'] !== undefined) total += breakdown['Sibling Discount'];
                 if (breakdown['Deposit'] !== undefined) total -= Math.abs(breakdown['Deposit']); // Subtract deposit
 
-                remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</strong>`;
+                remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;
             }
         }
 
