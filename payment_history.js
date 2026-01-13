@@ -902,7 +902,7 @@ class PaymentHistory {
 
             // Send PDF generation request to API
             const response = await fetch(
-                "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/generateInvoicePDF",
+                "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/generateItemizedInvoice",
                 {
                     method: "POST",
                     headers: {
