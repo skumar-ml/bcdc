@@ -469,7 +469,7 @@ function creEl(name,className,idName){
 			  icon.addEventListener('click', function(){
 					  // Get current student data from the updated data structure
 					  var currentStudent = $this.$currentClass.studentDetails.find(function(student) {
-						  return student.studentemail === item.studentemail;
+						  return student.paymentId === item.paymentId;
 					  });
 					  
 					  // Use current state if available, otherwise fall back to item
@@ -482,14 +482,14 @@ function creEl(name,className,idName){
 					  if(isCurrentlyCheckedIn){
 						  // Currently checked in, so we're unchecking in
 						  if (confirm("Are you sure want to uncheck-in") == true) {
-							  $this.updateAttendanceData(item.studentemail, currentAttendanceId, currentPaymentId, icon);
+							  $this.updateAttendanceData(currentAttendanceId, currentPaymentId, icon);
 						  } else {
 							  // Reset icon if user cancels
 							  icon.src = $this.getCheckedIcon(true).src;
 						  }
 					  }else{
 						  // Currently not checked in, so we're checking in
-						  $this.updateAttendanceData(item.studentemail, '', currentPaymentId, icon);
+						  $this.updateAttendanceData( '', currentPaymentId, icon);
 					  }
 					  
 				  
@@ -522,8 +522,8 @@ function creEl(name,className,idName){
 		  //return studentlist;
 	  }
 	  // Updates current attendance data
-	  updateAttendanceData(studentId, attendanceId, paymentId, iconElement){
-		  this.callCheckedInApi(studentId, attendanceId, paymentId, iconElement);
+	  updateAttendanceData(attendanceId, paymentId, iconElement){
+		  this.callCheckedInApi(attendanceId, paymentId, iconElement);
 	  }
 	  // Returns the tick icon for checked-in status
 	  getCheckInIcon(){
@@ -532,7 +532,7 @@ function creEl(name,className,idName){
 		  return img
 	  }
 	  // Makes an API call to update check-in status
-	  callCheckedInApi(studentId, attendanceId, paymentId, iconElement){
+	  callCheckedInApi(attendanceId, paymentId, iconElement){
 		  var currentClass = this.$currentClass;
 		  var data = {
 		   "memberId":this.webflowMemberId, 	
@@ -562,7 +562,7 @@ function creEl(name,className,idName){
 					  // Update attendance status locally
 					  // Find the student in current class
 					  var studentIndex = currentClass.studentDetails.findIndex(function(student) {
-						  return student.studentemail === studentId;
+						  return student.paymentId === paymentId;
 					  });
 					  
 					  if (studentIndex !== -1 && isSuccess) {
@@ -595,7 +595,7 @@ function creEl(name,className,idName){
 						  
 						  if (classDataIndex !== -1) {
 							  var studentDataIndex = $this.classData[classDataIndex].studentDetails.findIndex(function(student) {
-								  return student.studentemail === studentId;
+								  return student.paymentId === paymentId;
 							  });
 							  
 							  if (studentDataIndex !== -1) {
