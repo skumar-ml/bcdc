@@ -126,7 +126,7 @@ Are there any dependent JS files: No
                     const url = `${this.data.apiBaseURL}updatePortalMillions`;
                     const body = {
                         memberId: this.data.memberId,
-                        paymentId: this.$currentStudent.paymentId,
+                        studentId: this.$currentStudent.studentId,
                         _id: this.$currentStudent._id,
                         amount: amount,
                         description: description,
@@ -264,13 +264,13 @@ Are there any dependent JS files: No
 
                 if (addButton) {
                     addButton.addEventListener('click', () => {
-                        this.addStudentAmount(student.paymentId);
+                        this.addStudentAmount(student.studentId);
                     });
                 }
 
                 if (deleteButton) {
                     deleteButton.addEventListener('click', () => {
-                        this.deleteStudentAmount(student.paymentId);
+                        this.deleteStudentAmount(student.studentId);
                     });
                 }
 
@@ -742,7 +742,7 @@ Are there any dependent JS files: No
 
                     if (result.message === 'Success') {
                         // Update the current student's amount in the local data immediately
-                        const studentIndex = this.currentStudentsList.findIndex(student => student.paymentId === this.currentStudentId);
+                        const studentIndex = this.currentStudentsList.findIndex(student => student.studentId === this.currentStudentId);
                         if (studentIndex !== -1) {
                             this.currentStudentsList[studentIndex].amount = apiAmount;
                         }
@@ -795,7 +795,7 @@ Are there any dependent JS files: No
              * @returns {Object|null} Student object if found, null otherwise
              */
             findStudentById(studentId) {
-                return this.currentStudentsList.find(student => student.paymentId === studentId);
+                return this.currentStudentsList.find(student => student.studentId === studentId);
             }
         }
 
