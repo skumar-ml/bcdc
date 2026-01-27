@@ -395,7 +395,8 @@ class classDetailsStripe extends parentLogin {
     //selectField.innerHTML = "";
 
     // Process the API response
-    data[0].forEach((level) => {
+    let level = data[0];
+    //data[0].forEach((level) => {
       level.location.forEach((location) => {
         //  create option element and add value and text in option
         locationOption = creEl("option");
@@ -442,7 +443,7 @@ class classDetailsStripe extends parentLogin {
           };
         });
       });
-    });
+    //});
 
     const classTimesContainer = document.querySelector(
       ".class-times-grid-wrapper"
