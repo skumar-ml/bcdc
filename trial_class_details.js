@@ -388,7 +388,7 @@ class TrialClassDetails {
                 return;
             }
 
-            console.log('Toggling attendance for student:', student.name, 'Current attended:', student.attended);
+            console.log('Toggling attendance for student:', student.studentName, 'Current attended:', student.attended);
 
             // Get the original attendance state (before any local changes)
             const originalAttendance = this.getOriginalAttendanceState(studentId);
@@ -594,7 +594,7 @@ class TrialClassDetails {
 
         // Update modal title based on whether notes exist
         const hasExistingNotes = student.notes && student.notes.trim();
-        const modalTitle = hasExistingNotes ? `Update Notes for ${student.name}` : `Add Notes for ${student.name}`;
+        const modalTitle = hasExistingNotes ? `Update Notes for ${student.studentName}` : `Add Notes for ${student.studentName}`;
         const modalTitleElement = modal.querySelector('.poppins-heading');
         if (modalTitleElement) {
             modalTitleElement.textContent = modalTitle;
