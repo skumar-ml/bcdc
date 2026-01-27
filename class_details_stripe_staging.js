@@ -1173,7 +1173,7 @@ class classDetailsStripe extends parentLogin {
 
       // -------------End new code for stripe payment integration---------------
       const data = await this.fetchData(
-        "getClassDetailByMemberIdAndLevelId?levelId=" +
+        "getClassDetails?levelId=" +
         this.levelId +
         "&memberId=" +
         this.webflowMemberId

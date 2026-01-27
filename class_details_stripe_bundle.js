@@ -1172,7 +1172,7 @@ class classDetailsStripe extends parentLogin {
       this.updateBasicData();
 
       const data = await this.fetchData(
-        "getClassDetailByMemberIdAndLevelId?levelId=" +
+        "getClassDetails?levelId=" +
         this.levelId +
         "&memberId=" +
         this.webflowMemberId
@@ -2528,15 +2528,17 @@ class classDetailsStripe extends parentLogin {
       var coreData = item.upsellPrograms.find(
         (bundle) => bundle.sessionId == currentSessionId
       );
+      
       // Select  [data-stripe='totalDepositPrice'] and get data-stripe-price attribute value
-      var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
-      var coreDepositPrice = 0;
-      if (totalDepositPriceEl) {
-        var dataStripePrice = parseFloat(totalDepositPriceEl.getAttribute("data-stripe-price") || "0");
-        var coreAmount = parseFloat(coreData.amount || "0");
+      //var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
+      //var coreDepositPrice = 0;
+      //if (totalDepositPriceEl) {
+        //var dataStripePrice = parseFloat(totalDepositPriceEl.getAttribute("data-stripe-price") || "0");
+        //var coreAmount = parseFloat(coreData.amount || "0");
         // removed deposit amount
         //coreData.amount = coreAmount - dataStripePrice;
-      }
+      //}
+      
       this.$coreData = coreData;
       var bundlePopUpText = creEl("p", "bundle-pop-up-text");
       bundlePopUpText.innerHTML = "*To get the bundle benefits, a future session must be selected and the full tuition is due at class registration.";
@@ -2683,6 +2685,7 @@ class classDetailsStripe extends parentLogin {
         flexContainer.classList.remove("border-brown-red");
       }
 
+      // Updating all checkbox for the same program id checked checkbox
       const allCheckboxes = document.querySelectorAll("[programDetailId]");
       allCheckboxes.forEach((checkbox) => {
         if (checkbox.getAttribute("programDetailId") == singleBundleData.upsellProgramId) {
@@ -2726,7 +2729,7 @@ class classDetailsStripe extends parentLogin {
     }
     //}
   }
-
+  // Handling core data program if upsell program selected or not.
   updateCoreData(type = "upsell") {
     var coreData = this.$coreData;
     if (type == "upsell" && coreData && coreData.upsellProgramId) {
