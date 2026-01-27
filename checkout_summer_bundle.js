@@ -227,6 +227,7 @@ class CheckOutWebflow {
 		//Payment button
 		var next_page_2 = document.getElementById('next_page_2');
 		next_page_2.innerHTML ="Processing..."
+		next_page_2.style.pointerEvents = "none";
 		
 		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
 		// Check if the URL already has a query string returnType based on the current URL
@@ -273,6 +274,7 @@ class CheckOutWebflow {
 				localStorage.setItem("checkOutData", JSON.stringify(data));
 
 				next_page_2.innerHTML ="Next"
+				next_page_2.style.pointerEvents = "auto";
 			}
 
 		}
@@ -293,10 +295,13 @@ class CheckOutWebflow {
 		var paylater_payment = document.getElementById('paylater_payment');
 		ach_payment.innerHTML = "Processing..."
 		ach_payment.disabled = true;
+		ach_payment.pointerEvents = "none";
 		card_payment.innerHTML = "Processing..."
 		card_payment.disabled = true;
+		card_payment.pointerEvents = "none";
 		paylater_payment.innerHTML = "Processing..."
 		paylater_payment.disabled = true;
+		paylater_payment.pointerEvents = "none";
 		
 		checkOutData = JSON.parse(checkOutData)
 		var data = {
@@ -317,10 +322,13 @@ class CheckOutWebflow {
 			console.log('responseText', responseText)
 			ach_payment.innerHTML = "Checkout"
 			ach_payment.disabled = false;
+			ach_payment.pointerEvents = "auto";
 			card_payment.innerHTML = "Checkout"
 			card_payment.disabled = false;
+			card_payment.pointerEvents = "auto";
 			paylater_payment.innerHTML = "Checkout"
 			paylater_payment.disabled = false;
+			paylater_payment.pointerEvents = "auto";
 
 		}
 	}
@@ -328,12 +336,12 @@ class CheckOutWebflow {
 	// Updates click events in the database and redirects to the checkout URL
 	updateClickEventInDB(checkOutUrl, paymentType) {
 		let checkOutData = localStorage.getItem('checkOutData')
-    var ach_payment = document.getElementById('ach_payment');
+    	var ach_payment = document.getElementById('ach_payment');
 		var card_payment = document.getElementById('card_payment');
-    ach_payment.innerHTML = "Processing..."
-    ach_payment.style.pointerEvents = "none";
-    card_payment.innerHTML = "Processing..."
-    card_payment.style.pointerEvents = "none";
+    	ach_payment.innerHTML = "Processing..."
+    	ach_payment.style.pointerEvents = "none";
+    	card_payment.innerHTML = "Processing..."
+    	card_payment.style.pointerEvents = "none";
 		if(checkOutData == undefined){
 			return true
 		}
