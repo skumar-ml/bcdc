@@ -50,16 +50,10 @@ class CheckOutWebflow {
 		var $this = this
 		sessionList.innerHTML = "";
 		if (data.summerSessionData.length > 0) {
-			// filter summer inventory empty left spots
+			// filter summer inventory empty left spots: hide session only when ALL locations have no spots
 			var summerSessionData = data.summerSessionData.filter((item) => {
-				var findFortLee = item.location.find((i) => i.locationId == 2 && i.leftSpot == 0)
-				var findGlenRock = item.location.find((i) => i.locationId == 1 && i.leftSpot == 0)
-
-				if (findFortLee == undefined || findGlenRock == undefined) {
-					return true
-				} else {
-					return false
-				}
+				var hasAvailability = item.location.some((i) => i.leftSpot > 0)
+				return hasAvailability
 			})
 
 			summerSessionData.forEach((sData, i) => {
