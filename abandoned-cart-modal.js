@@ -74,7 +74,7 @@ class AbandonedCartModal {
     
     const cartData = localStorage.getItem("checkOutData");
     var is_selling_started = $this.checkSellingSession(cartData);
-    if(!is_selling_started){
+    if(cartData && !is_selling_started){
         return;
     }
     if (cartData) {
