@@ -476,7 +476,7 @@ class PaymentHistory {
         var xhr = new XMLHttpRequest();
         xhr.open(
             "POST",
-            "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrl",
+            "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice",
             true
         );
         xhr.withCredentials = false;

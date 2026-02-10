@@ -1321,7 +1321,7 @@ class classDetailsStripe extends parentLogin {
       var $this = this;
       xhr.open(
         "POST",
-        "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl",
+        "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard",
         true
       );
       xhr.withCredentials = false;
@@ -1562,7 +1562,7 @@ class classDetailsStripe extends parentLogin {
     var $this = this;
     xhr.open(
       "POST",
-      "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForClasses",
+      "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId",
       true
     );
     xhr.withCredentials = false;

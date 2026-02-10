@@ -127,7 +127,7 @@ Are there any dependent JS files: No
                     const body = {
                         memberId: this.data.memberId,
                         studentId: this.$currentStudent.studentId,
-                        _id: this.$currentStudent._id,
+                        newStudent: this.$currentStudent.newStudent,
                         amount: amount,
                         description: description,
                         prevAmount: this.$currentStudent.amount
@@ -142,8 +142,8 @@ Are there any dependent JS files: No
                     });
 
                     const data = await response.json();
-                    if(data._id){
-                        this.$currentStudent._id = data._id;
+                    if(data.studentId){
+                        this.$currentStudent.studentId = data.studentId;
                     }
                     return { message: "Success", data: data };
                 } catch (error) {
@@ -229,13 +229,13 @@ Are there any dependent JS files: No
             // Creates a DOM element for a single student row
             /**
              * Creates a DOM element for a single student row
-             * @param {Object} student - Student object containing name, email, amount, and _id
+             * @param {Object} student - Student object containing name, email, amount, and newStudent, studentID
              * @returns {HTMLElement} DOM element representing the student row
              */
             createStudentRow(student) {
                 const row = document.createElement('div');
                 row.className = 'students-info-row-grid';
-                row.setAttribute('data-student-id', student._id);
+                row.setAttribute('data-student-id', student.studentId);
 
                 const amountClass = student.amount > 0 ? 'green-semi-bold' : 'red-semi-bold';
                 const amountText = student.amount > 0 ? `+$${student.amount}` : `$${student.amount}`;
@@ -245,12 +245,12 @@ Are there any dependent JS files: No
     <div class="students-info-row-text">${student.emailId || 'N/A'}</div>
     <div class="students-info-row-text ${amountClass}">${amountText}</div>
     <div class="students-info-flex-wrapper">
-        <div class="students-info-add-icon-div" data-student-id="${student._id}" data-action="add">
+        <div class="students-info-add-icon-div" data-student-id="${student.studentId}" data-action="add">
             <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/688a001a61f82b5217fc5b50_add_box%201.svg" 
                  loading="lazy" alt="" class="add-icon">
             <div class="add-tooltip-text">Add</div>
         </div>
-        <div class="students-info-delete-icon-div" data-student-id="${student._id}" data-action="delete">
+        <div class="students-info-delete-icon-div" data-student-id="${student.studentId}" data-action="delete">
             <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/688a0024a37a8bf30b97a453_remove_circle%201.svg" 
                  loading="lazy" alt="" class="delete-icon">
             <div class="delete-tooltip-text">Delete</div>
