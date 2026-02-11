@@ -143,7 +143,7 @@ Are there any dependent JS files: No
 
                     const data = await response.json();
                     if(data.studentId){
-                        this.$currentStudent.studentId = data.studentId;
+                        this.$currentStudent.newStudent = false;
                     }
                     return { message: "Success", data: data };
                 } catch (error) {
