@@ -1179,7 +1179,7 @@ class classDetailsStripe extends parentLogin {
         this.webflowMemberId
       );
       this.viewClassLocations(data);
-      var suppData = await this.fetchData("getUpsellProgramV2", this.typeEBaseUrl);
+      var suppData = await this.fetchData("getUpsellProgram", this.typeEBaseUrl);
       this.$allSuppData = suppData;
       // Check if there are any upsell programs
       var academicSuppData = suppData.find((item) => {
@@ -1294,7 +1294,7 @@ class classDetailsStripe extends parentLogin {
 
     if (this.$isCheckoutFlow == "Bundle-Purchase") {
       data.paymentId = this.$selectedBundleProgram.paymentId;
-      data.isBundleProgram = true;
+      data.isPreRegistration = true;
       data.classUniqueId = classId;
     }
     if (this.$isCheckoutFlow == "Bundle-Purchase" && (upsellProgramIds.length > 0 || this.selectedBriefs.length > 0)) {

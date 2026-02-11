@@ -62,7 +62,7 @@ class DisplaySuppProgram {
   async displaySupplementaryProgram() {
     try {
       //this.spinner.style.display = "block";
-      this.$suppPro = await this.fetchData("getUpsellProgramV2?type=portal", this.memberData.baseUrl);
+      this.$suppPro = await this.fetchData("getUpsellProgram?type=portal", this.memberData.baseUrl);
       this.handleClickEvents();
       this.closeIconEvent();
       if (this.$suppPro.length === 0) {
