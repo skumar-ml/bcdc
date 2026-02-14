@@ -656,6 +656,7 @@ class CheckOutWebflow {
 			spinner.style.display = 'block';
 			// API call
 			const data = await this.fetchData('getSummerSessionDetails/' + this.memberData.memberId + '/' + this.memberData.programId);
+			console.log('data', data);
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
