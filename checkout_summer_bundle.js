@@ -113,15 +113,18 @@ class CheckOutWebflow {
 		var fortLeeContainer = document.getElementById('fortLeeContainer');
 		var GlenRockContainer = document.getElementById('GlenRockContainer');
 		var LivingstonContainer = document.getElementById('LivingstonContainer');
+		var whitePlainsContainer = document.getElementById('whitePlainsContainer');
 		var next_page_2 = document.getElementById('next_page_2');
 		GlenRockContainer.style.display = "none";
 		fortLeeContainer.style.display = "none";
 		LivingstonContainer.style.display = "none";
+		whitePlainsContainer.style.display = "none";
 		next_page_2.style.display = 'block';
 		if (this.memberData.programId == '102') {
 			var findFortLee = location.filter((i) => i.locationId == 2 && i.leftSpot > 0)
 			var findGlenRock = location.filter((i) => i.locationId == 1 && i.leftSpot > 0)
 			var findLivingston = location.filter((i) => i.locationId == 4 && i.leftSpot > 0)
+			var findWhitePlains = location.filter((i) => i.locationId == 6 && i.leftSpot > 0)
 			if (findFortLee.length == 2) {
 				fortLeeContainer.style.display = "flex"
 			}
@@ -131,8 +134,10 @@ class CheckOutWebflow {
 			if (findLivingston.length == 2) {
 				LivingstonContainer.style.display = "flex"
 			}
-
-			if (findFortLee.length != 2 && findGlenRock.length != 2 && findLivingston.length != 2) {
+			if (findWhitePlains.length == 2) {
+				whitePlainsContainer.style.display = "flex"
+			}
+			if (findFortLee.length != 2 && findGlenRock.length != 2 && findLivingston.length != 2 && findWhitePlains.length != 2) {
 				next_page_2.style.display = 'none';
 				document.querySelector('.cart-location-container').style.display = "none";
 			}else{
@@ -155,8 +160,12 @@ class CheckOutWebflow {
 			if (findLivingston != undefined) {
 				LivingstonContainer.style.display = "flex"
 			}
+			var findWhitePlains = location.find((i) => i.locationId == 6 && i.programId == this.memberData.programId && i.leftSpot > 0)
 
-			if (findFortLee == undefined && findGlenRock == undefined && findLivingston == undefined) {
+			if (findWhitePlains != undefined) {
+				whitePlainsContainer.style.display = "flex"
+			}
+			if (findFortLee == undefined && findGlenRock == undefined && findLivingston == undefined && findWhitePlains == undefined) {
 				next_page_2.style.display = 'none';
 				document.querySelector('.cart-location-container').style.display = "none";
 			}else{
