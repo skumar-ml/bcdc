@@ -603,6 +603,8 @@ class CheckOutWebflow {
 			var prevStudent = document.getElementById('prevStudent-2');
 			var fort_lee_location = document.getElementById('fort_lee_location');
 			var glen_rock_location = document.getElementById('glen_rock_location');
+			var livingston_location = document.getElementById('livingston_location');
+			var white_plains_location = document.getElementById('white_plains_location');
 			// Update all local storage data
 			studentEmail.value = paymentData.studentEmail;
 
@@ -628,7 +630,9 @@ class CheckOutWebflow {
 				fort_lee_location.checked = true;
 			} else if(paymentData.updateData.locationId == 4){
 				livingston_location.checked = true;
-			} else {
+			} else if(paymentData.updateData.locationId == 6){
+				white_plains_location.checked = true;
+			}else {
 				glen_rock_location.checked = true;
 			}
 			if(paymentData.updateData.locationId){
