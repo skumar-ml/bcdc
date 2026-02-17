@@ -1230,9 +1230,9 @@ class classDetailsStripe extends parentLogin {
   ) {
 
     var upsellProgramIds = this.getSelectedBundleProgram();
-    // Skip credit modal for Bundle-Purchase when upsells or briefs are selected (credit not applied)
+    // Skip credit modal for Bundle-Purchase when upsells or briefs are not selected (credit not applied)
     var skipCreditChoice = this.$isCheckoutFlow === "Bundle-Purchase" &&
-      (upsellProgramIds.length > 0 || this.selectedBriefs.length > 0);
+      (upsellProgramIds.length == 0 && this.selectedBriefs.length == 0);
     var applyCredit = skipCreditChoice
       ? false
       : await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
