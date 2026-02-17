@@ -103,6 +103,16 @@ class DisplaySuppProgram {
       var bundleData = item.upsellPrograms.filter(
         (bundle) => bundle.sessionId !== currentSessionId
       );
+      // if bundle data empty hide upSellEls
+      if(bundleData.length == 0){
+        this.upSellEls.forEach((el) => {
+          el.style.display = "none";
+        });
+      }else {
+        this.upSellEls.forEach((el) => {
+          el.style.display = "block";
+        });
+      }
       bundleData.forEach((singleBundleData) => {
         var card = this.createBundleCard(singleBundleData);
         cardContainer.appendChild(card);
