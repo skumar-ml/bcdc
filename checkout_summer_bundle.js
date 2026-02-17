@@ -44,14 +44,17 @@ class CheckOutWebflow {
 
 	// Displays summer session data with checkboxes
 	displaySessionsData(data) {
-		this.$sessionData = data.summerSessionData;
+		var summerSessionData = data.summerSessionData;
+		// sort by summerSessionId
+		summerSessionData.sort((a, b) => a.summerSessionId - b.summerSessionId);
+		this.$sessionData = summerSessionData;
 		// Getting main dom elment object to add summer session list with checkbox
 		var sessionList = document.getElementById('checkout_session_data');
 		var $this = this
 		sessionList.innerHTML = "";
-		if (data.summerSessionData.length > 0) {
+		if (summerSessionData.length > 0) {
 			// filter summer inventory empty left spots: hide session only when ALL locations have no spots
-			var summerSessionData = data.summerSessionData.filter((item) => {
+			var summerSessionData = summerSessionData.filter((item) => {
 				var hasAvailability = item.location.some((i) => i.leftSpot > 0)
 				return hasAvailability
 			})
@@ -98,7 +101,7 @@ class CheckOutWebflow {
 		const startDate = new Date(sessionProData.startDate)
 		const endDate = new Date(sessionProData.endDate)
 		const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-		div.innerHTML = month[startDate.getMonth()]  + ' ' + startDate.getDate() + ', ' + startDate.getFullYear() + ' - ' + endDate.getDate() + ' ' + month[endDate.getMonth()] + ' ' + startDate.getFullYear();
+		div.innerHTML = month[startDate.getMonth()]  + ' ' + startDate.getDate() + ', ' + startDate.getFullYear() + ' - ' + endDate.getDate() + ', ' + month[endDate.getMonth()] + ' ' + startDate.getFullYear();
 
 		coreProductTitle.prepend(h1, div)
 
