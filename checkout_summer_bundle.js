@@ -101,7 +101,7 @@ class CheckOutWebflow {
 		const startDate = new Date(sessionProData.startDate)
 		const endDate = new Date(sessionProData.endDate)
 		const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-		div.innerHTML = month[startDate.getMonth()]  + ' ' + startDate.getDate() + ', ' + startDate.getFullYear() + ' - ' + endDate.getDate() + ', ' + month[endDate.getMonth()] + ' ' + startDate.getFullYear();
+		div.innerHTML = month[startDate.getMonth()]  + ' ' + startDate.getDate() + ', ' + startDate.getFullYear() + ' - ' + month[endDate.getMonth()] + ' ' + endDate.getDate() + ', ' + startDate.getFullYear();
 
 		coreProductTitle.prepend(h1, div)
 
