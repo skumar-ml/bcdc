@@ -1229,9 +1229,13 @@ class classDetailsStripe extends parentLogin {
     preRegistrationDiv = null
   ) {
 
-    // Open Bergen credits modal and wait for user's decision
-    // This will show the modal, fetch credit data, and wait for user to choose apply/no
-    const applyCredit = await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
+    var upsellProgramIds = this.getSelectedBundleProgram();
+    // Skip credit modal for Bundle-Purchase when upsells or briefs are selected (credit not applied)
+    var skipCreditChoice = this.$isCheckoutFlow === "Bundle-Purchase" &&
+      (upsellProgramIds.length > 0 || this.selectedBriefs.length > 0);
+    var applyCredit = skipCreditChoice
+      ? false
+      : await Utils.waitForCreditApplicationChoice(this.webflowMemberId);
 
     // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
     console.log("Apply credit:", applyCredit);
@@ -1253,8 +1257,6 @@ class classDetailsStripe extends parentLogin {
     locationActionLink.disabled = true;
     preRegistrationDiv.innerHTML = "Processing...";
     preRegistrationDiv.disabled = true;
-    // Get selected up-sell program ids
-    var upsellProgramIds = this.getSelectedBundleProgram();
     //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
     var cancelUrl = new URL(window.location.href);
     //console.log(window.location.href)
