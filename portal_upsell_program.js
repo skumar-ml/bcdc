@@ -463,11 +463,7 @@ class DisplaySuppProgram {
         "getAllPreviousStudents/" + this.memberData.memberId + "/selling",
         this.memberData.fTypeBaseUrl
       );
-      if (data != "No data Found") {
-        this.upSellEls.forEach((el) => {
-          el.style.display = "block";
-        });
-      } else {
+      if (data == "No data Found") {
         this.upSellEls.forEach((el) => {
           el.style.display = "none";
         });
