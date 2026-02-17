@@ -671,7 +671,7 @@ class CheckOutWebflow {
 			var spinner = document.getElementById('half-circle-spinner');
 			spinner.style.display = 'block';
 			// API call
-			const data = await this.fetchData('getSummerSessionDetails/' + this.memberData.programId);
+			const data = await this.fetchData('getSummerSessionDetails?programId=' + this.memberData.programId);
 			console.log('data', data);
 			// Display summer session
 			this.displaySessionsData(data)
