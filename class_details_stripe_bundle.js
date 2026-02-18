@@ -2113,7 +2113,8 @@ class classDetailsStripe extends parentLogin {
         selectBox.innerHTML = '<option value="">No previous students found</option>';
         return;
       }
-      data = data.filter(i => i.studentEmail != null && i.studentEmail != undefined && i.studentEmail != "");
+      // removed studentEmail required condition to avoid error in custom dropdown
+      //data = data.filter(i => i.studentEmail != null && i.studentEmail != undefined && i.studentEmail != "");
       const filterData = data
         .filter(
           (item, index, self) =>
