@@ -677,7 +677,7 @@ class PaymentHistory {
 
     // Formats the session display name
     getSessionDisplayName(session) {
-        const year = session.currentYear || session.yearId || "";
+        const year = session.yearId || "";
         return `Jan 1 - Dec 31, ${year}`;
     }
 
