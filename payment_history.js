@@ -592,9 +592,15 @@ class PaymentHistory {
                     session.classDetail &&
                     Object.keys(session.classDetail).length > 0
                 ) {
+                    var year = session.classDetail.currentYear;
+                    if(session.createdOn){
+                        var dateStr = session.createdOn;
+                        const date = new Date(dateStr.replace(" ", "T"));
+                        year = date.getFullYear();
+                    }
                     sessions.push({
                         ...session.classDetail,
-                        yearId: session.classDetail.currentYear,
+                        yearId: year,
                         location: session.classLoactionDeatils?.locationName,
                         sessionData: session,
                     });
@@ -605,10 +611,16 @@ class PaymentHistory {
                     session.summerProgramDetail &&
                     Object.keys(session.summerProgramDetail).length > 0
                 ) {
+                    var year = session.summerProgramDetail.currentYear;
+                    if(session.createdOn){
+                        var dateStr = session.createdOn;
+                        const date = new Date(dateStr.replace(" ", "T"));
+                        year = date.getFullYear();
+                    }
                     sessions.push({
                         ...session.summerProgramDetail,
-                        yearId: session.summerProgramDetail.currentYear,
-                        location: session.summerProgramDetail.location,
+                        yearId: year,
+                        location: session.summerProgramDetail.location,   
                         sessionData: session,
                     });
                 }
@@ -623,10 +635,16 @@ class PaymentHistory {
                     session.classDetail &&
                     Object.keys(session.classDetail).length > 0
                 ) {
+                    var year = session.classDetail.currentYear;
+                    if(session.createdOn){
+                    var dateStr = session.createdOn;
+                        const date = new Date(dateStr.replace(" ", "T"));
+                        year = date.getFullYear();
+                    }
                     sessions.push({
                         ...session.classDetail,
-                        yearId: session.classDetail.currentYear,
-                        location: session.classLoactionDeatils?.locationName,
+                        yearId: year,
+                        location: session.classLoactionDeatils?.locationName,   
                         sessionData: session,
                     });
                 }
@@ -636,9 +654,15 @@ class PaymentHistory {
                     session.summerProgramDetail &&
                     Object.keys(session.summerProgramDetail).length > 0
                 ) {
+                    var year = session.summerProgramDetail.currentYear;
+                    if(session.createdOn){ 
+                    var dateStr = session.createdOn;
+                        const date = new Date(dateStr.replace(" ", "T"));
+                        year = date.getFullYear();
+                    }
                     sessions.push({
                         ...session.summerProgramDetail,
-                        yearId: session.summerProgramDetail.currentYear,
+                        yearId: year,
                         location: session.summerProgramDetail.location,
                         sessionData: session,
                     });
