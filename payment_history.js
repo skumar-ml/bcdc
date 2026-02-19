@@ -580,8 +580,8 @@ class PaymentHistory {
         });
     }
 
-    // Retrieves all sessions (current and past) for a student
-    getAllSessions(studentData) {
+     // Retrieves all sessions (current and past) for a student
+     getAllSessions(studentData) {
         const sessions = [];
 
         // Process current sessions
@@ -650,7 +650,20 @@ class PaymentHistory {
             });
         }
 
-        return sessions;
+        // Merge sessions with the same yearId into one object per year
+        const byYear = {};
+        sessions.forEach((s) => {
+            const id = s.yearId;
+            if (!byYear[id]) {
+                byYear[id] = {
+                    ...s,
+                    sessionData: [s.sessionData],
+                };
+            } else {
+                byYear[id].sessionData.push(s.sessionData);
+            }
+        });
+        return Object.values(byYear);
     }
 
     // get year from date string
