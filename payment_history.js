@@ -592,13 +592,8 @@ class PaymentHistory {
                     session.classDetail &&
                     Object.keys(session.classDetail).length > 0
                 ) {
-                    var year = session.classDetail.currentYear;
-                    if(session.createdOn){
-                        var dateStr = session.createdOn;
-                        const date = new Date(dateStr.replace(" ", "T"));
-                        year = date.getFullYear();
-                    }
-                    sessions.push({
+                    var year =  year = this.getYearFromDateString(session.createdOn, session.classDetail.currentYear);
+                    sessions.push({ 
                         ...session.classDetail,
                         yearId: year,
                         location: session.classLoactionDeatils?.locationName,
@@ -611,12 +606,7 @@ class PaymentHistory {
                     session.summerProgramDetail &&
                     Object.keys(session.summerProgramDetail).length > 0
                 ) {
-                    var year = session.summerProgramDetail.currentYear;
-                    if(session.createdOn){
-                        var dateStr = session.createdOn;
-                        const date = new Date(dateStr.replace(" ", "T"));
-                        year = date.getFullYear();
-                    }
+                    var year = this.getYearFromDateString(session.createdOn, session.summerProgramDetail.currentYear);
                     sessions.push({
                         ...session.summerProgramDetail,
                         yearId: year,
@@ -635,12 +625,7 @@ class PaymentHistory {
                     session.classDetail &&
                     Object.keys(session.classDetail).length > 0
                 ) {
-                    var year = session.classDetail.currentYear;
-                    if(session.createdOn){
-                    var dateStr = session.createdOn;
-                        const date = new Date(dateStr.replace(" ", "T"));
-                        year = date.getFullYear();
-                    }
+                    var year = this.getYearFromDateString(session.createdOn, session.classDetail.currentYear);
                     sessions.push({
                         ...session.classDetail,
                         yearId: year,
@@ -654,12 +639,7 @@ class PaymentHistory {
                     session.summerProgramDetail &&
                     Object.keys(session.summerProgramDetail).length > 0
                 ) {
-                    var year = session.summerProgramDetail.currentYear;
-                    if(session.createdOn){ 
-                    var dateStr = session.createdOn;
-                        const date = new Date(dateStr.replace(" ", "T"));
-                        year = date.getFullYear();
-                    }
+                    var year = this.getYearFromDateString(session.createdOn, session.summerProgramDetail.currentYear);
                     sessions.push({
                         ...session.summerProgramDetail,
                         yearId: year,
@@ -671,6 +651,15 @@ class PaymentHistory {
         }
 
         return sessions;
+    }
+
+    // get year from date string
+    getYearFromDateString(dateString, currentYear = null) {
+        if(!dateString){
+            return currentYear;
+        }
+        const date = new Date(dateString.replace(" ", "T"));
+        return date.getFullYear();
     }
 
     // Formats the session display name
