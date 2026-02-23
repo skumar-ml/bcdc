@@ -420,7 +420,7 @@ class Portal {
             showRecommendedSection = false;
         } else {
             // Show recommended section only during registration period
-            if (timeBasedVisibility.showRegistration) {
+            if (timeBasedVisibility.showRegistration && hasBundle) {
                 recommendedSection.style.display = '';
                 showRecommendedSection = true;
             } else {
