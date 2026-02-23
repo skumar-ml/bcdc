@@ -461,7 +461,7 @@ class Portal {
         this.updateButtonVisibility(bundleContainer, recommendedLevel, timeBasedVisibility, studentData);
 
         // Update modal content and add click event for Learn More button
-        //this.updateModalContent(student, recommendedLevel, tabPane, studentData);
+        this.updateModalContent(student, recommendedLevel, tabPane, studentData);
         this.addLearnMoreClickEvent(bundleContainer, student, recommendedLevel, studentData);
 
         // Start/Update countdown in the recommended section if deadline exists
