@@ -581,13 +581,16 @@ class Portal {
         }
 
         // Check registration period from recommended level
-        if (recommendedLevel && recommendedLevel['pre-registrationDates'] && recommendedLevel['pre-registrationDates'].preRegStartDate && recommendedLevel.registrationStartDate) {
-            const regStart = new Date(recommendedLevel['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
-            const regEnd = new Date(recommendedLevel.registrationEndDate.replace(' ', 'T'));
+        // if (recommendedLevel && recommendedLevel['pre-registrationDates'] && recommendedLevel['pre-registrationDates'].preRegStartDate && recommendedLevel.registrationStartDate) {
+        //     const regStart = new Date(recommendedLevel['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
+        //     const regEnd = new Date(recommendedLevel.registrationEndDate.replace(' ', 'T'));
 
-            showRegistration = now >= regStart && now <= regEnd;
+        //     showRegistration = now >= regStart && now <= regEnd;
 
-        }
+        // }
+    if(recommendedLevel){
+        showRegistration = true;
+    }
 
         return {
             showPreRegistration,
