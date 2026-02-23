@@ -588,7 +588,8 @@ class Portal {
         //     showRegistration = now >= regStart && now <= regEnd;
 
         // }
-    if(recommendedLevel){
+    // check empty object for recommendedLevel
+    if(Object.keys(recommendedLevel).length > 0){
         showRegistration = true;
     }
 
