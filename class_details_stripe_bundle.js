@@ -2636,7 +2636,7 @@ class classDetailsStripe extends parentLogin {
     // Title and info
     const titleInfoDiv = creEl("div");
     const titleP = creEl("p", "bundle-sem-title");
-    titleP.textContent = type === "upsell"
+    titleP.textContent = (singleBundleData.label)
       ? `${singleBundleData.label} (${singleBundleData.yearId})`
       : "Winter/Spring (2026)";
     const infoP = creEl("p", "bundle-sem-info");
