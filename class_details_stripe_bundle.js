@@ -2841,7 +2841,7 @@ class classDetailsStripe extends parentLogin {
     });
 
     // New Student Fee (if not previous student)
-    if (!this.$isPrevStudent) {
+    //if (!this.$isPrevStudent) {
       const feeGrid = creEl("div", "cart-grid-wrapper");
       const feeLabel = creEl("p", "main-text order-details");
       feeLabel.textContent = "New Student Fee";
@@ -2854,7 +2854,7 @@ class classDetailsStripe extends parentLogin {
       container.forEach(el => {
         el.appendChild(feeGrid);
       });
-    }
+   // }
   }
   updateCountdown(preRegistrationEndDate) {
     // Registration start date
