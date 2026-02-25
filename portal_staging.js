@@ -655,7 +655,15 @@ class Portal {
 
             recommendedTextEl.textContent = recommendedText;
         }
-
+        // Update early-bird discount text from recommendedLevel.earlyBirdDiscount
+        const earlyBirdTextEl = modal.querySelector('.early-bird-text');
+        if (earlyBirdTextEl) {
+            const discountAmount = recommendedLevel?.earlyBirdDiscount != null && recommendedLevel.earlyBirdDiscount !== ''
+                ? recommendedLevel.earlyBirdDiscount
+                : 150;
+            const amountStr = typeof discountAmount === 'number' ? `$${discountAmount}` : (String(discountAmount).startsWith('$') ? discountAmount : `$${discountAmount}`);
+            earlyBirdTextEl.textContent = `Early Bird Discount Available | Save ${amountStr}!`;
+        }
         // Update countdown in modal if deadline exists
         const earlyBirdDeadline = student?.recommendedLevel?.earlyBirdDeadlineDate;
         if (earlyBirdDeadline) {
