@@ -1,5 +1,5 @@
 /*
-
+       
 Purpose: Primary BCDC portal experience that aggregates forms, invoices, briefs, class details, and supplementary data with modern UI. Manages the complete student portal interface.
 
 Brief Logic: Fetches portal data, announcements, and millions data from multiple APIs. Creates tabs for each student, displays invoices, briefs, supplementary programs, class details, and millions transactions. Handles referrals access control, updates sidebar counts, and manages all portal interactions.
@@ -27,17 +27,17 @@ class Portal {
     async fetchData() {
         try {
             const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
-        if (!response.ok) throw new Error('Network response was not ok');
-        const apiData = await response.json();
-        return apiData;
+            if (!response.ok) throw new Error('Network response was not ok');
+            const apiData = await response.json();
+            return apiData;
         } catch (error) {
             console.log(error);
             const portalMessage = document.querySelector('.portal-message')
             this.spinner.style.display = 'none';
             portalMessage.style.display = 'block';
-            return; 
+            return;
         }
-        
+
     }
 
     /**
@@ -286,7 +286,7 @@ class Portal {
                 tabPane.querySelectorAll('.registration-form-accordian').forEach(el => {
                     if (el) el.style.display = 'none';
                 });
-                
+
                 // display the invoice if futureSession or pastSession invoices exist
                 const futureInvoices = studentData.futureSession.flatMap(session => session.invoiceList || []);
                 var invoices = [].concat(futureInvoices);
@@ -340,8 +340,8 @@ class Portal {
         }
         // render pending items text after a delay to ensure data is ready
         setTimeout(() => {
-            
-            this.renderPendingItems(tabPane, studentData.currentSession.length > 0 ? student: [], studentData);
+
+            this.renderPendingItems(tabPane, studentData.currentSession.length > 0 ? student : [], studentData);
         }, 500);
 
         this.renderRecentAnnouncements(tabPane, announcements);
@@ -359,7 +359,7 @@ class Portal {
         const recommendedSection = tabPane.querySelector('.next-recomm-prog-container');
         const programTitle = tabPane.querySelector('.next-recomm-prog-title');
         const bundleContainer = tabPane.querySelector('[data-pre-registration="container"]');
-        
+
         if (!bundleContainer) return;
         const studentName = student.studentDetail.studentName;
         if (programTitle) {
@@ -370,14 +370,14 @@ class Portal {
 
         // Check if recommended level is empty
         const isRecommendedEmpty = !recommendedLevel.level;
-        
+
         // Check if student has bundle
         const hasBundle = this.checkHasBundle(studentData);
-        
+
         // Get current time-based visibility status
         const timeBasedVisibility = this.getTimeBasedVisibility(recommendedLevel, studentData);
-        
-        
+
+
         // Hide entire bundle container if no bundle and no recommended program
         if (!hasBundle && isRecommendedEmpty) {
             if (bundleContainer) {
@@ -385,7 +385,7 @@ class Portal {
             }
             return;
         }
-        
+
         // Show bundle container if either has bundle or has recommended program
         if (bundleContainer) {
             bundleContainer.style.display = 'block';
@@ -398,13 +398,13 @@ class Portal {
             if (hasBundle && timeBasedVisibility.showPreRegistration) {
                 preRegContainer.style.display = '';
                 showPreRegContainer = true;
-                
+
                 // Update pre-registration username dynamically
                 const preRegUserName = preRegContainer.querySelector('.pre-reg-user-name');
                 if (preRegUserName && studentName) {
                     preRegUserName.textContent = studentName + "'s";
                 }
-                
+
                 // Start registration timer for pre-registration end date
                 this.startRegistrationTimer(preRegContainer, studentData);
             } else {
@@ -420,7 +420,7 @@ class Portal {
             showRecommendedSection = false;
         } else {
             // Show recommended section only during registration period
-            if (timeBasedVisibility.showRegistration && hasBundle) {
+            if (timeBasedVisibility.showRegistration) {
                 recommendedSection.style.display = '';
                 showRecommendedSection = true;
             } else {
@@ -461,7 +461,7 @@ class Portal {
         this.updateButtonVisibility(bundleContainer, recommendedLevel, timeBasedVisibility, studentData);
 
         // Update modal content and add click event for Learn More button
-        //this.updateModalContent(student, recommendedLevel, tabPane, studentData);
+        this.updateModalContent(student, recommendedLevel, tabPane, studentData);
         this.addLearnMoreClickEvent(bundleContainer, student, recommendedLevel, studentData);
 
         // Start/Update countdown in the recommended section if deadline exists
@@ -482,17 +482,17 @@ class Portal {
         // Get the buttons
         const registerNowBtn = recommendedSection.querySelector('#enroll-now-btn-2');
         const learnMoreBtn = recommendedSection.querySelector('[data-portal="next-recomm-learn-more"]');
-        
+
         if (!registerNowBtn || !learnMoreBtn) return;
 
         // Condition A: Check if student has bundle (pre-reg-container) in future sessions except Summer
         const hasBundle = this.checkHasBundle(studentData);
-        
+
         // Condition B: Check if returner conversion is published in recommendedLevel
         const hasReturnerConversion = this.checkReturnerConversion(recommendedLevel);
-        
+
         // Debug logging
-        
+
         // Apply button visibility logic based on time-based visibility
         if (timeBasedVisibility.showPreRegistration && timeBasedVisibility.showRegistration) {
             // Both periods are active: Show both buttons
@@ -531,17 +531,17 @@ class Portal {
         if (!student.futureSession || !Array.isArray(student.futureSession)) {
             return false;
         }
-        
+
         // Filter out futureSession objects that have classId
         const filteredSessions = student.futureSession.filter(session => !session.classId && session.earlyBirdDeadlineDate != "");
-        if(filteredSessions.length == 0) {
+        if (filteredSessions.length == 0) {
             return false;
         }
         // Check if any remaining sessions are not Summer sessions
         const result = filteredSessions.some(session => {
             return !session.sessionName.toLowerCase().includes('summer');
         });
-        
+
         return result;
     }
     /**
@@ -564,31 +564,35 @@ class Portal {
         const now = new Date();
         let showPreRegistration = false;
         let showRegistration = false;
-        
+
         // Check pre-registration period from future session
         if (studentData.futureSession && Array.isArray(studentData.futureSession)) {
-            const futureSession = studentData.futureSession.find(session => 
+            const futureSession = studentData.futureSession.find(session =>
                 session['pre-registrationDates'] && session['pre-registrationDates'].preRegStartDate
             );
-            
+
             if (futureSession && futureSession['pre-registrationDates']) {
                 const preRegStart = new Date(futureSession['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
                 const preRegEnd = new Date(futureSession.programDates.startDate.replace(' ', 'T'));
-                
+
                 showPreRegistration = now >= preRegStart && now <= preRegEnd;
-                
+
             }
         }
-        
+
         // Check registration period from recommended level
-        if (recommendedLevel && recommendedLevel['pre-registrationDates'] && recommendedLevel['pre-registrationDates'].preRegStartDate && recommendedLevel.registrationStartDate) {
-            const regStart = new Date(recommendedLevel['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
-            const regEnd = new Date(recommendedLevel.registrationEndDate.replace(' ', 'T'));
-            
-            showRegistration = now >= regStart && now <= regEnd;
-            
-        }
-        
+        // if (recommendedLevel && recommendedLevel['pre-registrationDates'] && recommendedLevel['pre-registrationDates'].preRegStartDate && recommendedLevel.registrationStartDate) {
+        //     const regStart = new Date(recommendedLevel['pre-registrationDates'].preRegStartDate.replace(' ', 'T'));
+        //     const regEnd = new Date(recommendedLevel.registrationEndDate.replace(' ', 'T'));
+
+        //     showRegistration = now >= regStart && now <= regEnd;
+
+        // }
+    // check empty object for recommendedLevel
+    if(Object.keys(recommendedLevel).length > 0){
+        showRegistration = true;
+    }
+
         return {
             showPreRegistration,
             showRegistration
@@ -602,7 +606,7 @@ class Portal {
         modal.classList.add("show");
         modal.style.display = "flex";
     }
-    
+
     /**
      * Hides a modal by removing show class and setting display to none
      * @param {HTMLElement} modal - The modal element to hide
@@ -651,7 +655,15 @@ class Portal {
 
             recommendedTextEl.textContent = recommendedText;
         }
-
+        // Update early-bird discount text from recommendedLevel.earlyBirdDiscount
+        const earlyBirdTextEl = modal.querySelector('.early-bird-text');
+        if (earlyBirdTextEl) {
+            const discountAmount = recommendedLevel?.earlyBirdDiscount != null && recommendedLevel.earlyBirdDiscount !== ''
+                ? recommendedLevel.earlyBirdDiscount
+                : 150;
+            const amountStr = typeof discountAmount === 'number' ? `$${discountAmount}` : (String(discountAmount).startsWith('$') ? discountAmount : `$${discountAmount}`);
+            earlyBirdTextEl.textContent = `Early Bird Discount Available | Save ${amountStr}!`;
+        }
         // Update countdown in modal if deadline exists
         const earlyBirdDeadline = student?.recommendedLevel?.earlyBirdDeadlineDate;
         if (earlyBirdDeadline) {
@@ -691,7 +703,7 @@ class Portal {
         const hasReturnerConversion = this.checkReturnerConversion(recommendedLevel);
         const timeBasedVisibility = this.getTimeBasedVisibility(recommendedLevel, studentData);
         const hasRecommendedCondition = hasReturnerConversion && timeBasedVisibility.showRegistration;
-        
+
         // Generate the enrollment URL based on condition
         let enrollUrl;
         if (hasRecommendedCondition) {
@@ -808,7 +820,7 @@ class Portal {
         // Find the pre-registration end date from future session
         let preRegEndDate = null;
         if (studentData.futureSession && Array.isArray(studentData.futureSession)) {
-            const futureSession = studentData.futureSession.find(session => 
+            const futureSession = studentData.futureSession.find(session =>
                 session['pre-registrationDates'] && session['pre-registrationDates'].preRegEndDate
             );
             if (futureSession) {
@@ -826,7 +838,7 @@ class Portal {
         const hoursEl = contextEl.querySelector('[data-registration-timer="hour"]');
         const minutesEl = contextEl.querySelector('[data-registration-timer="minutes"]');
         const secondsEl = contextEl.querySelector('[data-registration-timer="seconds"]');
-        
+
         if (!daysEl || !hoursEl || !minutesEl || !secondsEl) {
             return;
         }
@@ -846,7 +858,7 @@ class Portal {
         const update = () => {
             const now = new Date();
             let totalSeconds = Math.floor((parsed.getTime() - now.getTime()) / 1000);
-            
+
             if (totalSeconds <= 0) {
                 daysEl.textContent = '0';
                 hoursEl.textContent = '00';
@@ -863,7 +875,7 @@ class Portal {
             totalSeconds -= hours * 3600;
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
-            
+
             daysEl.textContent = String(days);
             hoursEl.textContent = String(hours).padStart(2, '0');
             minutesEl.textContent = String(minutes).padStart(2, '0');
@@ -909,7 +921,7 @@ class Portal {
      * @param {Object} announcements - Announcements data
      */
     renderRecentAnnouncements(tabPane, announcements) {
-        
+
         // update sidebar d)ata count data-announcements of is_read is false 
         const sidebarAnnouncementsCount = document.querySelectorAll('[data-announcements="counts"]');
         sidebarAnnouncementsCount.forEach(el => {
@@ -986,19 +998,19 @@ class Portal {
             //futureList = futureList.filter(session => !session.isRefunded);
             futureList.forEach(session => {
                 let text = 'No details available';
-                if(session.classId){
+                if (session.classId) {
                     const hasClassDetail = session.classDetail && Object.keys(session.classDetail).length > 0;
-                    if(hasClassDetail){
+                    if (hasClassDetail) {
                         const { classLevel = '', day = '', startTime = '', location = '', sessionName = '', currentYear = '' } = session.classDetail;
-                        if(classLevel == 'Level customizedtrack'){
+                        if (classLevel == 'Level customizedtrack') {
                             text = `Customized Track | ${sessionName} ${currentYear}`;
-                        }else{
+                        } else {
                             text = `${classLevel} | ${day} ${startTime} | ${location} | ${sessionName} ${currentYear}`;
                         }
-                    }else{
+                    } else {
                         text = 'No details available';
                     }
-                }else{
+                } else {
                     text = session.sessionName || session.classDetail?.sessionName || session.summerProgramDetail?.programName || 'No details available';
                 }
                 const div = document.createElement('div');
@@ -1103,7 +1115,7 @@ class Portal {
             hasPendingForm = allForms.some(form => !student.formCompletedList?.some(c => c.formId === form.formId));
         }
         var invoices = student.invoiceList || [];
-        if(studentData.futureSession.length > 0){
+        if (studentData.futureSession.length > 0) {
             // include future session invoices
             const futureInvoices = studentData.futureSession.flatMap(session => session.invoiceList || []);
             invoices = invoices.concat(futureInvoices);
@@ -1139,8 +1151,8 @@ class Portal {
     renderMillions(tabPane, student, millionsData) {
         const millionsText = tabPane.querySelector('.million-price-text');
         if (!millionsText) return;
-        if(!millionsData){
-           millionsData =[];
+        if (!millionsData) {
+            millionsData = [];
         }
         const entry = millionsData.find(e => e.studentName === student.studentDetail.studentName);
         const millionsCount = entry?.earnAmount || 0;
@@ -1461,166 +1473,386 @@ class Portal {
         const invoiceAccordion = tabPane.querySelector('[data-portal="invoice-form-accordian"]');
         if (!invoiceAccordion) return;
 
-        // Remove any previous content
-        invoiceAccordion.innerHTML = '';
-        
         var invoices = student.invoiceList || [];
-        if(studentData.futureSession.length > 0){
+        if (studentData.futureSession.length > 0) {
             // include future session invoices
             const futureInvoices = studentData.futureSession.flatMap(session => session.invoiceList || []);
             invoices = invoices.concat(futureInvoices);
         }
         if (!Array.isArray(invoices) || invoices.length === 0) {
-            // If no invoices, do not render the accordion, just clear
+            // If no invoices, hide the accordion
+            invoiceAccordion.style.display = 'none';
             return;
+        } else {
+            invoiceAccordion.style.display = '';
         }
 
-        // Accordion header
-        invoiceAccordion.className = 'invoice-form-accordian registration-form-accordian'; // reuse styles
-        invoiceAccordion.innerHTML = `
-            <div class="registration-form-accordion-header">
-                <div class="registration-form-title"><span>Invoices</span></div>
-                <div class="registration-form-flex-wrapper">
-                    <div class="registration-form-tag">
-                        <p class="dashboard-tag-text">${invoices.some(inv => !inv.is_completed) ? 'Needs to be completed' : 'All Paid'}</p>
-                    </div>
-                    <img loading="eager" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/66bc5bebffd8cf0e335b1d95_icon%20(2).svg" alt="" class="registration-form-toggle-icon-open" />
-                    <img loading="eager" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68778b4fa96c8f8c87733352_check_indeterminate_small.svg" alt="" class="registration-form-toggle-icon-close" />
-                </div>
-            </div>
-            <div class="registration-form-accordion-body">
-                <div class="completion-progress-div">
-                    <div class="completion-progress-flex-wrapper">
-                        <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877903fb840c5aea61921a4_clock_loader_40.svg" alt="" class="inline-block-icon" />
-                        <div class="dm-sans completion-progress"><span>Completion Progress</span></div>
-                        <div class="dm-sans medium-text-with-margin-auto"><span></span></div>
-                    </div>
-                    <div class="completion-progress-bar">
-                        <div class="progress-bar-red-fill"></div>
-                    </div>
-                    <div class="completion-percent-flex-wrapper">
-                        <div class="dm-sans bold-text-with-margin-auto"><span></span></div>
-                    </div>
-                </div>
-                <div class="required-forms-div"></div>
-            </div>
-        `;
+        // Check if the new HTML structure already exists
+        const existingBody = invoiceAccordion.querySelector('.registration-form-accordion-body');
+        const existingRequiredDiv = existingBody ? existingBody.querySelector('.required-forms-div') : null;
+        const hasNewStructure = existingRequiredDiv && existingRequiredDiv.querySelector('.invoice-info-flex-container');
 
-        // Fill in invoice data
-        const body = invoiceAccordion.querySelector('.registration-form-accordion-body');
-        const requiredDiv = body.querySelector('.required-forms-div');
-        requiredDiv.innerHTML = '';
+        if (hasNewStructure) {
+            // Update existing structure - preserve header and body, only update content
+            const body = existingBody;
+            const requiredDiv = existingRequiredDiv;
 
-        const completed = invoices.filter(inv => inv.is_completed).length;
-        const total = invoices.length;
-        const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+            // Update header tag text
+            const headerTag = invoiceAccordion.querySelector('.dashboard-tag-text');
+            if (headerTag) {
+                headerTag.textContent = invoices.some(inv => !inv.is_completed) ? 'Needs to be completed' : 'All Paid';
+            }
 
-        // Progress text
-        const progressText = body.querySelector('.medium-text-with-margin-auto span');
-        if (progressText) progressText.textContent = `${completed} of ${total} invoices complete`;
-        const percentText = body.querySelector('.bold-text-with-margin-auto span');
-        if (percentText) percentText.textContent = `${percent}%`;
-        const progressBar = body.querySelector('.progress-bar-red-fill');
-        if (progressBar) progressBar.style.width = `${percent}%`;
+            // Update progress information
+            const completed = invoices.filter(inv => inv.is_completed).length;
+            const total = invoices.length;
+            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
 
-        // List each invoice
-        invoices.forEach(inv => {
-            const div = document.createElement('div');
-            div.className = 'required-forms-flex-wrapper bluish-gray-rounded-with-mt-10';
-            const isCompleted = inv.is_completed;
-            // Action links container
-            const actionLinksContainer = document.createElement('span');
-            actionLinksContainer.style.textDecoration = 'underline';
-            if (!isCompleted && Array.isArray(inv.jotFormUrlLink)) {
-                inv.jotFormUrlLink.forEach((link, idx) => {
-                    let a;
-                    if (link.paymentType === 'card' || link.paymentType === 'us_bank_account') {
-                        a = document.createElement('a');
-                        a.href = '#';
-                        a.className = 'pay-link';
-                        a.setAttribute('data-invoice-id', inv.invoice_id);
-                        a.setAttribute('data-amount', link.amount);
-                        a.setAttribute('data-payment-link-id', link.paymentLinkId);
-                        a.setAttribute('data-title', link.title);
-                        a.setAttribute('data-payment-type', link.paymentType);
-                        a.textContent = link.title;
-                        // Add event listener for Stripe payment
-                        a.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            a.textContent = 'Processing...';
-                            if (typeof $this.initializeStripePayment === 'function') {
-                                $this.initializeStripePayment(
-                                    inv.invoice_id,
-                                    inv.invoiceName,
-                                    link.amount,
-                                    link.paymentLinkId,
-                                    a, // pass the link element
-                                    link.title,
-                                    link.paymentType,
-                                    student,
-                                    inv.paymentId
-                                );
+            const progressDiv = body.querySelector('.completion-progress-div');
+            if (progressDiv) {
+                const progressText = progressDiv.querySelector('.medium-text-with-margin-auto span');
+                if (progressText) progressText.textContent = `${completed} of ${total} invoices complete`;
+                const percentText = progressDiv.querySelector('.bold-text-with-margin-auto span');
+                if (percentText) percentText.textContent = `${percent}%`;
+                const progressBar = progressDiv.querySelector('.progress-bar-red-fill');
+                if (progressBar) progressBar.style.width = `${percent}%`;
+                // Show progress div if it was hidden
+                progressDiv.classList.remove('hide');
+            }
+
+            // Remove existing invoice-info-flex-container elements but keep the required-forms-flex-wrapper header
+            const existingInvoiceContainers = requiredDiv.querySelectorAll('.invoice-info-flex-container');
+            existingInvoiceContainers.forEach(container => container.remove());
+
+            // Show the required-forms-flex-wrapper header if it was hidden
+            const requiredFormsHeader = requiredDiv.querySelector('.required-forms-flex-wrapper');
+            if (requiredFormsHeader) {
+                requiredFormsHeader.classList.remove('hide');
+            }
+
+            // Render each invoice using the new invoice-info-flex-container structure
+            invoices.forEach(inv => {
+                const isCompleted = inv.is_completed;
+                const invoiceContainer = document.createElement('div');
+                invoiceContainer.className = 'invoice-info-flex-container';
+
+                // Left side: Invoice info
+                const leftFlex = document.createElement('div');
+                leftFlex.className = 'invoice-inner-flex';
+
+                // Icon based on completion status
+                const icon = document.createElement('img');
+                icon.loading = 'lazy';
+                if (isCompleted) {
+                    icon.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6943e4bcc4af80937f99d7d3_radio_button_checked_16dp_3A974F_FILL0_wght400_GRAD0_opsz20.svg';
+                    icon.className = 'paid-icon';
+                } else {
+                    icon.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/69439d207730a2b708fee46f_check.svg';
+                    icon.className = 'inline-block-icon';
+                }
+                leftFlex.appendChild(icon);
+
+                const invoiceInfoDiv = document.createElement('div');
+                const invoiceName = document.createElement('div');
+                invoiceName.className = 'poppins-para medium';
+                invoiceName.innerHTML = `<span>${inv.invoiceName || 'Invoice'}</span>`;
+                invoiceInfoDiv.appendChild(invoiceName);
+
+                // Invoice breakdown link (show only if not completed or if breakdown is available)
+                // Only show if "Semester Tuition" exists in breakDownList
+                const hasSemesterTuition = inv && inv.breakDownList && inv.breakDownList['Semester Tuition'] !== undefined;
+                if ((!isCompleted || inv.showBreakdown) && hasSemesterTuition) {
+                    const breakdownLink = document.createElement('a');
+                    breakdownLink.href = '#';
+                    breakdownLink.className = 'invoice-breakdown-link w-inline-block';
+                    if (isCompleted) breakdownLink.classList.add('hide');
+                    breakdownLink.innerHTML = '<div><span>Invoice Breakdown</span></div>';
+                    // Store full invoice object and studentData as data attributes for use in modal
+                    if (inv) {
+                        breakdownLink.setAttribute('data-invoice', JSON.stringify(inv));
+                        breakdownLink.setAttribute('data-student-data', JSON.stringify(studentData));
+                    }
+                    invoiceInfoDiv.appendChild(breakdownLink);
+                }
+                leftFlex.appendChild(invoiceInfoDiv);
+
+                // Right side: Payment options or status
+                const rightFlex = document.createElement('div');
+                rightFlex.className = 'invoice-inner-flex';
+
+                if (isCompleted) {
+                    // Completed state
+                    const completedTag = document.createElement('div');
+                    completedTag.className = 'invoice-completed-tag';
+                    completedTag.innerHTML = '<p class="completed-tag-text">Completed</p>';
+                    rightFlex.appendChild(completedTag);
+
+                    const paidLink = document.createElement('a');
+                    paidLink.href = '#';
+                    paidLink.className = 'invoice-card-payment-link plaid-info-icon w-inline-block';
+                    paidLink.innerHTML = '<div>Paid</div>';
+                    rightFlex.appendChild(paidLink);
+                } else {
+                    // Incomplete state
+                    const incompleteTag = document.createElement('div');
+                    incompleteTag.className = 'invoice-in-completed-tag';
+                    incompleteTag.innerHTML = '<p class="incompleted-tag-text">Incompleted</p>';
+                    //rightFlex.appendChild(incompleteTag);
+
+                    // Payment options
+                    if (Array.isArray(inv.jotFormUrlLink) && inv.jotFormUrlLink.length > 0) {
+                        // Add credit card icon image before payment links
+                        const paymentIcon = document.createElement('img');
+                        paymentIcon.loading = 'lazy';
+                        paymentIcon.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/69439e917c2bfdd47f48a943_image%20150.svg';
+                        paymentIcon.className = 'inline-block-icon';
+                        paymentIcon.alt = '';
+                        rightFlex.appendChild(paymentIcon);
+
+                        inv.jotFormUrlLink.forEach((link, idx) => {
+                            if (idx > 0) {
+                                const separator = document.createElement('img');
+                                separator.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6943df8b65a1afe5f4e5ac11__.svg';
+                                separator.loading = 'lazy';
+                                separator.className = 'line-icon';
+                                separator.alt = '';
+                                rightFlex.appendChild(separator);
                             }
+
+                            const paymentLink = document.createElement('a');
+                            paymentLink.href = '#';
+                            paymentLink.className = 'invoice-card-payment-link w-inline-block';
+
+                            if (link.paymentType === 'card' || link.paymentType === 'us_bank_account') {
+                                paymentLink.setAttribute('data-invoice-id', inv.invoice_id);
+                                paymentLink.setAttribute('data-amount', link.amount);
+                                paymentLink.setAttribute('data-payment-link-id', link.paymentLinkId);
+                                paymentLink.setAttribute('data-title', link.title);
+                                paymentLink.setAttribute('data-payment-type', link.paymentType);
+                                paymentLink.innerHTML = '<div>'+link.title+'</div>';
+
+                                // Add event listener for Stripe payment
+                                paymentLink.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    paymentLink.innerHTML = '<div>Processing...</div>';
+                                    if (typeof $this.initializeStripePayment === 'function') {
+                                        $this.initializeStripePayment(
+                                            inv.invoice_id,
+                                            inv.invoiceName,
+                                            link.amount,
+                                            link.paymentLinkId,
+                                            paymentLink,
+                                            link.title,
+                                            link.paymentType,
+                                            student,
+                                            inv.paymentId
+                                        );
+                                    }
+                                });
+                            } else if (link.paymentType === 'bank_transfer') {
+                                paymentLink.innerHTML = '<div><span>Bank Transfer</span></div>';
+                                if (link.jotFormUrl) {
+                                    paymentLink.href = link.jotFormUrl;
+                                    paymentLink.target = '_blank';
+                                }
+                            } else {
+                                paymentLink.innerHTML = '<div>Credit Card</div>';
+                                if (link.jotFormUrl) {
+                                    paymentLink.href = link.jotFormUrl;
+                                    paymentLink.target = '_blank';
+                                }
+                            }
+
+                            rightFlex.appendChild(paymentLink);
                         });
                     } else {
-                        a = document.createElement('a');
-                        a.href = link.jotFormUrl;
-                        a.target = '_blank';
-                        a.className = 'pay-link';
-                        a.textContent = link.title;
+                        // Default payment icon if no links
+                        const paymentIcon = document.createElement('img');
+                        paymentIcon.loading = 'lazy';
+                        paymentIcon.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/69439e917c2bfdd47f48a943_image%20150.svg';
+                        paymentIcon.className = 'inline-block-icon';
+                        paymentIcon.alt = '';
+                        rightFlex.appendChild(paymentIcon);
                     }
-                    actionLinksContainer.appendChild(a);
-                    // Add separator if not last
-                    if (idx < inv.jotFormUrlLink.length - 1) {
-                        actionLinksContainer.appendChild(document.createTextNode(' | '));
-                    }
-                });
-            } else if (isCompleted) {
-                actionLinksContainer.innerHTML = '<span class="invoice-paid">Paid</span>';
-            }
-            div.innerHTML = `
-                <div class="required-forms-inner-flex-wrapper">
-                    <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777aa573ccf80dbcfca9a0_svg1053.svg" alt="" class="inline-block-icon">
-                    <div>
-                        <div class="poppins-para medium"><span>${inv.invoiceName}</span></div>
-                        <div class="poppins-para dark-gray"><span>${inv.status === 'Complete' || isCompleted ? 'Paid' : 'Pending'}</span></div>
-                    </div>
-                </div>
-                <div class="required-forms-tags-wrapper">
-                    <div class="${isCompleted ? 'required-form-completed-tag' : 'required-form-in-completed-tag'}">
-                        <p class="${isCompleted ? 'completed-tag-text' : 'incompleted-tag-text'}">${isCompleted ? 'Completed' : 'Incompleted'}</p>
-                    </div>
-                    <div class="edit-form-flex-wrapper">
-                        <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777c5d76467e79b4430b3c_border_color.svg" alt="" class="inline-block-icon">
-                        <span class="action-links-placeholder"></span>
-                    </div>
-                </div>
-            `;
-            // Replace placeholder with actionLinksContainer
-            const placeholder = div.querySelector('.action-links-placeholder');
-            if (placeholder) {
-                placeholder.replaceWith(actionLinksContainer);
-            }
-            requiredDiv.appendChild(div);
-        });
+                }
 
-        // Accordion open/close logic (reuse your FAQ/registration form logic)
-        const header = invoiceAccordion.querySelector('.registration-form-accordion-header');
-        header.addEventListener('click', function () {
-            if (invoiceAccordion.classList.contains('open')) {
-                invoiceAccordion.classList.remove('open');
-                body.style.maxHeight = '0';
-            } else {
-                // Close other open accordions in this tab
-                tabPane.querySelectorAll('.registration-form-accordian.open').forEach(faq => {
-                    faq.classList.remove('open');
-                    const b = faq.querySelector('.registration-form-accordion-body');
-                    if (b) b.style.maxHeight = '0';
+                invoiceContainer.appendChild(leftFlex);
+                invoiceContainer.appendChild(rightFlex);
+                requiredDiv.appendChild(invoiceContainer);
+            });
+
+            // Accordion open/close logic - check if already attached
+            const header = invoiceAccordion.querySelector('.registration-form-accordion-header');
+            if (header && !header.hasAttribute('data-listener-attached')) {
+                header.setAttribute('data-listener-attached', 'true');
+                header.addEventListener('click', function () {
+                    if (invoiceAccordion.classList.contains('open')) {
+                        invoiceAccordion.classList.remove('open');
+                        body.style.maxHeight = '0';
+                    } else {
+                        // Close other open accordions in this tab
+                        tabPane.querySelectorAll('.registration-form-accordian.open').forEach(faq => {
+                            faq.classList.remove('open');
+                            const b = faq.querySelector('.registration-form-accordion-body');
+                            if (b) b.style.maxHeight = '0';
+                        });
+                        invoiceAccordion.classList.add('open');
+                        body.style.maxHeight = body.scrollHeight + 'px';
+                    }
                 });
-                invoiceAccordion.classList.add('open');
-                body.style.maxHeight = body.scrollHeight + 'px';
             }
-        });
+        } else {
+            // Fallback: Create structure from scratch (old behavior)
+            // Remove any previous content
+            invoiceAccordion.innerHTML = '';
+
+            // Accordion header
+            invoiceAccordion.className = 'invoice-form-accordian registration-form-accordian'; // reuse styles
+            invoiceAccordion.innerHTML = `
+        <div class="registration-form-accordion-header">
+            <div class="registration-form-title"><span>Invoices</span></div>
+            <div class="registration-form-flex-wrapper">
+                <div class="registration-form-tag">
+                    <p class="dashboard-tag-text">${invoices.some(inv => !inv.is_completed) ? 'Needs to be completed' : 'All Paid'}</p>
+                </div>
+                <img loading="eager" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/66bc5bebffd8cf0e335b1d95_icon%20(2).svg" alt="" class="registration-form-toggle-icon-open" />
+                <img loading="eager" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68778b4fa96c8f8c87733352_check_indeterminate_small.svg" alt="" class="registration-form-toggle-icon-close" />
+            </div>
+        </div>
+        <div class="registration-form-accordion-body">
+            <div class="completion-progress-div">
+                <div class="completion-progress-flex-wrapper">
+                    <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6877903fb840c5aea61921a4_clock_loader_40.svg" alt="" class="inline-block-icon" />
+                    <div class="dm-sans completion-progress"><span>Completion Progress</span></div>
+                    <div class="dm-sans medium-text-with-margin-auto"><span></span></div>
+                </div>
+                <div class="completion-progress-bar">
+                    <div class="progress-bar-red-fill"></div>
+                </div>
+                <div class="completion-percent-flex-wrapper">
+                    <div class="dm-sans bold-text-with-margin-auto"><span></span></div>
+                </div>
+            </div>
+            <div class="required-forms-div"></div>
+        </div>
+    `;
+
+            // Fill in invoice data
+            const body = invoiceAccordion.querySelector('.registration-form-accordion-body');
+            const requiredDiv = body.querySelector('.required-forms-div');
+            requiredDiv.innerHTML = '';
+
+            const completed = invoices.filter(inv => inv.is_completed).length;
+            const total = invoices.length;
+            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+            // Progress text
+            const progressText = body.querySelector('.medium-text-with-margin-auto span');
+            if (progressText) progressText.textContent = `${completed} of ${total} invoices complete`;
+            const percentText = body.querySelector('.bold-text-with-margin-auto span');
+            if (percentText) percentText.textContent = `${percent}%`;
+            const progressBar = body.querySelector('.progress-bar-red-fill');
+            if (progressBar) progressBar.style.width = `${percent}%`;
+
+            // List each invoice
+            invoices.forEach(inv => {
+                const div = document.createElement('div');
+                div.className = 'required-forms-flex-wrapper bluish-gray-rounded-with-mt-10';
+                const isCompleted = inv.is_completed;
+                // Action links container
+                const actionLinksContainer = document.createElement('span');
+                actionLinksContainer.style.textDecoration = 'underline';
+                if (!isCompleted && Array.isArray(inv.jotFormUrlLink)) {
+                    inv.jotFormUrlLink.forEach((link, idx) => {
+                        let a;
+                        if (link.paymentType === 'card' || link.paymentType === 'us_bank_account') {
+                            a = document.createElement('a');
+                            a.href = '#';
+                            a.className = 'pay-link';
+                            a.setAttribute('data-invoice-id', inv.invoice_id);
+                            a.setAttribute('data-amount', link.amount);
+                            a.setAttribute('data-payment-link-id', link.paymentLinkId);
+                            a.setAttribute('data-title', link.title);
+                            a.setAttribute('data-payment-type', link.paymentType);
+                            a.textContent = link.title;
+                            // Add event listener for Stripe payment
+                            a.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                a.textContent = 'Processing...';
+                                if (typeof $this.initializeStripePayment === 'function') {
+                                    $this.initializeStripePayment(
+                                        inv.invoice_id,
+                                        inv.invoiceName,
+                                        link.amount,
+                                        link.paymentLinkId,
+                                        a, // pass the link element
+                                        link.title,
+                                        link.paymentType,
+                                        student,
+                                        inv.paymentId
+                                    );
+                                }
+                            });
+                        } else {
+                            a = document.createElement('a');
+                            a.href = link.jotFormUrl;
+                            a.target = '_blank';
+                            a.className = 'pay-link';
+                            a.textContent = link.title;
+                        }
+                        actionLinksContainer.appendChild(a);
+                        // Add separator if not last
+                        if (idx < inv.jotFormUrlLink.length - 1) {
+                            actionLinksContainer.appendChild(document.createTextNode(' | '));
+                        }
+                    });
+                } else if (isCompleted) {
+                    actionLinksContainer.innerHTML = '<span class="invoice-paid">Paid</span>';
+                }
+                div.innerHTML = `
+            <div class="required-forms-inner-flex-wrapper">
+                <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777aa573ccf80dbcfca9a0_svg1053.svg" alt="" class="inline-block-icon">
+                <div>
+                    <div class="poppins-para medium"><span>${inv.invoiceName}</span></div>
+                    <div class="poppins-para dark-gray"><span>${inv.status === 'Complete' || isCompleted ? 'Paid' : 'Pending'}</span></div>
+                </div>
+            </div>
+            <div class="required-forms-tags-wrapper">
+                <div class="${isCompleted ? 'required-form-completed-tag' : 'required-form-in-completed-tag'}">
+                    <p class="${isCompleted ? 'completed-tag-text' : 'incompleted-tag-text'}">${isCompleted ? 'Completed' : 'Incompleted'}</p>
+                </div>
+                <div class="edit-form-flex-wrapper">
+                    <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777c5d76467e79b4430b3c_border_color.svg" alt="" class="inline-block-icon">
+                    <span class="action-links-placeholder"></span>
+                </div>
+            </div>
+        `;
+                // Replace placeholder with actionLinksContainer
+                const placeholder = div.querySelector('.action-links-placeholder');
+                if (placeholder) {
+                    placeholder.replaceWith(actionLinksContainer);
+                }
+                requiredDiv.appendChild(div);
+            });
+
+            // Accordion open/close logic (reuse your FAQ/registration form logic)
+            const header = invoiceAccordion.querySelector('.registration-form-accordion-header');
+            header.addEventListener('click', function () {
+                if (invoiceAccordion.classList.contains('open')) {
+                    invoiceAccordion.classList.remove('open');
+                    body.style.maxHeight = '0';
+                } else {
+                    // Close other open accordions in this tab
+                    tabPane.querySelectorAll('.registration-form-accordian.open').forEach(faq => {
+                        faq.classList.remove('open');
+                        const b = faq.querySelector('.registration-form-accordion-body');
+                        if (b) b.style.maxHeight = '0';
+                    });
+                    invoiceAccordion.classList.add('open');
+                    body.style.maxHeight = body.scrollHeight + 'px';
+                }
+            });
+        }
     }
 
     /**
@@ -1634,6 +1866,159 @@ class Portal {
             failedDiv.className = 'notification-failed-invoice';
             failedDiv.innerHTML = '<span>Some invoices have failed payments. Please pay again.</span>';
             tabPane.prepend(failedDiv);
+        }
+    }
+
+    /**
+     * Shows invoice breakdown modal and sets up close functionality
+     * @param {HTMLElement} modal - The invoice breakdown modal element
+     * @param {Object} invoice - Invoice data to display
+     */
+    showInvoiceBreakdownModal(modal, invoice, studentData) {
+        var $this = this;
+        if (!modal) return;
+
+        // Don't show modal if "Semester Tuition" is not available
+        if (!invoice || !invoice.breakDownList || invoice.breakDownList['Semester Tuition'] === undefined) {
+            return;
+        }
+
+        // Update modal content with invoice breakdown data
+        if (invoice && invoice.breakDownList) {
+            const breakdown = invoice.breakDownList;
+
+            // Format currency helper
+            const formatCurrency = (amount) => {
+                const num = parseFloat(amount) || 0;
+                const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
+                return `${sign}$${Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            };
+
+            // Update Semester Tuition
+            const semesterTuitionEl = modal.querySelector('[invoice-breakdown-data="SemesterTuition"]');
+            if (semesterTuitionEl && breakdown['Semester Tuition'] !== undefined) {
+                semesterTuitionEl.textContent = formatCurrency(breakdown['Semester Tuition']);
+                if(breakdown['Semester Tuition'] == 0){
+                    semesterTuitionEl.parentElement.style.display = 'none';
+                } else {
+                    semesterTuitionEl.parentElement.style.display = 'flex';
+                }
+            }
+
+            // Update Early Bird
+            const earlyBirdEl = modal.querySelector('[invoice-breakdown-data="EarlyBird"]');
+            if (earlyBirdEl && breakdown['Early Bird'] !== undefined) {
+                earlyBirdEl.textContent = formatCurrency(breakdown['Early Bird']);
+                if(breakdown['Early Bird'] == 0){
+                    earlyBirdEl.parentElement.style.display = 'none';
+                } else {
+                    earlyBirdEl.parentElement.style.display = 'flex';
+                }
+            }
+
+            // Update New Student Fee
+            const newStudentFeeEl = modal.querySelector('[invoice-breakdown-data="NewStudentFee"]');
+            if (newStudentFeeEl && breakdown['New Student Fee'] !== undefined) {
+                newStudentFeeEl.textContent = formatCurrency(breakdown['New Student Fee']);
+                if(breakdown['New Student Fee'] == 0){
+                    newStudentFeeEl.parentElement.style.display = 'none';
+                } else {
+                    newStudentFeeEl.parentElement.style.display = 'flex';
+                }
+            }
+
+            // invoice-breakdown-data="sibling-discount"
+            const siblingDiscountEl = modal.querySelector('[invoice-breakdown-data="sibling-discount"]');
+            if (siblingDiscountEl && breakdown['Sibling Discount'] !== undefined) {
+                siblingDiscountEl.textContent = formatCurrency(breakdown['Sibling Discount']);
+                if(breakdown['Sibling Discount'] == 0){
+                    siblingDiscountEl.parentElement.style.display = 'none';
+                } else {
+                    siblingDiscountEl.parentElement.style.display = 'flex';
+                }
+            }
+
+
+            // Update Deposit Title with date
+            const depositTitleEl = modal.querySelector('[invoice-breakdown-data="DepositTitle"]');
+            if (depositTitleEl && breakdown['Deposit'] !== undefined) {
+                let depositDate = '';
+                // Get date from currentSession.createdOn if available
+                if (studentData && studentData.currentSession && studentData.currentSession.length > 0) {
+                    const currentSession = studentData.currentSession[0];
+                    if (currentSession.createdOn) {
+                        try {
+                            const date = new Date(currentSession.createdOn);
+                            depositDate = date.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit'
+                            });
+                        } catch (e) {
+                            console.error('Error parsing date:', e);
+                        }
+                    }
+                }
+                depositTitleEl.textContent = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
+                if(breakdown['Deposit'] == 0){
+                    depositTitleEl.parentElement.style.display = 'none';
+                } else {
+                    depositTitleEl.parentElement.style.display = 'flex';
+                }
+            }
+
+            // Update Deposit amount
+            const depositEl = modal.querySelector('[invoice-breakdown-data="Deposit"]');
+            if (depositEl && breakdown['Deposit'] !== undefined) {
+                depositEl.textContent = formatCurrency(-Math.abs(breakdown['Deposit'])); // Always show as negative
+            }
+
+            // Calculate and update remaining balance
+            const remainingBalanceEl = modal.querySelector('[data-cart-total="cart-total-price"]');
+            if (remainingBalanceEl) {
+                let total = 0;
+                if (breakdown['Semester Tuition'] !== undefined) total += breakdown['Semester Tuition'];
+                if (breakdown['Early Bird'] !== undefined) total += breakdown['Early Bird'];
+                if (breakdown['New Student Fee'] !== undefined) total += breakdown['New Student Fee'];
+                if (breakdown['Sibling Discount'] !== undefined) total += breakdown['Sibling Discount'];
+                if (breakdown['Deposit'] !== undefined) total -= Math.abs(breakdown['Deposit']); // Subtract deposit
+
+                remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;
+            }
+        }
+
+        // Show the modal
+        this.showModal(modal);
+
+        // Set up close functionality if not already set up
+        if (!modal.hasAttribute('data-close-setup')) {
+            modal.setAttribute('data-close-setup', 'true');
+
+            // Close on background click
+            const modalBg = modal.querySelector('.invoice-breakdown-modal-bg');
+            if (modalBg) {
+                modalBg.addEventListener('click', () => {
+                    $this.hideModal(modal);
+                });
+            }
+
+            // Close on close button click
+            const closeBtn = modal.querySelector('.upsell-buy-now-close-link');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    $this.hideModal(modal);
+                });
+            }
+
+            // Close on Escape key
+            const handleEscape = (e) => {
+                if (e.key === 'Escape' && modal.classList.contains('show')) {
+                    $this.hideModal(modal);
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
         }
     }
 
@@ -1744,23 +2129,23 @@ class Portal {
                             const formDiv = document.createElement('div');
                             formDiv.className = 'required-forms-flex-wrapper bluish-gray-rounded-with-mt-10';
                             formDiv.innerHTML = `
-                                <div class="required-forms-inner-flex-wrapper">
-                                    <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777aa573ccf80dbcfca9a0_svg1053.svg" alt="" class="inline-block-icon">
-                                    <div>
-                                        <div class="poppins-para medium"><span>${form.name}</span></div>
-                                        <div class="poppins-para dark-gray"><span>Required for program enrollment</span></div>
-                                    </div>
-                                </div>
-                                <div class="required-forms-tags-wrapper">
-                                    <div class="${isCompleted ? 'required-form-completed-tag' : 'required-form-in-completed-tag'}">
-                                        <p class="${isCompleted ? 'completed-tag-text' : 'incompleted-tag-text'}">${isCompleted ? 'Completed' : 'Incompleted'}</p>
-                                    </div>
-                                    <div class="edit-form-flex-wrapper">
-                                        <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777c5d76467e79b4430b3c_border_color.svg" alt="" class="inline-block-icon">
-                                        <a href="${formLinkHref}" target="_blank" class="${linkClass}" style="text-decoration:underline;">${actionText}</a>
-                                    </div>
-                                </div>
-                            `;
+                        <div class="required-forms-inner-flex-wrapper">
+                            <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777aa573ccf80dbcfca9a0_svg1053.svg" alt="" class="inline-block-icon">
+                            <div>
+                                <div class="poppins-para medium"><span>${form.name}</span></div>
+                                <div class="poppins-para dark-gray"><span>Required for program enrollment</span></div>
+                            </div>
+                        </div>
+                        <div class="required-forms-tags-wrapper">
+                            <div class="${isCompleted ? 'required-form-completed-tag' : 'required-form-in-completed-tag'}">
+                                <p class="${isCompleted ? 'completed-tag-text' : 'incompleted-tag-text'}">${isCompleted ? 'Completed' : 'Incompleted'}</p>
+                            </div>
+                            <div class="edit-form-flex-wrapper">
+                                <img loading="lazy" src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68777c5d76467e79b4430b3c_border_color.svg" alt="" class="inline-block-icon">
+                                <a href="${formLinkHref}" target="_blank" class="${linkClass}" style="text-decoration:underline;">${actionText}</a>
+                            </div>
+                        </div>
+                    `;
                             requiredFormsDiv.appendChild(formDiv);
                         });
                     }
@@ -1824,7 +2209,7 @@ class Portal {
         }
         var xhr = new XMLHttpRequest()
         var $this = this;
-        xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutUrlForInvoice", true)
+        xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice", true)
         xhr.withCredentials = false
         xhr.send(JSON.stringify(data))
         xhr.onload = function () {
@@ -1901,6 +2286,7 @@ class Portal {
      * Initializes invoice accordion functionality
      */
     initializeInvoiceAccordion() {
+        var $this = this;
         const invoiceItems = document.querySelectorAll('.invoice-form-accordian');
 
         invoiceItems.forEach((item, index) => {
@@ -1923,6 +2309,45 @@ class Portal {
                     body.style.maxHeight = body.scrollHeight + 'px';
                 }
             });
+        });
+
+        // Set up event delegation for invoice breakdown links
+        // This handles both existing HTML links and dynamically created ones
+        document.addEventListener('click', function (e) {
+            const breakdownLink = e.target.closest('.invoice-breakdown-link');
+            if (breakdownLink) {
+                e.preventDefault();
+                const modal = document.getElementById('invoice-breakdown-modal');
+                if (modal) {
+                    // Get full invoice and studentData from data attributes
+                    let invoice = null;
+                    let studentData = null;
+
+                    const invoiceDataStr = breakdownLink.getAttribute('data-invoice');
+                    const studentDataStr = breakdownLink.getAttribute('data-student-data');
+
+                    if (invoiceDataStr) {
+                        try {
+                            invoice = JSON.parse(invoiceDataStr);
+                        } catch (e) {
+                            console.error('Error parsing invoice data:', e);
+                        }
+                    }
+
+                    if (studentDataStr) {
+                        try {
+                            studentData = JSON.parse(studentDataStr);
+                        } catch (e) {
+                            console.error('Error parsing student data:', e);
+                        }
+                    }
+
+                    // Only show modal if "Semester Tuition" exists in breakDownList
+                    if (invoice && invoice.breakDownList && invoice.breakDownList['Semester Tuition'] !== undefined) {
+                        $this.showInvoiceBreakdownModal(modal, invoice, studentData);
+                    }
+                }
+            }
         });
 
         // close event lightbox
