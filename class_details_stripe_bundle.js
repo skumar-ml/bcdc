@@ -2788,11 +2788,13 @@ class classDetailsStripe extends parentLogin {
   }
   // display Original Price 
   updateOriginPrice() {
-    const container = document.querySelector('[data-upsell="original-tution-fee"]');
-    if (!container) return;
+    const container = document.querySelectorAll('[data-upsell="original-tution-fee"]');
+    if (container.length === 0) return;
 
     // Clear existing content
-    container.innerHTML = "";
+    container.forEach(el => {
+      el.innerHTML = "";
+    });
 
     // Always show core program first if selected
     const selected = [...this.$selectedProgram];
@@ -2818,7 +2820,9 @@ class classDetailsStripe extends parentLogin {
       priceWrap.appendChild(price);
       grid.appendChild(label);
       grid.appendChild(priceWrap);
-      container.appendChild(grid);
+      container.forEach(el => {
+        el.appendChild(grid);
+      });
       tuitionTotal += Number(program.disc_amount) || 0;
     });
 
@@ -2832,7 +2836,9 @@ class classDetailsStripe extends parentLogin {
     totalWrap.appendChild(totalPrice);
     totalGrid.appendChild(totalLabel);
     totalGrid.appendChild(totalWrap);
-    container.appendChild(totalGrid);
+    container.forEach(el => {
+      el.appendChild(totalGrid);
+    });
 
     // New Student Fee (if not previous student)
     if (!this.$isPrevStudent) {
@@ -2845,7 +2851,9 @@ class classDetailsStripe extends parentLogin {
       feeWrap.appendChild(feePrice);
       feeGrid.appendChild(feeLabel);
       feeGrid.appendChild(feeWrap);
-      container.appendChild(feeGrid);
+      container.forEach(el => {
+        el.appendChild(feeGrid);
+      });
     }
   }
   updateCountdown(preRegistrationEndDate) {
