@@ -130,12 +130,8 @@ class RewardStore {
                 if (!container) return;
                 container.innerHTML = '';
                 this.$items.forEach(item => {
-                    const imageUrl = item.imageUrl && item.imageUrl.trim() !== ''
-                        ? item.imageUrl
-                        : 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6874f05a6a3c8b52a411757b_Frame%20427320224%20(7).png';
                     const itemHtml = `
                             <div class="portal-white-banner-reward">
-                                <img loading="lazy" src="${imageUrl}" alt="" class="reward-card-image">
                                 <div class="reward-card-info">
                                     <p class="dm-sans reward">${item.itemName || ''}</p>
                                     <p class="poppins-para">${item.description || ''}</p>
