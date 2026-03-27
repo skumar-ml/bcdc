@@ -47,7 +47,7 @@ class RewardStore {
                     }
 
                     const normalizedBase = apiBaseURL.endsWith('/') ? apiBaseURL : `${apiBaseURL}/`;
-                    const requestUrl = `${normalizedBase}getMillionsTransactionData/${encodeURIComponent(memberId)}`;
+                    const requestUrl = `${normalizedBase}getMillionsStoreDetails/${encodeURIComponent(memberId)}`;
                     console.log('[RewardStore] Fetching store data from:', requestUrl);
 
                     const response = await fetch(requestUrl);
