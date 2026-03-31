@@ -40,12 +40,23 @@ class RewardStore {
             // Fetches millions transaction data and reward items from the API
             async fetchData() {
                 try {
-                    const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
+                    const apiBaseURL = (this.data && this.data.apiBaseURL ? this.data.apiBaseURL : '').trim();
+                    const memberId = this.data && this.data.memberId ? this.data.memberId : '';
+                    if (!apiBaseURL || !memberId) {
+                        throw new Error(`Missing apiBaseURL/memberId. apiBaseURL="${apiBaseURL}", memberId="${memberId}"`);
+                    }
+
+                    const normalizedBase = apiBaseURL.endsWith('/') ? apiBaseURL : `${apiBaseURL}/`;
+                    const requestUrl = `https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/getMillionsStoreDetails/${encodeURIComponent(memberId)}`;
+                    console.log('[RewardStore] Fetching store data from:', requestUrl);
+
+                    const response = await fetch(requestUrl);
                     if (!response.ok) {
                       this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
                       this.spinner.style.display = 'none';
                       this.noRecordDiv.style.display = 'block'; // Hide no record div initially
-                     return []
+                     console.error('[RewardStore] Non-OK response:', response.status, response.statusText);
+                     return { millions_transactions: [], items: [] }
                     };
 
                     const apiData = await response.json();
@@ -55,6 +66,7 @@ class RewardStore {
                      this.spinner.style.display = 'none';
                      this.noRecordDiv.style.display = 'block'; // Hide no record div initially
                     console.error('Fetch error:', error);
+                    return { millions_transactions: [], items: [] };
                 }
             }
             // Formats millions amounts with commas
@@ -129,19 +141,23 @@ class RewardStore {
                 const container = document.querySelector('[data-rewards="items"]');
                 if (!container) return;
                 container.innerHTML = '';
-                this.$items.forEach(item => {
-                    const imageUrl = item.imageUrl && item.imageUrl.trim() !== ''
-                        ? item.imageUrl
-                        : 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/6874f05a6a3c8b52a411757b_Frame%20427320224%20(7).png';
+                const sortedItems = [...this.$items].sort((a, b) => {
+                    const amountA = Number(a.amount) || 0;
+                    const amountB = Number(b.amount) || 0;
+                    return amountA - amountB;
+                });
+
+                sortedItems.forEach(item => {
+                    const amount = Number(item.amount) || 0;
+                    const unitLabel = amount === 1 ? 'million' : 'millions';
                     const itemHtml = `
                             <div class="portal-white-banner-reward">
-                                <img loading="lazy" src="${imageUrl}" alt="" class="reward-card-image">
                                 <div class="reward-card-info">
                                     <p class="dm-sans reward">${item.itemName || ''}</p>
                                     <p class="poppins-para">${item.description || ''}</p>
                                     <div class="reward-cost-wrapper">
                                         <div class="portal-flex-wrapper">
-                                            <div class="million-price-text reward">${this.formatMillions(item.amount)} <span class="million-text-gray reward">million</span></div>
+                                            <div class="million-price-text reward">${this.formatMillions(amount)} <span class="million-text-gray reward">${unitLabel}</span></div>
                                         </div>
                                     </div>
                                 </div>
