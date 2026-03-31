@@ -55,10 +55,11 @@ class TrialClassDetails {
 
             if (data.data && data.data.length > 0) {
                 this.totalAppointmentTypes = data.count || data.data.length;
-                this.displayAppointmentTypes(data.data);
+                const sorted = this.sortAppointmentTypesByDateAscending(data.data);
+                this.displayAppointmentTypes(sorted);
                 this.displayPagination();
                 // Select first appointment type by default
-                this.selectAppointmentType(data.data[0]);
+                this.selectAppointmentType(sorted[0]);
             } else {
                 this.showNoRecordsMessage('No trial class appointments found');
             }
@@ -98,6 +99,25 @@ class TrialClassDetails {
             console.error('Error fetching trial class details:', error);
             throw error;
         }
+    }
+
+    /**
+     * Sorts appointment types by scheduled date/time ascending (earliest first).
+     * @param {Array} appointmentTypes
+     * @returns {Array}
+     */
+    sortAppointmentTypesByDateAscending(appointmentTypes) {
+        if (!appointmentTypes || appointmentTypes.length === 0) {
+            return appointmentTypes || [];
+        }
+        return [...appointmentTypes].sort((a, b) => {
+            const scheduledTimestampA = Date.parse(`${a.scheduledDate} ${a.scheduledTime || ''}`);
+            const scheduledTimestampB = Date.parse(`${b.scheduledDate} ${b.scheduledTime || ''}`);
+            // Keep malformed dates at the end instead of top.
+            const normalizedTimestampA = Number.isNaN(scheduledTimestampA) ? Number.POSITIVE_INFINITY : scheduledTimestampA;
+            const normalizedTimestampB = Number.isNaN(scheduledTimestampB) ? Number.POSITIVE_INFINITY : scheduledTimestampB;
+            return normalizedTimestampA - normalizedTimestampB;
+        });
     }
 
     /**
@@ -877,10 +897,11 @@ class TrialClassDetails {
             const data = await this.fetchTrialClassDetails(this.currentPage * this.limit, this.limit);
 
             if (data.data && data.data.length > 0) {
-                this.displayAppointmentTypes(data.data);
+                const sorted = this.sortAppointmentTypesByDateAscending(data.data);
+                this.displayAppointmentTypes(sorted);
                 this.displayPagination();
                 // Select first appointment type on the new page
-                this.selectAppointmentType(data.data[0]);
+                this.selectAppointmentType(sorted[0]);
             } else {
                 this.showNoRecordsMessage('No appointment types found on this page');
             }
