@@ -149,7 +149,7 @@ class RewardStore {
 
                 sortedItems.forEach(item => {
                     const amount = Number(item.amount) || 0;
-                    const unitLabel = amount > 1 ? 'millions' : 'million';
+                    const unitLabel = amount === 1 ? 'million' : 'millions';
                     const itemHtml = `
                             <div class="portal-white-banner-reward">
                                 <div class="reward-card-info">
