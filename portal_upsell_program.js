@@ -471,11 +471,20 @@ class DisplaySuppProgram {
       }
       //finding unique value and sorting by firstName
       const filterData = data
-        .filter(
-          (item, index, self) =>
+        .filter((item, index, self) => {
+          const dedupeKey = item.studentEmail && item.studentEmail.trim()
+            ? `email:${item.studentEmail.trim().toLowerCase()}`
+            : `payment:${item.paymentId}`;
+          return (
             index ===
-            self.findIndex((obj) => obj.studentEmail === item.studentEmail)
-        )
+            self.findIndex((obj) => {
+              const objKey = obj.studentEmail && obj.studentEmail.trim()
+                ? `email:${obj.studentEmail.trim().toLowerCase()}`
+                : `payment:${obj.paymentId}`;
+              return objKey === dedupeKey;
+            })
+          );
+        })
         .sort(function (a, b) {
           return a.studentName.trim().localeCompare(b.studentName.trim());
         });
