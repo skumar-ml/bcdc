@@ -141,7 +141,15 @@ class RewardStore {
                 const container = document.querySelector('[data-rewards="items"]');
                 if (!container) return;
                 container.innerHTML = '';
-                this.$items.forEach(item => {
+                const sortedItems = [...this.$items].sort((a, b) => {
+                    const amountA = Number(a.amount) || 0;
+                    const amountB = Number(b.amount) || 0;
+                    return amountA - amountB;
+                });
+
+                sortedItems.forEach(item => {
+                    const amount = Number(item.amount) || 0;
+                    const unitLabel = amount > 1 ? 'millions' : 'million';
                     const itemHtml = `
                             <div class="portal-white-banner-reward">
                                 <div class="reward-card-info">
@@ -149,7 +157,7 @@ class RewardStore {
                                     <p class="poppins-para">${item.description || ''}</p>
                                     <div class="reward-cost-wrapper">
                                         <div class="portal-flex-wrapper">
-                                            <div class="million-price-text reward">${this.formatMillions(item.amount)} <span class="million-text-gray reward">million</span></div>
+                                            <div class="million-price-text reward">${this.formatMillions(amount)} <span class="million-text-gray reward">${unitLabel}</span></div>
                                         </div>
                                     </div>
                                 </div>
