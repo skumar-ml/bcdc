@@ -12,6 +12,7 @@ class TrialClassDetails {
     currentPage = 0;
     limit = 5; // Number of appointment types per page
     totalAppointmentTypes = 0;
+    showPastClasses = false;
     currentStudentsList = [];
     // Local variable to track attendance changes
     localAttendanceChanges = new Map(); // Map<studentId, boolean>
@@ -1043,6 +1044,36 @@ class TrialClassDetails {
         if (markAttendanceButton) {
             markAttendanceButton.style.display = 'none';
         }
+
+        // Setup "Show past classes" radio toggle behavior
+        this.setupPastClassesToggle();
+    }
+
+    setupPastClassesToggle() {
+        const toggleWrapper = document.querySelector('.trial-class_toogle');
+        if (!toggleWrapper) {
+            return;
+        }
+
+        const pastClassesRadio = toggleWrapper.querySelector('input[type="radio"]');
+        if (!pastClassesRadio) {
+            return;
+        }
+
+        const updateToggleUI = () => {
+            toggleWrapper.classList.remove('selected-border-red', 'not-selected-white');
+            toggleWrapper.classList.add(this.showPastClasses ? 'selected-border-red' : 'not-selected-white');
+            pastClassesRadio.checked = this.showPastClasses;
+        };
+
+        const toggleSelection = (event) => {
+            event.preventDefault();
+            this.showPastClasses = !this.showPastClasses;
+            updateToggleUI();
+        };
+
+        updateToggleUI();
+        toggleWrapper.addEventListener('click', toggleSelection);
     }
     showModal(modal) {
         if (modal) {
