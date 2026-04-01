@@ -81,7 +81,8 @@ class TrialClassDetails {
      */
     async fetchTrialClassDetails(offset = 0, limit = 5) {
         try {
-            const url = `${this.data.apiBaseURL}getTrialClassDetails/${this.data.memberId}?offset=${offset}&limit=${limit}`;
+            const pastclasses = this.showPastClasses ? 1 : 0;
+            const url = `${this.data.apiBaseURL}getTrialClassDetails/${this.data.memberId}?offset=${offset}&limit=${limit}&pastclasses=${pastclasses}`;
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -1070,6 +1071,8 @@ class TrialClassDetails {
             event.preventDefault();
             this.showPastClasses = !this.showPastClasses;
             updateToggleUI();
+            this.currentPage = 0;
+            this.render();
         };
 
         updateToggleUI();
