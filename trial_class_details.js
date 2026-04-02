@@ -1056,7 +1056,9 @@ class TrialClassDetails {
             return;
         }
 
-        const pastClassesRadio = toggleWrapper.querySelector('input[type="radio"]');
+        const pastClassesRadio =
+            document.getElementById('tc_attendance_radio') ||
+            toggleWrapper.querySelector('input[type="radio"]');
         if (!pastClassesRadio) {
             return;
         }
@@ -1064,11 +1066,18 @@ class TrialClassDetails {
         const updateToggleUI = () => {
             toggleWrapper.classList.remove('selected-border-red', 'not-selected-white');
             toggleWrapper.classList.add(this.showPastClasses ? 'selected-border-red' : 'not-selected-white');
-            pastClassesRadio.checked = this.showPastClasses;
+            const nextChecked = !!this.showPastClasses;
+            const prevChecked = pastClassesRadio.checked;
+            pastClassesRadio.checked = nextChecked;
+
+            if (prevChecked !== nextChecked) {
+                pastClassesRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         };
 
         const toggleSelection = (event) => {
             event.preventDefault();
+            event.stopPropagation();
             this.showPastClasses = !this.showPastClasses;
             updateToggleUI();
             this.currentPage = 0;
@@ -1076,7 +1085,19 @@ class TrialClassDetails {
         };
 
         updateToggleUI();
-        toggleWrapper.addEventListener('click', toggleSelection);
+        toggleWrapper.addEventListener('click', (event) => {
+            if (event.target === pastClassesRadio) return;
+            toggleSelection(event);
+        });
+
+        pastClassesRadio.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        pastClassesRadio.addEventListener('click', (event) => {
+            toggleSelection(event);
+        });
     }
     showModal(modal) {
         if (modal) {
