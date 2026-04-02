@@ -1056,10 +1056,14 @@ class TrialClassDetails {
             return;
         }
 
+        const pastClassesRadioEl = document.getElementById('tc_attendance_radio');
         const pastClassesRadio =
-            document.getElementById('tc_attendance_radio') ||
-            toggleWrapper.querySelector('input[type="radio"]');
-        if (!pastClassesRadio) {
+            (pastClassesRadioEl
+                ? pastClassesRadioEl.tagName === 'INPUT'
+                    ? pastClassesRadioEl
+                    : pastClassesRadioEl.querySelector('input[type="radio"]')
+                : null) || toggleWrapper.querySelector('input[type="radio"]');
+        if (!pastClassesRadio || pastClassesRadio.tagName !== 'INPUT') {
             return;
         }
 
@@ -1067,27 +1071,36 @@ class TrialClassDetails {
             toggleWrapper.classList.remove('selected-border-red', 'not-selected-white');
             toggleWrapper.classList.add(this.showPastClasses ? 'selected-border-red' : 'not-selected-white');
             const nextChecked = !!this.showPastClasses;
-            const prevChecked = pastClassesRadio.checked;
-            pastClassesRadio.checked = nextChecked;
 
-            if (prevChecked !== nextChecked) {
-                pastClassesRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            pastClassesRadio.checked = nextChecked;
+            if (nextChecked) {
+                pastClassesRadio.setAttribute('checked', 'checked');
+            } else {
+                pastClassesRadio.removeAttribute('checked');
             }
+            pastClassesRadio.setAttribute('aria-checked', nextChecked ? 'true' : 'false');
+            const radioLabel = pastClassesRadio.closest('label');
+            if (radioLabel) {
+                radioLabel.classList.toggle('w--redirected-checked', nextChecked);
+            }
+
+            pastClassesRadio.dispatchEvent(new Event('change', { bubbles: true }));
         };
 
-        const toggleSelection = (event) => {
+        const toggleSelection = async (event) => {
             event.preventDefault();
             event.stopPropagation();
             this.showPastClasses = !this.showPastClasses;
             updateToggleUI();
             this.currentPage = 0;
-            this.render();
+            await this.render();
+            updateToggleUI();
         };
 
         updateToggleUI();
-        toggleWrapper.addEventListener('click', (event) => {
+        toggleWrapper.addEventListener('click', async (event) => {
             if (event.target === pastClassesRadio) return;
-            toggleSelection(event);
+            await toggleSelection(event);
         });
 
         pastClassesRadio.addEventListener('mousedown', (event) => {
@@ -1095,8 +1108,8 @@ class TrialClassDetails {
             event.stopPropagation();
         });
 
-        pastClassesRadio.addEventListener('click', (event) => {
-            toggleSelection(event);
+        pastClassesRadio.addEventListener('click', async (event) => {
+            await toggleSelection(event);
         });
     }
     showModal(modal) {
