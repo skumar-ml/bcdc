@@ -1046,16 +1046,24 @@ class TrialClassDetails {
             markAttendanceButton.style.display = 'none';
         }
 
-        // Setup "Show past classes" radio toggle behavior
+        // Initialize past/upcoming classes toggle:
+        // Handles UI interaction, updates `showPastClasses`, resets pagination,
+        // and re-renders the list based on the selected filter.
         this.setupPastClassesToggle();
     }
 
+      /**
+     * Sets up the "past classes" toggle (`.trial-class_toogle` / `#tc_attendance_radio`).
+     * Handles wrapper and radio interactions, keeps UI and accessibility state in sync,
+     * and refetches data when toggled.
+     */
     setupPastClassesToggle() {
         const toggleWrapper = document.querySelector('.trial-class_toogle');
         if (!toggleWrapper) {
             return;
         }
 
+        // `#tc_attendance_radio` id that is the radio input element
         const pastClassesRadioEl = document.getElementById('tc_attendance_radio');
         const pastClassesRadio =
             (pastClassesRadioEl
@@ -1067,6 +1075,7 @@ class TrialClassDetails {
             return;
         }
 
+        // Sync UI state (styles, checked state, and accessibility attributes)
         const updateToggleUI = () => {
             toggleWrapper.classList.remove('selected-border-red', 'not-selected-white');
             toggleWrapper.classList.add(this.showPastClasses ? 'selected-border-red' : 'not-selected-white');
@@ -1084,9 +1093,11 @@ class TrialClassDetails {
                 radioLabel.classList.toggle('w--redirected-checked', nextChecked);
             }
 
+        // Dispatch a change event so external listeners can react to the updated toggle/UI state.
             pastClassesRadio.dispatchEvent(new Event('change', { bubbles: true }));
         };
 
+        // Flip filter, re-render the list, then sync UI again after async render completes.
         const toggleSelection = async (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -1097,17 +1108,21 @@ class TrialClassDetails {
             updateToggleUI();
         };
 
+    // Initialize UI state before any user interaction.
         updateToggleUI();
+        // Clicks on wrapper padding (not on the input) still toggle; radio clicks are handled separately.
         toggleWrapper.addEventListener('click', async (event) => {
             if (event.target === pastClassesRadio) return;
             await toggleSelection(event);
         });
 
+        // Suppress native radio focus/selection so we fully control checked state via `toggleSelection`.
         pastClassesRadio.addEventListener('mousedown', (event) => {
             event.preventDefault();
             event.stopPropagation();
         });
 
+        // Direct clicks on the radio input run the same toggle path as wrapper clicks.
         pastClassesRadio.addEventListener('click', async (event) => {
             await toggleSelection(event);
         });
