@@ -12,6 +12,7 @@ class TrialClassDetails {
     currentPage = 0;
     limit = 5; // Number of appointment types per page
     totalAppointmentTypes = 0;
+    showPastClasses = false;
     currentStudentsList = [];
     // Local variable to track attendance changes
     localAttendanceChanges = new Map(); // Map<studentId, boolean>
@@ -80,7 +81,8 @@ class TrialClassDetails {
      */
     async fetchTrialClassDetails(offset = 0, limit = 5) {
         try {
-            const url = `${this.data.apiBaseURL}getTrialClassDetails/${this.data.memberId}?offset=${offset}&limit=${limit}`;
+            const pastclasses = this.showPastClasses ? 1 : 0;
+            const url = `${this.data.apiBaseURL}getTrialClassDetails/${this.data.memberId}?offset=${offset}&limit=${limit}&pastclasses=${pastclasses}`;
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -1043,6 +1045,87 @@ class TrialClassDetails {
         if (markAttendanceButton) {
             markAttendanceButton.style.display = 'none';
         }
+
+        // Initialize past/upcoming classes toggle:
+        // Handles UI interaction, updates `showPastClasses`, resets pagination,
+        // and re-renders the list based on the selected filter.
+        this.setupPastClassesToggle();
+    }
+
+      /**
+     * Sets up the "past classes" toggle (`.trial-class_toogle` / `#tc_attendance_radio`).
+     * Handles wrapper and radio interactions, keeps UI and accessibility state in sync,
+     * and refetches data when toggled.
+     */
+    setupPastClassesToggle() {
+        const toggleWrapper = document.querySelector('.trial-class_toogle');
+        if (!toggleWrapper) {
+            return;
+        }
+
+        // `#tc_attendance_radio` id that is the radio input element
+        const pastClassesRadioEl = document.getElementById('tc_attendance_radio');
+        const pastClassesRadio =
+            (pastClassesRadioEl
+                ? pastClassesRadioEl.tagName === 'INPUT'
+                    ? pastClassesRadioEl
+                    : pastClassesRadioEl.querySelector('input[type="radio"]')
+                : null) || toggleWrapper.querySelector('input[type="radio"]');
+        if (!pastClassesRadio || pastClassesRadio.tagName !== 'INPUT') {
+            return;
+        }
+
+        // Sync UI state (styles, checked state, and accessibility attributes)
+        const updateToggleUI = () => {
+            toggleWrapper.classList.remove('selected-border-red', 'not-selected-white');
+            toggleWrapper.classList.add(this.showPastClasses ? 'selected-border-red' : 'not-selected-white');
+            const nextChecked = !!this.showPastClasses;
+
+            pastClassesRadio.checked = nextChecked;
+            if (nextChecked) {
+                pastClassesRadio.setAttribute('checked', 'checked');
+            } else {
+                pastClassesRadio.removeAttribute('checked');
+            }
+            pastClassesRadio.setAttribute('aria-checked', nextChecked ? 'true' : 'false');
+            const radioLabel = pastClassesRadio.closest('label');
+            if (radioLabel) {
+                radioLabel.classList.toggle('w--redirected-checked', nextChecked);
+            }
+
+        // Dispatch a change event so external listeners can react to the updated toggle/UI state.
+            pastClassesRadio.dispatchEvent(new Event('change', { bubbles: true }));
+        };
+
+        // Flip filter, re-render the list, then sync UI again after async render completes.
+        const toggleSelection = async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.showPastClasses = !this.showPastClasses;
+            updateToggleUI();
+            this.currentPage = 0;
+            await this.render();
+            updateToggleUI();
+        };
+
+    // Initialize UI state before any user interaction.
+        updateToggleUI();
+        // Clicks on wrapper padding (not on the input) still toggle; radio clicks are handled separately.
+        toggleWrapper.addEventListener('click', async (event) => {
+            if (event.target === pastClassesRadio) return;
+            await toggleSelection(event);
+        });
+
+        // Suppress native radio focus/selection so we fully control checked state via `toggleSelection`.
+        pastClassesRadio.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        // Direct clicks on the radio input run the same toggle path as wrapper clicks.
+        pastClassesRadio.addEventListener('click', async (event) => {
+            await toggleSelection(event);
+        });
     }
     showModal(modal) {
         if (modal) {
