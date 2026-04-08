@@ -340,7 +340,7 @@ class CheckOutWebflow {
 	}
 
 	// Updates click events in the database and redirects to the checkout URL
-	updateClickEventInDB(checkOutUrl, paymentType) {
+	async updateClickEventInDB(checkOutUrl, paymentType) {
 		let checkOutData = localStorage.getItem('checkOutData')
     	var ach_payment = document.getElementById('ach_payment');
 		var card_payment = document.getElementById('card_payment');
@@ -361,10 +361,16 @@ class CheckOutWebflow {
 		}
 		
 		checkOutData = JSON.parse(checkOutData)
+		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
+		var applyCredit = false;
+		if (typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
+			applyCredit = await Utils.waitForCreditApplicationChoice(this.memberData.memberId);
+		}
 		var data = {
 			"checkoutId": checkOutData.checkoutData.checkoutId,
 			"isSummerData": true,
 			"upsellProgramIds": this.$selectedProgram.map(item => item.upsellProgramId),
+			"applyCredit": applyCredit,
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
@@ -563,25 +569,25 @@ class CheckOutWebflow {
 		// Browser back button event hidden fields
 		var ibackbutton = document.getElementById("backbuttonstate");
 		var $this = this;
-		ach_payment.addEventListener('click', function () {
+		ach_payment.addEventListener('click', async function () {
 			// ach_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('us_bank_account', ach_payment);
 			ibackbutton.value = "1";
-			$this.updateClickEventInDB($this.$checkoutData.achUrl, 'ach_payment');
+			await $this.updateClickEventInDB($this.$checkoutData.achUrl, 'ach_payment');
 			//window.location.href = $this.$checkoutData.achUrl;
 		})
-		card_payment.addEventListener('click', function () {
+		card_payment.addEventListener('click', async function () {
 			// card_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('card', card_payment);
 			ibackbutton.value = "1";
-			$this.updateClickEventInDB($this.$checkoutData.cardUrl, 'card_payment');
+			await $this.updateClickEventInDB($this.$checkoutData.cardUrl, 'card_payment');
 			//window.location.href = $this.$checkoutData.cardUrl;
 		})
-		paylater_payment.addEventListener('click', function () {
+		paylater_payment.addEventListener('click', async function () {
 			// paylater_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('paylater', paylater_payment);
 			ibackbutton.value = "1";
-			$this.updateClickEventInDB($this.$checkoutData.payLaterUrl, 'paylater_payment');
+			await $this.updateClickEventInDB($this.$checkoutData.payLaterUrl, 'paylater_payment');
 			//window.location.href = $this.$checkoutData.payLaterUrl;
 		})
 	}
