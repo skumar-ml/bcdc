@@ -695,11 +695,25 @@ class classDetailsStripe extends parentLogin {
       // }
       this.createBundlePrograms(this.$allSuppData);
       this.updateBundleProgram(paymentData)
+      this.resetSubmitClassButtons();
     } else {
       // removed local storage when checkout page rendar direct without back button
       localStorage.removeItem("checkOutData");
     }
     setTimeout(() => { this.spinner.style.display = "none"; }, 500);
+  }
+  resetSubmitClassButtons() {
+    var submitClassPayment = document.getElementById("submit-class");
+    var preRegistrationDiv = document.getElementById("pre_registration_btn");
+    [submitClassPayment, preRegistrationDiv].forEach((btn) => {
+      if (!btn) return;
+      if (!btn.dataset.defaultText) {
+        btn.dataset.defaultText = btn.innerHTML;
+      }
+      btn.style.pointerEvents = "auto";
+      btn.disabled = false;
+      btn.innerHTML = btn.dataset.defaultText;
+    });
   }
   attachChromeBackRestoreHandler() {
     var $this = this;
@@ -725,6 +739,7 @@ class classDetailsStripe extends parentLogin {
       if (returnType === "back" || ((event.persisted || isHistoryNav) && hasBrowserBackMarker)) {
         setTimeout(function () {
           $this.setUpBackButtonTab();
+          $this.resetSubmitClassButtons();
         }, 200);
       }
     });
@@ -1217,6 +1232,7 @@ class classDetailsStripe extends parentLogin {
       //this.updateAddonProgram();
       // Setup back button for browser and stripe checkout page
       this.setUpBackButtonTab();
+      this.resetSubmitClassButtons();
       this.attachChromeBackRestoreHandler();
       // Onload render bundle programs
       this.createBundlePrograms(suppData);
@@ -1281,10 +1297,18 @@ class classDetailsStripe extends parentLogin {
 
     //Payment button
     //console.log('event', locationActionLink)
+    if (locationActionLink && !locationActionLink.dataset.defaultText) {
+      locationActionLink.dataset.defaultText = locationActionLink.innerHTML;
+    }
+    if (preRegistrationDiv && !preRegistrationDiv.dataset.defaultText) {
+      preRegistrationDiv.dataset.defaultText = preRegistrationDiv.innerHTML;
+    }
     locationActionLink.innerHTML = "Processing...";
     locationActionLink.disabled = true;
+    locationActionLink.style.pointerEvents = "none";
     preRegistrationDiv.innerHTML = "Processing...";
     preRegistrationDiv.disabled = true;
+    preRegistrationDiv.style.pointerEvents = "none";
     //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
     var cancelUrl = new URL(window.location.href);
     //console.log(window.location.href)
@@ -1292,6 +1316,7 @@ class classDetailsStripe extends parentLogin {
     //console.log(cancelUrl)
     var checkOutLocalData = localStorage.getItem("checkOutData");
     if (checkOutLocalData == undefined) {
+      this.resetSubmitClassButtons();
       return;
     }
     checkOutLocalData = JSON.parse(checkOutLocalData);
