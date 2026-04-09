@@ -676,18 +676,14 @@ class CheckOutWebflow {
 				this.$backRestoreTs = Date.now();
 				this.activateDiv('checkout_program');
 				this.activeBreadCrumb('student-details');
-				// Ensure the class-selection submit button is clickable after back restore.
-				var next_page_2 = document.getElementById('next_page_2');
-				if (next_page_2) {
-					next_page_2.innerHTML = "Next";
-					next_page_2.style.pointerEvents = "auto";
-					next_page_2.disabled = false;
-				}
+				// Ensure class-selection submit stays clickable after back restore/BFCache.
+				this.resetClassSelectionSubmitButton();
 				// Some delayed scripts can switch to the next step; enforce the expected step once more.
 				var $this = this;
 				setTimeout(function () {
 					$this.activateDiv('checkout_program');
 					$this.activeBreadCrumb('student-details');
+					$this.resetClassSelectionSubmitButton();
 				}, 1200);
 			}
 			// Consume back markers so a new checkout attempt generates fresh flow/URLs.
@@ -704,6 +700,15 @@ class CheckOutWebflow {
 			// removed local storage when checkout page rendar direct without back button
 			localStorage.removeItem("checkOutData");
 		}
+	}
+	resetClassSelectionSubmitButton() {
+		// Use querySelectorAll in case multiple wrappers/symbol instances exist.
+		var nextButtons = document.querySelectorAll('#next_page_2');
+		nextButtons.forEach(function (btn) {
+			btn.innerHTML = "Next";
+			btn.style.pointerEvents = "auto";
+			btn.disabled = false;
+		});
 	}
 	// Chrome-only browser back support without changing Stripe return flow
 	attachChromeBackRefreshHandler() {
@@ -724,6 +729,7 @@ class CheckOutWebflow {
 		  if (returnType === 'back' || ((event.persisted || isHistoryNav) && hasBrowserBackMarker)) {
 			setTimeout(function () {
 				$this.setUpBackButtonTab();
+				$this.resetClassSelectionSubmitButton();
 			}, 200);
 		  }
 		});
@@ -746,6 +752,7 @@ class CheckOutWebflow {
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
+			this.resetClassSelectionSubmitButton();
 			this.setUpBackButtonTab();
 			this.attachChromeBackRefreshHandler();
 			// Update basic data
