@@ -32,7 +32,6 @@ class CheckOutWebflow {
 	$checkoutData = "";
 	$suppPro = [];
 	$selectedProgram = [];
-	$backRestoreHandlerAttached = false;
 	// Initializes the checkout process with API URL and member data
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
@@ -666,19 +665,24 @@ class CheckOutWebflow {
 			localStorage.removeItem("checkOutData");
 		}
 	}
-	// Handles Chrome BFCache back/forward where init may not rerun
-	attachBackRestoreHandler() {
-		if (this.$backRestoreHandlerAttached) {
-			return;
-		}
-		this.$backRestoreHandlerAttached = true;
-		var $this = this;
+	// Chrome-only browser back support without changing Stripe return flow
+	attachChromeBackRefreshHandler() {
 		window.addEventListener('pageshow', function (event) {
 			var isChrome = /Chrome/.test(navigator.userAgent) && !/Edg|OPR/.test(navigator.userAgent);
+			if (!isChrome) {
+				return;
+			}
+			var urlPar = new URLSearchParams(window.location.search);
+			var isStripeReturn = urlPar.get('returnType') === 'back';
 			var navEntries = performance.getEntriesByType("navigation");
 			var isHistoryNav = navEntries && navEntries.length > 0 && navEntries[0].type === "back_forward";
-			if (isChrome && (event.persisted || isHistoryNav)) {
-				$this.setUpBackButtonTab();
+			if ((event.persisted || isHistoryNav) && !isStripeReturn && sessionStorage.getItem("chromeBackRefreshDone") !== "1") {
+				sessionStorage.setItem("chromeBackRefreshDone", "1");
+				window.location.reload();
+				return;
+			}
+			if (!isHistoryNav) {
+				sessionStorage.removeItem("chromeBackRefreshDone");
 			}
 		});
 	}
@@ -701,8 +705,8 @@ class CheckOutWebflow {
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
-			this.setUpBackButtonTab();
-			this.attachBackRestoreHandler();
+			//this.setUpBackButtonTab();
+			this.attachChromeBackRefreshHandler();
 			// Update basic data
 			this.updateBasicData();
 			// Hide spinner 
