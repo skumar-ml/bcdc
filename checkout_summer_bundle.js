@@ -33,6 +33,7 @@ class CheckOutWebflow {
 	$suppPro = [];
 	$selectedProgram = [];
 	$backRestoreTs = 0;
+	$locationSelectionBound = false;
 	// Initializes the checkout process with API URL and member data
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
@@ -176,6 +177,78 @@ class CheckOutWebflow {
 				document.querySelector('.cart-location-container').style.display = "block";
 			}
 		}
+		this.clearHiddenLocationSelection();
+		this.syncLocationContainerSelection();
+	}
+	// Returns the canonical mapping between location radios and container cards
+	getLocationSelectionMappings() {
+		return [
+			{ containerId: 'fortLeeContainer', radioId: 'fort_lee_location' },
+			{ containerId: 'GlenRockContainer', radioId: 'glen_rock_location' },
+			{ containerId: 'LivingstonContainer', radioId: 'livingston_location' },
+			{ containerId: 'whitePlainsContainer', radioId: 'white_plains_location' }
+		];
+	}
+	// Adds/removes selected class on location containers based on checked radio
+	syncLocationContainerSelection() {
+		this.getLocationSelectionMappings().forEach(function (map) {
+			var container = document.getElementById(map.containerId);
+			var radio = document.getElementById(map.radioId);
+			if (!container || !radio) {
+				return;
+			}
+			container.classList.toggle('core-product-selected', !!radio.checked);
+		});
+	}
+	// Clears a checked location when its container is hidden for the selected session
+	clearHiddenLocationSelection() {
+		var selectedRadio = document.querySelector('input[name = radio]:checked');
+		if (!selectedRadio) {
+			return;
+		}
+		var selectedMapping = this.getLocationSelectionMappings().find(function (map) {
+			return map.radioId === selectedRadio.id;
+		});
+		if (!selectedMapping) {
+			return;
+		}
+		var selectedContainer = document.getElementById(selectedMapping.containerId);
+		if (!selectedContainer || selectedContainer.style.display === "none") {
+			selectedRadio.checked = false;
+		}
+	}
+	// Makes full location container clickable and keeps UI state in sync
+	setupLocationContainerSelection() {
+		if (this.$locationSelectionBound) {
+			this.clearHiddenLocationSelection();
+			this.syncLocationContainerSelection();
+			return;
+		}
+		var $this = this;
+		this.getLocationSelectionMappings().forEach(function (map) {
+			var container = document.getElementById(map.containerId);
+			var radio = document.getElementById(map.radioId);
+			if (!container || !radio) {
+				return;
+			}
+			container.addEventListener('click', function (event) {
+				if (event.target && event.target.tagName === 'INPUT') {
+					$this.syncLocationContainerSelection();
+					return;
+				}
+				if (!radio.checked) {
+					radio.checked = true;
+					radio.dispatchEvent(new Event('change', { bubbles: true }));
+				}
+				$this.syncLocationContainerSelection();
+			});
+			radio.addEventListener('change', function () {
+				$this.syncLocationContainerSelection();
+			});
+		});
+		this.$locationSelectionBound = true;
+		this.clearHiddenLocationSelection();
+		this.syncLocationContainerSelection();
 	}
 	// Validates the user for a specific program (e.g., Level 2A) via API
 	async validateUserForProgram() {
@@ -660,6 +733,7 @@ class CheckOutWebflow {
 			}else {
 				glen_rock_location.checked = true;
 			}
+			this.syncLocationContainerSelection();
 			if(paymentData.updateData.locationId){
 				document.querySelector('.cart-location-container').style.display = "block";
 			}
@@ -797,6 +871,7 @@ class CheckOutWebflow {
 			console.log('data', data);
 			// Display summer session
 			this.displaySessionsData(data)
+			this.setupLocationContainerSelection();
 			// Setup back button for browser and stripe checkout page
 			this.resetClassSelectionSubmitButton();
 			this.resetPaymentCheckoutButtons();
