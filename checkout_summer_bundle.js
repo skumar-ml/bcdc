@@ -690,6 +690,42 @@ class CheckOutWebflow {
 		});
 	  }
 
+	refreshCheckoutUI() {
+		console.log("Refreshing checkout UI...");
+	  
+		// 🔁 Force Webflow tabs to reinitialize
+		if (typeof Webflow !== "undefined" && Webflow.require) {
+		  try {
+			Webflow.require('tabs').redraw();
+		  } catch (e) {
+			console.warn("Webflow tabs redraw failed", e);
+		  }
+		}
+	  
+		// 🔁 Trigger location update again (important)
+		const selectedSession = document.querySelector('input[name="checkbox"]:checked');
+		if (selectedSession) {
+		  const sessionId = selectedSession.value;
+	  
+		  const sessionData = this.$sessionData.find(
+			s => String(s.summerSessionId) === String(sessionId)
+		  );
+	  
+		  if (sessionData) {
+			this.updateLocation(sessionData);
+		  }
+		}
+	  
+		// 🔁 Trigger price recalculation
+		this.updatePriceForCardPayment();
+	  
+		// 🔁 Optional: trigger change event manually
+		const locationRadio = document.querySelector('input[name="radio"]:checked');
+		if (locationRadio) {
+		  locationRadio.dispatchEvent(new Event('change'));
+		}
+	} 
+
 	safeRestoreState() {
 		const sessionEls = document.querySelectorAll('input[data-name="Checkbox"]');
 	  
@@ -713,6 +749,9 @@ class CheckOutWebflow {
 			// activate program tab
 			this.activateDiv('checkout_program')
 
+			setTimeout(() => {
+				this.refreshCheckoutUI();
+			}, 100);
 			// loader icon code
 			var spinner = document.getElementById('half-circle-spinner');
 			spinner.style.display = 'block';
