@@ -32,6 +32,7 @@ class CheckOutWebflow {
 	$checkoutData = "";
 	$suppPro = [];
 	$selectedProgram = [];
+	$backRestoreTs = 0;
 	// Initializes the checkout process with API URL and member data
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
@@ -236,10 +237,8 @@ class CheckOutWebflow {
 		next_page_2.style.pointerEvents = "none";
 		
 		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
-		// Check if the URL already has a query string returnType based on the current URL
-		if (!cancelUrl.searchParams.has('returnType')) {
-			cancelUrl.searchParams.set('returnType', 'back');
-		}
+		// Always enforce returnType for Stripe cancel-back flow
+		cancelUrl.searchParams.set('returnType', 'back');
 		var data = {
 			"email": this.memberData.email,
 			"studentEmail": studentEmail.value,
@@ -354,11 +353,8 @@ class CheckOutWebflow {
 		//
 		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
 		//var cancelUrl = new URL(window.location.href);
-		console.log(window.location.href)
-		// Check if the URL already has a query string returnType based on the current URL
-		if (!cancelUrl.searchParams.has('returnType')) {
-			cancelUrl.searchParams.set('returnType', 'back');
-		}
+		// Always enforce returnType for Stripe cancel-back flow
+		cancelUrl.searchParams.set('returnType', 'back');
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
@@ -410,11 +406,29 @@ class CheckOutWebflow {
 	
 	// Shows a specific checkout tab and hides others
 	activateDiv(divId) {
+		// Guard against delayed async/UI callbacks that can immediately jump back to payment
+		// right after restoring from Stripe/Chrome back flow.
+		if (divId === 'checkout_payment' && this.$backRestoreTs && (Date.now() - this.$backRestoreTs) < 3000) {
+			return;
+		}
 		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment', 'pf_labs_error_message'];
 		// Remove the active class from all div elements
-		divIds.forEach(id => document.getElementById(id).classList.remove('active_checkout_tab'));
+		divIds.forEach(id => {
+			// Webflow pages can accidentally render duplicate IDs across wrappers/symbols.
+			// Handle all matching nodes, not only the first getElementById result.
+			var els = document.querySelectorAll('#' + id);
+			els.forEach(el => {
+				el.classList.remove('active_checkout_tab');
+				// Hide non-active sections and clear inline display on active one.
+				el.style.display = (id === divId) ? "" : "none";
+			});
+		});
 		// Add the active class to the div with the specified id
-		document.getElementById(divId).classList.add('active_checkout_tab');
+		var activeEls = document.querySelectorAll('#' + divId);
+		activeEls.forEach(el => {
+			el.classList.add('active_checkout_tab');
+			el.style.display = "";
+		});
 	}
 	// Sets up event listeners for "Next" and "Previous" buttons in the checkout flow
 	addEventForPrevNaxt() {
@@ -658,13 +672,114 @@ class CheckOutWebflow {
 
 			if (paymentData.checkoutData) {
 				this.$checkoutData = paymentData.checkoutData;
-				this.activateDiv('checkout_payment');
+				this.$backRestoreTs = Date.now();
+				this.resetPaymentTabUI();
+				this.activateDiv('checkout_program');
+				this.activeBreadCrumb('student-details');
+				// Ensure class-selection submit stays clickable after back restore/BFCache.
+				this.resetClassSelectionSubmitButton();
+				this.resetPaymentCheckoutButtons();
+				// Some delayed scripts can switch to the next step; enforce the expected step once more.
+				var $this = this;
+				setTimeout(function () {
+					$this.resetPaymentTabUI();
+					$this.activateDiv('checkout_program');
+					$this.activeBreadCrumb('student-details');
+					$this.resetClassSelectionSubmitButton();
+					$this.resetPaymentCheckoutButtons();
+				}, 1200);
+			}
+			// Consume back markers so a new checkout attempt generates fresh flow/URLs.
+			if (ibackbutton) {
+				ibackbutton.value = "0";
 			}
 		} else {
 			// removed local storage when checkout page rendar direct without back button
 			localStorage.removeItem("checkOutData");
 		}
 	}
+	resetClassSelectionSubmitButton() {
+		// Use querySelectorAll in case multiple wrappers/symbol instances exist.
+		var nextButtons = document.querySelectorAll('#next_page_2');
+		nextButtons.forEach(function (btn) {
+			btn.innerHTML = "Next";
+			btn.style.pointerEvents = "auto";
+			btn.disabled = false;
+		});
+	}
+	resetPaymentCheckoutButtons() {
+		var ach_payment = document.getElementById('ach_payment');
+		var card_payment = document.getElementById('card_payment');
+		var paylater_payment = document.getElementById('paylater_payment');
+		[ach_payment, card_payment, paylater_payment].forEach(function (btn) {
+			if (!btn) return;
+			btn.style.pointerEvents = "auto";
+			btn.disabled = false;
+		});
+		if (ach_payment) ach_payment.innerHTML = "Checkout";
+		if (card_payment) card_payment.innerHTML = "Checkout";
+		if (paylater_payment) paylater_payment.innerHTML = "Checkout";
+	}
+	resetPaymentTabUI() {
+		// Clear cached Webflow tab selection so checkout button is not pre-shown on browser back.
+		var tabLinks = document.querySelectorAll('.checkout-payment-cards .w-tab-link');
+		tabLinks.forEach(function (tab) {
+			tab.classList.remove('w--current');
+			tab.setAttribute('aria-selected', 'false');
+			var paneId = tab.getAttribute('aria-controls');
+			if (!paneId) {
+				var href = tab.getAttribute('href') || "";
+				if (href.indexOf("#") === 0) {
+					paneId = href.substring(1);
+				}
+			}
+			if (paneId) {
+				var pane = document.getElementById(paneId);
+				if (pane) {
+					pane.classList.remove('w--tab-active');
+				}
+			}
+		});
+		if (typeof Webflow !== "undefined" && Webflow.require) {
+			try {
+				Webflow.require('tabs').redraw();
+			} catch (e) {}
+		}
+	}
+	// Chrome-only browser back support without changing Stripe return flow
+	attachChromeBackRefreshHandler() {
+		var $this = this;
+	  
+		window.addEventListener('pageshow', function (event) {
+		  const urlPar = new URLSearchParams(window.location.search);
+		  let returnType = urlPar.get('returnType');
+		  const ibackbutton = document.getElementById("backbuttonstate");
+		  const hasBrowserBackMarker = !!(ibackbutton && ibackbutton.value == 1);
+	  
+		  const navEntries = performance.getEntriesByType("navigation");
+		  const isHistoryNav =
+			navEntries &&
+			navEntries.length > 0 &&
+			navEntries[0].type === "back_forward";
+		  // If Chrome/browser back restored from BFCache and marker exists, re-attach returnType
+		  // so downstream flow is consistent with Stripe cancel return behavior.
+		  if (!returnType && hasBrowserBackMarker && (event.persisted || isHistoryNav) && window.history && window.history.replaceState) {
+			urlPar.set('returnType', 'back');
+			var newQuery = urlPar.toString();
+			var newUrl = window.location.pathname + (newQuery ? ("?" + newQuery) : "") + window.location.hash;
+			window.history.replaceState({}, "", newUrl);
+			returnType = 'back';
+		  }
+		  // Restore on Stripe return, or on browser history restore when marker is present.
+		  if (returnType === 'back' || ((event.persisted || isHistoryNav) && hasBrowserBackMarker)) {
+			setTimeout(function () {
+				$this.setUpBackButtonTab();
+				$this.resetClassSelectionSubmitButton();
+				$this.resetPaymentCheckoutButtons();
+			}, 200);
+		  }
+		});
+	  }
 	// Orchestrates the rendering of summer session data and initializes event handlers
 	async renderPortalData(memberId) {
 		try {
@@ -674,7 +789,6 @@ class CheckOutWebflow {
 			this.addEventForPrevNaxt();
 			// activate program tab
 			this.activateDiv('checkout_program')
-
 			// loader icon code
 			var spinner = document.getElementById('half-circle-spinner');
 			spinner.style.display = 'block';
@@ -684,7 +798,10 @@ class CheckOutWebflow {
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
-			//this.setUpBackButtonTab();
+			this.resetClassSelectionSubmitButton();
+			this.resetPaymentCheckoutButtons();
+			this.setUpBackButtonTab();
+			this.attachChromeBackRefreshHandler();
 			// Update basic data
 			this.updateBasicData();
 			// Hide spinner 
