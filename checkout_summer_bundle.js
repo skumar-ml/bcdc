@@ -687,6 +687,16 @@ class CheckOutWebflow {
 					$this.activeBreadCrumb('student-details');
 				}, 1200);
 			}
+			// Consume back markers so a new checkout attempt generates fresh flow/URLs.
+			if (ibackbutton) {
+				ibackbutton.value = "0";
+			}
+			if (returnType == 'back' && window.history && window.history.replaceState) {
+				urlPar.delete('returnType');
+				var newQuery = urlPar.toString();
+				var newUrl = window.location.pathname + (newQuery ? ("?" + newQuery) : "") + window.location.hash;
+				window.history.replaceState({}, "", newUrl);
+			}
 		} else {
 			// removed local storage when checkout page rendar direct without back button
 			localStorage.removeItem("checkOutData");
@@ -699,14 +709,16 @@ class CheckOutWebflow {
 		window.addEventListener('pageshow', function (event) {
 		  const urlPar = new URLSearchParams(window.location.search);
 		  const returnType = urlPar.get('returnType');
+		  const ibackbutton = document.getElementById("backbuttonstate");
+		  const hasBrowserBackMarker = !!(ibackbutton && ibackbutton.value == 1);
 	  
 		  const navEntries = performance.getEntriesByType("navigation");
 		  const isHistoryNav =
 			navEntries &&
 			navEntries.length > 0 &&
 			navEntries[0].type === "back_forward";
-		  // Re-run restore on BFCache/history nav, and always for Stripe returnType=back.
-		  if (returnType === 'back' || event.persisted || isHistoryNav) {
+		  // Restore on Stripe return, or on browser history restore when marker is present.
+		  if (returnType === 'back' || ((event.persisted || isHistoryNav) && hasBrowserBackMarker)) {
 			setTimeout(function () {
 				$this.setUpBackButtonTab();
 			}, 200);
