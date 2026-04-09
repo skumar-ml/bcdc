@@ -680,8 +680,15 @@ class CheckOutWebflow {
 			if (paymentData.checkoutData) {
 				this.$checkoutData = paymentData.checkoutData;
 				this.activateDiv('checkout_student_details');
-				this.activeBreadCrumb('select-class');
+				this.activeBreadCrumb('student-details');
 				console.log("[summer-checkout][restore] activated checkout_student_details");
+				// Some delayed scripts can switch to the next step; enforce the expected step once more.
+				var $this = this;
+				setTimeout(function () {
+					$this.activateDiv('checkout_student_details');
+					$this.activeBreadCrumb('student-details');
+					console.log("[summer-checkout][restore] re-enforced checkout_student_details");
+				}, 1200);
 			}
 		} else {
 			// removed local storage when checkout page rendar direct without back button
