@@ -601,9 +601,16 @@ class CheckOutWebflow {
 		var checkoutJson = localStorage.getItem("checkOutData");
 		// Browser back button event hidden fields
 		var ibackbutton = document.getElementById("backbuttonstate");
+		console.log("[summer-checkout][restore] check", {
+			returnType: returnType,
+			hasCheckoutJson: checkoutJson != undefined,
+			backButtonState: ibackbutton ? ibackbutton.value : "missing"
+		});
 		if ((returnType == 'back' || ibackbutton.value == 1) && checkoutJson != undefined) {
+			console.log("[summer-checkout][restore] entering restore branch");
 			var paymentData = JSON.parse(checkoutJson);
 			//console.log('checkoutData', paymentData)
+			console.log("[summer-checkout][restore] paymentData keys", Object.keys(paymentData || {}));
 
 			var studentFirstName = document.getElementById('Student-First-Name');
 			var studentLastName = document.getElementById('Student-Last-Name');
@@ -650,6 +657,7 @@ class CheckOutWebflow {
 				document.querySelector('.cart-location-container').style.display = "block";
 			}
 			const sessionEls = document.querySelectorAll('input[data-name="Checkbox"]');
+			console.log("[summer-checkout][restore] session elements found", sessionEls.length);
 			sessionEls.forEach(el=>{
 				if(el.value == paymentData.updateData.summerSessionId){
 					el.checked = true;
@@ -660,9 +668,11 @@ class CheckOutWebflow {
 				this.$checkoutData = paymentData.checkoutData;
 				this.activateDiv('checkout_student_details');
 				this.activeBreadCrumb('select-class');
+				console.log("[summer-checkout][restore] activated checkout_student_details");
 			}
 		} else {
 			// removed local storage when checkout page rendar direct without back button
+			console.log("[summer-checkout][restore] skipped restore, clearing checkOutData");
 			localStorage.removeItem("checkOutData");
 		}
 	}
@@ -679,67 +689,21 @@ class CheckOutWebflow {
 			navEntries &&
 			navEntries.length > 0 &&
 			navEntries[0].type === "back_forward";
+		  console.log("[summer-checkout][pageshow]", {
+			persisted: event.persisted,
+			isHistoryNav: isHistoryNav,
+			returnType: returnType
+		  });
 	  
 		  // ✅ ONLY handle Chrome back (NOT Stripe)
 		  if ((event.persisted || isHistoryNav) && returnType !== 'back') {
-			console.log("Chrome back detected");
-	  
-			setTimeout(() => {
-			  $this.safeRestoreState();
+			console.log("[summer-checkout][pageshow] chrome history restore path");
+			setTimeout(function () {
+				$this.setUpBackButtonTab();
 			}, 200);
 		  }
 		});
 	  }
-
-	refreshCheckoutUI() {
-		console.log("Refreshing checkout UI...");
-	  
-		// 🔁 Force Webflow tabs to reinitialize
-		if (typeof Webflow !== "undefined" && Webflow.require) {
-		  try {
-			Webflow.require('tabs').redraw();
-		  } catch (e) {
-			console.warn("Webflow tabs redraw failed", e);
-		  }
-		}
-	  
-		// 🔁 Trigger location update again (important)
-		const selectedSession = document.querySelector('input[name="checkbox"]:checked');
-		if (selectedSession) {
-		  const sessionId = selectedSession.value;
-	  
-		  const sessionData = this.$sessionData.find(
-			s => String(s.summerSessionId) === String(sessionId)
-		  );
-	  
-		  if (sessionData) {
-			this.updateLocation(sessionData);
-		  }
-		}
-	  
-		// 🔁 Trigger price recalculation
-		this.updatePriceForCardPayment();
-	  
-		// 🔁 Optional: trigger change event manually
-		const locationRadio = document.querySelector('input[name="radio"]:checked');
-		if (locationRadio) {
-		  locationRadio.dispatchEvent(new Event('change'));
-		}
-	} 
-
-	safeRestoreState() {
-		const sessionEls = document.querySelectorAll('input[data-name="Checkbox"]');
-	  
-		// Wait until sessions are rendered
-		if (!sessionEls || sessionEls.length === 0) {
-		  console.log("Waiting for DOM...");
-		  setTimeout(() => this.safeRestoreState(), 300);
-		  return;
-		}
-	  
-		console.log("Restoring state now...");
-		this.setUpBackButtonTab();
-	}
 	// Orchestrates the rendering of summer session data and initializes event handlers
 	async renderPortalData(memberId) {
 		try {
@@ -749,10 +713,6 @@ class CheckOutWebflow {
 			this.addEventForPrevNaxt();
 			// activate program tab
 			this.activateDiv('checkout_program')
-
-			setTimeout(() => {
-				this.refreshCheckoutUI();
-			}, 100);
 			// loader icon code
 			var spinner = document.getElementById('half-circle-spinner');
 			spinner.style.display = 'block';
@@ -762,16 +722,9 @@ class CheckOutWebflow {
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
-			//this.setUpBackButtonTab();
-			// ✅ Handle Stripe back ONLY here
-			const urlPar = new URLSearchParams(window.location.search);
-			const returnType = urlPar.get('returnType');
-
-			if (returnType === 'back') {
-				console.log("Stripe back detected");
-			  
-				this.safeRestoreState(); // ✅ use this instead
-			}
+			console.log("[summer-checkout][render] calling setUpBackButtonTab");
+			this.setUpBackButtonTab();
+			console.log("[summer-checkout][render] attaching chrome back handler");
 			this.attachChromeBackRefreshHandler();
 			// Update basic data
 			this.updateBasicData();
