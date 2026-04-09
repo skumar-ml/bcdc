@@ -24,6 +24,7 @@ class DisplaySuppProgram {
     this.displaySupplementaryProgram();
     this.updateOldStudentList();
     this.handlePaymentEvents();
+    this.attachBackRestoreHandler();
     this.discount_amount = parseInt(memberData.amount);
     
   }
@@ -523,6 +524,8 @@ class DisplaySuppProgram {
     
     // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
     console.log("Apply credit:", applyCredit);
+    var cancelUrl = new URL(window.location.href);
+    cancelUrl.searchParams.set("returnType", "back");
     // Define the data to be sent in the POST request
     const data = {
       sessionId: "",
@@ -532,8 +535,7 @@ class DisplaySuppProgram {
       successUrl:
         this.memberData.site_url +
         "portal/dashboard?success=true",
-      cancelUrl:
-        (document.referrer) ? document.referrer : "https://www.bergendebate.com/portal/dashboard",
+      cancelUrl: cancelUrl.href,
       label: programName,
       amount: parseFloat(amount * 100),
       source: "portal_page",
@@ -561,11 +563,42 @@ class DisplaySuppProgram {
         if (data.success) {
           console.log(data.cardUrl);
           window.location.href = data.cardUrl;
+        } else {
+          this.resetPaySuppProgramButton();
         }
       })
       .catch((error) => {
         console.error("There was a problem with the fetch operation:", error); // Handle errors
+        this.resetPaySuppProgramButton();
       });
+  }
+  resetPaySuppProgramButton() {
+    const payBtn = document.getElementById("pay-supp-program");
+    if (!payBtn) return;
+    payBtn.innerHTML = "Pay Now";
+    payBtn.style.pointerEvents = "auto";
+    payBtn.disabled = false;
+  }
+  attachBackRestoreHandler() {
+    var $this = this;
+    window.addEventListener("pageshow", function (event) {
+      const navEntries = performance.getEntriesByType("navigation");
+      const isHistoryNav =
+        navEntries &&
+        navEntries.length > 0 &&
+        navEntries[0].type === "back_forward";
+      if (event.persisted || isHistoryNav) {
+        const urlPar = new URLSearchParams(window.location.search);
+        const returnType = urlPar.get("returnType");
+        if (!returnType && window.history && window.history.replaceState) {
+          urlPar.set("returnType", "back");
+          const newQuery = urlPar.toString();
+          const newUrl = window.location.pathname + (newQuery ? ("?" + newQuery) : "") + window.location.hash;
+          window.history.replaceState({}, "", newUrl);
+        }
+        $this.resetPaySuppProgramButton();
+      }
+    });
   }
   handlePaymentEvents() {
     var $this = this;
@@ -577,6 +610,7 @@ class DisplaySuppProgram {
       if (studentEl.value) {
         payBtn.innerHTML = "Processing...";
         payBtn.style.pointerEvents = "none";
+        payBtn.disabled = true;
         let programName = $this.$selectedProgram.map(
           (program) => program.label 
         ).join(", ");
@@ -595,9 +629,12 @@ class DisplaySuppProgram {
             programName,
             amount
           );
+        } else {
+          $this.resetPaySuppProgramButton();
         }
       } else {
         alert("Please select student");
+        $this.resetPaySuppProgramButton();
       }
     });
   }
