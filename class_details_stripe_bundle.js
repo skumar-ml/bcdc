@@ -568,7 +568,6 @@ class classDetailsStripe extends parentLogin {
   }
   // Setup back button for stripe back button and browser back button
   setUpBackButtonTab() {
-    return;
     this.spinner.style.display = "block";
     var query = window.location.search;
     var urlPar = new URLSearchParams(query);
@@ -696,11 +695,54 @@ class classDetailsStripe extends parentLogin {
       // }
       this.createBundlePrograms(this.$allSuppData);
       this.updateBundleProgram(paymentData)
+      this.resetSubmitClassButtons();
     } else {
       // removed local storage when checkout page rendar direct without back button
       localStorage.removeItem("checkOutData");
     }
     setTimeout(() => { this.spinner.style.display = "none"; }, 500);
+  }
+  resetSubmitClassButtons() {
+    var submitClassPayment = document.getElementById("submit-class");
+    var preRegistrationDiv = document.getElementById("pre_registration_btn");
+    [submitClassPayment, preRegistrationDiv].forEach((btn) => {
+      if (!btn) return;
+      if (!btn.dataset.defaultText) {
+        btn.dataset.defaultText = btn.innerHTML;
+      }
+      btn.style.pointerEvents = "auto";
+      btn.disabled = false;
+      btn.innerHTML = btn.dataset.defaultText;
+    });
+  }
+  attachChromeBackRestoreHandler() {
+    var $this = this;
+    window.addEventListener("pageshow", function (event) {
+      var urlPar = new URLSearchParams(window.location.search);
+      var returnType = urlPar.get("returnType");
+      var ibackbutton = document.getElementById("backbuttonstate");
+      var hasBrowserBackMarker = !!(ibackbutton && ibackbutton.value == 1);
+      var navEntries = performance.getEntriesByType("navigation");
+      var isHistoryNav =
+        navEntries &&
+        navEntries.length > 0 &&
+        navEntries[0].type === "back_forward";
+
+      // Chrome/BFCache restore can drop query params; re-attach returnType when back marker exists.
+      if (!returnType && hasBrowserBackMarker && (event.persisted || isHistoryNav) && window.history && window.history.replaceState) {
+        urlPar.set("returnType", "back");
+        var newQuery = urlPar.toString();
+        var newUrl = window.location.pathname + (newQuery ? ("?" + newQuery) : "") + window.location.hash;
+        window.history.replaceState({}, "", newUrl);
+      }
+
+      if (returnType === "back" || ((event.persisted || isHistoryNav) && hasBrowserBackMarker)) {
+        setTimeout(function () {
+          $this.setUpBackButtonTab();
+          $this.resetSubmitClassButtons();
+        }, 200);
+      }
+    });
   }
   // update Addon program based on local storage data
   updateBundleProgram(paymentData) {
@@ -1190,6 +1232,8 @@ class classDetailsStripe extends parentLogin {
       //this.updateAddonProgram();
       // Setup back button for browser and stripe checkout page
       this.setUpBackButtonTab();
+      this.resetSubmitClassButtons();
+      this.attachChromeBackRestoreHandler();
       // Onload render bundle programs
       this.createBundlePrograms(suppData);
 
@@ -1253,17 +1297,26 @@ class classDetailsStripe extends parentLogin {
 
     //Payment button
     //console.log('event', locationActionLink)
+    if (locationActionLink && !locationActionLink.dataset.defaultText) {
+      locationActionLink.dataset.defaultText = locationActionLink.innerHTML;
+    }
+    if (preRegistrationDiv && !preRegistrationDiv.dataset.defaultText) {
+      preRegistrationDiv.dataset.defaultText = preRegistrationDiv.innerHTML;
+    }
     locationActionLink.innerHTML = "Processing...";
     locationActionLink.disabled = true;
+    locationActionLink.style.pointerEvents = "none";
     preRegistrationDiv.innerHTML = "Processing...";
     preRegistrationDiv.disabled = true;
+    preRegistrationDiv.style.pointerEvents = "none";
     //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
     var cancelUrl = new URL(window.location.href);
     //console.log(window.location.href)
-    cancelUrl.searchParams.append("returnType", "back");
+    cancelUrl.searchParams.set("returnType", "back");
     //console.log(cancelUrl)
     var checkOutLocalData = localStorage.getItem("checkOutData");
     if (checkOutLocalData == undefined) {
+      this.resetSubmitClassButtons();
       return;
     }
     checkOutLocalData = JSON.parse(checkOutLocalData);
@@ -1531,7 +1584,7 @@ class classDetailsStripe extends parentLogin {
     //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
     var cancelUrl = new URL(window.location.href);
     //console.log(window.location.href)
-    cancelUrl.searchParams.append("returnType", "back");
+    cancelUrl.searchParams.set("returnType", "back");
     //console.log(cancelUrl)
     var data = {
       email: this.accountEmail,
