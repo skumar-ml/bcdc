@@ -237,10 +237,8 @@ class CheckOutWebflow {
 		next_page_2.style.pointerEvents = "none";
 		
 		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
-		// Check if the URL already has a query string returnType based on the current URL
-		if (!cancelUrl.searchParams.has('returnType')) {
-			cancelUrl.searchParams.set('returnType', 'back');
-		}
+		// Always enforce returnType for Stripe cancel-back flow
+		cancelUrl.searchParams.set('returnType', 'back');
 		var data = {
 			"email": this.memberData.email,
 			"studentEmail": studentEmail.value,
@@ -356,10 +354,8 @@ class CheckOutWebflow {
 		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
 		//var cancelUrl = new URL(window.location.href);
 		console.log(window.location.href)
-		// Check if the URL already has a query string returnType based on the current URL
-		if (!cancelUrl.searchParams.has('returnType')) {
-			cancelUrl.searchParams.set('returnType', 'back');
-		}
+		// Always enforce returnType for Stripe cancel-back flow
+		cancelUrl.searchParams.set('returnType', 'back');
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
