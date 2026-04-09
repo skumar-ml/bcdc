@@ -32,6 +32,7 @@ class CheckOutWebflow {
 	$checkoutData = "";
 	$suppPro = [];
 	$selectedProgram = [];
+	$backRestoreTs = 0;
 	// Initializes the checkout process with API URL and member data
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
@@ -410,23 +411,17 @@ class CheckOutWebflow {
 	
 	// Shows a specific checkout tab and hides others
 	activateDiv(divId) {
+		// Guard against delayed async/UI callbacks that can immediately jump back to payment
+		// right after restoring from Stripe/Chrome back flow.
+		if (divId === 'checkout_payment' && this.$backRestoreTs && (Date.now() - this.$backRestoreTs) < 3000) {
+			console.log("[summer-checkout][activateDiv] blocked checkout_payment during restore window");
+			return;
+		}
 		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment', 'pf_labs_error_message'];
 		// Remove the active class from all div elements
-		divIds.forEach(id => {
-			var el = document.getElementById(id);
-			if (!el) {
-				return;
-			}
-			el.classList.remove('active_checkout_tab');
-			// Force hide inactive sections so stale cached display state cannot keep them visible.
-			el.style.display = 'none';
-		});
+		divIds.forEach(id => document.getElementById(id).classList.remove('active_checkout_tab'));
 		// Add the active class to the div with the specified id
-		var activeEl = document.getElementById(divId);
-		if (activeEl) {
-			activeEl.classList.add('active_checkout_tab');
-			activeEl.style.display = 'block';
-		}
+		document.getElementById(divId).classList.add('active_checkout_tab');
 		console.log("[summer-checkout][activateDiv]", divId);
 	}
 	// Sets up event listeners for "Next" and "Previous" buttons in the checkout flow
@@ -679,6 +674,7 @@ class CheckOutWebflow {
 
 			if (paymentData.checkoutData) {
 				this.$checkoutData = paymentData.checkoutData;
+				this.$backRestoreTs = Date.now();
 				this.activateDiv('checkout_student_details');
 				this.activeBreadCrumb('student-details');
 				console.log("[summer-checkout][restore] activated checkout_student_details");
