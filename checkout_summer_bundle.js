@@ -676,6 +676,7 @@ class CheckOutWebflow {
 			if (paymentData.checkoutData) {
 				this.$checkoutData = paymentData.checkoutData;
 				this.$backRestoreTs = Date.now();
+				this.resetPaymentTabUI();
 				this.activateDiv('checkout_program');
 				this.activeBreadCrumb('student-details');
 				// Ensure class-selection submit stays clickable after back restore/BFCache.
@@ -684,6 +685,7 @@ class CheckOutWebflow {
 				// Some delayed scripts can switch to the next step; enforce the expected step once more.
 				var $this = this;
 				setTimeout(function () {
+					$this.resetPaymentTabUI();
 					$this.activateDiv('checkout_program');
 					$this.activeBreadCrumb('student-details');
 					$this.resetClassSelectionSubmitButton();
@@ -693,12 +695,6 @@ class CheckOutWebflow {
 			// Consume back markers so a new checkout attempt generates fresh flow/URLs.
 			if (ibackbutton) {
 				ibackbutton.value = "0";
-			}
-			if (returnType == 'back' && window.history && window.history.replaceState) {
-				urlPar.delete('returnType');
-				var newQuery = urlPar.toString();
-				var newUrl = window.location.pathname + (newQuery ? ("?" + newQuery) : "") + window.location.hash;
-				window.history.replaceState({}, "", newUrl);
 			}
 		} else {
 			// removed local storage when checkout page rendar direct without back button
@@ -731,6 +727,23 @@ class CheckOutWebflow {
 			card: card_payment ? card_payment.style.pointerEvents : "missing",
 			paylater: paylater_payment ? paylater_payment.style.pointerEvents : "missing"
 		});
+	}
+	resetPaymentTabUI() {
+		// Clear cached Webflow tab selection so checkout button is not pre-shown on browser back.
+		var tabLinks = document.querySelectorAll('.checkout-payment-cards .w-tab-link');
+		var tabPanes = document.querySelectorAll('.checkout-payment-cards-container .w-tab-pane');
+		tabLinks.forEach(function (tab) {
+			tab.classList.remove('w--current');
+			tab.setAttribute('aria-selected', 'false');
+		});
+		tabPanes.forEach(function (pane) {
+			pane.classList.remove('w--tab-active');
+		});
+		if (typeof Webflow !== "undefined" && Webflow.require) {
+			try {
+				Webflow.require('tabs').redraw();
+			} catch (e) {}
+		}
 	}
 	// Chrome-only browser back support without changing Stripe return flow
 	attachChromeBackRefreshHandler() {
