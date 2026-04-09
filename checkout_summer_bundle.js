@@ -87,8 +87,21 @@ class CheckOutWebflow {
 		checkboxS.addEventListener('change', function () {
 			var locationSessionError = document.getElementById('locationSessionError');
 			locationSessionError.style.display = 'none';
+			document.querySelectorAll('.core-session-container.core-product-container').forEach(function (card) {
+				card.classList.remove('core-product-selected');
+			});
+			coreProductContainer.classList.add('core-product-selected');
 			$this.updateLocation(sessionProData);
 
+		});
+		coreProductContainer.addEventListener('click', function (event) {
+			if (event.target && event.target.tagName === 'INPUT') {
+				return;
+			}
+			if (!checkboxS.checked) {
+				checkboxS.checked = true;
+				checkboxS.dispatchEvent(new Event('change', { bubbles: true }));
+			}
 		});
 		wCheckbox.appendChild(checkboxS)
 		var spantext = creEl('span', 'core-checkbox-label w-form-label')
@@ -741,6 +754,13 @@ class CheckOutWebflow {
 			sessionEls.forEach(el=>{
 				if(el.value == paymentData.updateData.summerSessionId){
 					el.checked = true;
+					var sessionCard = el.closest('.core-session-container.core-product-container');
+					if (sessionCard) {
+						document.querySelectorAll('.core-session-container.core-product-container').forEach(function (card) {
+							card.classList.remove('core-product-selected');
+						});
+						sessionCard.classList.add('core-product-selected');
+					}
 				}
 			})
 
