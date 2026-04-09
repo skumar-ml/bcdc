@@ -693,15 +693,15 @@ class CheckOutWebflow {
 			if (paymentData.checkoutData) {
 				this.$checkoutData = paymentData.checkoutData;
 				this.$backRestoreTs = Date.now();
-				this.activateDiv('checkout_student_details');
+				this.activateDiv('checkout_program');
 				this.activeBreadCrumb('student-details');
-				console.log("[summer-checkout][restore] activated checkout_student_details");
+				console.log("[summer-checkout][restore] activated checkout_program");
 				// Some delayed scripts can switch to the next step; enforce the expected step once more.
 				var $this = this;
 				setTimeout(function () {
-					$this.activateDiv('checkout_student_details');
+					$this.activateDiv('checkout_program');
 					$this.activeBreadCrumb('student-details');
-					console.log("[summer-checkout][restore] re-enforced checkout_student_details");
+					console.log("[summer-checkout][restore] re-enforced checkout_program");
 				}, 1200);
 			}
 		} else {
