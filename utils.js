@@ -231,6 +231,7 @@ class Utils {
             // Query for buttons - may need to wait a moment for modal to render
             const applyButton = document.querySelector('[data-credit="apply"]');
             const noButton = document.querySelector('[data-credit="no"]');
+            const bergenCreditsModalClose = document.getElementById("bergen-credits-modal-close");
             
             // If buttons don't exist, default to false and resolve immediately
             if (!applyButton && !noButton) {
@@ -250,6 +251,11 @@ class Utils {
                 cleanup();
                 resolve(false);
             };
+
+            const handleClose = (event) => {
+                if (event) event.preventDefault();
+                handleNo();
+            };
             
             // Cleanup function to remove event listeners
             const cleanup = () => {
@@ -259,6 +265,9 @@ class Utils {
                 if (noButton) {
                     noButton.removeEventListener('click', handleNo);
                 }
+                if (bergenCreditsModalClose) {
+                    bergenCreditsModalClose.removeEventListener('click', handleClose);
+                }
             };
             
             // Add event listeners
@@ -267,6 +276,9 @@ class Utils {
             }
             if (noButton) {
                 noButton.addEventListener('click', handleNo);
+            }
+            if (bergenCreditsModalClose) {
+                bergenCreditsModalClose.addEventListener('click', handleClose);
             }
         });
         
