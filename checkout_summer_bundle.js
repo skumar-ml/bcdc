@@ -419,7 +419,13 @@ class CheckOutWebflow {
 		}
 		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment', 'pf_labs_error_message'];
 		// Remove the active class from all div elements
-		divIds.forEach(id => document.getElementById(id).classList.remove('active_checkout_tab'));
+		divIds.forEach(id => {
+			var el = document.getElementById(id);
+			if (!el) return;
+			el.classList.remove('active_checkout_tab');
+			// Hide non-active sections and clear inline display on active one.
+			el.style.display = (id === divId) ? "" : "none";
+		});
 		// Add the active class to the div with the specified id
 		document.getElementById(divId).classList.add('active_checkout_tab');
 		console.log("[summer-checkout][activateDiv]", divId);
@@ -711,9 +717,9 @@ class CheckOutWebflow {
 			returnType: returnType
 		  });
 	  
-		  // ✅ ONLY handle Chrome back (NOT Stripe)
-		  if ((event.persisted || isHistoryNav) && returnType !== 'back') {
-			console.log("[summer-checkout][pageshow] chrome history restore path");
+		  // Re-run restore on BFCache/history nav, and always for Stripe returnType=back.
+		  if (returnType === 'back' || event.persisted || isHistoryNav) {
+			console.log("[summer-checkout][pageshow] restore path");
 			setTimeout(function () {
 				$this.setUpBackButtonTab();
 			}, 200);
