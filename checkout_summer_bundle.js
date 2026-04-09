@@ -676,6 +676,13 @@ class CheckOutWebflow {
 				this.$backRestoreTs = Date.now();
 				this.activateDiv('checkout_program');
 				this.activeBreadCrumb('student-details');
+				// Ensure the class-selection submit button is clickable after back restore.
+				var next_page_2 = document.getElementById('next_page_2');
+				if (next_page_2) {
+					next_page_2.innerHTML = "Next";
+					next_page_2.style.pointerEvents = "auto";
+					next_page_2.disabled = false;
+				}
 				// Some delayed scripts can switch to the next step; enforce the expected step once more.
 				var $this = this;
 				setTimeout(function () {
