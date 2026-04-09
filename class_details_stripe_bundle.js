@@ -568,7 +568,6 @@ class classDetailsStripe extends parentLogin {
   }
   // Setup back button for stripe back button and browser back button
   setUpBackButtonTab() {
-    return;
     this.spinner.style.display = "block";
     var query = window.location.search;
     var urlPar = new URLSearchParams(query);
@@ -701,6 +700,34 @@ class classDetailsStripe extends parentLogin {
       localStorage.removeItem("checkOutData");
     }
     setTimeout(() => { this.spinner.style.display = "none"; }, 500);
+  }
+  attachChromeBackRestoreHandler() {
+    var $this = this;
+    window.addEventListener("pageshow", function (event) {
+      var urlPar = new URLSearchParams(window.location.search);
+      var returnType = urlPar.get("returnType");
+      var ibackbutton = document.getElementById("backbuttonstate");
+      var hasBrowserBackMarker = !!(ibackbutton && ibackbutton.value == 1);
+      var navEntries = performance.getEntriesByType("navigation");
+      var isHistoryNav =
+        navEntries &&
+        navEntries.length > 0 &&
+        navEntries[0].type === "back_forward";
+
+      // Chrome/BFCache restore can drop query params; re-attach returnType when back marker exists.
+      if (!returnType && hasBrowserBackMarker && (event.persisted || isHistoryNav) && window.history && window.history.replaceState) {
+        urlPar.set("returnType", "back");
+        var newQuery = urlPar.toString();
+        var newUrl = window.location.pathname + (newQuery ? ("?" + newQuery) : "") + window.location.hash;
+        window.history.replaceState({}, "", newUrl);
+      }
+
+      if (returnType === "back" || ((event.persisted || isHistoryNav) && hasBrowserBackMarker)) {
+        setTimeout(function () {
+          $this.setUpBackButtonTab();
+        }, 200);
+      }
+    });
   }
   // update Addon program based on local storage data
   updateBundleProgram(paymentData) {
@@ -1190,6 +1217,7 @@ class classDetailsStripe extends parentLogin {
       //this.updateAddonProgram();
       // Setup back button for browser and stripe checkout page
       this.setUpBackButtonTab();
+      this.attachChromeBackRestoreHandler();
       // Onload render bundle programs
       this.createBundlePrograms(suppData);
 
@@ -1260,7 +1288,7 @@ class classDetailsStripe extends parentLogin {
     //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
     var cancelUrl = new URL(window.location.href);
     //console.log(window.location.href)
-    cancelUrl.searchParams.append("returnType", "back");
+    cancelUrl.searchParams.set("returnType", "back");
     //console.log(cancelUrl)
     var checkOutLocalData = localStorage.getItem("checkOutData");
     if (checkOutLocalData == undefined) {
@@ -1531,7 +1559,7 @@ class classDetailsStripe extends parentLogin {
     //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
     var cancelUrl = new URL(window.location.href);
     //console.log(window.location.href)
-    cancelUrl.searchParams.append("returnType", "back");
+    cancelUrl.searchParams.set("returnType", "back");
     //console.log(cancelUrl)
     var data = {
       email: this.accountEmail,
