@@ -412,9 +412,22 @@ class CheckOutWebflow {
 	activateDiv(divId) {
 		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment', 'pf_labs_error_message'];
 		// Remove the active class from all div elements
-		divIds.forEach(id => document.getElementById(id).classList.remove('active_checkout_tab'));
+		divIds.forEach(id => {
+			var el = document.getElementById(id);
+			if (!el) {
+				return;
+			}
+			el.classList.remove('active_checkout_tab');
+			// Force hide inactive sections so stale cached display state cannot keep them visible.
+			el.style.display = 'none';
+		});
 		// Add the active class to the div with the specified id
-		document.getElementById(divId).classList.add('active_checkout_tab');
+		var activeEl = document.getElementById(divId);
+		if (activeEl) {
+			activeEl.classList.add('active_checkout_tab');
+			activeEl.style.display = 'block';
+		}
+		console.log("[summer-checkout][activateDiv]", divId);
 	}
 	// Sets up event listeners for "Next" and "Previous" buttons in the checkout flow
 	addEventForPrevNaxt() {
