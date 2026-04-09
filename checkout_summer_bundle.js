@@ -420,15 +420,27 @@ class CheckOutWebflow {
 		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment', 'pf_labs_error_message'];
 		// Remove the active class from all div elements
 		divIds.forEach(id => {
-			var el = document.getElementById(id);
-			if (!el) return;
-			el.classList.remove('active_checkout_tab');
-			// Hide non-active sections and clear inline display on active one.
-			el.style.display = (id === divId) ? "" : "none";
+			// Webflow pages can accidentally render duplicate IDs across wrappers/symbols.
+			// Handle all matching nodes, not only the first getElementById result.
+			var els = document.querySelectorAll('#' + id);
+			els.forEach(el => {
+				el.classList.remove('active_checkout_tab');
+				// Hide non-active sections and clear inline display on active one.
+				el.style.display = (id === divId) ? "" : "none";
+			});
 		});
 		// Add the active class to the div with the specified id
-		document.getElementById(divId).classList.add('active_checkout_tab');
-		console.log("[summer-checkout][activateDiv]", divId);
+		var activeEls = document.querySelectorAll('#' + divId);
+		activeEls.forEach(el => {
+			el.classList.add('active_checkout_tab');
+			el.style.display = "";
+		});
+		console.log("[summer-checkout][activateDiv]", {
+			target: divId,
+			targetCount: activeEls.length,
+			checkoutProgramCount: document.querySelectorAll('#checkout_program').length,
+			studentDetailsCount: document.querySelectorAll('#checkout_student_details').length
+		});
 	}
 	// Sets up event listeners for "Next" and "Previous" buttons in the checkout flow
 	addEventForPrevNaxt() {
