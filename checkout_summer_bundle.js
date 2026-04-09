@@ -667,25 +667,33 @@ class CheckOutWebflow {
 	}
 	// Chrome-only browser back support without changing Stripe return flow
 	attachChromeBackRefreshHandler() {
+		var $this = this;
+	  
 		window.addEventListener('pageshow', function (event) {
-			var isChrome = /Chrome/.test(navigator.userAgent) && !/Edg|OPR/.test(navigator.userAgent);
-			if (!isChrome) {
-				return;
+		  try {
+			const urlPar = new URLSearchParams(window.location.search);
+			const returnType = urlPar.get('returnType');
+	  
+			const navEntries = performance.getEntriesByType("navigation");
+			const isHistoryNav =
+			  navEntries &&
+			  navEntries.length > 0 &&
+			  navEntries[0].type === "back_forward";
+	  
+			// Detect all back scenarios:
+			if (event.persisted || isHistoryNav || returnType === 'back') {
+			  console.log("Back navigation detected → restoring checkout state");
+	  
+			  // 🔥 Restore state instead of reload
+			  if (typeof $this.setUpBackButtonTab === "function") {
+				$this.setUpBackButtonTab();
+			  }
 			}
-			var urlPar = new URLSearchParams(window.location.search);
-			var isStripeReturn = urlPar.get('returnType') === 'back';
-			var navEntries = performance.getEntriesByType("navigation");
-			var isHistoryNav = navEntries && navEntries.length > 0 && navEntries[0].type === "back_forward";
-			if ((event.persisted || isHistoryNav) && !isStripeReturn && sessionStorage.getItem("chromeBackRefreshDone") !== "1") {
-				sessionStorage.setItem("chromeBackRefreshDone", "1");
-				window.location.reload();
-				return;
-			}
-			if (!isHistoryNav) {
-				sessionStorage.removeItem("chromeBackRefreshDone");
-			}
+		  } catch (err) {
+			console.error("Back handler error:", err);
+		  }
 		});
-	}
+	  }
 	// Orchestrates the rendering of summer session data and initializes event handlers
 	async renderPortalData(memberId) {
 		try {
@@ -705,7 +713,7 @@ class CheckOutWebflow {
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
-			//this.setUpBackButtonTab();
+			this.setUpBackButtonTab();
 			this.attachChromeBackRefreshHandler();
 			// Update basic data
 			this.updateBasicData();
