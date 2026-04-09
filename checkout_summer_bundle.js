@@ -414,7 +414,6 @@ class CheckOutWebflow {
 		// Guard against delayed async/UI callbacks that can immediately jump back to payment
 		// right after restoring from Stripe/Chrome back flow.
 		if (divId === 'checkout_payment' && this.$backRestoreTs && (Date.now() - this.$backRestoreTs) < 3000) {
-			console.log("[summer-checkout][activateDiv] blocked checkout_payment during restore window");
 			return;
 		}
 		var divIds = ['checkout_program', 'checkout_student_details', 'checkout_payment', 'pf_labs_error_message'];
@@ -434,12 +433,6 @@ class CheckOutWebflow {
 		activeEls.forEach(el => {
 			el.classList.add('active_checkout_tab');
 			el.style.display = "";
-		});
-		console.log("[summer-checkout][activateDiv]", {
-			target: divId,
-			targetCount: activeEls.length,
-			checkoutProgramCount: document.querySelectorAll('#checkout_program').length,
-			studentDetailsCount: document.querySelectorAll('#checkout_student_details').length
 		});
 	}
 	// Sets up event listeners for "Next" and "Previous" buttons in the checkout flow
@@ -627,16 +620,9 @@ class CheckOutWebflow {
 		var checkoutJson = localStorage.getItem("checkOutData");
 		// Browser back button event hidden fields
 		var ibackbutton = document.getElementById("backbuttonstate");
-		console.log("[summer-checkout][restore] check", {
-			returnType: returnType,
-			hasCheckoutJson: checkoutJson != undefined,
-			backButtonState: ibackbutton ? ibackbutton.value : "missing"
-		});
 		if ((returnType == 'back' || ibackbutton.value == 1) && checkoutJson != undefined) {
-			console.log("[summer-checkout][restore] entering restore branch");
 			var paymentData = JSON.parse(checkoutJson);
 			//console.log('checkoutData', paymentData)
-			console.log("[summer-checkout][restore] paymentData keys", Object.keys(paymentData || {}));
 
 			var studentFirstName = document.getElementById('Student-First-Name');
 			var studentLastName = document.getElementById('Student-Last-Name');
@@ -683,7 +669,6 @@ class CheckOutWebflow {
 				document.querySelector('.cart-location-container').style.display = "block";
 			}
 			const sessionEls = document.querySelectorAll('input[data-name="Checkbox"]');
-			console.log("[summer-checkout][restore] session elements found", sessionEls.length);
 			sessionEls.forEach(el=>{
 				if(el.value == paymentData.updateData.summerSessionId){
 					el.checked = true;
@@ -695,18 +680,15 @@ class CheckOutWebflow {
 				this.$backRestoreTs = Date.now();
 				this.activateDiv('checkout_program');
 				this.activeBreadCrumb('student-details');
-				console.log("[summer-checkout][restore] activated checkout_program");
 				// Some delayed scripts can switch to the next step; enforce the expected step once more.
 				var $this = this;
 				setTimeout(function () {
 					$this.activateDiv('checkout_program');
 					$this.activeBreadCrumb('student-details');
-					console.log("[summer-checkout][restore] re-enforced checkout_program");
 				}, 1200);
 			}
 		} else {
 			// removed local storage when checkout page rendar direct without back button
-			console.log("[summer-checkout][restore] skipped restore, clearing checkOutData");
 			localStorage.removeItem("checkOutData");
 		}
 	}
@@ -723,15 +705,8 @@ class CheckOutWebflow {
 			navEntries &&
 			navEntries.length > 0 &&
 			navEntries[0].type === "back_forward";
-		  console.log("[summer-checkout][pageshow]", {
-			persisted: event.persisted,
-			isHistoryNav: isHistoryNav,
-			returnType: returnType
-		  });
-	  
 		  // Re-run restore on BFCache/history nav, and always for Stripe returnType=back.
 		  if (returnType === 'back' || event.persisted || isHistoryNav) {
-			console.log("[summer-checkout][pageshow] restore path");
 			setTimeout(function () {
 				$this.setUpBackButtonTab();
 			}, 200);
@@ -756,9 +731,7 @@ class CheckOutWebflow {
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
-			console.log("[summer-checkout][render] calling setUpBackButtonTab");
 			this.setUpBackButtonTab();
-			console.log("[summer-checkout][render] attaching chrome back handler");
 			this.attachChromeBackRefreshHandler();
 			// Update basic data
 			this.updateBasicData();
