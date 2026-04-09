@@ -239,7 +239,6 @@ class CheckOutWebflow {
 		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
 		// Always enforce returnType for Stripe cancel-back flow
 		cancelUrl.searchParams.set('returnType', 'back');
-		console.log("[summer-checkout][initPayment] cancelUrl", cancelUrl.href);
 		var data = {
 			"email": this.memberData.email,
 			"studentEmail": studentEmail.value,
@@ -354,10 +353,8 @@ class CheckOutWebflow {
 		//
 		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
 		//var cancelUrl = new URL(window.location.href);
-		console.log(window.location.href)
 		// Always enforce returnType for Stripe cancel-back flow
 		cancelUrl.searchParams.set('returnType', 'back');
-		console.log("[summer-checkout][updateClick] cancelUrl", cancelUrl.href);
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
@@ -722,11 +719,6 @@ class CheckOutWebflow {
 		if (ach_payment) ach_payment.innerHTML = "Checkout";
 		if (card_payment) card_payment.innerHTML = "Checkout";
 		if (paylater_payment) paylater_payment.innerHTML = "Checkout";
-		console.log("[summer-checkout][button-reset]", {
-			ach: ach_payment ? ach_payment.style.pointerEvents : "missing",
-			card: card_payment ? card_payment.style.pointerEvents : "missing",
-			paylater: paylater_payment ? paylater_payment.style.pointerEvents : "missing"
-		});
 	}
 	resetPaymentTabUI() {
 		// Clear cached Webflow tab selection so checkout button is not pre-shown on browser back.
@@ -769,12 +761,6 @@ class CheckOutWebflow {
 			navEntries &&
 			navEntries.length > 0 &&
 			navEntries[0].type === "back_forward";
-		  console.log("[summer-checkout][pageshow-debug]", {
-			persisted: event.persisted,
-			isHistoryNav: isHistoryNav,
-			returnType: returnType,
-			hasBrowserBackMarker: hasBrowserBackMarker
-		  });
 		  // If Chrome/browser back restored from BFCache and marker exists, re-attach returnType
 		  // so downstream flow is consistent with Stripe cancel return behavior.
 		  if (!returnType && hasBrowserBackMarker && (event.persisted || isHistoryNav) && window.history && window.history.replaceState) {
