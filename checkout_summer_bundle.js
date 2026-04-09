@@ -731,13 +731,22 @@ class CheckOutWebflow {
 	resetPaymentTabUI() {
 		// Clear cached Webflow tab selection so checkout button is not pre-shown on browser back.
 		var tabLinks = document.querySelectorAll('.checkout-payment-cards .w-tab-link');
-		var tabPanes = document.querySelectorAll('.checkout-payment-cards-container .w-tab-pane');
 		tabLinks.forEach(function (tab) {
 			tab.classList.remove('w--current');
 			tab.setAttribute('aria-selected', 'false');
-		});
-		tabPanes.forEach(function (pane) {
-			pane.classList.remove('w--tab-active');
+			var paneId = tab.getAttribute('aria-controls');
+			if (!paneId) {
+				var href = tab.getAttribute('href') || "";
+				if (href.indexOf("#") === 0) {
+					paneId = href.substring(1);
+				}
+			}
+			if (paneId) {
+				var pane = document.getElementById(paneId);
+				if (pane) {
+					pane.classList.remove('w--tab-active');
+				}
+			}
 		});
 		if (typeof Webflow !== "undefined" && Webflow.require) {
 			try {
@@ -751,7 +760,7 @@ class CheckOutWebflow {
 	  
 		window.addEventListener('pageshow', function (event) {
 		  const urlPar = new URLSearchParams(window.location.search);
-		  const returnType = urlPar.get('returnType');
+		  let returnType = urlPar.get('returnType');
 		  const ibackbutton = document.getElementById("backbuttonstate");
 		  const hasBrowserBackMarker = !!(ibackbutton && ibackbutton.value == 1);
 	  
@@ -766,6 +775,15 @@ class CheckOutWebflow {
 			returnType: returnType,
 			hasBrowserBackMarker: hasBrowserBackMarker
 		  });
+		  // If Chrome/browser back restored from BFCache and marker exists, re-attach returnType
+		  // so downstream flow is consistent with Stripe cancel return behavior.
+		  if (!returnType && hasBrowserBackMarker && (event.persisted || isHistoryNav) && window.history && window.history.replaceState) {
+			urlPar.set('returnType', 'back');
+			var newQuery = urlPar.toString();
+			var newUrl = window.location.pathname + (newQuery ? ("?" + newQuery) : "") + window.location.hash;
+			window.history.replaceState({}, "", newUrl);
+			returnType = 'back';
+		  }
 		  // Restore on Stripe return, or on browser history restore when marker is present.
 		  if (returnType === 'back' || ((event.persisted || isHistoryNav) && hasBrowserBackMarker)) {
 			setTimeout(function () {
