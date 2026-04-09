@@ -239,6 +239,7 @@ class CheckOutWebflow {
 		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
 		// Always enforce returnType for Stripe cancel-back flow
 		cancelUrl.searchParams.set('returnType', 'back');
+		console.log("[summer-checkout][initPayment] cancelUrl", cancelUrl.href);
 		var data = {
 			"email": this.memberData.email,
 			"studentEmail": studentEmail.value,
@@ -356,6 +357,7 @@ class CheckOutWebflow {
 		console.log(window.location.href)
 		// Always enforce returnType for Stripe cancel-back flow
 		cancelUrl.searchParams.set('returnType', 'back');
+		console.log("[summer-checkout][updateClick] cancelUrl", cancelUrl.href);
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
@@ -678,12 +680,14 @@ class CheckOutWebflow {
 				this.activeBreadCrumb('student-details');
 				// Ensure class-selection submit stays clickable after back restore/BFCache.
 				this.resetClassSelectionSubmitButton();
+				this.resetPaymentCheckoutButtons();
 				// Some delayed scripts can switch to the next step; enforce the expected step once more.
 				var $this = this;
 				setTimeout(function () {
 					$this.activateDiv('checkout_program');
 					$this.activeBreadCrumb('student-details');
 					$this.resetClassSelectionSubmitButton();
+					$this.resetPaymentCheckoutButtons();
 				}, 1200);
 			}
 			// Consume back markers so a new checkout attempt generates fresh flow/URLs.
@@ -710,6 +714,24 @@ class CheckOutWebflow {
 			btn.disabled = false;
 		});
 	}
+	resetPaymentCheckoutButtons() {
+		var ach_payment = document.getElementById('ach_payment');
+		var card_payment = document.getElementById('card_payment');
+		var paylater_payment = document.getElementById('paylater_payment');
+		[ach_payment, card_payment, paylater_payment].forEach(function (btn) {
+			if (!btn) return;
+			btn.style.pointerEvents = "auto";
+			btn.disabled = false;
+		});
+		if (ach_payment) ach_payment.innerHTML = "Checkout";
+		if (card_payment) card_payment.innerHTML = "Checkout";
+		if (paylater_payment) paylater_payment.innerHTML = "Checkout";
+		console.log("[summer-checkout][button-reset]", {
+			ach: ach_payment ? ach_payment.style.pointerEvents : "missing",
+			card: card_payment ? card_payment.style.pointerEvents : "missing",
+			paylater: paylater_payment ? paylater_payment.style.pointerEvents : "missing"
+		});
+	}
 	// Chrome-only browser back support without changing Stripe return flow
 	attachChromeBackRefreshHandler() {
 		var $this = this;
@@ -725,11 +747,18 @@ class CheckOutWebflow {
 			navEntries &&
 			navEntries.length > 0 &&
 			navEntries[0].type === "back_forward";
+		  console.log("[summer-checkout][pageshow-debug]", {
+			persisted: event.persisted,
+			isHistoryNav: isHistoryNav,
+			returnType: returnType,
+			hasBrowserBackMarker: hasBrowserBackMarker
+		  });
 		  // Restore on Stripe return, or on browser history restore when marker is present.
 		  if (returnType === 'back' || ((event.persisted || isHistoryNav) && hasBrowserBackMarker)) {
 			setTimeout(function () {
 				$this.setUpBackButtonTab();
 				$this.resetClassSelectionSubmitButton();
+				$this.resetPaymentCheckoutButtons();
 			}, 200);
 		  }
 		});
@@ -753,6 +782,7 @@ class CheckOutWebflow {
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
 			this.resetClassSelectionSubmitButton();
+			this.resetPaymentCheckoutButtons();
 			this.setUpBackButtonTab();
 			this.attachChromeBackRefreshHandler();
 			// Update basic data
