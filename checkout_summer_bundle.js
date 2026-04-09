@@ -32,6 +32,7 @@ class CheckOutWebflow {
 	$checkoutData = "";
 	$suppPro = [];
 	$selectedProgram = [];
+	$backRestoreHandlerAttached = false;
 	// Initializes the checkout process with API URL and member data
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
@@ -665,6 +666,22 @@ class CheckOutWebflow {
 			localStorage.removeItem("checkOutData");
 		}
 	}
+	// Handles Chrome BFCache back/forward where init may not rerun
+	attachBackRestoreHandler() {
+		if (this.$backRestoreHandlerAttached) {
+			return;
+		}
+		this.$backRestoreHandlerAttached = true;
+		var $this = this;
+		window.addEventListener('pageshow', function (event) {
+			var isChrome = /Chrome/.test(navigator.userAgent) && !/Edg|OPR/.test(navigator.userAgent);
+			var navEntries = performance.getEntriesByType("navigation");
+			var isHistoryNav = navEntries && navEntries.length > 0 && navEntries[0].type === "back_forward";
+			if (isChrome && (event.persisted || isHistoryNav)) {
+				$this.setUpBackButtonTab();
+			}
+		});
+	}
 	// Orchestrates the rendering of summer session data and initializes event handlers
 	async renderPortalData(memberId) {
 		try {
@@ -684,7 +701,8 @@ class CheckOutWebflow {
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
-			//this.setUpBackButtonTab();
+			this.setUpBackButtonTab();
+			this.attachBackRestoreHandler();
 			// Update basic data
 			this.updateBasicData();
 			// Hide spinner 
