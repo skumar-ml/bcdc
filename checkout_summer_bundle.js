@@ -670,30 +670,39 @@ class CheckOutWebflow {
 		var $this = this;
 	  
 		window.addEventListener('pageshow', function (event) {
-		  try {
-			const urlPar = new URLSearchParams(window.location.search);
-			const returnType = urlPar.get('returnType');
+		  const urlPar = new URLSearchParams(window.location.search);
+		  const returnType = urlPar.get('returnType');
 	  
-			const navEntries = performance.getEntriesByType("navigation");
-			const isHistoryNav =
-			  navEntries &&
-			  navEntries.length > 0 &&
-			  navEntries[0].type === "back_forward";
+		  const navEntries = performance.getEntriesByType("navigation");
+		  const isHistoryNav =
+			navEntries &&
+			navEntries.length > 0 &&
+			navEntries[0].type === "back_forward";
 	  
-			// Detect all back scenarios:
-			if (event.persisted || isHistoryNav || returnType === 'back') {
-			  console.log("Back navigation detected → restoring checkout state");
+		  // ✅ ONLY handle Chrome back (NOT Stripe)
+		  if ((event.persisted || isHistoryNav) && returnType !== 'back') {
+			console.log("Chrome back detected");
 	  
-			  // 🔥 Restore state instead of reload
-			  if (typeof $this.setUpBackButtonTab === "function") {
-				$this.setUpBackButtonTab();
-			  }
-			}
-		  } catch (err) {
-			console.error("Back handler error:", err);
+			setTimeout(() => {
+			  $this.safeRestoreState();
+			}, 200);
 		  }
 		});
 	  }
+
+	safeRestoreState() {
+		const sessionEls = document.querySelectorAll('input[data-name="Checkbox"]');
+	  
+		// Wait until sessions are rendered
+		if (!sessionEls || sessionEls.length === 0) {
+		  console.log("Waiting for DOM...");
+		  setTimeout(() => this.safeRestoreState(), 300);
+		  return;
+		}
+	  
+		console.log("Restoring state now...");
+		this.setUpBackButtonTab();
+	}
 	// Orchestrates the rendering of summer session data and initializes event handlers
 	async renderPortalData(memberId) {
 		try {
@@ -713,7 +722,16 @@ class CheckOutWebflow {
 			// Display summer session
 			this.displaySessionsData(data)
 			// Setup back button for browser and stripe checkout page
-			this.setUpBackButtonTab();
+			//this.setUpBackButtonTab();
+			// ✅ Handle Stripe back ONLY here
+			const urlPar = new URLSearchParams(window.location.search);
+			const returnType = urlPar.get('returnType');
+
+			if (returnType === 'back') {
+				console.log("Stripe back detected");
+			  
+				this.safeRestoreState(); // ✅ use this instead
+			}
 			this.attachChromeBackRefreshHandler();
 			// Update basic data
 			this.updateBasicData();
