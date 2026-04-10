@@ -444,6 +444,7 @@ class CheckOutWebflow {
 
 		var checkoutAmount = this.getDisplayedCheckoutAmount();
 		this.setCreditModalBaseAmount(checkoutAmount);
+		var requestAmount = this.getCheckoutRequestAmount();
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
@@ -459,7 +460,7 @@ class CheckOutWebflow {
 			"memberId": this.memberData.memberId,
 			"isSummerData": true,
 			"upsellProgramIds": this.$selectedProgram.map(item => item.upsellProgramId),
-			"amount": Math.round(parseFloat(checkoutAmount || 0) * 100),
+			"amount": Math.round(parseFloat(requestAmount || 0) * 100),
 			"source": "cart_page",
 			"has_fee": hasFee,
 			"applyCredit": applyCredit,
@@ -1568,6 +1569,19 @@ class CheckOutWebflow {
 		}
 		var amount = parseFloat(String(rawText).replace(/[^0-9.]/g, ""));
 		return isNaN(amount) ? 0 : amount;
+	}
+
+	getCheckoutRequestAmount() {
+		var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
+		if (!totalDepositPriceEl) return 0;
+		var baseAmount = parseFloat(
+			String(totalDepositPriceEl.getAttribute("data-stripe-price") || "0").replace(/[^0-9.]/g, "")
+		);
+		if (isNaN(baseAmount)) baseAmount = 0;
+		var selectedAmount = this.$selectedProgram.reduce((total, program) => {
+			return total + (parseFloat(program.amount) || 0);
+		}, 0);
+		return parseFloat(baseAmount) + parseFloat(selectedAmount);
 	}
 
 	setCreditModalBaseAmount(amount) {
