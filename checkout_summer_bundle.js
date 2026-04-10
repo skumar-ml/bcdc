@@ -1595,10 +1595,18 @@ class CheckOutWebflow {
 
 	getCheckoutRequestAmount() {
 		var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
-		if (!totalDepositPriceEl) return 0;
-		var baseAmount = parseFloat(
-			String(totalDepositPriceEl.getAttribute("data-stripe-price") || "0").replace(/[^0-9.]/g, "")
-		);
+		var baseAmount = 0;
+		if (totalDepositPriceEl) {
+			baseAmount = parseFloat(
+				String(totalDepositPriceEl.getAttribute("data-stripe-price") || "0").replace(/[^0-9.]/g, "")
+			);
+		}
+		if (isNaN(baseAmount) || baseAmount <= 0) {
+			baseAmount = this.getDisplayedCheckoutAmount();
+		}
+		if ((isNaN(baseAmount) || baseAmount <= 0) && this.memberData && this.memberData.achAmount) {
+			baseAmount = parseFloat(String(this.memberData.achAmount).replace(/[^0-9.]/g, ""));
+		}
 		if (isNaN(baseAmount)) baseAmount = 0;
 		var selectedAmount = this.$selectedProgram.reduce((total, program) => {
 			return total + (parseFloat(program.amount) || 0);
