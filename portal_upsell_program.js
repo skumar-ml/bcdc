@@ -1,5 +1,5 @@
 /*
-
+ 
 Purpose: Supplementary program carousel/slider that fetches offerings, handles payments, and updates student pricing. Displays upsell programs and manages bundle program selection.
 
 Brief Logic: Fetches supplementary programs from API, displays programs in carousel/slider format, handles program selection, calculates pricing with discounts for old students, processes payment through checkout API, and manages bundle program creation.
@@ -8,6 +8,8 @@ Are there any dependent JS files: Yes
 Utils.js provides common functionality for modal management, credit data fetching, and API calls.
 
 */
+var PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY = "portalUpsell_stripeCancelUrl_v1";
+
 class DisplaySuppProgram {
   $selectedProgram = [];
   $suppPro = [];
@@ -24,6 +26,7 @@ class DisplaySuppProgram {
     this.displaySupplementaryProgram();
     this.updateOldStudentList();
     this.handlePaymentEvents();
+    this.attachBackRestoreHandler();
     this.discount_amount = parseInt(memberData.amount);
     
   }
@@ -523,6 +526,20 @@ class DisplaySuppProgram {
     
     // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
     console.log("Apply credit:", applyCredit);
+    // Must match Stripe session cancel_url. Chrome back follows history (often dashboard);
+    // Stripe back uses cancel_url — same string we POST here. Restore full URL on pageshow via sessionStorage.
+    var pathForCancel =
+      this.memberData && this.memberData.stripeCancelPath
+        ? (this.memberData.stripeCancelPath.indexOf("/") === 0
+            ? this.memberData.stripeCancelPath
+            : "/" + this.memberData.stripeCancelPath)
+        : window.location.pathname;
+    var cancelUrl = new URL(window.location.origin + pathForCancel);
+    cancelUrl.searchParams.set("returnType", "back");
+    cancelUrl.hash = "";
+    try {
+      sessionStorage.setItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY, cancelUrl.href);
+    } catch (e) {}
     // Define the data to be sent in the POST request
     const data = {
       sessionId: "",
@@ -532,8 +549,7 @@ class DisplaySuppProgram {
       successUrl:
         this.memberData.site_url +
         "portal/dashboard?success=true",
-      cancelUrl:
-        (document.referrer) ? document.referrer : "https://www.bergendebate.com/portal/dashboard",
+      cancelUrl: cancelUrl.href,
       label: programName,
       amount: parseFloat(amount * 100),
       source: "portal_page",
@@ -561,11 +577,54 @@ class DisplaySuppProgram {
         if (data.success) {
           console.log(data.cardUrl);
           window.location.href = data.cardUrl;
+        } else {
+          this.resetPaySuppProgramButton();
         }
       })
       .catch((error) => {
         console.error("There was a problem with the fetch operation:", error); // Handle errors
+        this.resetPaySuppProgramButton();
       });
+  }
+  resetPaySuppProgramButton() {
+    const payBtn = document.getElementById("pay-supp-program");
+    if (!payBtn) return;
+    payBtn.innerHTML = "Pay Now";
+    payBtn.style.pointerEvents = "auto";
+    payBtn.disabled = false;
+  }
+  attachBackRestoreHandler() {
+    var $this = this;
+    window.addEventListener("pageshow", function (event) {
+      const navEntries = performance.getEntriesByType("navigation");
+      const isHistoryNav =
+        navEntries &&
+        navEntries.length > 0 &&
+        navEntries[0].type === "back_forward";
+      if (!(event.persisted || isHistoryNav)) {
+        return;
+      }
+      var stored = null;
+      try {
+        stored = sessionStorage.getItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY);
+      } catch (e) {}
+      if (stored) {
+        try {
+          var storedU = new URL(stored);
+          var currentU = new URL(window.location.href);
+          var storedKey = storedU.origin + storedU.pathname + storedU.search;
+          var currentKey = currentU.origin + currentU.pathname + currentU.search;
+          if (storedKey !== currentKey && storedU.origin === currentU.origin) {
+            window.location.replace(stored);
+            return;
+          }
+        } catch (e2) {}
+      }
+      try {
+        sessionStorage.removeItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY);
+      } catch (e3) {}
+      $this.resetPaySuppProgramButton();
+    });
   }
   handlePaymentEvents() {
     var $this = this;
@@ -577,6 +636,7 @@ class DisplaySuppProgram {
       if (studentEl.value) {
         payBtn.innerHTML = "Processing...";
         payBtn.style.pointerEvents = "none";
+        payBtn.disabled = true;
         let programName = $this.$selectedProgram.map(
           (program) => program.label 
         ).join(", ");
@@ -595,9 +655,12 @@ class DisplaySuppProgram {
             programName,
             amount
           );
+        } else {
+          $this.resetPaySuppProgramButton();
         }
       } else {
         alert("Please select student");
+        $this.resetPaySuppProgramButton();
       }
     });
   }
