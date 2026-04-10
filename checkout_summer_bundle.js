@@ -467,6 +467,10 @@ class CheckOutWebflow {
 			memberId: this.memberData.memberId,
 			applyCredit: applyCredit
 		});
+		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
+		if (selectedUpsellIds.length === 0 && this.$coreData && this.$coreData.upsellProgramId) {
+			selectedUpsellIds = [this.$coreData.upsellProgramId];
+		}
 		var hasFee = paymentType === 'card_payment';
 		var checkoutLabel = "Summer | " + this.memberData.programName;
 		var data = {
@@ -474,7 +478,7 @@ class CheckOutWebflow {
 			"label": checkoutLabel,
 			"memberId": this.memberData.memberId,
 			"isSummerData": true,
-			"upsellProgramIds": this.$selectedProgram.map(item => item.upsellProgramId),
+			"upsellProgramIds": selectedUpsellIds,
 			"amount": Math.round(parseFloat(requestAmount || 0) * 100),
 			"source": "cart_page",
 			"has_fee": hasFee,
