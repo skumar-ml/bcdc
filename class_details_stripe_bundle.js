@@ -658,12 +658,14 @@ class classDetailsStripe extends parentLogin {
       if (!paymentData.checkoutData) {
         this.storeBasicData();
         this.AddStudentData();
-        this.activeBreadCrumb("select-class");
-        this.activateDiv("class-selection-container");
-        this.displayStudentInfo("block");
-        this.displayTopicData("block")
+        this.activeBreadCrumb("student-details");
+        this.activateDiv("checkout_student_details");
+        this.displayStudentInfo("none");
+        this.displayTopicData("none")
       } else {
-        this.displayStudentInfo("block");
+        this.activeBreadCrumb("student-details");
+        this.activateDiv("checkout_student_details");
+        this.displayStudentInfo("none");
         this.displayTopicData("none")
       }
 
@@ -671,7 +673,8 @@ class classDetailsStripe extends parentLogin {
       if (paymentData.checkoutData) {
         //this.$checkoutData = paymentData.checkoutData;
         // Will debug latter
-        this.activateDiv('class-selection-container');
+        this.activeBreadCrumb("student-details");
+        this.activateDiv("checkout_student_details");
         const selectField = document.getElementById("location-select-field");
         // Set the selected location in the dropdown
         if (paymentData.location) {
