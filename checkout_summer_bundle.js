@@ -311,8 +311,8 @@ class CheckOutWebflow {
 		var studentSchool = document.getElementById('Student-School');
 		var studentGender = document.getElementById('Student-Gender');
 		var prevStudent = document.getElementById('prevStudent-2');
-		var suppProIdE = document.getElementById('suppProIds');
-		var core_product_price = document.getElementById('core_product_price');
+		var requestAchAmount = this.getCheckoutRequestAmount();
+		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
 		
 		//Utm Source
 		let localUtmSource = localStorage.getItem("utm_source");
@@ -342,8 +342,8 @@ class CheckOutWebflow {
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href,
 			"memberId": this.memberData.memberId,
-			"achAmount": parseFloat(this.memberData.achAmount.replace(/,/g, '')),
-			"cardAmount": parseFloat(this.memberData.cardAmount.replace(/,/g, '')),
+			"achAmount": parseFloat(requestAchAmount.toFixed(2)),
+			"cardAmount": parseFloat(requestCardAmount.toFixed(2)),
 			"utm_source": (localUtmSource != null) ? localUtmSource : "null"
 		}
 
@@ -443,13 +443,16 @@ class CheckOutWebflow {
 		cancelUrl.searchParams.set('returnType', 'back');
 
 		var checkoutAmount = this.getDisplayedCheckoutAmount();
-		this.setCreditModalBaseAmount(checkoutAmount);
 		var requestAmount = this.getCheckoutRequestAmount();
+		var hasAvailableCredits = await this.hasAvailableCredits();
+		if (hasAvailableCredits) {
+			this.setCreditModalBaseAmount(checkoutAmount);
+		}
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
 		var applyCredit = false;
-		if (typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
+		if (hasAvailableCredits && typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
 			applyCredit = await Utils.waitForCreditApplicationChoice(this.memberData.memberId);
 		}
 		var hasFee = paymentType === 'card_payment';
@@ -460,13 +463,15 @@ class CheckOutWebflow {
 			"memberId": this.memberData.memberId,
 			"isSummerData": true,
 			"upsellProgramIds": this.$selectedProgram.map(item => item.upsellProgramId),
-			"amount": Math.round(parseFloat(requestAmount || 0) * 100),
 			"source": "cart_page",
 			"has_fee": hasFee,
 			"applyCredit": applyCredit,
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
+		}
+		if (hasAvailableCredits) {
+			data.amount = Math.round(parseFloat(requestAmount || 0) * 100);
 		}
 		
 		var xhr = new XMLHttpRequest()
@@ -1582,6 +1587,24 @@ class CheckOutWebflow {
 			return total + (parseFloat(program.amount) || 0);
 		}, 0);
 		return parseFloat(baseAmount) + parseFloat(selectedAmount);
+	}
+
+	async hasAvailableCredits() {
+		if (typeof Utils === "undefined" || !this.memberData || !this.memberData.memberId) {
+			return false;
+		}
+		try {
+			const instance = new Utils();
+			const creditsData = await instance.fetchData(
+				"getCreditBalance/" + this.memberData.memberId,
+				"https://bkqmhuwcwj.execute-api.us-east-1.amazonaws.com/prod/camp/"
+			);
+			const creditBalance = Number(creditsData?.creditBalance?.creditBalance || 0);
+			return !isNaN(creditBalance) && creditBalance > 0;
+		} catch (error) {
+			console.error("Error checking credit balance:", error);
+			return false;
+		}
 	}
 
 	setCreditModalBaseAmount(amount) {
