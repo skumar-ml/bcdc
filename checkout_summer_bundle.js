@@ -441,6 +441,9 @@ class CheckOutWebflow {
 		//var cancelUrl = new URL(window.location.href);
 		// Always enforce returnType for Stripe cancel-back flow
 		cancelUrl.searchParams.set('returnType', 'back');
+
+		var checkoutAmount = this.getDisplayedCheckoutAmount();
+		this.setCreditModalBaseAmount(checkoutAmount);
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
@@ -448,10 +451,15 @@ class CheckOutWebflow {
 		if (typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
 			applyCredit = await Utils.waitForCreditApplicationChoice(this.memberData.memberId);
 		}
+		if (applyCredit) {
+			checkoutAmount = await this.getAmountAfterCredits(checkoutAmount);
+			this.updateVisibleCheckoutTotal(checkoutAmount);
+		}
 		var data = {
 			"checkoutId": checkOutData.checkoutData.checkoutId,
 			"isSummerData": true,
 			"upsellProgramIds": this.$selectedProgram.map(item => item.upsellProgramId),
+			"amount": Math.round(parseFloat(checkoutAmount || 0) * 100),
 			"applyCredit": applyCredit,
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
@@ -983,6 +991,11 @@ class CheckOutWebflow {
       dataStripePrice = parseFloat(dataStripePrice);
       totalPriceText.innerHTML = "$" + this.numberWithCommas(dataStripePrice);
 		}
+
+		const grayElem = document.querySelector(".current-price-gray");
+		if (grayElem) {
+			grayElem.innerHTML = totalPriceText.innerHTML;
+		}
        
         
       });
@@ -1472,6 +1485,10 @@ class CheckOutWebflow {
                 
                 deposit_price.innerHTML =
                   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+				const grayElem = document.querySelector(".current-price-gray");
+				if (grayElem) {
+					grayElem.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+				}
               });
             }
           } else {
@@ -1503,6 +1520,10 @@ class CheckOutWebflow {
               // }      
               deposit_price.innerHTML =
                 "$" + finalPrice;
+			  const grayElem = document.querySelector(".current-price-gray");
+			  if (grayElem) {
+				grayElem.innerHTML = "$" + finalPrice;
+			  }
             });
           }
           }
@@ -1535,5 +1556,52 @@ class CheckOutWebflow {
       }
       //data-stripe="totalDepositPrice"
     }
+
+	getDisplayedCheckoutAmount() {
+		var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
+		if (!totalDepositPriceEl) return 0;
+		var rawText = (totalDepositPriceEl.textContent || totalDepositPriceEl.innerText || "").trim();
+		if (!rawText) {
+			rawText = totalDepositPriceEl.getAttribute("data-stripe-price") || "0";
+		}
+		var amount = parseFloat(String(rawText).replace(/[^0-9.]/g, ""));
+		return isNaN(amount) ? 0 : amount;
+	}
+
+	setCreditModalBaseAmount(amount) {
+		const grayElem = document.querySelector(".current-price-gray");
+		if (grayElem) {
+			grayElem.innerHTML = "$" + this.numberWithCommas(parseFloat(amount || 0).toFixed(2));
+		}
+	}
+
+	updateVisibleCheckoutTotal(amount) {
+		const formattedAmount = "$" + this.numberWithCommas(parseFloat(amount || 0).toFixed(2));
+		const totalPriceAllText = document.querySelectorAll("[data-stripe='totalDepositPrice']");
+		totalPriceAllText.forEach((el) => {
+			el.innerHTML = formattedAmount;
+		});
+		this.setCreditModalBaseAmount(amount);
+	}
+
+	async getAmountAfterCredits(totalAmount) {
+		if (typeof Utils === "undefined" || !this.memberData || !this.memberData.memberId) {
+			return totalAmount;
+		}
+		try {
+			const utilsInstance = new Utils();
+			const creditsData = await utilsInstance.fetchData(
+				"getCreditBalance/" + this.memberData.memberId,
+				"https://bkqmhuwcwj.execute-api.us-east-1.amazonaws.com/prod/camp/"
+			);
+			var creditBalance = Number(creditsData?.creditBalance?.creditBalance || 0);
+			if (isNaN(creditBalance) || creditBalance <= 0) return totalAmount;
+			var finalAmount = parseFloat(totalAmount || 0) - creditBalance;
+			return finalAmount > 0 ? finalAmount : 0;
+		} catch (error) {
+			console.error("Error calculating amount after credits:", error);
+			return totalAmount;
+		}
+	}
 }
 
