@@ -1,5 +1,5 @@
 /*
-
+ 
 Purpose: Supplementary program carousel/slider that fetches offerings, handles payments, and updates student pricing. Displays upsell programs and manages bundle program selection.
 
 Brief Logic: Fetches supplementary programs from API, displays programs in carousel/slider format, handles program selection, calculates pricing with discounts for old students, processes payment through checkout API, and manages bundle program creation.
@@ -8,6 +8,9 @@ Are there any dependent JS files: Yes
 Utils.js provides common functionality for modal management, credit data fetching, and API calls.
 
 */
+/** Exact Stripe cancelUrl for upsell checkout; used to restore full URL after Chrome back (BFCache). */
+var PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY = "portalUpsell_stripeCancelUrl_v1";
+
 class DisplaySuppProgram {
   $selectedProgram = [];
   $suppPro = [];
@@ -526,6 +529,9 @@ class DisplaySuppProgram {
     console.log("Apply credit:", applyCredit);
     var cancelUrl = new URL(window.location.href);
     cancelUrl.searchParams.set("returnType", "back");
+    try {
+      sessionStorage.setItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY, cancelUrl.href);
+    } catch (e) {}
     // Define the data to be sent in the POST request
     const data = {
       sessionId: "",
@@ -587,7 +593,25 @@ class DisplaySuppProgram {
         navEntries &&
         navEntries.length > 0 &&
         navEntries[0].type === "back_forward";
-      if (event.persisted || isHistoryNav) {
+      if (!(event.persisted || isHistoryNav)) {
+        return;
+      }
+      var stored = null;
+      try {
+        stored = sessionStorage.getItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY);
+      } catch (e) {}
+      if (stored) {
+        try {
+          var storedU = new URL(stored);
+          var currentU = new URL(window.location.href);
+          if (storedU.href !== currentU.href) {
+            if (storedU.origin === currentU.origin) {
+              window.location.replace(stored);
+              return;
+            }
+          }
+        } catch (e2) {}
+      } else {
         const urlPar = new URLSearchParams(window.location.search);
         const returnType = urlPar.get("returnType");
         if (!returnType && window.history && window.history.replaceState) {
@@ -596,8 +620,11 @@ class DisplaySuppProgram {
           const newUrl = window.location.pathname + (newQuery ? ("?" + newQuery) : "") + window.location.hash;
           window.history.replaceState({}, "", newUrl);
         }
-        $this.resetPaySuppProgramButton();
       }
+      try {
+        sessionStorage.removeItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY);
+      } catch (e3) {}
+      $this.resetPaySuppProgramButton();
     });
   }
   handlePaymentEvents() {
