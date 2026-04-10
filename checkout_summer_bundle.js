@@ -346,6 +346,12 @@ class CheckOutWebflow {
 			"cardAmount": parseFloat(requestCardAmount.toFixed(2)),
 			"utm_source": (localUtmSource != null) ? localUtmSource : "null"
 		}
+		console.log("[SummerCheckout] initializeStripePayment amounts", {
+			memberId: this.memberData.memberId,
+			requestAchAmount: requestAchAmount,
+			requestCardAmount: requestCardAmount,
+			programName: this.memberData.programName
+		});
 
 
 		var xhr = new XMLHttpRequest()
@@ -355,7 +361,7 @@ class CheckOutWebflow {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log('responseText', responseText)
+			console.log("[SummerCheckout] checkoutUrlForSummer response", responseText)
 			if (responseText.success) {
 
 				$this.$checkoutData = responseText;
@@ -444,17 +450,23 @@ class CheckOutWebflow {
 
 		var checkoutAmount = this.getDisplayedCheckoutAmount();
 		var requestAmount = this.getCheckoutRequestAmount();
-		var hasAvailableCredits = await this.hasAvailableCredits();
-		if (hasAvailableCredits) {
-			this.setCreditModalBaseAmount(checkoutAmount);
-		}
+		this.setCreditModalBaseAmount(checkoutAmount);
+		console.log("[SummerCheckout] pre-credit amounts", {
+			checkoutAmount: checkoutAmount,
+			requestAmount: requestAmount,
+			paymentType: paymentType
+		});
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
 		var applyCredit = false;
-		if (hasAvailableCredits && typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
+		if (typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
 			applyCredit = await Utils.waitForCreditApplicationChoice(this.memberData.memberId);
 		}
+		console.log("[SummerCheckout] credit choice", {
+			memberId: this.memberData.memberId,
+			applyCredit: applyCredit
+		});
 		var hasFee = paymentType === 'card_payment';
 		var checkoutLabel = "Summer | " + this.memberData.programName;
 		var data = {
@@ -463,6 +475,7 @@ class CheckOutWebflow {
 			"memberId": this.memberData.memberId,
 			"isSummerData": true,
 			"upsellProgramIds": this.$selectedProgram.map(item => item.upsellProgramId),
+			"amount": Math.round(parseFloat(requestAmount || 0) * 100),
 			"source": "cart_page",
 			"has_fee": hasFee,
 			"applyCredit": applyCredit,
@@ -470,9 +483,7 @@ class CheckOutWebflow {
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
 		}
-		if (hasAvailableCredits) {
-			data.amount = Math.round(parseFloat(requestAmount || 0) * 100);
-		}
+		console.log("[SummerCheckout] checkoutUrlForStandard payload", data);
 		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
@@ -481,9 +492,15 @@ class CheckOutWebflow {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log('responseText', responseText)
+			console.log("[SummerCheckout] checkoutUrlForStandard response", responseText)
       if (responseText.success) {
         $this.$checkoutData = responseText;
+		console.log("[SummerCheckout] redirect urls", {
+			paymentType: paymentType,
+			achUrl: responseText.achUrl,
+			cardUrl: responseText.cardUrl,
+			paylaterUrl: responseText.paylaterUrl
+		});
         if (paymentType == 'ach_payment' && responseText.achUrl) {
           ach_payment.innerHTML = "Checkout"
           ach_payment.style.pointerEvents = "auto";
@@ -1587,24 +1604,6 @@ class CheckOutWebflow {
 			return total + (parseFloat(program.amount) || 0);
 		}, 0);
 		return parseFloat(baseAmount) + parseFloat(selectedAmount);
-	}
-
-	async hasAvailableCredits() {
-		if (typeof Utils === "undefined" || !this.memberData || !this.memberData.memberId) {
-			return false;
-		}
-		try {
-			const instance = new Utils();
-			const creditsData = await instance.fetchData(
-				"getCreditBalance/" + this.memberData.memberId,
-				"https://bkqmhuwcwj.execute-api.us-east-1.amazonaws.com/prod/camp/"
-			);
-			const creditBalance = Number(creditsData?.creditBalance?.creditBalance || 0);
-			return !isNaN(creditBalance) && creditBalance > 0;
-		} catch (error) {
-			console.error("Error checking credit balance:", error);
-			return false;
-		}
 	}
 
 	setCreditModalBaseAmount(amount) {
