@@ -8,7 +8,6 @@ Are there any dependent JS files: Yes
 Utils.js provides common functionality for modal management, credit data fetching, and API calls.
 
 */
-/** Exact Stripe cancelUrl for upsell checkout; used to restore full URL after Chrome back (BFCache). */
 var PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY = "portalUpsell_stripeCancelUrl_v1";
 
 class DisplaySuppProgram {
@@ -527,8 +526,17 @@ class DisplaySuppProgram {
     
     // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
     console.log("Apply credit:", applyCredit);
-    var cancelUrl = new URL(window.location.href);
+    // Must match Stripe session cancel_url. Chrome back follows history (often dashboard);
+    // Stripe back uses cancel_url — same string we POST here. Restore full URL on pageshow via sessionStorage.
+    var pathForCancel =
+      this.memberData && this.memberData.stripeCancelPath
+        ? (this.memberData.stripeCancelPath.indexOf("/") === 0
+            ? this.memberData.stripeCancelPath
+            : "/" + this.memberData.stripeCancelPath)
+        : window.location.pathname;
+    var cancelUrl = new URL(window.location.origin + pathForCancel);
     cancelUrl.searchParams.set("returnType", "back");
+    cancelUrl.hash = "";
     try {
       sessionStorage.setItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY, cancelUrl.href);
     } catch (e) {}
@@ -604,22 +612,13 @@ class DisplaySuppProgram {
         try {
           var storedU = new URL(stored);
           var currentU = new URL(window.location.href);
-          if (storedU.href !== currentU.href) {
-            if (storedU.origin === currentU.origin) {
-              window.location.replace(stored);
-              return;
-            }
+          var storedKey = storedU.origin + storedU.pathname + storedU.search;
+          var currentKey = currentU.origin + currentU.pathname + currentU.search;
+          if (storedKey !== currentKey && storedU.origin === currentU.origin) {
+            window.location.replace(stored);
+            return;
           }
         } catch (e2) {}
-      } else {
-        const urlPar = new URLSearchParams(window.location.search);
-        const returnType = urlPar.get("returnType");
-        if (!returnType && window.history && window.history.replaceState) {
-          urlPar.set("returnType", "back");
-          const newQuery = urlPar.toString();
-          const newUrl = window.location.pathname + (newQuery ? ("?" + newQuery) : "") + window.location.hash;
-          window.history.replaceState({}, "", newUrl);
-        }
       }
       try {
         sessionStorage.removeItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY);
