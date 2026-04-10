@@ -451,15 +451,17 @@ class CheckOutWebflow {
 		if (typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
 			applyCredit = await Utils.waitForCreditApplicationChoice(this.memberData.memberId);
 		}
-		if (applyCredit) {
-			checkoutAmount = await this.getAmountAfterCredits(checkoutAmount);
-			this.updateVisibleCheckoutTotal(checkoutAmount);
-		}
+		var hasFee = paymentType === 'card_payment';
+		var checkoutLabel = "Summer | " + this.memberData.programName;
 		var data = {
 			"checkoutId": checkOutData.checkoutData.checkoutId,
+			"label": checkoutLabel,
+			"memberId": this.memberData.memberId,
 			"isSummerData": true,
 			"upsellProgramIds": this.$selectedProgram.map(item => item.upsellProgramId),
 			"amount": Math.round(parseFloat(checkoutAmount || 0) * 100),
+			"source": "cart_page",
+			"has_fee": hasFee,
 			"applyCredit": applyCredit,
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
@@ -1572,35 +1574,6 @@ class CheckOutWebflow {
 		const grayElem = document.querySelector(".current-price-gray");
 		if (grayElem) {
 			grayElem.innerHTML = "$" + this.numberWithCommas(parseFloat(amount || 0).toFixed(2));
-		}
-	}
-
-	updateVisibleCheckoutTotal(amount) {
-		const formattedAmount = "$" + this.numberWithCommas(parseFloat(amount || 0).toFixed(2));
-		const totalPriceAllText = document.querySelectorAll("[data-stripe='totalDepositPrice']");
-		totalPriceAllText.forEach((el) => {
-			el.innerHTML = formattedAmount;
-		});
-		this.setCreditModalBaseAmount(amount);
-	}
-
-	async getAmountAfterCredits(totalAmount) {
-		if (typeof Utils === "undefined" || !this.memberData || !this.memberData.memberId) {
-			return totalAmount;
-		}
-		try {
-			const utilsInstance = new Utils();
-			const creditsData = await utilsInstance.fetchData(
-				"getCreditBalance/" + this.memberData.memberId,
-				"https://bkqmhuwcwj.execute-api.us-east-1.amazonaws.com/prod/camp/"
-			);
-			var creditBalance = Number(creditsData?.creditBalance?.creditBalance || 0);
-			if (isNaN(creditBalance) || creditBalance <= 0) return totalAmount;
-			var finalAmount = parseFloat(totalAmount || 0) - creditBalance;
-			return finalAmount > 0 ? finalAmount : 0;
-		} catch (error) {
-			console.error("Error calculating amount after credits:", error);
-			return totalAmount;
 		}
 	}
 }
