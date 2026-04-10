@@ -55,22 +55,7 @@ class Utils {
         const bergenCreditsModal = document.getElementById("bergen-credits-modal");
         
         if (bergenCreditsModal) {
-            const bergenCreditsModalBg = document.getElementById("bergen-credits-modal-bg");
-            const bergenCreditsModalClose = document.getElementById("bergen-credits-modal-close");
-            
-            // Add event listener to close modal when close button is clicked
-            if (bergenCreditsModalClose) {
-                bergenCreditsModalClose.addEventListener("click", () => {
-                    Utils.close(bergenCreditsModal, bergenCreditsModalBg);
-                });
-            }
-            
-            // Add event listener to close modal when background is clicked
-            if (bergenCreditsModalBg) {
-                bergenCreditsModalBg.addEventListener("click", () => {
-                    Utils.close(bergenCreditsModal, bergenCreditsModalBg);
-                });
-            }
+            Utils.setupBergenCreditsModalHandlers();
         }
 
         // Fetch credits data using private method
@@ -105,7 +90,6 @@ class Utils {
 
         // Format & update UI for credit price
         creditPriceEl.textContent = `$${creditPrice.toFixed(2)}`;
-        //console.log("Credit price:", creditPrice);
 
         // Total price amount
         const depositPrice = parseFloat(
@@ -178,7 +162,33 @@ class Utils {
         
         if (bergenCreditsModal) {
             const bergenCreditsModalBg = document.getElementById("bergen-credits-modal-bg");
+            Utils.setupBergenCreditsModalHandlers();
             Utils.show(bergenCreditsModal, bergenCreditsModalBg);
+        }
+    }
+
+    /**
+     * Wires up close interactions for Bergen credits modal.
+     * Uses onclick assignment to avoid stacking duplicate handlers.
+     */
+    static setupBergenCreditsModalHandlers() {
+        const bergenCreditsModal = document.getElementById("bergen-credits-modal");
+        const bergenCreditsModalBg = document.getElementById("bergen-credits-modal-bg");
+        const bergenCreditsModalClose = document.getElementById("bergen-credits-modal-close");
+
+        if (!bergenCreditsModal) return;
+
+        if (bergenCreditsModalClose) {
+            bergenCreditsModalClose.onclick = (event) => {
+                if (event) event.preventDefault();
+                Utils.close(bergenCreditsModal, bergenCreditsModalBg);
+            };
+        }
+
+        if (bergenCreditsModalBg) {
+            bergenCreditsModalBg.onclick = () => {
+                Utils.close(bergenCreditsModal, bergenCreditsModalBg);
+            };
         }
     }
 
@@ -221,6 +231,7 @@ class Utils {
             // Query for buttons - may need to wait a moment for modal to render
             const applyButton = document.querySelector('[data-credit="apply"]');
             const noButton = document.querySelector('[data-credit="no"]');
+            const bergenCreditsModalClose = document.getElementById("bergen-credits-modal-close");
             
             // If buttons don't exist, default to false and resolve immediately
             if (!applyButton && !noButton) {
@@ -240,6 +251,11 @@ class Utils {
                 cleanup();
                 resolve(false);
             };
+
+            const handleClose = (event) => {
+                if (event) event.preventDefault();
+                handleNo();
+            };
             
             // Cleanup function to remove event listeners
             const cleanup = () => {
@@ -249,6 +265,9 @@ class Utils {
                 if (noButton) {
                     noButton.removeEventListener('click', handleNo);
                 }
+                if (bergenCreditsModalClose) {
+                    bergenCreditsModalClose.removeEventListener('click', handleClose);
+                }
             };
             
             // Add event listeners
@@ -257,6 +276,9 @@ class Utils {
             }
             if (noButton) {
                 noButton.addEventListener('click', handleNo);
+            }
+            if (bergenCreditsModalClose) {
+                bergenCreditsModalClose.addEventListener('click', handleClose);
             }
         });
         
