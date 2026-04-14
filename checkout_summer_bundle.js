@@ -669,7 +669,11 @@ class CheckOutWebflow {
 		}
 		var $this = this;
 		try {
-			var data = await this.fetchData("https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/getAllPreviousStudents/" + this.memberData.memberId + "/current", "");
+			var response = await fetch("https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/getAllPreviousStudents/" + this.memberData.memberId + "/current");
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+			var data = await response.json();
 			if (data == "No data Found" || !Array.isArray(data) || data.length === 0) {
 				selectBox.disabled = true;
 				selectBox.innerHTML = '<option value="">No previous students found</option>';
