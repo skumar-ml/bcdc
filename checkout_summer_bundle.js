@@ -669,10 +669,7 @@ class CheckOutWebflow {
 		}
 		var $this = this;
 		try {
-			var data = await this.fetchData(
-				"getAllPreviousStudents/" + this.memberData.memberId + "/current",
-				this.baseUrl
-			);
+			var data = await this.fetchData("https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/getAllPreviousStudents/" + this.memberData.memberId + "/current", "");
 			if (data == "No data Found" || !Array.isArray(data) || data.length === 0) {
 				selectBox.disabled = true;
 				selectBox.innerHTML = '<option value="">No previous students found</option>';
