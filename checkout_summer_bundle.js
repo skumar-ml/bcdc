@@ -1220,6 +1220,7 @@ class CheckOutWebflow {
           //coreData.amount = coreAmount - dataStripePrice;
         }
         this.$coreData = coreData;
+        this.$selectedProgram = [coreData, ...this.$selectedProgram.filter(program => program.upsellProgramId !== coreData.upsellProgramId)];
         var bundlePopUpText = creEl("p", "bundle-pop-up-text");
         bundlePopUpText.innerHTML = "*To get the bundle benefits, a future session must be selected and the full tuition is due at class registration.";
 
@@ -1245,6 +1246,7 @@ class CheckOutWebflow {
           var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
           modalCardContainer.appendChild(modelCard);
         });
+        this.updateAmount(0);
         this.displayTotalDiscount(item.upsellPrograms, item.disc_amount);
       });
       this.disableEnableBuyNowButton();
