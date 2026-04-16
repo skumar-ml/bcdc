@@ -311,8 +311,8 @@ class CheckOutWebflow {
 		var studentSchool = document.getElementById('Student-School');
 		var studentGender = document.getElementById('Student-Gender');
 		var prevStudent = document.getElementById('prevStudent-2');
-		var suppProIdE = document.getElementById('suppProIds');
-		var core_product_price = document.getElementById('core_product_price');
+		var requestAchAmount = this.getCheckoutRequestAmount();
+		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
 		
 		//Utm Source
 		let localUtmSource = localStorage.getItem("utm_source");
@@ -342,10 +342,16 @@ class CheckOutWebflow {
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href,
 			"memberId": this.memberData.memberId,
-			"achAmount": parseFloat(this.memberData.achAmount.replace(/,/g, '')),
-			"cardAmount": parseFloat(this.memberData.cardAmount.replace(/,/g, '')),
+			"achAmount": parseFloat(requestAchAmount.toFixed(2)),
+			"cardAmount": parseFloat(requestCardAmount.toFixed(2)),
 			"utm_source": (localUtmSource != null) ? localUtmSource : "null"
 		}
+		console.log("[SummerCheckout] initializeStripePayment amounts", {
+			memberId: this.memberData.memberId,
+			requestAchAmount: requestAchAmount,
+			requestCardAmount: requestCardAmount,
+			programName: this.memberData.programName
+		});
 
 
 		var xhr = new XMLHttpRequest()
@@ -355,7 +361,7 @@ class CheckOutWebflow {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log('responseText', responseText)
+			console.log("[SummerCheckout] checkoutUrlForSummer response", responseText)
 			if (responseText.success) {
 
 				$this.$checkoutData = responseText;
@@ -441,6 +447,15 @@ class CheckOutWebflow {
 		//var cancelUrl = new URL(window.location.href);
 		// Always enforce returnType for Stripe cancel-back flow
 		cancelUrl.searchParams.set('returnType', 'back');
+
+		var checkoutAmount = this.getDisplayedCheckoutAmount();
+		var requestAmount = this.getCheckoutRequestAmount();
+		this.setCreditModalBaseAmount(checkoutAmount);
+		console.log("[SummerCheckout] pre-credit amounts", {
+			checkoutAmount: checkoutAmount,
+			requestAmount: requestAmount,
+			paymentType: paymentType
+		});
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
@@ -448,15 +463,31 @@ class CheckOutWebflow {
 		if (typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
 			applyCredit = await Utils.waitForCreditApplicationChoice(this.memberData.memberId);
 		}
+		console.log("[SummerCheckout] credit choice", {
+			memberId: this.memberData.memberId,
+			applyCredit: applyCredit
+		});
+		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
+		if (selectedUpsellIds.length === 0 && this.$coreData && this.$coreData.upsellProgramId) {
+			selectedUpsellIds = [this.$coreData.upsellProgramId];
+		}
+		var hasFee = paymentType === 'card_payment';
+		var checkoutLabel = "Summer | " + this.memberData.programName;
 		var data = {
 			"checkoutId": checkOutData.checkoutData.checkoutId,
+			"label": checkoutLabel,
+			"memberId": this.memberData.memberId,
 			"isSummerData": true,
-			"upsellProgramIds": this.$selectedProgram.map(item => item.upsellProgramId),
+			"upsellProgramIds": selectedUpsellIds,
+			"amount": Math.round(parseFloat(requestAmount || 0) * 100),
+			"source": "cart_page",
+			"has_fee": hasFee,
 			"applyCredit": applyCredit,
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
 		}
+		console.log("[SummerCheckout] checkoutUrlForStandard payload", data);
 		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
@@ -465,9 +496,15 @@ class CheckOutWebflow {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log('responseText', responseText)
+			console.log("[SummerCheckout] checkoutUrlForStandard response", responseText)
       if (responseText.success) {
         $this.$checkoutData = responseText;
+		console.log("[SummerCheckout] redirect urls", {
+			paymentType: paymentType,
+			achUrl: responseText.achUrl,
+			cardUrl: responseText.cardUrl,
+			paylaterUrl: responseText.paylaterUrl
+		});
         if (paymentType == 'ach_payment' && responseText.achUrl) {
           ach_payment.innerHTML = "Checkout"
           ach_payment.style.pointerEvents = "auto";
@@ -983,6 +1020,11 @@ class CheckOutWebflow {
       dataStripePrice = parseFloat(dataStripePrice);
       totalPriceText.innerHTML = "$" + this.numberWithCommas(dataStripePrice);
 		}
+
+		const grayElem = document.querySelector(".current-price-gray");
+		if (grayElem) {
+			grayElem.innerHTML = totalPriceText.innerHTML;
+		}
        
         
       });
@@ -1472,6 +1514,10 @@ class CheckOutWebflow {
                 
                 deposit_price.innerHTML =
                   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+				const grayElem = document.querySelector(".current-price-gray");
+				if (grayElem) {
+					grayElem.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+				}
               });
             }
           } else {
@@ -1503,6 +1549,10 @@ class CheckOutWebflow {
               // }      
               deposit_price.innerHTML =
                 "$" + finalPrice;
+			  const grayElem = document.querySelector(".current-price-gray");
+			  if (grayElem) {
+				grayElem.innerHTML = "$" + finalPrice;
+			  }
             });
           }
           }
@@ -1535,5 +1585,44 @@ class CheckOutWebflow {
       }
       //data-stripe="totalDepositPrice"
     }
+
+	getDisplayedCheckoutAmount() {
+		var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
+		if (!totalDepositPriceEl) return 0;
+		var rawText = (totalDepositPriceEl.textContent || totalDepositPriceEl.innerText || "").trim();
+		if (!rawText) {
+			rawText = totalDepositPriceEl.getAttribute("data-stripe-price") || "0";
+		}
+		var amount = parseFloat(String(rawText).replace(/[^0-9.]/g, ""));
+		return isNaN(amount) ? 0 : amount;
+	}
+
+	getCheckoutRequestAmount() {
+		var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
+		var baseAmount = 0;
+		if (totalDepositPriceEl) {
+			baseAmount = parseFloat(
+				String(totalDepositPriceEl.getAttribute("data-stripe-price") || "0").replace(/[^0-9.]/g, "")
+			);
+		}
+		if (isNaN(baseAmount) || baseAmount <= 0) {
+			baseAmount = this.getDisplayedCheckoutAmount();
+		}
+		if ((isNaN(baseAmount) || baseAmount <= 0) && this.memberData && this.memberData.achAmount) {
+			baseAmount = parseFloat(String(this.memberData.achAmount).replace(/[^0-9.]/g, ""));
+		}
+		if (isNaN(baseAmount)) baseAmount = 0;
+		var selectedAmount = this.$selectedProgram.reduce((total, program) => {
+			return total + (parseFloat(program.amount) || 0);
+		}, 0);
+		return parseFloat(baseAmount) + parseFloat(selectedAmount);
+	}
+
+	setCreditModalBaseAmount(amount) {
+		const grayElem = document.querySelector(".current-price-gray");
+		if (grayElem) {
+			grayElem.innerHTML = "$" + this.numberWithCommas(parseFloat(amount || 0).toFixed(2));
+		}
+	}
 }
 
