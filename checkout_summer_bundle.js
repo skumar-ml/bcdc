@@ -1543,11 +1543,11 @@ class CheckOutWebflow {
                     return total + (((isNaN(amount) ? 0 : amount) + 0.3) / 0.971);
                   }, 0)
                 ).toFixed(2);
-                // if($this.$selectedProgram.length > 0){
-                //     coreDepositPrice = parseFloat(sumOfSelectedPrograms);
-                // } else {
+                if($this.$selectedProgram.length > 0){
+                    coreDepositPrice = parseFloat(sumOfSelectedPrograms);
+                } else {
                     coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice;
-                //}
+                }
                 
                 deposit_price.innerHTML =
                   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
@@ -1584,16 +1584,25 @@ class CheckOutWebflow {
                 return total + (isNaN(amount) ? 0 : amount);
               }, 0)
         ).toFixed(2);
-              var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms)+ parseFloat(amount))      
-              // if($this.$selectedProgram.length > 0){
-              //     finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms))
-              // }      
+              var finalPrice = 0;
+              if($this.$selectedProgram.length > 0){
+                finalPrice = parseFloat(sumOfSelectedPrograms);
+              } else {
+                finalPrice = parseFloat(sumOfSelectedPrograms) + parseFloat(amount);
+              }
+              console.log("[SummerCheckout] payment tab total recalculation", {
+                tab: tab,
+                selectedProgramCount: $this.$selectedProgram.length,
+                baseAmount: amount,
+                selectedAmount: parseFloat(sumOfSelectedPrograms),
+                finalPrice: finalPrice
+              });
               deposit_price.innerHTML =
-                "$" + finalPrice;
-			  deposit_price.setAttribute("data-stripe-price", finalPrice);
+                "$" + $this.numberWithCommas(finalPrice.toFixed(2));
+			  deposit_price.setAttribute("data-stripe-price", $this.numberWithCommas(finalPrice.toFixed(2)));
 			  const grayElem = document.querySelector(".current-price-gray");
 			  if (grayElem) {
-				grayElem.innerHTML = "$" + finalPrice;
+				grayElem.innerHTML = "$" + $this.numberWithCommas(finalPrice.toFixed(2));
 			  }
             });
           }
