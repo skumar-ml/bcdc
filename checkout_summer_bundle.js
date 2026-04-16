@@ -724,7 +724,8 @@ class CheckOutWebflow {
 		// Browser back button event hidden fields
 		var ibackbutton = document.getElementById("backbuttonstate");
 		var $this = this;
-		ach_payment.addEventListener('click', async function () {
+		ach_payment.addEventListener('click', async function (event) {
+			if (event) event.preventDefault();
 			// ach_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('us_bank_account', ach_payment);
 			ibackbutton.value = "1";
@@ -735,7 +736,8 @@ class CheckOutWebflow {
 			await $this.updateClickEventInDB($this.$checkoutData.achUrl, 'ach_payment');
 			//window.location.href = $this.$checkoutData.achUrl;
 		})
-		card_payment.addEventListener('click', async function () {
+		card_payment.addEventListener('click', async function (event) {
+			if (event) event.preventDefault();
 			// card_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('card', card_payment);
 			ibackbutton.value = "1";
@@ -746,7 +748,8 @@ class CheckOutWebflow {
 			await $this.updateClickEventInDB($this.$checkoutData.cardUrl, 'card_payment');
 			//window.location.href = $this.$checkoutData.cardUrl;
 		})
-		paylater_payment.addEventListener('click', async function () {
+		paylater_payment.addEventListener('click', async function (event) {
+			if (event) event.preventDefault();
 			// paylater_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('paylater', paylater_payment);
 			ibackbutton.value = "1";
