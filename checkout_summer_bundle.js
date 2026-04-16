@@ -1185,15 +1185,21 @@ class CheckOutWebflow {
         
 		var bundleData = item.upsellPrograms;
 
+		var disc_amount = "";
+		var achAmount = 0;
 		if (this.memberData.achAmount && typeof this.memberData.achAmount === "string") {
-			// Remove commas and parse as float
-			let achAmount = parseFloat(this.memberData.achAmount.replace(/,/g, ""));
-			// Add 50 and assign to disc_amount
-      var disc_amount = (achAmount).toFixed(2);
-			if(item.disc_amount){
-        var disc_amount = (achAmount + parseFloat(item.disc_amount)).toFixed(2);
-      }
+			achAmount = parseFloat(this.memberData.achAmount.replace(/,/g, ""));
 		}
+		if (item.disc_amount !== undefined && item.disc_amount !== null && item.disc_amount !== "") {
+			disc_amount = parseFloat(item.disc_amount).toFixed(2);
+		} else if (!Number.isNaN(achAmount) && achAmount > 0) {
+			disc_amount = achAmount.toFixed(2);
+		}
+		console.log("[Summer Bundle] core price values", {
+			achAmount: this.memberData.achAmount,
+			itemDiscAmount: item.disc_amount,
+			resolvedDiscAmount: disc_amount
+		});
 		var coreData = {
 			"amount": this.memberData.achAmount,
 			"bundle_type": "Summer",
@@ -1312,6 +1318,13 @@ class CheckOutWebflow {
       const priceFlex = creEl("div", "bundle-sem-popup-price-flex-wrapper");
       const originalPrice = creEl("div", "bundle-sem-popup-price-gray");
       originalPrice.setAttribute("data-addon", "price");
+      if (type === "core") {
+        console.log("[Summer Bundle] rendering gray price", {
+          label: singleBundleData.label,
+          yearId: singleBundleData.yearId,
+          disc_amount: singleBundleData.disc_amount
+        });
+      }
       originalPrice.textContent = singleBundleData.disc_amount
         ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
         : "$3,770";
