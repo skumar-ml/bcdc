@@ -1687,12 +1687,19 @@ class CheckOutWebflow {
 		var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
 		var displayAmount = this.getDisplayedCheckoutAmount();
 		var attrAmount = 0;
+		var selectedProgramAmount = this.$selectedProgram.reduce((total, program) => {
+			var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
+			return total + (isNaN(amount) ? 0 : amount);
+		}, 0);
 		if (totalDepositPriceEl) {
 			attrAmount = parseFloat(
 				String(totalDepositPriceEl.getAttribute("data-stripe-price") || "0").replace(/[^0-9.]/g, "")
 			);
 		}
 		var requestAmount = displayAmount;
+		if (selectedProgramAmount > 0) {
+			requestAmount = selectedProgramAmount;
+		}
 		if (isNaN(requestAmount) || requestAmount <= 0) {
 			requestAmount = attrAmount;
 		}
@@ -1700,9 +1707,13 @@ class CheckOutWebflow {
 			requestAmount = parseFloat(String(this.memberData.achAmount).replace(/[^0-9.]/g, ""));
 		}
 		if (isNaN(requestAmount)) requestAmount = 0;
+		if (totalDepositPriceEl && requestAmount >= 0) {
+			totalDepositPriceEl.setAttribute("data-stripe-price", this.numberWithCommas(parseFloat(requestAmount).toFixed(2)));
+		}
 		console.log("[SummerCheckout] getCheckoutRequestAmount", {
 			displayAmount: displayAmount,
 			dataStripePriceAmount: attrAmount,
+			selectedProgramAmount: selectedProgramAmount,
 			requestAmount: requestAmount
 		});
 		return requestAmount;
