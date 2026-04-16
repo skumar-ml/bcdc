@@ -466,6 +466,19 @@ class CheckOutWebflow {
 			applyCredit: applyCredit
 		});
 		var requestAmount = this.getCheckoutRequestAmount();
+		if (applyCredit) {
+			var discountedAmountEl = document.querySelector(".current-price-text-red");
+			if (discountedAmountEl) {
+				var discountedAmount = parseFloat(String(discountedAmountEl.textContent || "").replace(/[^0-9.]/g, ""));
+				if (!isNaN(discountedAmount) && discountedAmount >= 0) {
+					requestAmount = discountedAmount;
+				}
+				console.log("[SummerCheckout] applyCredit amount override", {
+					discountedText: discountedAmountEl.textContent,
+					overrideRequestAmount: requestAmount
+				});
+			}
+		}
 		var requestAchAmount = parseFloat(requestAmount || 0);
 		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
 		console.log("[SummerCheckout] post-credit request amount", {
