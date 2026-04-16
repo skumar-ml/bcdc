@@ -1005,6 +1005,7 @@ class CheckOutWebflow {
 			this.$selectedProgram.reduce((total, program) => total + (parseFloat((program.amount + "").replace(/,/g, "")) || 0), 0)
 			).toFixed(2);
 			totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
+			totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(sumOfSelectedPrograms));
 		}else{
 			var dataStripePrice = totalPriceText.getAttribute("data-stripe-price");
       if(dataStripePrice){
@@ -1012,6 +1013,7 @@ class CheckOutWebflow {
       }
       dataStripePrice = parseFloat(dataStripePrice);
       totalPriceText.innerHTML = "$" + this.numberWithCommas(dataStripePrice);
+      totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(dataStripePrice));
 		}
 
 		const grayElem = document.querySelector(".current-price-gray");
@@ -1528,6 +1530,7 @@ class CheckOutWebflow {
                 
                 deposit_price.innerHTML =
                   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
+				deposit_price.setAttribute("data-stripe-price", $this.numberWithCommas(coreDepositPrice.toFixed(2)));
 				const grayElem = document.querySelector(".current-price-gray");
 				if (grayElem) {
 					grayElem.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
@@ -1563,6 +1566,7 @@ class CheckOutWebflow {
               // }      
               deposit_price.innerHTML =
                 "$" + finalPrice;
+			  deposit_price.setAttribute("data-stripe-price", finalPrice);
 			  const grayElem = document.querySelector(".current-price-gray");
 			  if (grayElem) {
 				grayElem.innerHTML = "$" + finalPrice;
@@ -1613,23 +1617,27 @@ class CheckOutWebflow {
 
 	getCheckoutRequestAmount() {
 		var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
-		var baseAmount = 0;
+		var displayAmount = this.getDisplayedCheckoutAmount();
+		var attrAmount = 0;
 		if (totalDepositPriceEl) {
-			baseAmount = parseFloat(
+			attrAmount = parseFloat(
 				String(totalDepositPriceEl.getAttribute("data-stripe-price") || "0").replace(/[^0-9.]/g, "")
 			);
 		}
-		if (isNaN(baseAmount) || baseAmount <= 0) {
-			baseAmount = this.getDisplayedCheckoutAmount();
+		var requestAmount = displayAmount;
+		if (isNaN(requestAmount) || requestAmount <= 0) {
+			requestAmount = attrAmount;
 		}
-		if ((isNaN(baseAmount) || baseAmount <= 0) && this.memberData && this.memberData.achAmount) {
-			baseAmount = parseFloat(String(this.memberData.achAmount).replace(/[^0-9.]/g, ""));
+		if ((isNaN(requestAmount) || requestAmount <= 0) && this.memberData && this.memberData.achAmount) {
+			requestAmount = parseFloat(String(this.memberData.achAmount).replace(/[^0-9.]/g, ""));
 		}
-		if (isNaN(baseAmount)) baseAmount = 0;
-		var selectedAmount = this.$selectedProgram.reduce((total, program) => {
-			return total + (parseFloat(program.amount) || 0);
-		}, 0);
-		return parseFloat(baseAmount) + parseFloat(selectedAmount);
+		if (isNaN(requestAmount)) requestAmount = 0;
+		console.log("[SummerCheckout] getCheckoutRequestAmount", {
+			displayAmount: displayAmount,
+			dataStripePriceAmount: attrAmount,
+			requestAmount: requestAmount
+		});
+		return requestAmount;
 	}
 
 	setCreditModalBaseAmount(amount) {
