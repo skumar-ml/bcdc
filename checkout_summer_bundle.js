@@ -477,6 +477,10 @@ class CheckOutWebflow {
 			applyCredit: applyCredit
 		});
 		var requestAmount = this.getCheckoutRequestAmount();
+		console.log("[SummerCheckout] credit button final amount", {
+			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
+			finalRequestAmount: requestAmount
+		});
 		if (applyCredit) {
 			var discountedAmountEl = document.querySelector(".current-price-text-red");
 			if (discountedAmountEl) {
@@ -529,6 +533,12 @@ class CheckOutWebflow {
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
 		}
+		console.log("[SummerCheckout] final payload amount by credit action", {
+			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
+			amountCents: data.amount,
+			achAmount: data.achAmount,
+			cardAmount: data.cardAmount
+		});
 		console.log("[SummerCheckout] checkoutUrlForStandard payload", data);
 		
 		var xhr = new XMLHttpRequest()
@@ -560,10 +570,26 @@ class CheckOutWebflow {
           paylater_payment.style.pointerEvents = "auto";
           window.location = responseText.paylaterUrl;
         } else {
-          window.location = checkOutUrl;
+		  ach_payment.innerHTML = "Checkout";
+		  ach_payment.style.pointerEvents = "auto";
+		  card_payment.innerHTML = "Checkout";
+		  card_payment.style.pointerEvents = "auto";
+          console.error("[SummerCheckout] Missing updated redirect URL, stopping fallback to stale URL", {
+            paymentType: paymentType,
+            responseText: responseText
+          });
+          return;
         }
       }else {
-        window.location = checkOutUrl;
+		ach_payment.innerHTML = "Checkout";
+		ach_payment.style.pointerEvents = "auto";
+		card_payment.innerHTML = "Checkout";
+		card_payment.style.pointerEvents = "auto";
+        console.error("[SummerCheckout] checkoutUrlForStandard failed, stopping fallback to stale URL", {
+          paymentType: paymentType,
+          responseText: responseText
+        });
+        return;
       }
     }
 	}
