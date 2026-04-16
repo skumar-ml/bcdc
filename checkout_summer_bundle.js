@@ -1186,22 +1186,28 @@ class CheckOutWebflow {
 		var bundleData = item.upsellPrograms;
 
 		var disc_amount = "";
+		var discounted_amount = "";
 		var achAmount = 0;
 		if (this.memberData.achAmount && typeof this.memberData.achAmount === "string") {
 			achAmount = parseFloat(this.memberData.achAmount.replace(/,/g, ""));
 		}
-		if (item.disc_amount !== undefined && item.disc_amount !== null && item.disc_amount !== "") {
-			disc_amount = parseFloat(item.disc_amount).toFixed(2);
-		} else if (!Number.isNaN(achAmount) && achAmount > 0) {
+		if (!Number.isNaN(achAmount) && achAmount > 0) {
 			disc_amount = achAmount.toFixed(2);
+			discounted_amount = achAmount.toFixed(2);
 		}
-		console.log("[Summer Bundle] core price values", {
+		if (item.disc_amount !== undefined && item.disc_amount !== null && item.disc_amount !== "" && !Number.isNaN(achAmount) && achAmount > 0) {
+			discounted_amount = (achAmount - parseFloat(item.disc_amount)).toFixed(2);
+		}
+		console.log("Summer Bundle core price values", {
 			achAmount: this.memberData.achAmount,
-			itemDiscAmount: item.disc_amount,
-			resolvedDiscAmount: disc_amount
+			itemDiscAmount: item.disc_amount
+		});
+		console.log("Summer Bundle core resolved prices", {
+			originalAmount: disc_amount,
+			discountedAmount: discounted_amount
 		});
 		var coreData = {
-			"amount": this.memberData.achAmount,
+			"amount": discounted_amount,
 			"bundle_type": "Summer",
 			"desc": (item.desc ? item.desc : ""),
 			"disc_amount": this.numberWithCommas(disc_amount),
