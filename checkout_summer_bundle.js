@@ -481,8 +481,16 @@ class CheckOutWebflow {
 		}
 		var hasFee = paymentType === 'card_payment';
 		var checkoutLabel = "Summer | " + this.memberData.programName;
+		var latestCheckoutId = (this.$checkoutData && this.$checkoutData.checkoutId)
+			? this.$checkoutData.checkoutId
+			: checkOutData.checkoutData.checkoutId;
+		console.log("[SummerCheckout] checkout id selection", {
+			latestInMemoryCheckoutId: this.$checkoutData ? this.$checkoutData.checkoutId : null,
+			localStorageCheckoutId: checkOutData && checkOutData.checkoutData ? checkOutData.checkoutData.checkoutId : null,
+			usingCheckoutId: latestCheckoutId
+		});
 		var data = {
-			"checkoutId": checkOutData.checkoutData.checkoutId,
+			"checkoutId": latestCheckoutId,
 			"label": checkoutLabel,
 			"memberId": this.memberData.memberId,
 			"isSummerData": true,
