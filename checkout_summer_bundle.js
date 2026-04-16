@@ -710,6 +710,10 @@ class CheckOutWebflow {
 			// ach_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('us_bank_account', ach_payment);
 			ibackbutton.value = "1";
+			console.log("[SummerCheckout] ach click amounts", {
+				displayAmount: $this.getDisplayedCheckoutAmount(),
+				requestAmount: $this.getCheckoutRequestAmount()
+			});
 			await $this.updateClickEventInDB($this.$checkoutData.achUrl, 'ach_payment');
 			//window.location.href = $this.$checkoutData.achUrl;
 		})
@@ -717,6 +721,10 @@ class CheckOutWebflow {
 			// card_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('card', card_payment);
 			ibackbutton.value = "1";
+			console.log("[SummerCheckout] card click amounts", {
+				displayAmount: $this.getDisplayedCheckoutAmount(),
+				requestAmount: $this.getCheckoutRequestAmount()
+			});
 			await $this.updateClickEventInDB($this.$checkoutData.cardUrl, 'card_payment');
 			//window.location.href = $this.$checkoutData.cardUrl;
 		})
@@ -1520,7 +1528,10 @@ class CheckOutWebflow {
                  })
                }
                 let sumOfSelectedPrograms = (
-                  $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
+                  $this.$selectedProgram.reduce((total, program) => {
+                    var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
+                    return total + (((isNaN(amount) ? 0 : amount) + 0.3) / 0.971);
+                  }, 0)
                 ).toFixed(2);
                 // if($this.$selectedProgram.length > 0){
                 //     coreDepositPrice = parseFloat(sumOfSelectedPrograms);
@@ -1558,7 +1569,10 @@ class CheckOutWebflow {
                   
               
               var sumOfSelectedPrograms = (
-              $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
+              $this.$selectedProgram.reduce((total, program) => {
+                var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
+                return total + (isNaN(amount) ? 0 : amount);
+              }, 0)
         ).toFixed(2);
               var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms)+ parseFloat(amount))      
               // if($this.$selectedProgram.length > 0){
