@@ -1102,8 +1102,7 @@ class CheckOutWebflow {
        
         
       });
-      totalAmountInput.value =
-          parseFloat(totalAmountInput.value) + parseFloat(amount);
+      totalAmountInput.value = this.getCheckoutRequestAmount();
       var suppProIdE = document.getElementById("suppProIds");
       var allSupIds = this.$selectedProgram.map(item => item.upsellProgramId);
       suppProIdE.value = JSON.stringify(allSupIds);
