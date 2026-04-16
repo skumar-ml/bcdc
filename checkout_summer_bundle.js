@@ -449,11 +449,9 @@ class CheckOutWebflow {
 		cancelUrl.searchParams.set('returnType', 'back');
 
 		var checkoutAmount = this.getDisplayedCheckoutAmount();
-		var requestAmount = this.getCheckoutRequestAmount();
 		this.setCreditModalBaseAmount(checkoutAmount);
 		console.log("[SummerCheckout] pre-credit amounts", {
 			checkoutAmount: checkoutAmount,
-			requestAmount: requestAmount,
 			paymentType: paymentType
 		});
 		
@@ -466,6 +464,16 @@ class CheckOutWebflow {
 		console.log("[SummerCheckout] credit choice", {
 			memberId: this.memberData.memberId,
 			applyCredit: applyCredit
+		});
+		var requestAmount = this.getCheckoutRequestAmount();
+		var requestAchAmount = parseFloat(requestAmount || 0);
+		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
+		console.log("[SummerCheckout] post-credit request amount", {
+			applyCredit: applyCredit,
+			checkoutAmount: this.getDisplayedCheckoutAmount(),
+			requestAmount: requestAmount,
+			requestAchAmount: requestAchAmount,
+			requestCardAmount: requestCardAmount
 		});
 		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
 		if (selectedUpsellIds.length === 0 && this.$coreData && this.$coreData.upsellProgramId) {
@@ -480,6 +488,8 @@ class CheckOutWebflow {
 			"isSummerData": true,
 			"upsellProgramIds": selectedUpsellIds,
 			"amount": Math.round(parseFloat(requestAmount || 0) * 100),
+			"achAmount": parseFloat(requestAchAmount.toFixed(2)),
+			"cardAmount": parseFloat(requestCardAmount.toFixed(2)),
 			"source": "cart_page",
 			"has_fee": hasFee,
 			"applyCredit": applyCredit,
