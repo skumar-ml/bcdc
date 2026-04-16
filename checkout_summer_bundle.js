@@ -1002,15 +1002,8 @@ class CheckOutWebflow {
         var sumOfSelectedPrograms = 0;
 		if(this.$selectedProgram.length > 0){
 			 sumOfSelectedPrograms = (
-			this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
+			this.$selectedProgram.reduce((total, program) => total + (parseFloat((program.amount + "").replace(/,/g, "")) || 0), 0)
 			).toFixed(2);
-      var dataStripePrice = totalPriceText.getAttribute("data-stripe-price");
-      //1,750.00 convert to 1750.00
-      if(dataStripePrice){
-        dataStripePrice = dataStripePrice.replace(/,/g, '');
-      }
-			var dataStripePrice = parseFloat(dataStripePrice);
-			sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice);
 			totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
 		}else{
 			var dataStripePrice = totalPriceText.getAttribute("data-stripe-price");
