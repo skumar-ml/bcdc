@@ -312,17 +312,9 @@ class CheckOutWebflow {
 		var studentGender = document.getElementById('Student-Gender');
 		var prevStudent = document.getElementById('prevStudent-2');
 		var requestAchAmount = this.getCheckoutRequestAmount();
-		var discountedAmountEl = document.querySelector(".current-price-text-red");
-		if (discountedAmountEl) {
-			var discountedAmount = parseFloat(String(discountedAmountEl.textContent || "").replace(/[^0-9.]/g, ""));
-			if (!isNaN(discountedAmount) && discountedAmount >= 0) {
-				requestAchAmount = discountedAmount;
-			}
-			console.log("[SummerCheckout] initializeStripePayment discount override", {
-				discountedText: discountedAmountEl.textContent,
-				overrideRequestAchAmount: requestAchAmount
-			});
-		}
+		console.log("[SummerCheckout] initializeStripePayment using canonical checkout amount", {
+			requestAchAmount: requestAchAmount
+		});
 		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
 		
 		//Utm Source
