@@ -545,6 +545,21 @@ class CheckOutWebflow {
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
 			console.log("[SummerCheckout] checkoutUrlForStandard response", responseText)
+      const isStringSuccessResponse = typeof responseText === "string" &&
+        responseText.toLowerCase().includes("updated successfully");
+      if (isStringSuccessResponse) {
+        ach_payment.innerHTML = "Checkout";
+        ach_payment.style.pointerEvents = "auto";
+        card_payment.innerHTML = "Checkout";
+        card_payment.style.pointerEvents = "auto";
+        console.log("[SummerCheckout] checkoutUrlForStandard string-success fallback redirect", {
+          paymentType: paymentType,
+          redirectUrl: checkOutUrl,
+          responseText: responseText
+        });
+        window.location = checkOutUrl;
+        return;
+      }
       if (responseText.success) {
         $this.$checkoutData = responseText;
 		console.log("[SummerCheckout] redirect urls", {
