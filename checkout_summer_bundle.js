@@ -1077,6 +1077,14 @@ class CheckOutWebflow {
         "[data-stripe='totalDepositPrice']"
       );
       var selectedIds = [];
+      var cartLineTotal = 0;
+      if (this.$selectedProgram.length > 0) {
+        cartLineTotal = parseFloat(
+          this.$selectedProgram
+            .reduce((total, program) => total + (parseFloat((program.amount + "").replace(/,/g, "")) || 0), 0)
+            .toFixed(2)
+        );
+      }
       totalPriceAllText.forEach(totalPriceText=>{
         var sumOfSelectedPrograms = 0;
 		if(this.$selectedProgram.length > 0){
@@ -1093,6 +1101,9 @@ class CheckOutWebflow {
       dataStripePrice = parseFloat(dataStripePrice);
       totalPriceText.innerHTML = "$" + this.numberWithCommas(dataStripePrice);
       totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(dataStripePrice));
+      if (totalPriceAllText.length && totalPriceText === totalPriceAllText[0]) {
+        cartLineTotal = dataStripePrice;
+      }
 		}
 
 		const grayElem = document.querySelector(".current-price-gray");
@@ -1102,7 +1113,9 @@ class CheckOutWebflow {
        
         
       });
-      totalAmountInput.value = this.getCheckoutRequestAmount();
+      if (totalAmountInput) {
+        totalAmountInput.value = isNaN(cartLineTotal) ? "0" : String(cartLineTotal);
+      }
       var suppProIdE = document.getElementById("suppProIds");
       var allSupIds = this.$selectedProgram.map(item => item.upsellProgramId);
       suppProIdE.value = JSON.stringify(allSupIds);
@@ -1732,9 +1745,10 @@ class CheckOutWebflow {
 			requestAmount = parseFloat(String(this.memberData.achAmount).replace(/[^0-9.]/g, ""));
 		}
 		if (isNaN(requestAmount)) requestAmount = 0;
-		if (totalDepositPriceEl && requestAmount >= 0) {
-			totalDepositPriceEl.setAttribute("data-stripe-price", this.numberWithCommas(parseFloat(requestAmount).toFixed(2)));
-		}
+		var formattedStripe = this.numberWithCommas(parseFloat(requestAmount).toFixed(2));
+		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+			el.setAttribute("data-stripe-price", formattedStripe);
+		});
 		console.log("[SummerCheckout] getCheckoutRequestAmount", {
 			displayAmount: displayAmount,
 			dataStripePriceAmount: attrAmount,
