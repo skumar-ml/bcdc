@@ -496,9 +496,13 @@ class CheckOutWebflow {
 			requestCardAmount: requestCardAmount
 		});
 		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
-		if (selectedUpsellIds.length === 0 && this.$coreData && this.$coreData.upsellProgramId) {
-			selectedUpsellIds = [this.$coreData.upsellProgramId];
+		if (this.$coreData && this.$coreData.upsellProgramId) {
+			selectedUpsellIds = selectedUpsellIds.filter(id => id !== this.$coreData.upsellProgramId);
 		}
+		console.log("[SummerCheckout] upsell ids for payload", {
+			coreProgramId: this.$coreData ? this.$coreData.upsellProgramId : null,
+			selectedUpsellIds: selectedUpsellIds
+		});
 		var hasFee = paymentType === 'card_payment';
 		var checkoutLabel = "Summer | " + this.memberData.programName;
 		var latestCheckoutId = (this.$checkoutData && this.$checkoutData.checkoutId)
