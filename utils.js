@@ -76,9 +76,9 @@ class Utils {
     static calculateDiscountPrice() {
         const creditPriceEl = document.querySelector('[data-credit="amount"]');
         const totalDepositPriceEl = document.querySelector(".current-price-gray");
-        const totalCurrentPriceEl = document.querySelector(".current-price-text-red");
+        const totalCurrentPriceEls = document.querySelectorAll(".current-price-text-red");
 
-        if (!creditPriceEl || !totalDepositPriceEl || !totalCurrentPriceEl) return;
+        if (!creditPriceEl || !totalDepositPriceEl || !totalCurrentPriceEls.length) return;
 
         // Credit amount
         let creditPrice = parseFloat(
@@ -103,7 +103,9 @@ class Utils {
         finalPrice = finalPrice.toFixed(2);
 
         // Set discounted value
-        totalCurrentPriceEl.textContent = `$${finalPrice}`;
+        totalCurrentPriceEls.forEach((el) => {
+            el.textContent = `$${finalPrice}`;
+        });
     }
 
 

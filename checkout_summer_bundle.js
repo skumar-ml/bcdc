@@ -489,6 +489,14 @@ class CheckOutWebflow {
 					requestAmount = Math.max(0, parseFloat(this.getCheckoutRequestAmount() || 0) - creditAmount);
 				}
 			}
+			var formattedDiscountedAmount = "$" + this.numberWithCommas(parseFloat(requestAmount || 0).toFixed(2));
+			document.querySelectorAll(".current-price-text-red").forEach(function (el) {
+				el.textContent = formattedDiscountedAmount;
+			});
+			document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+				el.innerHTML = formattedDiscountedAmount;
+				el.setAttribute("data-stripe-price", String(parseFloat(requestAmount || 0).toFixed(2)));
+			});
 		}
 		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
 		if (selectedUpsellIds.length === 0 && this.$coreData && this.$coreData.upsellProgramId) {
