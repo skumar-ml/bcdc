@@ -499,9 +499,14 @@ class CheckOutWebflow {
 			requestAchAmount: requestAchAmount,
 			requestCardAmount: requestCardAmount
 		});
+		// Keep non-core selected upsells first; if none selected, fallback to core upsell id
+		// so apply-credit payload still has a valid program context.
 		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
 		if (this.$coreData && this.$coreData.upsellProgramId) {
 			selectedUpsellIds = selectedUpsellIds.filter(id => id !== this.$coreData.upsellProgramId);
+			if (selectedUpsellIds.length === 0) {
+				selectedUpsellIds = [this.$coreData.upsellProgramId];
+			}
 		}
 		console.log("[SummerCheckout] upsell ids for payload", {
 			coreProgramId: this.$coreData ? this.$coreData.upsellProgramId : null,
