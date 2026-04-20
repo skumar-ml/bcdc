@@ -501,10 +501,10 @@ class CheckOutWebflow {
 			requestAchAmount: requestAchAmount,
 			requestCardAmount: requestCardAmount
 		});
+		// Send full selected bundle context (including core summer program id).
+		// This preserves summer built-in discount mapping and allows credit application
+		// to work consistently for both "summer only" and "summer + future session".
 		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
-		if (this.$coreData && this.$coreData.upsellProgramId) {
-			selectedUpsellIds = selectedUpsellIds.filter(id => id !== this.$coreData.upsellProgramId);
-		}
 		console.log("[SummerCheckout] upsell ids for payload", {
 			coreProgramId: this.$coreData ? this.$coreData.upsellProgramId : null,
 			selectedUpsellIds: selectedUpsellIds
