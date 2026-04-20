@@ -528,7 +528,7 @@ class CheckOutWebflow {
 			"cardAmount": parseFloat(requestCardAmount.toFixed(2)),
 			"source": "cart_page",
 			"has_fee": hasFee,
-			"applyCredit": applyCredit,
+			"applyCredit": applyCredit ? "true" : "false",
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
