@@ -345,8 +345,8 @@ class CheckOutWebflow {
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href,
 			"memberId": this.memberData.memberId,
-			"achAmount": parseFloat(requestAchAmount.toFixed(2)),
-			"cardAmount": parseFloat(requestCardAmount.toFixed(2)),
+			"achAmount": Math.round(parseFloat(requestAchAmount || 0) * 100),
+			"cardAmount": Math.round(parseFloat(requestCardAmount || 0) * 100),
 			"utm_source": (localUtmSource != null) ? localUtmSource : "null"
 		}
 		console.log("[SummerCheckout] initializeStripePayment amounts", {
