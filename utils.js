@@ -81,7 +81,7 @@ class Utils {
         if (!creditPriceEl || !totalDepositPriceEl || !totalCurrentPriceEl) return;
 
         // Credit amount
-        const creditPrice = parseFloat(
+        let creditPrice = parseFloat(
             creditPriceEl.textContent.replace(/[^0-9.]/g, "")
         );
         console.log("Credit price:", creditPrice);

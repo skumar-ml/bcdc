@@ -486,6 +486,19 @@ class CheckOutWebflow {
 					overrideRequestAmount: requestAmount
 				});
 			}
+			if (isNaN(parseFloat(requestAmount)) || parseFloat(requestAmount) < 0) {
+				var creditAmountEl = document.querySelector("[data-credit='amount']");
+				var creditAmount = creditAmountEl
+					? parseFloat(String(creditAmountEl.textContent || "").replace(/[^0-9.]/g, ""))
+					: 0;
+				if (!isNaN(creditAmount)) {
+					requestAmount = Math.max(0, parseFloat(this.getCheckoutRequestAmount() || 0) - creditAmount);
+				}
+				console.log("[SummerCheckout] applyCredit fallback amount", {
+					creditAmount: creditAmount,
+					overrideRequestAmount: requestAmount
+				});
+			}
 		}
 		var requestAchAmount = parseFloat(requestAmount || 0);
 		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
