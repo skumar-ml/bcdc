@@ -462,13 +462,17 @@ class CheckOutWebflow {
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
 		var applyCredit = false;
 		if (typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
-			applyCredit = await Utils.waitForCreditApplicationChoice(this.memberData.memberId);
+			var creditMemberId = String((this.memberData && this.memberData.memberId) || "");
+			applyCredit = await Utils.waitForCreditApplicationChoice(creditMemberId);
 		}
 		console.log("[SummerCheckout] credit choice", {
 			memberId: this.memberData.memberId,
 			applyCredit: applyCredit
 		});
-		var requestAmount = this.getCheckoutRequestAmount();
+		var requestAmount = parseFloat(checkoutAmount || 0);
+		if (isNaN(requestAmount) || requestAmount <= 0) {
+			requestAmount = this.getCheckoutRequestAmount();
+		}
 		console.log("[SummerCheckout] credit button final amount", {
 			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
 			finalRequestAmount: requestAmount
