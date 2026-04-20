@@ -1076,6 +1076,7 @@ class CheckOutWebflow {
       if (totalAmountInput) {
         totalAmountInput.value = isNaN(cartLineTotal) ? "0" : String(cartLineTotal);
       }
+	  this.recalculateDiscountPrice();
       var suppProIdE = document.getElementById("suppProIds");
       var allSupIds = this.$selectedProgram.map(item => item.upsellProgramId);
       suppProIdE.value = JSON.stringify(allSupIds);
@@ -1665,6 +1666,7 @@ class CheckOutWebflow {
               });
             }
           }
+		  this.recalculateDiscountPrice();
         });
       }
       //data-stripe="totalDepositPrice"
@@ -1713,6 +1715,13 @@ class CheckOutWebflow {
 		const grayElem = document.querySelector(".current-price-gray");
 		if (grayElem) {
 			grayElem.innerHTML = "$" + this.numberWithCommas(parseFloat(amount || 0).toFixed(2));
+		}
+		this.recalculateDiscountPrice();
+	}
+
+	recalculateDiscountPrice() {
+		if (typeof Utils !== "undefined" && typeof Utils.calculateDiscountPrice === "function") {
+			Utils.calculateDiscountPrice();
 		}
 	}
 }
