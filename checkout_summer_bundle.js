@@ -465,6 +465,8 @@ class CheckOutWebflow {
 			var creditMemberId = String((this.memberData && this.memberData.memberId) || "");
 			applyCredit = await Utils.waitForCreditApplicationChoice(creditMemberId);
 		}
+		// Normalize to strict boolean to avoid string truthy/falsey issues.
+		applyCredit = (applyCredit === true || applyCredit === "true");
 		console.log("[SummerCheckout] credit choice", {
 			memberId: this.memberData.memberId,
 			applyCredit: applyCredit
@@ -499,14 +501,9 @@ class CheckOutWebflow {
 			requestAchAmount: requestAchAmount,
 			requestCardAmount: requestCardAmount
 		});
-		// Keep non-core selected upsells first; if none selected, fallback to core upsell id
-		// so apply-credit payload still has a valid program context.
 		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
 		if (this.$coreData && this.$coreData.upsellProgramId) {
 			selectedUpsellIds = selectedUpsellIds.filter(id => id !== this.$coreData.upsellProgramId);
-			if (selectedUpsellIds.length === 0) {
-				selectedUpsellIds = [this.$coreData.upsellProgramId];
-			}
 		}
 		console.log("[SummerCheckout] upsell ids for payload", {
 			coreProgramId: this.$coreData ? this.$coreData.upsellProgramId : null,
@@ -533,7 +530,7 @@ class CheckOutWebflow {
 			"cardAmount": parseFloat(requestCardAmount.toFixed(2)),
 			"source": "cart_page",
 			"has_fee": hasFee,
-			"applyCredit": applyCredit ? "true" : "false",
+			"applyCredit": applyCredit,
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
