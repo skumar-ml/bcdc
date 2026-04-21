@@ -484,18 +484,19 @@ class CheckOutWebflow {
 			memberId: this.memberData.memberId,
 			applyCredit: applyCredit
 		});
-		// achAmount / cardAmount must always be derived from the canonical base ACH amount,
-		// NOT from the displayed total (which already includes the processing fee when the
-		// user is on the card tab). Otherwise cardAmount ends up with the fee applied twice.
-		var baseAchAmount = this.getBaseAchAmount();
-		var requestAchAmount = parseFloat(baseAchAmount || 0);
-		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
+		// achAmount / cardAmount must mirror what the UI shows. cardAmount applies the
+		// (+0.30)/0.971 processing fee PER selected program (same as updatePriceForCardPayment),
+		// so we can't just do (achTotal + 0.30)/0.971 when multiple items are selected.
+		var checkoutAmounts = this.getRequestAmounts();
+		var requestAchAmount = parseFloat(checkoutAmounts.ach || 0);
+		var requestCardAmount = parseFloat(checkoutAmounts.card || 0);
 		// `amount` represents the actual charge (ACH base on ach tab, card-with-fee on card tab).
 		var requestAmount = (paymentType === 'card_payment') ? requestCardAmount : requestAchAmount;
 		console.log("[SummerCheckout] credit button final amount", {
 			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
 			paymentType: paymentType,
-			baseAchAmount: baseAchAmount,
+			baseAchAmount: requestAchAmount,
+			baseCardAmount: requestCardAmount,
 			finalRequestAmount: requestAmount
 		});
 		// Credit application is handled server-side; client only relays the user's choice via applyCredit flag.
@@ -1796,35 +1797,41 @@ class CheckOutWebflow {
 		return isNaN(amount) ? 0 : amount;
 	}
 
-	getBaseAchAmount() {
-		// Canonical base ACH amount (before card processing fee) used to derive achAmount/cardAmount
-		// for the checkout payload. Independent of which payment tab is active, so switching to the
-		// card tab (which shows fee-inclusive totals) does not leak fees into achAmount.
-		var selectedSum = this.$selectedProgram.reduce((total, program) => {
+	getRequestAmounts() {
+		// Mirror the exact formulas used by updatePriceForCardPayment so the payload matches
+		// what the user sees on screen. cardAmount applies the (+0.30)/0.971 fee per selected
+		// program (matching Tab 2's rendering), not once on the combined base.
+		var selectedPrograms = this.$selectedProgram || [];
+		var achSum = selectedPrograms.reduce((total, program) => {
 			var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
 			return total + (isNaN(amount) ? 0 : amount);
 		}, 0);
-		if (selectedSum > 0) {
-			console.log("[SummerCheckout] getBaseAchAmount -> selectedProgram sum", selectedSum);
-			return selectedSum;
-		}
-		var coreProductPriceEl = document.getElementById("core_product_price");
-		if (coreProductPriceEl && coreProductPriceEl.value) {
-			var coreVal = parseFloat(String(coreProductPriceEl.value).replace(/,/g, ""));
-			if (!isNaN(coreVal) && coreVal > 0) {
-				console.log("[SummerCheckout] getBaseAchAmount -> core_product_price", coreVal);
-				return coreVal;
+		var cardSum = selectedPrograms.reduce((total, program) => {
+			var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
+			return total + (((isNaN(amount) ? 0 : amount) + 0.3) / 0.971);
+		}, 0);
+
+		if (selectedPrograms.length === 0) {
+			// No selected upsells: fall back to the core price (same source of truth Tab 2 uses).
+			var coreAch = 0;
+			var coreProductPriceEl = document.getElementById("core_product_price");
+			if (coreProductPriceEl && coreProductPriceEl.value) {
+				coreAch = parseFloat(String(coreProductPriceEl.value).replace(/,/g, ""));
 			}
-		}
-		if (this.memberData && this.memberData.achAmount) {
-			var memberVal = parseFloat(String(this.memberData.achAmount).replace(/,/g, ""));
-			if (!isNaN(memberVal) && memberVal > 0) {
-				console.log("[SummerCheckout] getBaseAchAmount -> memberData.achAmount", memberVal);
-				return memberVal;
+			if ((isNaN(coreAch) || coreAch <= 0) && this.memberData && this.memberData.achAmount) {
+				coreAch = parseFloat(String(this.memberData.achAmount).replace(/,/g, ""));
 			}
+			if (isNaN(coreAch)) coreAch = 0;
+			achSum = coreAch;
+			cardSum = (coreAch + 0.3) / 0.971;
 		}
-		console.log("[SummerCheckout] getBaseAchAmount -> fallback 0");
-		return 0;
+
+		console.log("[SummerCheckout] getRequestAmounts", {
+			selectedCount: selectedPrograms.length,
+			achSum: achSum,
+			cardSum: cardSum
+		});
+		return { ach: achSum, card: cardSum };
 	}
 
 	getCheckoutRequestAmount() {
