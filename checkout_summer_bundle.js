@@ -492,35 +492,7 @@ class CheckOutWebflow {
 			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
 			finalRequestAmount: requestAmount
 		});
-		if (applyCredit) {
-			var discountedAmountEl = document.querySelector(".current-price-text-red");
-			if (discountedAmountEl) {
-				var discountedAmount = parseFloat(String(discountedAmountEl.textContent || "").replace(/[^0-9.]/g, ""));
-				if (!isNaN(discountedAmount) && discountedAmount >= 0) {
-					requestAmount = discountedAmount;
-					// Keep DOM in sync so downstream reads (and any re-renders) reflect the credited total.
-					var self = this;
-					var formattedDiscount = "$" + self.numberWithCommas(discountedAmount.toFixed(2));
-					var formattedStripeAttr = self.numberWithCommas(discountedAmount.toFixed(2));
-					document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
-						el.innerHTML = formattedDiscount;
-						el.setAttribute("data-stripe-price", formattedStripeAttr);
-					});
-					var totalAmountInput = document.getElementById("totalAmount");
-					if (totalAmountInput) {
-						totalAmountInput.value = String(discountedAmount);
-					}
-					console.log("[SummerCheckout] applyCredit DOM sync", {
-						discountedAmount: discountedAmount,
-						formattedDiscount: formattedDiscount
-					});
-				}
-				console.log("[SummerCheckout] applyCredit amount override", {
-					discountedText: discountedAmountEl.textContent,
-					overrideRequestAmount: requestAmount
-				});
-			}
-		}
+		// Credit application is handled server-side; client only relays the user's choice via applyCredit flag.
 		var requestAchAmount = parseFloat(requestAmount || 0);
 		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
 		console.log("[SummerCheckout] post-credit request amount", {
