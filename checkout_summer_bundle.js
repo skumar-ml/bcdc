@@ -38,12 +38,6 @@ class CheckOutWebflow {
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
 		this.memberData = memberData;
-		console.log("[SummerCheckout][init] constructor", {
-			baseUrl: this.baseUrl,
-			memberId: memberData ? memberData.memberId : null,
-			programId: memberData ? memberData.programId : null,
-			programName: memberData ? memberData.programName : null
-		});
 		this.renderPortalData();
 		this.displaySupplementaryProgram();
 		this.updatePriceForCardPayment()
@@ -132,10 +126,6 @@ class CheckOutWebflow {
 	}
 	// Updates the displayed locations based on session selection
 	updateLocation(sessionData) {
-		console.log("[SummerCheckout][session] updateLocation called", {
-			summerSessionId: sessionData ? sessionData.summerSessionId : null,
-			summerSessionName: sessionData ? sessionData.summerSessionName : null
-		});
 
 		var location = sessionData.location;
 		var fortLeeContainer = document.getElementById('fortLeeContainer');
@@ -202,9 +192,6 @@ class CheckOutWebflow {
 		}
 		this.clearHiddenLocationSelection();
 		this.syncLocationContainerSelection();
-		console.log("[SummerCheckout][session] updateLocation result", {
-			selectedLocation: document.querySelector('input[name = radio]:checked') ? document.querySelector('input[name = radio]:checked').value : null
-		});
 	}
 	// Returns the canonical mapping between location radios and container cards
 	getLocationSelectionMappings() {
@@ -325,9 +312,6 @@ class CheckOutWebflow {
 		var studentGender = document.getElementById('Student-Gender');
 		var prevStudent = document.getElementById('prevStudent-2');
 		var requestAchAmount = this.getCheckoutRequestAmount();
-		console.log("[SummerCheckout] initializeStripePayment using canonical checkout amount", {
-			requestAchAmount: requestAchAmount
-		});
 		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
 		
 		//Utm Source
@@ -362,23 +346,15 @@ class CheckOutWebflow {
 			"cardAmount": Math.round(parseFloat(requestCardAmount || 0) * 100),
 			"utm_source": (localUtmSource != null) ? localUtmSource : "null"
 		}
-		console.log("[SummerCheckout] initializeStripePayment amounts", {
-			memberId: this.memberData.memberId,
-			requestAchAmount: requestAchAmount,
-			requestCardAmount: requestCardAmount,
-			programName: this.memberData.programName
-		});
 
 
 		var xhr = new XMLHttpRequest()
 		var $this = this;
 		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForSummer", true)
 		xhr.withCredentials = false
-		console.log("[SummerCheckout][api] checkoutUrlForSummer request payload", data);
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log("[SummerCheckout] checkoutUrlForSummer response", responseText)
 			if (responseText.success) {
 
 				$this.$checkoutData = responseText;
@@ -423,7 +399,6 @@ class CheckOutWebflow {
 			"locationId": parseInt(locationId),
 			"summerSessionId": parseInt(summerSessionId)
 		}
-		console.log("[SummerCheckout][api] checkoutUrlForStandard pre-payment payload", data);
 		checkOutData.updateData = data
 		localStorage.setItem("checkOutData", JSON.stringify(checkOutData));
 		
@@ -434,7 +409,6 @@ class CheckOutWebflow {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log('[SummerCheckout][api] checkoutUrlForStandard pre-payment response', responseText)
 			ach_payment.innerHTML = "Checkout"
 			ach_payment.disabled = false;
 			ach_payment.pointerEvents = "auto";
@@ -468,10 +442,6 @@ class CheckOutWebflow {
 
 		var checkoutAmount = this.getDisplayedCheckoutAmount();
 		this.setCreditModalBaseAmount(checkoutAmount);
-		console.log("[SummerCheckout] pre-credit amounts", {
-			checkoutAmount: checkoutAmount,
-			paymentType: paymentType
-		});
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
@@ -480,10 +450,6 @@ class CheckOutWebflow {
 			var creditMemberId = String((this.memberData && this.memberData.memberId) || "");
 			applyCredit = await Utils.waitForCreditApplicationChoice(creditMemberId);
 		}
-		console.log("[SummerCheckout] credit choice", {
-			memberId: this.memberData.memberId,
-			applyCredit: applyCredit
-		});
 		// achAmount / cardAmount must mirror what the UI shows. cardAmount applies the
 		// (+0.30)/0.971 processing fee PER selected program (same as updatePriceForCardPayment),
 		// so we can't just do (achTotal + 0.30)/0.971 when multiple items are selected.
@@ -492,26 +458,7 @@ class CheckOutWebflow {
 		var requestCardAmount = parseFloat(checkoutAmounts.card || 0);
 		// `amount` represents the actual charge (ACH base on ach tab, card-with-fee on card tab).
 		var requestAmount = (paymentType === 'card_payment') ? requestCardAmount : requestAchAmount;
-		console.log("[SummerCheckout] credit button final amount", {
-			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
-			paymentType: paymentType,
-			ach: requestAchAmount,
-			card: requestCardAmount,
-			achBaseAmount: checkoutAmounts.achBaseAmount,
-			cardBaseAmount: checkoutAmounts.cardBaseAmount,
-			achUpsellAmount: checkoutAmounts.achUpsellAmount,
-			cardUpsellAmount: checkoutAmounts.cardUpsellAmount,
-			hasUpsells: checkoutAmounts.hasUpsells,
-			finalRequestAmount: requestAmount
-		});
 		// Credit application is handled server-side; client only relays the user's choice via applyCredit flag.
-		console.log("[SummerCheckout] post-credit request amount", {
-			applyCredit: applyCredit,
-			checkoutAmount: this.getDisplayedCheckoutAmount(),
-			requestAmount: requestAmount,
-			requestAchAmount: requestAchAmount,
-			requestCardAmount: requestCardAmount
-		});
 		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
 		// Drop core id so the array only carries true addons; if none selected, fall back to [coreId]
 		// so backend still receives the baseline program id (matches legacy behavior).
@@ -521,20 +468,11 @@ class CheckOutWebflow {
 		if (selectedUpsellIds.length === 0 && this.$coreData && this.$coreData.upsellProgramId) {
 			selectedUpsellIds = [this.$coreData.upsellProgramId];
 		}
-		console.log("[SummerCheckout] upsell ids for payload", {
-			coreProgramId: this.$coreData ? this.$coreData.upsellProgramId : null,
-			selectedUpsellIds: selectedUpsellIds
-		});
 		var hasFee = paymentType === 'card_payment';
 		var checkoutLabel = "Summer | " + this.memberData.programName;
 		var latestCheckoutId = (this.$checkoutData && this.$checkoutData.checkoutId)
 			? this.$checkoutData.checkoutId
 			: checkOutData.checkoutData.checkoutId;
-		console.log("[SummerCheckout] checkout id selection", {
-			latestInMemoryCheckoutId: this.$checkoutData ? this.$checkoutData.checkoutId : null,
-			localStorageCheckoutId: checkOutData && checkOutData.checkoutData ? checkOutData.checkoutData.checkoutId : null,
-			usingCheckoutId: latestCheckoutId
-		});
 		var data = {
 			"checkoutId": latestCheckoutId,
 			"label": checkoutLabel,
@@ -557,20 +495,7 @@ class CheckOutWebflow {
 			data.cardBaseAmount = parseFloat(checkoutAmounts.cardBaseAmount.toFixed(2));
 			data.achUpsellAmount = parseFloat(checkoutAmounts.achUpsellAmount.toFixed(2));
 			data.cardUpsellAmount = parseFloat(checkoutAmounts.cardUpsellAmount.toFixed(2));
-			console.log("[SummerCheckout] payload breakdown attached", {
-				achBaseAmount: data.achBaseAmount,
-				cardBaseAmount: data.cardBaseAmount,
-				achUpsellAmount: data.achUpsellAmount,
-				cardUpsellAmount: data.cardUpsellAmount
-			});
 		}
-		console.log("[SummerCheckout] final payload amount by credit action", {
-			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
-			amountCents: data.amount,
-			achAmount: data.achAmount,
-			cardAmount: data.cardAmount
-		});
-		console.log("[SummerCheckout] checkoutUrlForStandard payload", data);
 		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
@@ -579,7 +504,6 @@ class CheckOutWebflow {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log("[SummerCheckout] checkoutUrlForStandard response", responseText)
       const isStringSuccessResponse = typeof responseText === "string" &&
         responseText.toLowerCase().includes("updated successfully");
       if (isStringSuccessResponse) {
@@ -587,22 +511,11 @@ class CheckOutWebflow {
         ach_payment.style.pointerEvents = "auto";
         card_payment.innerHTML = "Checkout";
         card_payment.style.pointerEvents = "auto";
-        console.log("[SummerCheckout] checkoutUrlForStandard string-success fallback redirect", {
-          paymentType: paymentType,
-          redirectUrl: checkOutUrl,
-          responseText: responseText
-        });
         window.location = checkOutUrl;
         return;
       }
       if (responseText.success) {
         $this.$checkoutData = responseText;
-		console.log("[SummerCheckout] redirect urls", {
-			paymentType: paymentType,
-			achUrl: responseText.achUrl,
-			cardUrl: responseText.cardUrl,
-			paylaterUrl: responseText.paylaterUrl
-		});
         if (paymentType == 'ach_payment' && responseText.achUrl) {
           ach_payment.innerHTML = "Checkout"
           ach_payment.style.pointerEvents = "auto";
@@ -677,10 +590,6 @@ class CheckOutWebflow {
 		var form = $("#checkout-form");
 		next_page_1.addEventListener('click', async function () {
 			if (form.valid()) {
-				console.log("[SummerCheckout][nav] next_page_1 click", {
-					formValid: true,
-					memberId: $this.memberData ? $this.memberData.memberId : null
-				});
 				$this.storeBasicData();
 				var eligible = true;
 				if ($this.memberData.programId == '101') {
@@ -702,10 +611,6 @@ class CheckOutWebflow {
 			var summerSessionId = document.querySelector('input[name = checkbox]:checked');
 			var locationId = document.querySelector('input[name = radio]:checked');
 			var locationSessionError = document.getElementById('locationSessionError');
-			console.log("[SummerCheckout][nav] next_page_2 click", {
-				selectedSessionId: summerSessionId ? summerSessionId.value : null,
-				selectedLocationId: locationId ? locationId.value : null
-			});
 			if (summerSessionId && locationId) {
 				locationSessionError.style.display = 'none';
 				$this.activeBreadCrumb('pay-deposite')
@@ -833,10 +738,6 @@ class CheckOutWebflow {
 			// ach_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('us_bank_account', ach_payment);
 			ibackbutton.value = "1";
-			console.log("[SummerCheckout] ach click amounts", {
-				displayAmount: $this.getDisplayedCheckoutAmount(),
-				requestAmount: $this.getCheckoutRequestAmount()
-			});
 			await $this.updateClickEventInDB($this.$checkoutData.achUrl, 'ach_payment');
 			//window.location.href = $this.$checkoutData.achUrl;
 		})
@@ -845,10 +746,6 @@ class CheckOutWebflow {
 			// card_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('card', card_payment);
 			ibackbutton.value = "1";
-			console.log("[SummerCheckout] card click amounts", {
-				displayAmount: $this.getDisplayedCheckoutAmount(),
-				requestAmount: $this.getCheckoutRequestAmount()
-			});
 			await $this.updateClickEventInDB($this.$checkoutData.cardUrl, 'card_payment');
 			//window.location.href = $this.$checkoutData.cardUrl;
 		})
@@ -1060,7 +957,6 @@ class CheckOutWebflow {
 			spinner.style.display = 'block';
 			// API call
 			const data = await this.fetchData('getSummerSessionDetails/' + this.memberData.memberId + '/' + this.memberData.programId);
-			console.log('data', data);
 			// Display summer session
 			this.displaySessionsData(data)
 			this.setupLocationContainerSelection();
@@ -1134,11 +1030,6 @@ class CheckOutWebflow {
       );
       var selectedIds = [];
       var cartLineTotal = 0;
-      console.log("[SummerCheckout][amount] updateAmount start", {
-        amountArg: amount,
-        selectedProgramCount: this.$selectedProgram.length,
-        selectedProgramIds: this.$selectedProgram.map(item => item.upsellProgramId)
-      });
       if (this.$selectedProgram.length > 0) {
         cartLineTotal = parseFloat(
           this.$selectedProgram
@@ -1188,11 +1079,6 @@ class CheckOutWebflow {
       // reflects the new per-program fee total without waiting for a tab click.
       // Uses DOM (#totalAmount + #suppProIds) so it is correct across instances.
       this.applyTotalsForTab(this.getCurrentPaymentTab());
-      console.log("[SummerCheckout][amount] updateAmount end", {
-        cartLineTotal: cartLineTotal,
-        totalAmountInput: totalAmountInput ? totalAmountInput.value : null,
-        displayTotal: document.querySelector("[data-stripe='totalDepositPrice']") ? document.querySelector("[data-stripe='totalDepositPrice']").textContent : null
-      });
     }
 	// Displays selected supplementary programs in the sidebar
 	displaySelectedSuppProgram(selectedIds) {
@@ -1355,14 +1241,6 @@ class CheckOutWebflow {
 		if (item.disc_amount !== undefined && item.disc_amount !== null && item.disc_amount !== "" && !Number.isNaN(achAmount) && achAmount > 0) {
 			discounted_amount = (achAmount - parseFloat(item.disc_amount)).toFixed(2);
 		}
-		console.log("Summer Bundle core price values", {
-			achAmount: this.memberData.achAmount,
-			itemDiscAmount: item.disc_amount
-		});
-		console.log("Summer Bundle core resolved prices", {
-			originalAmount: disc_amount,
-			discountedAmount: discounted_amount
-		});
 		var coreData = {
 			"amount": discounted_amount,
 			"bundle_type": "Summer",
@@ -1374,7 +1252,6 @@ class CheckOutWebflow {
 			"upsellProgramId": 99,
 			"yearId": item.yearId
 		}
-		console.log("[SummerCheckout][bundle] coreData created", coreData);
 		// Paint initial totals immediately so users see price without waiting for full card render loop.
 		this.applyInitialBundleTotals(coreData.amount);
         // Select  [data-stripe='totalDepositPrice'] and get data-stripe-price attribute value
@@ -1433,10 +1310,6 @@ class CheckOutWebflow {
 		if (totalAmountInput) {
 			totalAmountInput.value = String(parsed);
 		}
-		console.log("[SummerCheckout][amount] initial bundle totals applied", {
-			amount: parsed,
-			formatted: formatted
-		});
 	}
 
 	// Displays the total discount amount
@@ -1506,13 +1379,6 @@ class CheckOutWebflow {
       const priceFlex = creEl("div", "bundle-sem-popup-price-flex-wrapper");
       const originalPrice = creEl("div", "bundle-sem-popup-price-gray");
       originalPrice.setAttribute("data-addon", "price");
-      if (type === "core") {
-        console.log("[Summer Bundle] rendering gray price", {
-          label: singleBundleData.label,
-          yearId: singleBundleData.yearId,
-          disc_amount: singleBundleData.disc_amount
-        });
-      }
       originalPrice.textContent = singleBundleData.disc_amount
         ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
         : "$3,770";
@@ -1540,11 +1406,6 @@ class CheckOutWebflow {
       // Checkbox logic
       input.addEventListener("change", (event) => {
         event.preventDefault();
-        console.log("[SummerCheckout][bundle] checkbox change", {
-          upsellProgramId: singleBundleData ? singleBundleData.upsellProgramId : null,
-          checked: event.target.checked,
-          type: type
-        });
         if (event.target.checked) {
           if (!this.$selectedProgram.includes(singleBundleData)) {
             this.$selectedProgram.push(singleBundleData);
@@ -1784,13 +1645,6 @@ class CheckOutWebflow {
 		// the "Remove / Fall / $amount" row stays stuck on ACH pricing when the card tab
 		// is active.
 		this.renderAddonRowPrices(tabName);
-		console.log("[SummerCheckout] applyTotalsForTab", {
-			tab: tabName,
-			programCount: totals.programCount,
-			achTotal: totals.achTotal,
-			cardTotal: totals.cardTotal,
-			displayed: amountToShow
-		});
 	}
 
 	renderAddonRowPrices(tabName) {
@@ -1868,10 +1722,6 @@ class CheckOutWebflow {
 			cardUpsellAmount: cardUpsellAmount,
 			hasUpsells: upsellPrograms.length > 0
 		};
-		console.log("[SummerCheckout] getRequestAmounts", Object.assign({
-			selectedCount: selectedPrograms.length,
-			upsellCount: upsellPrograms.length
-		}, result));
 		return result;
 	}
 
@@ -1902,12 +1752,6 @@ class CheckOutWebflow {
 		var formattedStripe = this.numberWithCommas(parseFloat(requestAmount).toFixed(2));
 		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
 			el.setAttribute("data-stripe-price", formattedStripe);
-		});
-		console.log("[SummerCheckout] getCheckoutRequestAmount", {
-			displayAmount: displayAmount,
-			dataStripePriceAmount: attrAmount,
-			selectedProgramAmount: selectedProgramAmount,
-			requestAmount: requestAmount
 		});
 		return requestAmount;
 	}
