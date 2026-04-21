@@ -1183,6 +1183,11 @@ class CheckOutWebflow {
 
       // Update selected supplementary program ids
       this.displaySelectedSuppProgram(allSupIds);
+
+      // Re-render the total for the currently active payment tab so the card tab
+      // reflects the new per-program fee total without waiting for a tab click.
+      // Uses DOM (#totalAmount + #suppProIds) so it is correct across instances.
+      this.applyTotalsForTab(this.getCurrentPaymentTab());
       console.log("[SummerCheckout][amount] updateAmount end", {
         cartLineTotal: cartLineTotal,
         totalAmountInput: totalAmountInput ? totalAmountInput.value : null,
@@ -1685,94 +1690,22 @@ class CheckOutWebflow {
         paymentTab[i].addEventListener("click", function (e) {
           e.preventDefault()
           let tab = paymentTab[i].getAttribute("data-w-tab");
-          if (tab == "Tab 2") {
-            if (totalDepositPrice.length > 0) {
-              totalDepositPrice.forEach((deposit_price) => {
-                var core_product_price =
-                  document.getElementById("core_product_price");
-                var coreDepositPrice = parseFloat(
-                  core_product_price.value.replace(/,/g, "")
-                );
-                coreDepositPrice = (parseFloat(coreDepositPrice) + 0.3) / 0.971;
+          // Render the payment-area total from shared DOM state. This is the
+          // single source of truth, so multiple bound listeners (duplicate
+          // Webflow symbols / multiple class instances) all produce the same
+          // correct value instead of clobbering each other with stale data.
+          $this.applyTotalsForTab(tab);
 
-                // Update deposit Price for addon program
-                let addonDepositPrices = document.querySelectorAll(
-                 "[data-stripe='addon-deposit-price']"
-               );
-               if(addonDepositPrices.length > 0){
-                 addonDepositPrices.forEach(addonDepositPrice =>{
-                   addonDepositPrice.innerHTML =   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));  
-                 })
-               }
-                let sumOfSelectedPrograms = (
-                  $this.$selectedProgram.reduce((total, program) => {
-                    var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
-                    return total + (((isNaN(amount) ? 0 : amount) + 0.3) / 0.971);
-                  }, 0)
-                ).toFixed(2);
-                if($this.$selectedProgram.length > 0){
-                    coreDepositPrice = parseFloat(sumOfSelectedPrograms);
-                } else {
-                    coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice;
-                }
-                
-                deposit_price.innerHTML =
-                  "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
-				deposit_price.setAttribute("data-stripe-price", $this.numberWithCommas(coreDepositPrice.toFixed(2)));
-				const grayElem = document.querySelector(".current-price-gray");
-				if (grayElem) {
-					grayElem.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
-				}
-              });
-            }
-          } else {
-            if (totalDepositPrice.length > 0) {
-              totalDepositPrice.forEach((deposit_price) => {
-                let amountEl = deposit_price.getAttribute("data-stripe-price");
-  
-                let amount = parseFloat(
-                  amountEl.replace(/,/g, "").replace(/\$/g, "")
-                );
-
-                // Update deposit Price for addon program
-                let addonDepositPrices = document.querySelectorAll(
-                 "[data-stripe='addon-deposit-price']"
-               );
-               if(addonDepositPrices.length > 0){
-                 addonDepositPrices.forEach(addonDepositPrice =>{
-                   addonDepositPrice.innerHTML =   "$" + $this.numberWithCommas(amount.toFixed(2));
-                 })
-               }
-                  
-              
-              var sumOfSelectedPrograms = (
-              $this.$selectedProgram.reduce((total, program) => {
-                var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
-                return total + (isNaN(amount) ? 0 : amount);
-              }, 0)
-        ).toFixed(2);
-              var finalPrice = 0;
-              if($this.$selectedProgram.length > 0){
-                finalPrice = parseFloat(sumOfSelectedPrograms);
-              } else {
-                finalPrice = parseFloat(sumOfSelectedPrograms) + parseFloat(amount);
-              }
-              console.log("[SummerCheckout] payment tab total recalculation", {
-                tab: tab,
-                selectedProgramCount: $this.$selectedProgram.length,
-                baseAmount: amount,
-                selectedAmount: parseFloat(sumOfSelectedPrograms),
-                finalPrice: finalPrice
-              });
-              deposit_price.innerHTML =
-                "$" + $this.numberWithCommas(finalPrice.toFixed(2));
-			  deposit_price.setAttribute("data-stripe-price", $this.numberWithCommas(finalPrice.toFixed(2)));
-			  const grayElem = document.querySelector(".current-price-gray");
-			  if (grayElem) {
-				grayElem.innerHTML = "$" + $this.numberWithCommas(finalPrice.toFixed(2));
-			  }
+          // Addon sidebar prices still need a per-tab refresh (fee vs. no fee).
+          let addonDepositPrices = document.querySelectorAll(
+            "[data-stripe='addon-deposit-price']"
+          );
+          if (addonDepositPrices.length > 0) {
+            var totalsForAddon = $this.computeDisplayedTotals();
+            var addonValue = (tab === "Tab 2") ? totalsForAddon.cardTotal : totalsForAddon.achTotal;
+            addonDepositPrices.forEach(addonDepositPrice => {
+              addonDepositPrice.innerHTML = "$" + $this.numberWithCommas(addonValue.toFixed(2));
             });
-          }
           }
   
           // Code for addon price update based on payment method selection
@@ -1813,6 +1746,66 @@ class CheckOutWebflow {
 		}
 		var amount = parseFloat(String(rawText).replace(/[^0-9.]/g, ""));
 		return isNaN(amount) ? 0 : amount;
+	}
+
+	getCurrentPaymentTab() {
+		// "Tab 2" = card, "Tab 1" = ACH (Webflow's data-w-tab naming).
+		var activeTab = document.querySelector(".checkout-tab-link.w--current");
+		if (activeTab) {
+			var attr = activeTab.getAttribute("data-w-tab");
+			if (attr) return attr;
+		}
+		return "Tab 1";
+	}
+
+	computeDisplayedTotals() {
+		// Reads totals from the SHARED DOM state so the computation is correct even if
+		// multiple CheckOutWebflow instances exist (Webflow symbol duplication can cause
+		// this) and their private $selectedProgram arrays are out of sync.
+		// #totalAmount is maintained by updateAmount; #suppProIds holds the latest ids.
+		var totalAmountEl = document.getElementById("totalAmount");
+		var suppProIdsEl = document.getElementById("suppProIds");
+		var achTotal = 0;
+		if (totalAmountEl && totalAmountEl.value) {
+			achTotal = parseFloat(String(totalAmountEl.value).replace(/,/g, ""));
+			if (isNaN(achTotal)) achTotal = 0;
+		}
+		var programCount = 1; // core is always counted for the per-program card fee.
+		if (suppProIdsEl && suppProIdsEl.value) {
+			try {
+				var ids = JSON.parse(suppProIdsEl.value);
+				if (Array.isArray(ids)) {
+					var unique = Array.from(new Set(ids.filter(id => id !== null && id !== undefined)));
+					if (unique.length > 0) programCount = unique.length;
+				}
+			} catch (e) { /* keep default */ }
+		}
+		var cardTotal = achTotal > 0 ? (achTotal + programCount * 0.3) / 0.971 : 0;
+		return { achTotal: achTotal, cardTotal: cardTotal, programCount: programCount };
+	}
+
+	applyTotalsForTab(tabName) {
+		// Single renderer for the payment-area total. Called from both updateAmount
+		// (on every selection change) AND the tab click handler, so the UI updates
+		// immediately regardless of which instance's listener fires.
+		var totals = this.computeDisplayedTotals();
+		var amountToShow = (tabName === "Tab 2") ? totals.cardTotal : totals.achTotal;
+		var formatted = this.numberWithCommas(amountToShow.toFixed(2));
+		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+			el.innerHTML = "$" + formatted;
+			el.setAttribute("data-stripe-price", formatted);
+		});
+		var grayElem = document.querySelector(".current-price-gray");
+		if (grayElem) {
+			grayElem.innerHTML = "$" + formatted;
+		}
+		console.log("[SummerCheckout] applyTotalsForTab", {
+			tab: tabName,
+			programCount: totals.programCount,
+			achTotal: totals.achTotal,
+			cardTotal: totals.cardTotal,
+			displayed: amountToShow
+		});
 	}
 
 	getRequestAmounts() {
