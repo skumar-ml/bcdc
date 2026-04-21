@@ -187,6 +187,7 @@ class Utils {
             bergenCreditsModalClose.onclick = (event) => {
                 if (event) event.preventDefault();
             };
+            bergenCreditsModalClose.style.display = "none";
         }
 
         if (bergenCreditsModalBg) {
@@ -230,32 +231,38 @@ class Utils {
         }
         
         Utils.showBergenCreditsModal();
-        // Wait for user to click either "apply" or "no" button.
-        // The modal can ONLY be closed via these two buttons -- backdrop click
-        // and X close button are intentionally disabled in setupBergenCreditsModalHandlers
-        // so the promise below is guaranteed to resolve once the user makes a choice.
+        // Wait for user to click either "apply" or "no" button
         const applyCredit = await new Promise((resolve) => {
+            // Query for buttons - may need to wait a moment for modal to render
             const applyButton = document.querySelector('[data-credit="apply"]');
             const noButton = document.querySelector('[data-credit="no"]');
-
+            const bergenCreditsModalClose = document.getElementById("bergen-credits-modal-close");
+            
+            // If buttons don't exist, default to false and resolve immediately
             if (!applyButton && !noButton) {
                 console.warn("Credit modal buttons not found, defaulting to applyCredit = false");
                 resolve(false);
                 return;
             }
-
-            const handleApply = (event) => {
-                if (event) event.preventDefault();
+            
+            // Handler for apply button click
+            const handleApply = () => {
                 cleanup();
                 resolve(true);
             };
-
-            const handleNo = (event) => {
-                if (event) event.preventDefault();
+            
+            // Handler for no button click
+            const handleNo = () => {
                 cleanup();
                 resolve(false);
             };
 
+            const handleClose = (event) => {
+                if (event) event.preventDefault();
+                handleNo();
+            };
+            
+            // Cleanup function to remove event listeners
             const cleanup = () => {
                 if (applyButton) {
                     applyButton.removeEventListener('click', handleApply);
@@ -263,13 +270,20 @@ class Utils {
                 if (noButton) {
                     noButton.removeEventListener('click', handleNo);
                 }
+                if (bergenCreditsModalClose) {
+                    bergenCreditsModalClose.removeEventListener('click', handleClose);
+                }
             };
-
+            
+            // Add event listeners
             if (applyButton) {
                 applyButton.addEventListener('click', handleApply);
             }
             if (noButton) {
                 noButton.addEventListener('click', handleNo);
+            }
+            if (bergenCreditsModalClose) {
+                bergenCreditsModalClose.addEventListener('click', handleClose);
             }
         });
         
