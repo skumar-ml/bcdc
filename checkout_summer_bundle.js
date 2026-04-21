@@ -498,6 +498,22 @@ class CheckOutWebflow {
 				var discountedAmount = parseFloat(String(discountedAmountEl.textContent || "").replace(/[^0-9.]/g, ""));
 				if (!isNaN(discountedAmount) && discountedAmount >= 0) {
 					requestAmount = discountedAmount;
+					// Keep DOM in sync so downstream reads (and any re-renders) reflect the credited total.
+					var self = this;
+					var formattedDiscount = "$" + self.numberWithCommas(discountedAmount.toFixed(2));
+					var formattedStripeAttr = self.numberWithCommas(discountedAmount.toFixed(2));
+					document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+						el.innerHTML = formattedDiscount;
+						el.setAttribute("data-stripe-price", formattedStripeAttr);
+					});
+					var totalAmountInput = document.getElementById("totalAmount");
+					if (totalAmountInput) {
+						totalAmountInput.value = String(discountedAmount);
+					}
+					console.log("[SummerCheckout] applyCredit DOM sync", {
+						discountedAmount: discountedAmount,
+						formattedDiscount: formattedDiscount
+					});
 				}
 				console.log("[SummerCheckout] applyCredit amount override", {
 					discountedText: discountedAmountEl.textContent,
@@ -515,8 +531,13 @@ class CheckOutWebflow {
 			requestCardAmount: requestCardAmount
 		});
 		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
+		// Drop core id so the array only carries true addons; if none selected, fall back to [coreId]
+		// so backend still receives the baseline program id (matches legacy behavior).
 		if (this.$coreData && this.$coreData.upsellProgramId) {
 			selectedUpsellIds = selectedUpsellIds.filter(id => id !== this.$coreData.upsellProgramId);
+		}
+		if (selectedUpsellIds.length === 0 && this.$coreData && this.$coreData.upsellProgramId) {
+			selectedUpsellIds = [this.$coreData.upsellProgramId];
 		}
 		console.log("[SummerCheckout] upsell ids for payload", {
 			coreProgramId: this.$coreData ? this.$coreData.upsellProgramId : null,
@@ -1352,6 +1373,8 @@ class CheckOutWebflow {
 			"yearId": item.yearId
 		}
 		console.log("[SummerCheckout][bundle] coreData created", coreData);
+		// Paint initial totals immediately so users see price without waiting for full card render loop.
+		this.applyInitialBundleTotals(coreData.amount);
         // Select  [data-stripe='totalDepositPrice'] and get data-stripe-price attribute value
         var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
         var coreDepositPrice = 0;
@@ -1393,6 +1416,26 @@ class CheckOutWebflow {
       });
       this.disableEnableBuyNowButton();
     }
+	applyInitialBundleTotals(amount) {
+		var parsed = parseFloat(String(amount || "0").replace(/,/g, ""));
+		if (isNaN(parsed)) parsed = 0;
+		var formatted = "$" + this.numberWithCommas(parsed.toFixed(2));
+		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+			el.innerHTML = formatted;
+		});
+		var grayElem = document.querySelector(".current-price-gray");
+		if (grayElem) {
+			grayElem.innerHTML = formatted;
+		}
+		var totalAmountInput = document.getElementById("totalAmount");
+		if (totalAmountInput) {
+			totalAmountInput.value = String(parsed);
+		}
+		console.log("[SummerCheckout][amount] initial bundle totals applied", {
+			amount: parsed,
+			formatted: formatted
+		});
+	}
 
 	// Displays the total discount amount
 	displayTotalDiscount(bundleData, discAmount){
