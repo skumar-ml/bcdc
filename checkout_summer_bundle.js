@@ -342,16 +342,10 @@ class CheckOutWebflow {
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href,
 			"memberId": this.memberData.memberId,
-			"achAmount": parseFloat(requestAchAmount.toFixed(2)),
-			"cardAmount": parseFloat(requestCardAmount.toFixed(2)),
+			"achAmount": Math.round(parseFloat(requestAchAmount || 0) * 100),
+			"cardAmount": Math.round(parseFloat(requestCardAmount || 0) * 100),
 			"utm_source": (localUtmSource != null) ? localUtmSource : "null"
 		}
-		console.log("[SummerCheckout] initializeStripePayment amounts", {
-			memberId: this.memberData.memberId,
-			requestAchAmount: requestAchAmount,
-			requestCardAmount: requestCardAmount,
-			programName: this.memberData.programName
-		});
 
 
 		var xhr = new XMLHttpRequest()
@@ -361,7 +355,6 @@ class CheckOutWebflow {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log("[SummerCheckout] checkoutUrlForSummer response", responseText)
 			if (responseText.success) {
 
 				$this.$checkoutData = responseText;
@@ -416,7 +409,6 @@ class CheckOutWebflow {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log('responseText', responseText)
 			ach_payment.innerHTML = "Checkout"
 			ach_payment.disabled = false;
 			ach_payment.pointerEvents = "auto";
@@ -449,37 +441,47 @@ class CheckOutWebflow {
 		cancelUrl.searchParams.set('returnType', 'back');
 
 		var checkoutAmount = this.getDisplayedCheckoutAmount();
-		var requestAmount = this.getCheckoutRequestAmount();
 		this.setCreditModalBaseAmount(checkoutAmount);
-		console.log("[SummerCheckout] pre-credit amounts", {
-			checkoutAmount: checkoutAmount,
-			requestAmount: requestAmount,
-			paymentType: paymentType
-		});
 		
 		checkOutData = JSON.parse(checkOutData)
 		// Match class checkout flow: ask whether to apply available credits before checkout URL generation.
 		var applyCredit = false;
 		if (typeof Utils !== "undefined" && typeof Utils.waitForCreditApplicationChoice === "function") {
-			applyCredit = await Utils.waitForCreditApplicationChoice(this.memberData.memberId);
+			var creditMemberId = String((this.memberData && this.memberData.memberId) || "");
+			applyCredit = await Utils.waitForCreditApplicationChoice(creditMemberId);
 		}
-		console.log("[SummerCheckout] credit choice", {
-			memberId: this.memberData.memberId,
-			applyCredit: applyCredit
-		});
+		// achAmount / cardAmount must mirror what the UI shows. cardAmount applies the
+		// (+0.30)/0.971 processing fee PER selected program (same as updatePriceForCardPayment),
+		// so we can't just do (achTotal + 0.30)/0.971 when multiple items are selected.
+		var checkoutAmounts = this.getRequestAmounts();
+		var requestAchAmount = parseFloat(checkoutAmounts.ach || 0);
+		var requestCardAmount = parseFloat(checkoutAmounts.card || 0);
+		// `amount` represents the actual charge (ACH base on ach tab, card-with-fee on card tab).
+		var requestAmount = (paymentType === 'card_payment') ? requestCardAmount : requestAchAmount;
+		// Credit application is handled server-side; client only relays the user's choice via applyCredit flag.
 		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
+		// Drop core id so the array only carries true addons; if none selected, fall back to [coreId]
+		// so backend still receives the baseline program id (matches legacy behavior).
+		if (this.$coreData && this.$coreData.upsellProgramId) {
+			selectedUpsellIds = selectedUpsellIds.filter(id => id !== this.$coreData.upsellProgramId);
+		}
 		if (selectedUpsellIds.length === 0 && this.$coreData && this.$coreData.upsellProgramId) {
 			selectedUpsellIds = [this.$coreData.upsellProgramId];
 		}
 		var hasFee = paymentType === 'card_payment';
 		var checkoutLabel = "Summer | " + this.memberData.programName;
+		var latestCheckoutId = (this.$checkoutData && this.$checkoutData.checkoutId)
+			? this.$checkoutData.checkoutId
+			: checkOutData.checkoutData.checkoutId;
 		var data = {
-			"checkoutId": checkOutData.checkoutData.checkoutId,
+			"checkoutId": latestCheckoutId,
 			"label": checkoutLabel,
 			"memberId": this.memberData.memberId,
 			"isSummerData": true,
 			"upsellProgramIds": selectedUpsellIds,
 			"amount": Math.round(parseFloat(requestAmount || 0) * 100),
+			"achAmount": parseFloat(requestAchAmount.toFixed(2)),
+			"cardAmount": parseFloat(requestCardAmount.toFixed(2)),
 			"source": "cart_page",
 			"has_fee": hasFee,
 			"applyCredit": applyCredit,
@@ -487,7 +489,13 @@ class CheckOutWebflow {
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
 		}
-		console.log("[SummerCheckout] checkoutUrlForStandard payload", data);
+		// Backend requires an explicit base / upsell breakdown whenever real upsells are selected.
+		if (checkoutAmounts.hasUpsells) {
+			data.achBaseAmount = parseFloat(checkoutAmounts.achBaseAmount.toFixed(2));
+			data.cardBaseAmount = parseFloat(checkoutAmounts.cardBaseAmount.toFixed(2));
+			data.achUpsellAmount = parseFloat(checkoutAmounts.achUpsellAmount.toFixed(2));
+			data.cardUpsellAmount = parseFloat(checkoutAmounts.cardUpsellAmount.toFixed(2));
+		}
 		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
@@ -496,15 +504,18 @@ class CheckOutWebflow {
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
 			let responseText = JSON.parse(xhr.responseText);
-			console.log("[SummerCheckout] checkoutUrlForStandard response", responseText)
+      const isStringSuccessResponse = typeof responseText === "string" &&
+        responseText.toLowerCase().includes("updated successfully");
+      if (isStringSuccessResponse) {
+        ach_payment.innerHTML = "Checkout";
+        ach_payment.style.pointerEvents = "auto";
+        card_payment.innerHTML = "Checkout";
+        card_payment.style.pointerEvents = "auto";
+        window.location = checkOutUrl;
+        return;
+      }
       if (responseText.success) {
         $this.$checkoutData = responseText;
-		console.log("[SummerCheckout] redirect urls", {
-			paymentType: paymentType,
-			achUrl: responseText.achUrl,
-			cardUrl: responseText.cardUrl,
-			paylaterUrl: responseText.paylaterUrl
-		});
         if (paymentType == 'ach_payment' && responseText.achUrl) {
           ach_payment.innerHTML = "Checkout"
           ach_payment.style.pointerEvents = "auto";
@@ -518,10 +529,26 @@ class CheckOutWebflow {
           paylater_payment.style.pointerEvents = "auto";
           window.location = responseText.paylaterUrl;
         } else {
-          window.location = checkOutUrl;
+		  ach_payment.innerHTML = "Checkout";
+		  ach_payment.style.pointerEvents = "auto";
+		  card_payment.innerHTML = "Checkout";
+		  card_payment.style.pointerEvents = "auto";
+          console.error("[SummerCheckout] Missing updated redirect URL, stopping fallback to stale URL", {
+            paymentType: paymentType,
+            responseText: responseText
+          });
+          return;
         }
       }else {
-        window.location = checkOutUrl;
+		ach_payment.innerHTML = "Checkout";
+		ach_payment.style.pointerEvents = "auto";
+		card_payment.innerHTML = "Checkout";
+		card_payment.style.pointerEvents = "auto";
+        console.error("[SummerCheckout] checkoutUrlForStandard failed, stopping fallback to stale URL", {
+          paymentType: paymentType,
+          responseText: responseText
+        });
+        return;
       }
     }
 	}
@@ -706,21 +733,24 @@ class CheckOutWebflow {
 		// Browser back button event hidden fields
 		var ibackbutton = document.getElementById("backbuttonstate");
 		var $this = this;
-		ach_payment.addEventListener('click', async function () {
+		ach_payment.addEventListener('click', async function (event) {
+			if (event) event.preventDefault();
 			// ach_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('us_bank_account', ach_payment);
 			ibackbutton.value = "1";
 			await $this.updateClickEventInDB($this.$checkoutData.achUrl, 'ach_payment');
 			//window.location.href = $this.$checkoutData.achUrl;
 		})
-		card_payment.addEventListener('click', async function () {
+		card_payment.addEventListener('click', async function (event) {
+			if (event) event.preventDefault();
 			// card_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('card', card_payment);
 			ibackbutton.value = "1";
 			await $this.updateClickEventInDB($this.$checkoutData.cardUrl, 'card_payment');
 			//window.location.href = $this.$checkoutData.cardUrl;
 		})
-		paylater_payment.addEventListener('click', async function () {
+		paylater_payment.addEventListener('click', async function (event) {
+			if (event) event.preventDefault();
 			// paylater_payment.innerHTML = "Processing..."
 			// $this.initializeStripePayment('paylater', paylater_payment);
 			ibackbutton.value = "1";
@@ -774,22 +804,24 @@ class CheckOutWebflow {
 			if (paymentData.prevStudent) {
 				prevStudent.value = paymentData.prevStudent;
 			}
-			if (paymentData.updateData.locationId == 1) {
+			// Guard against partial local storage where user never completed session/location step.
+			var restoredUpdateData = paymentData.updateData || {};
+			if (restoredUpdateData.locationId == 1) {
 				fort_lee_location.checked = true;
-			} else if(paymentData.updateData.locationId == 4){
+			} else if(restoredUpdateData.locationId == 4){
 				livingston_location.checked = true;
-			} else if(paymentData.updateData.locationId == 6){
+			} else if(restoredUpdateData.locationId == 6){
 				white_plains_location.checked = true;
-			}else {
+			} else if(restoredUpdateData.locationId) {
 				glen_rock_location.checked = true;
 			}
 			this.syncLocationContainerSelection();
-			if(paymentData.updateData.locationId){
+			if(restoredUpdateData.locationId){
 				document.querySelector('.cart-location-container').style.display = "block";
 			}
 			const sessionEls = document.querySelectorAll('input[data-name="Checkbox"]');
 			sessionEls.forEach(el=>{
-				if(el.value == paymentData.updateData.summerSessionId){
+				if(restoredUpdateData.summerSessionId && el.value == restoredUpdateData.summerSessionId){
 					el.checked = true;
 					var sessionCard = el.closest('.core-session-container.core-product-container');
 					if (sessionCard) {
@@ -925,7 +957,6 @@ class CheckOutWebflow {
 			spinner.style.display = 'block';
 			// API call
 			const data = await this.fetchData('getSummerSessionDetails/' + this.memberData.memberId + '/' + this.memberData.programId);
-			console.log('data', data);
 			// Display summer session
 			this.displaySessionsData(data)
 			this.setupLocationContainerSelection();
@@ -998,20 +1029,22 @@ class CheckOutWebflow {
         "[data-stripe='totalDepositPrice']"
       );
       var selectedIds = [];
+      var cartLineTotal = 0;
+      if (this.$selectedProgram.length > 0) {
+        cartLineTotal = parseFloat(
+          this.$selectedProgram
+            .reduce((total, program) => total + (parseFloat((program.amount + "").replace(/,/g, "")) || 0), 0)
+            .toFixed(2)
+        );
+      }
       totalPriceAllText.forEach(totalPriceText=>{
         var sumOfSelectedPrograms = 0;
 		if(this.$selectedProgram.length > 0){
 			 sumOfSelectedPrograms = (
-			this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
+			this.$selectedProgram.reduce((total, program) => total + (parseFloat((program.amount + "").replace(/,/g, "")) || 0), 0)
 			).toFixed(2);
-      var dataStripePrice = totalPriceText.getAttribute("data-stripe-price");
-      //1,750.00 convert to 1750.00
-      if(dataStripePrice){
-        dataStripePrice = dataStripePrice.replace(/,/g, '');
-      }
-			var dataStripePrice = parseFloat(dataStripePrice);
-			sumOfSelectedPrograms = parseFloat(sumOfSelectedPrograms) + parseFloat(dataStripePrice);
 			totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
+			totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(sumOfSelectedPrograms));
 		}else{
 			var dataStripePrice = totalPriceText.getAttribute("data-stripe-price");
       if(dataStripePrice){
@@ -1019,6 +1052,10 @@ class CheckOutWebflow {
       }
       dataStripePrice = parseFloat(dataStripePrice);
       totalPriceText.innerHTML = "$" + this.numberWithCommas(dataStripePrice);
+      totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(dataStripePrice));
+      if (totalPriceAllText.length && totalPriceText === totalPriceAllText[0]) {
+        cartLineTotal = dataStripePrice;
+      }
 		}
 
 		const grayElem = document.querySelector(".current-price-gray");
@@ -1028,14 +1065,20 @@ class CheckOutWebflow {
        
         
       });
-      totalAmountInput.value =
-          parseFloat(totalAmountInput.value) + parseFloat(amount);
+      if (totalAmountInput) {
+        totalAmountInput.value = isNaN(cartLineTotal) ? "0" : String(cartLineTotal);
+      }
       var suppProIdE = document.getElementById("suppProIds");
       var allSupIds = this.$selectedProgram.map(item => item.upsellProgramId);
       suppProIdE.value = JSON.stringify(allSupIds);
 
       // Update selected supplementary program ids
       this.displaySelectedSuppProgram(allSupIds);
+
+      // Re-render the total for the currently active payment tab so the card tab
+      // reflects the new per-program fee total without waiting for a tab click.
+      // Uses DOM (#totalAmount + #suppProIds) so it is correct across instances.
+      this.applyTotalsForTab(this.getCurrentPaymentTab());
     }
 	// Displays selected supplementary programs in the sidebar
 	displaySelectedSuppProgram(selectedIds) {
@@ -1185,17 +1228,21 @@ class CheckOutWebflow {
         
 		var bundleData = item.upsellPrograms;
 
+		var disc_amount = "";
+		var discounted_amount = "";
+		var achAmount = 0;
 		if (this.memberData.achAmount && typeof this.memberData.achAmount === "string") {
-			// Remove commas and parse as float
-			let achAmount = parseFloat(this.memberData.achAmount.replace(/,/g, ""));
-			// Add 50 and assign to disc_amount
-      var disc_amount = (achAmount).toFixed(2);
-			if(item.disc_amount){
-        var disc_amount = (achAmount + parseFloat(item.disc_amount)).toFixed(2);
-      }
+			achAmount = parseFloat(this.memberData.achAmount.replace(/,/g, ""));
+		}
+		if (!Number.isNaN(achAmount) && achAmount > 0) {
+			disc_amount = achAmount.toFixed(2);
+			discounted_amount = achAmount.toFixed(2);
+		}
+		if (item.disc_amount !== undefined && item.disc_amount !== null && item.disc_amount !== "" && !Number.isNaN(achAmount) && achAmount > 0) {
+			discounted_amount = (achAmount - parseFloat(item.disc_amount)).toFixed(2);
 		}
 		var coreData = {
-			"amount": this.memberData.achAmount,
+			"amount": discounted_amount,
 			"bundle_type": "Summer",
 			"desc": (item.desc ? item.desc : ""),
 			"disc_amount": this.numberWithCommas(disc_amount),
@@ -1205,6 +1252,8 @@ class CheckOutWebflow {
 			"upsellProgramId": 99,
 			"yearId": item.yearId
 		}
+		// Paint initial totals immediately so users see price without waiting for full card render loop.
+		this.applyInitialBundleTotals(coreData.amount);
         // Select  [data-stripe='totalDepositPrice'] and get data-stripe-price attribute value
         var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
         var coreDepositPrice = 0;
@@ -1215,6 +1264,7 @@ class CheckOutWebflow {
           //coreData.amount = coreAmount - dataStripePrice;
         }
         this.$coreData = coreData;
+        this.$selectedProgram = [coreData, ...this.$selectedProgram.filter(program => program.upsellProgramId !== coreData.upsellProgramId)];
         var bundlePopUpText = creEl("p", "bundle-pop-up-text");
         bundlePopUpText.innerHTML = "*To get the bundle benefits, a future session must be selected and the full tuition is due at class registration.";
 
@@ -1240,10 +1290,27 @@ class CheckOutWebflow {
           var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
           modalCardContainer.appendChild(modelCard);
         });
+        this.updateAmount(0);
         this.displayTotalDiscount(item.upsellPrograms, item.disc_amount);
       });
       this.disableEnableBuyNowButton();
     }
+	applyInitialBundleTotals(amount) {
+		var parsed = parseFloat(String(amount || "0").replace(/,/g, ""));
+		if (isNaN(parsed)) parsed = 0;
+		var formatted = "$" + this.numberWithCommas(parsed.toFixed(2));
+		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+			el.innerHTML = formatted;
+		});
+		var grayElem = document.querySelector(".current-price-gray");
+		if (grayElem) {
+			grayElem.innerHTML = formatted;
+		}
+		var totalAmountInput = document.getElementById("totalAmount");
+		if (totalAmountInput) {
+			totalAmountInput.value = String(parsed);
+		}
+	}
 
 	// Displays the total discount amount
 	displayTotalDiscount(bundleData, discAmount){
@@ -1484,103 +1551,27 @@ class CheckOutWebflow {
         paymentTab[i].addEventListener("click", function (e) {
           e.preventDefault()
           let tab = paymentTab[i].getAttribute("data-w-tab");
-          if (tab == "Tab 2") {
-            if (totalDepositPrice.length > 0) {
-              totalDepositPrice.forEach((deposit_price) => {
-                var core_product_price =
-                  document.getElementById("core_product_price");
-                var coreDepositPrice = parseFloat(
-                  core_product_price.value.replace(/,/g, "")
-                );
-                coreDepositPrice = (parseFloat(coreDepositPrice) + 0.3) / 0.971;
+          // Render the payment-area total from shared DOM state. This is the
+          // single source of truth, so multiple bound listeners (duplicate
+          // Webflow symbols / multiple class instances) all produce the same
+          // correct value instead of clobbering each other with stale data.
+          $this.applyTotalsForTab(tab);
 
-                // Update deposit Price for addon program
-                let addonDepositPrices = document.querySelectorAll(
-                 "[data-stripe='addon-deposit-price']"
-               );
-               if(addonDepositPrices.length > 0){
-                 addonDepositPrices.forEach(addonDepositPrice =>{
-                   addonDepositPrice.innerHTML =   "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));  
-                 })
-               }
-                let sumOfSelectedPrograms = (
-                  $this.$selectedProgram.reduce((total, program) => total + ((parseFloat(program.amount) + 0.3) / 0.971), 0)
-                ).toFixed(2);
-                // if($this.$selectedProgram.length > 0){
-                //     coreDepositPrice = parseFloat(sumOfSelectedPrograms);
-                // } else {
-                    coreDepositPrice = parseFloat(sumOfSelectedPrograms) + coreDepositPrice;
-                //}
-                
-                deposit_price.innerHTML =
-                  "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
-				const grayElem = document.querySelector(".current-price-gray");
-				if (grayElem) {
-					grayElem.innerHTML = "$" + $this.numberWithCommas(coreDepositPrice.toFixed(2));
-				}
-              });
-            }
-          } else {
-            if (totalDepositPrice.length > 0) {
-              totalDepositPrice.forEach((deposit_price) => {
-                let amountEl = deposit_price.getAttribute("data-stripe-price");
-  
-                let amount = parseFloat(
-                  amountEl.replace(/,/g, "").replace(/\$/g, "")
-                );
-
-                // Update deposit Price for addon program
-                let addonDepositPrices = document.querySelectorAll(
-                 "[data-stripe='addon-deposit-price']"
-               );
-               if(addonDepositPrices.length > 0){
-                 addonDepositPrices.forEach(addonDepositPrice =>{
-                   addonDepositPrice.innerHTML =   "$" + $this.numberWithCommas(amount.toFixed(2));
-                 })
-               }
-                  
-              
-              var sumOfSelectedPrograms = (
-              $this.$selectedProgram.reduce((total, program) => total + program.amount, 0)
-        ).toFixed(2);
-              var finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms)+ parseFloat(amount))      
-              // if($this.$selectedProgram.length > 0){
-              //     finalPrice = $this.numberWithCommas(parseFloat(sumOfSelectedPrograms))
-              // }      
-              deposit_price.innerHTML =
-                "$" + finalPrice;
-			  const grayElem = document.querySelector(".current-price-gray");
-			  if (grayElem) {
-				grayElem.innerHTML = "$" + finalPrice;
-			  }
+          // Addon sidebar prices still need a per-tab refresh (fee vs. no fee).
+          let addonDepositPrices = document.querySelectorAll(
+            "[data-stripe='addon-deposit-price']"
+          );
+          if (addonDepositPrices.length > 0) {
+            var totalsForAddon = $this.computeDisplayedTotals();
+            var addonValue = (tab === "Tab 2") ? totalsForAddon.cardTotal : totalsForAddon.achTotal;
+            addonDepositPrices.forEach(addonDepositPrice => {
+              addonDepositPrice.innerHTML = "$" + $this.numberWithCommas(addonValue.toFixed(2));
             });
           }
-          }
   
-          // Code for addon price update based on payment method selection
-          let addonPrice = document.querySelectorAll(
-            "[data-stripe='addon_price']"
-          );
-          if (tab == "Tab 2") {
-            if (addonPrice.length > 0) {
-              addonPrice.forEach((addon_deposit_price) => {
-                let addonPrice = addon_deposit_price.getAttribute("addon-price")
-                  .replace(/,/g, "")
-                  .replace(/\$/g, "");
-                let addonPriceValue = (parseFloat(addonPrice) + 0.3) / 0.971;
-                addon_deposit_price.innerHTML =
-                  "$" + $this.numberWithCommas(addonPriceValue.toFixed(2));
-              });
-            }
-          } else {
-            if (addonPrice.length > 0) {
-              addonPrice.forEach((addon_deposit_price) => {
-                let addonSinglePrice =
-                  addon_deposit_price.getAttribute("addon-price");
-                addon_deposit_price.innerHTML = "$" + addonSinglePrice;
-              });
-            }
-          }
+          // Per-row addon prices ([data-stripe='addon_price']) are now handled
+          // inside applyTotalsForTab via renderAddonRowPrices() to keep every
+          // selection change AND every tab click in sync.
         });
       }
       //data-stripe="totalDepositPrice"
@@ -1597,25 +1588,172 @@ class CheckOutWebflow {
 		return isNaN(amount) ? 0 : amount;
 	}
 
+	getCurrentPaymentTab() {
+		// "Tab 2" = card, "Tab 1" = ACH (Webflow's data-w-tab naming).
+		var activeTab = document.querySelector(".checkout-tab-link.w--current");
+		if (activeTab) {
+			var attr = activeTab.getAttribute("data-w-tab");
+			if (attr) return attr;
+		}
+		return "Tab 1";
+	}
+
+	computeDisplayedTotals() {
+		// Reads totals from the SHARED DOM state so the computation is correct even if
+		// multiple CheckOutWebflow instances exist (Webflow symbol duplication can cause
+		// this) and their private $selectedProgram arrays are out of sync.
+		// #totalAmount is maintained by updateAmount; #suppProIds holds the latest ids.
+		var totalAmountEl = document.getElementById("totalAmount");
+		var suppProIdsEl = document.getElementById("suppProIds");
+		var achTotal = 0;
+		if (totalAmountEl && totalAmountEl.value) {
+			achTotal = parseFloat(String(totalAmountEl.value).replace(/,/g, ""));
+			if (isNaN(achTotal)) achTotal = 0;
+		}
+		var programCount = 1; // core is always counted for the per-program card fee.
+		if (suppProIdsEl && suppProIdsEl.value) {
+			try {
+				var ids = JSON.parse(suppProIdsEl.value);
+				if (Array.isArray(ids)) {
+					var unique = Array.from(new Set(ids.filter(id => id !== null && id !== undefined)));
+					if (unique.length > 0) programCount = unique.length;
+				}
+			} catch (e) { /* keep default */ }
+		}
+		var cardTotal = achTotal > 0 ? (achTotal + programCount * 0.3) / 0.971 : 0;
+		return { achTotal: achTotal, cardTotal: cardTotal, programCount: programCount };
+	}
+
+	applyTotalsForTab(tabName) {
+		// Single renderer for the payment-area total. Called from both updateAmount
+		// (on every selection change) AND the tab click handler, so the UI updates
+		// immediately regardless of which instance's listener fires.
+		var totals = this.computeDisplayedTotals();
+		var amountToShow = (tabName === "Tab 2") ? totals.cardTotal : totals.achTotal;
+		var formatted = this.numberWithCommas(amountToShow.toFixed(2));
+		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+			el.innerHTML = "$" + formatted;
+			el.setAttribute("data-stripe-price", formatted);
+		});
+		var grayElem = document.querySelector(".current-price-gray");
+		if (grayElem) {
+			grayElem.innerHTML = "$" + formatted;
+		}
+		// Also refresh the per-row addon prices in the sidebar (data-stripe="addon_price").
+		// displaySelectedSuppPrograms renders these with the raw ACH value, so when we're
+		// on the card tab we have to re-apply the per-program fee here too. Without this
+		// the "Remove / Fall / $amount" row stays stuck on ACH pricing when the card tab
+		// is active.
+		this.renderAddonRowPrices(tabName);
+	}
+
+	renderAddonRowPrices(tabName) {
+		var $this = this;
+		var addonRowPrices = document.querySelectorAll("[data-stripe='addon_price']");
+		if (!addonRowPrices.length) return;
+		addonRowPrices.forEach(function (el) {
+			var raw = el.getAttribute("addon-price");
+			if (!raw) return;
+			var base = parseFloat(String(raw).replace(/,/g, "").replace(/\$/g, ""));
+			if (isNaN(base)) return;
+			var value = (tabName === "Tab 2") ? (base + 0.3) / 0.971 : base;
+			el.innerHTML = "$" + $this.numberWithCommas(value.toFixed(2));
+		});
+	}
+
+	getRequestAmounts() {
+		// Mirror the exact formulas used by updatePriceForCardPayment so the payload matches
+		// what the user sees on screen. cardAmount applies the (+0.30)/0.971 fee per selected
+		// program (matching Tab 2's rendering), not once on the combined base.
+		var selectedPrograms = this.$selectedProgram || [];
+		var coreProgramId = (this.$coreData && this.$coreData.upsellProgramId) || 99;
+
+		var parseAmount = function (program) {
+			var amount = parseFloat(String((program && program.amount) || 0).replace(/,/g, ""));
+			return isNaN(amount) ? 0 : amount;
+		};
+		var achFee = function (amount) {
+			return amount;
+		};
+		var cardFee = function (amount) {
+			return (amount + 0.3) / 0.971;
+		};
+
+		var coreProgram = selectedPrograms.find(p => p && p.upsellProgramId === coreProgramId) || this.$coreData || null;
+		var upsellPrograms = selectedPrograms.filter(p => p && p.upsellProgramId !== coreProgramId);
+
+		// Core base amount (falls back to core input / memberData.achAmount when selectedPrograms
+		// was cleared before payload time).
+		var coreBaseAch = coreProgram ? parseAmount(coreProgram) : 0;
+		if (coreBaseAch <= 0) {
+			var coreProductPriceEl = document.getElementById("core_product_price");
+			if (coreProductPriceEl && coreProductPriceEl.value) {
+				var coreVal = parseFloat(String(coreProductPriceEl.value).replace(/,/g, ""));
+				if (!isNaN(coreVal) && coreVal > 0) coreBaseAch = coreVal;
+			}
+		}
+		if (coreBaseAch <= 0 && this.memberData && this.memberData.achAmount) {
+			var memberVal = parseFloat(String(this.memberData.achAmount).replace(/,/g, ""));
+			if (!isNaN(memberVal) && memberVal > 0) coreBaseAch = memberVal;
+		}
+
+		var achBaseAmount = achFee(coreBaseAch);
+		var cardBaseAmount = cardFee(coreBaseAch);
+		var achUpsellAmount = upsellPrograms.reduce((total, program) => total + achFee(parseAmount(program)), 0);
+		var cardUpsellAmount = upsellPrograms.reduce((total, program) => total + cardFee(parseAmount(program)), 0);
+
+		// Grand totals mirror Tab 1 / Tab 2 formulas.
+		var achSum;
+		var cardSum;
+		if (selectedPrograms.length > 0) {
+			achSum = selectedPrograms.reduce((total, program) => total + achFee(parseAmount(program)), 0);
+			cardSum = selectedPrograms.reduce((total, program) => total + cardFee(parseAmount(program)), 0);
+		} else {
+			achSum = achBaseAmount;
+			cardSum = cardBaseAmount;
+		}
+
+		var result = {
+			ach: achSum,
+			card: cardSum,
+			achBaseAmount: achBaseAmount,
+			cardBaseAmount: cardBaseAmount,
+			achUpsellAmount: achUpsellAmount,
+			cardUpsellAmount: cardUpsellAmount,
+			hasUpsells: upsellPrograms.length > 0
+		};
+		return result;
+	}
+
 	getCheckoutRequestAmount() {
 		var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
-		var baseAmount = 0;
+		var displayAmount = this.getDisplayedCheckoutAmount();
+		var attrAmount = 0;
+		var selectedProgramAmount = this.$selectedProgram.reduce((total, program) => {
+			var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
+			return total + (isNaN(amount) ? 0 : amount);
+		}, 0);
 		if (totalDepositPriceEl) {
-			baseAmount = parseFloat(
+			attrAmount = parseFloat(
 				String(totalDepositPriceEl.getAttribute("data-stripe-price") || "0").replace(/[^0-9.]/g, "")
 			);
 		}
-		if (isNaN(baseAmount) || baseAmount <= 0) {
-			baseAmount = this.getDisplayedCheckoutAmount();
+		var requestAmount = displayAmount;
+		if (selectedProgramAmount > 0) {
+			requestAmount = selectedProgramAmount;
 		}
-		if ((isNaN(baseAmount) || baseAmount <= 0) && this.memberData && this.memberData.achAmount) {
-			baseAmount = parseFloat(String(this.memberData.achAmount).replace(/[^0-9.]/g, ""));
+		if (isNaN(requestAmount) || requestAmount <= 0) {
+			requestAmount = attrAmount;
 		}
-		if (isNaN(baseAmount)) baseAmount = 0;
-		var selectedAmount = this.$selectedProgram.reduce((total, program) => {
-			return total + (parseFloat(program.amount) || 0);
-		}, 0);
-		return parseFloat(baseAmount) + parseFloat(selectedAmount);
+		if ((isNaN(requestAmount) || requestAmount <= 0) && this.memberData && this.memberData.achAmount) {
+			requestAmount = parseFloat(String(this.memberData.achAmount).replace(/[^0-9.]/g, ""));
+		}
+		if (isNaN(requestAmount)) requestAmount = 0;
+		var formattedStripe = this.numberWithCommas(parseFloat(requestAmount).toFixed(2));
+		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+			el.setAttribute("data-stripe-price", formattedStripe);
+		});
+		return requestAmount;
 	}
 
 	setCreditModalBaseAmount(amount) {
@@ -1625,4 +1763,3 @@ class CheckOutWebflow {
 		}
 	}
 }
-

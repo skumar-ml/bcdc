@@ -187,6 +187,7 @@ class Utils {
             bergenCreditsModalClose.onclick = (event) => {
                 if (event) event.preventDefault();
             };
+            bergenCreditsModalClose.style.display = "none";
         }
 
         if (bergenCreditsModalBg) {
