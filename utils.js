@@ -169,7 +169,12 @@ class Utils {
 
     /**
      * Wires up close interactions for Bergen credits modal.
-     * Uses onclick assignment to avoid stacking duplicate handlers.
+     * The modal is intentionally dismiss-only via the two choice buttons
+     * ([data-credit="apply"] and [data-credit="no"]), so we explicitly disable
+     * both the backdrop click and the X close button. Otherwise the checkout
+     * promise in waitForCreditApplicationChoice would hang (modal hides, but
+     * no choice is resolved, leaving the user stuck on "Processing...").
+     * Uses onclick assignment to overwrite any previously stacked handlers.
      */
     static setupBergenCreditsModalHandlers() {
         const bergenCreditsModal = document.getElementById("bergen-credits-modal");
@@ -181,13 +186,12 @@ class Utils {
         if (bergenCreditsModalClose) {
             bergenCreditsModalClose.onclick = (event) => {
                 if (event) event.preventDefault();
-                Utils.close(bergenCreditsModal, bergenCreditsModalBg);
             };
         }
 
         if (bergenCreditsModalBg) {
-            bergenCreditsModalBg.onclick = () => {
-                Utils.close(bergenCreditsModal, bergenCreditsModalBg);
+            bergenCreditsModalBg.onclick = (event) => {
+                if (event) event.preventDefault();
             };
         }
     }
@@ -226,38 +230,32 @@ class Utils {
         }
         
         Utils.showBergenCreditsModal();
-        // Wait for user to click either "apply" or "no" button
+        // Wait for user to click either "apply" or "no" button.
+        // The modal can ONLY be closed via these two buttons -- backdrop click
+        // and X close button are intentionally disabled in setupBergenCreditsModalHandlers
+        // so the promise below is guaranteed to resolve once the user makes a choice.
         const applyCredit = await new Promise((resolve) => {
-            // Query for buttons - may need to wait a moment for modal to render
             const applyButton = document.querySelector('[data-credit="apply"]');
             const noButton = document.querySelector('[data-credit="no"]');
-            const bergenCreditsModalClose = document.getElementById("bergen-credits-modal-close");
-            
-            // If buttons don't exist, default to false and resolve immediately
+
             if (!applyButton && !noButton) {
                 console.warn("Credit modal buttons not found, defaulting to applyCredit = false");
                 resolve(false);
                 return;
             }
-            
-            // Handler for apply button click
-            const handleApply = () => {
+
+            const handleApply = (event) => {
+                if (event) event.preventDefault();
                 cleanup();
                 resolve(true);
             };
-            
-            // Handler for no button click
-            const handleNo = () => {
+
+            const handleNo = (event) => {
+                if (event) event.preventDefault();
                 cleanup();
                 resolve(false);
             };
 
-            const handleClose = (event) => {
-                if (event) event.preventDefault();
-                handleNo();
-            };
-            
-            // Cleanup function to remove event listeners
             const cleanup = () => {
                 if (applyButton) {
                     applyButton.removeEventListener('click', handleApply);
@@ -265,20 +263,13 @@ class Utils {
                 if (noButton) {
                     noButton.removeEventListener('click', handleNo);
                 }
-                if (bergenCreditsModalClose) {
-                    bergenCreditsModalClose.removeEventListener('click', handleClose);
-                }
             };
-            
-            // Add event listeners
+
             if (applyButton) {
                 applyButton.addEventListener('click', handleApply);
             }
             if (noButton) {
                 noButton.addEventListener('click', handleNo);
-            }
-            if (bergenCreditsModalClose) {
-                bergenCreditsModalClose.addEventListener('click', handleClose);
             }
         });
         
