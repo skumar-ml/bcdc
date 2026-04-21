@@ -495,8 +495,13 @@ class CheckOutWebflow {
 		console.log("[SummerCheckout] credit button final amount", {
 			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
 			paymentType: paymentType,
-			baseAchAmount: requestAchAmount,
-			baseCardAmount: requestCardAmount,
+			ach: requestAchAmount,
+			card: requestCardAmount,
+			achBaseAmount: checkoutAmounts.achBaseAmount,
+			cardBaseAmount: checkoutAmounts.cardBaseAmount,
+			achUpsellAmount: checkoutAmounts.achUpsellAmount,
+			cardUpsellAmount: checkoutAmounts.cardUpsellAmount,
+			hasUpsells: checkoutAmounts.hasUpsells,
 			finalRequestAmount: requestAmount
 		});
 		// Credit application is handled server-side; client only relays the user's choice via applyCredit flag.
@@ -545,6 +550,19 @@ class CheckOutWebflow {
 			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
+		}
+		// Backend requires an explicit base / upsell breakdown whenever real upsells are selected.
+		if (checkoutAmounts.hasUpsells) {
+			data.achBaseAmount = parseFloat(checkoutAmounts.achBaseAmount.toFixed(2));
+			data.cardBaseAmount = parseFloat(checkoutAmounts.cardBaseAmount.toFixed(2));
+			data.achUpsellAmount = parseFloat(checkoutAmounts.achUpsellAmount.toFixed(2));
+			data.cardUpsellAmount = parseFloat(checkoutAmounts.cardUpsellAmount.toFixed(2));
+			console.log("[SummerCheckout] payload breakdown attached", {
+				achBaseAmount: data.achBaseAmount,
+				cardBaseAmount: data.cardBaseAmount,
+				achUpsellAmount: data.achUpsellAmount,
+				cardUpsellAmount: data.cardUpsellAmount
+			});
 		}
 		console.log("[SummerCheckout] final payload amount by credit action", {
 			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
@@ -1802,36 +1820,67 @@ class CheckOutWebflow {
 		// what the user sees on screen. cardAmount applies the (+0.30)/0.971 fee per selected
 		// program (matching Tab 2's rendering), not once on the combined base.
 		var selectedPrograms = this.$selectedProgram || [];
-		var achSum = selectedPrograms.reduce((total, program) => {
-			var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
-			return total + (isNaN(amount) ? 0 : amount);
-		}, 0);
-		var cardSum = selectedPrograms.reduce((total, program) => {
-			var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
-			return total + (((isNaN(amount) ? 0 : amount) + 0.3) / 0.971);
-		}, 0);
+		var coreProgramId = (this.$coreData && this.$coreData.upsellProgramId) || 99;
 
-		if (selectedPrograms.length === 0) {
-			// No selected upsells: fall back to the core price (same source of truth Tab 2 uses).
-			var coreAch = 0;
+		var parseAmount = function (program) {
+			var amount = parseFloat(String((program && program.amount) || 0).replace(/,/g, ""));
+			return isNaN(amount) ? 0 : amount;
+		};
+		var achFee = function (amount) {
+			return amount;
+		};
+		var cardFee = function (amount) {
+			return (amount + 0.3) / 0.971;
+		};
+
+		var coreProgram = selectedPrograms.find(p => p && p.upsellProgramId === coreProgramId) || this.$coreData || null;
+		var upsellPrograms = selectedPrograms.filter(p => p && p.upsellProgramId !== coreProgramId);
+
+		// Core base amount (falls back to core input / memberData.achAmount when selectedPrograms
+		// was cleared before payload time).
+		var coreBaseAch = coreProgram ? parseAmount(coreProgram) : 0;
+		if (coreBaseAch <= 0) {
 			var coreProductPriceEl = document.getElementById("core_product_price");
 			if (coreProductPriceEl && coreProductPriceEl.value) {
-				coreAch = parseFloat(String(coreProductPriceEl.value).replace(/,/g, ""));
+				var coreVal = parseFloat(String(coreProductPriceEl.value).replace(/,/g, ""));
+				if (!isNaN(coreVal) && coreVal > 0) coreBaseAch = coreVal;
 			}
-			if ((isNaN(coreAch) || coreAch <= 0) && this.memberData && this.memberData.achAmount) {
-				coreAch = parseFloat(String(this.memberData.achAmount).replace(/,/g, ""));
-			}
-			if (isNaN(coreAch)) coreAch = 0;
-			achSum = coreAch;
-			cardSum = (coreAch + 0.3) / 0.971;
+		}
+		if (coreBaseAch <= 0 && this.memberData && this.memberData.achAmount) {
+			var memberVal = parseFloat(String(this.memberData.achAmount).replace(/,/g, ""));
+			if (!isNaN(memberVal) && memberVal > 0) coreBaseAch = memberVal;
 		}
 
-		console.log("[SummerCheckout] getRequestAmounts", {
+		var achBaseAmount = achFee(coreBaseAch);
+		var cardBaseAmount = cardFee(coreBaseAch);
+		var achUpsellAmount = upsellPrograms.reduce((total, program) => total + achFee(parseAmount(program)), 0);
+		var cardUpsellAmount = upsellPrograms.reduce((total, program) => total + cardFee(parseAmount(program)), 0);
+
+		// Grand totals mirror Tab 1 / Tab 2 formulas.
+		var achSum;
+		var cardSum;
+		if (selectedPrograms.length > 0) {
+			achSum = selectedPrograms.reduce((total, program) => total + achFee(parseAmount(program)), 0);
+			cardSum = selectedPrograms.reduce((total, program) => total + cardFee(parseAmount(program)), 0);
+		} else {
+			achSum = achBaseAmount;
+			cardSum = cardBaseAmount;
+		}
+
+		var result = {
+			ach: achSum,
+			card: cardSum,
+			achBaseAmount: achBaseAmount,
+			cardBaseAmount: cardBaseAmount,
+			achUpsellAmount: achUpsellAmount,
+			cardUpsellAmount: cardUpsellAmount,
+			hasUpsells: upsellPrograms.length > 0
+		};
+		console.log("[SummerCheckout] getRequestAmounts", Object.assign({
 			selectedCount: selectedPrograms.length,
-			achSum: achSum,
-			cardSum: cardSum
-		});
-		return { ach: achSum, card: cardSum };
+			upsellCount: upsellPrograms.length
+		}, result));
+		return result;
 	}
 
 	getCheckoutRequestAmount() {
