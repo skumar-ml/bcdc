@@ -1708,30 +1708,9 @@ class CheckOutWebflow {
             });
           }
   
-          // Code for addon price update based on payment method selection
-          let addonPrice = document.querySelectorAll(
-            "[data-stripe='addon_price']"
-          );
-          if (tab == "Tab 2") {
-            if (addonPrice.length > 0) {
-              addonPrice.forEach((addon_deposit_price) => {
-                let addonPrice = addon_deposit_price.getAttribute("addon-price")
-                  .replace(/,/g, "")
-                  .replace(/\$/g, "");
-                let addonPriceValue = (parseFloat(addonPrice) + 0.3) / 0.971;
-                addon_deposit_price.innerHTML =
-                  "$" + $this.numberWithCommas(addonPriceValue.toFixed(2));
-              });
-            }
-          } else {
-            if (addonPrice.length > 0) {
-              addonPrice.forEach((addon_deposit_price) => {
-                let addonSinglePrice =
-                  addon_deposit_price.getAttribute("addon-price");
-                addon_deposit_price.innerHTML = "$" + addonSinglePrice;
-              });
-            }
-          }
+          // Per-row addon prices ([data-stripe='addon_price']) are now handled
+          // inside applyTotalsForTab via renderAddonRowPrices() to keep every
+          // selection change AND every tab click in sync.
         });
       }
       //data-stripe="totalDepositPrice"
@@ -1799,12 +1778,32 @@ class CheckOutWebflow {
 		if (grayElem) {
 			grayElem.innerHTML = "$" + formatted;
 		}
+		// Also refresh the per-row addon prices in the sidebar (data-stripe="addon_price").
+		// displaySelectedSuppPrograms renders these with the raw ACH value, so when we're
+		// on the card tab we have to re-apply the per-program fee here too. Without this
+		// the "Remove / Fall / $amount" row stays stuck on ACH pricing when the card tab
+		// is active.
+		this.renderAddonRowPrices(tabName);
 		console.log("[SummerCheckout] applyTotalsForTab", {
 			tab: tabName,
 			programCount: totals.programCount,
 			achTotal: totals.achTotal,
 			cardTotal: totals.cardTotal,
 			displayed: amountToShow
+		});
+	}
+
+	renderAddonRowPrices(tabName) {
+		var $this = this;
+		var addonRowPrices = document.querySelectorAll("[data-stripe='addon_price']");
+		if (!addonRowPrices.length) return;
+		addonRowPrices.forEach(function (el) {
+			var raw = el.getAttribute("addon-price");
+			if (!raw) return;
+			var base = parseFloat(String(raw).replace(/,/g, "").replace(/\$/g, ""));
+			if (isNaN(base)) return;
+			var value = (tabName === "Tab 2") ? (base + 0.3) / 0.971 : base;
+			el.innerHTML = "$" + $this.numberWithCommas(value.toFixed(2));
 		});
 	}
 
