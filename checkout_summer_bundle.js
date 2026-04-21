@@ -484,17 +484,21 @@ class CheckOutWebflow {
 			memberId: this.memberData.memberId,
 			applyCredit: applyCredit
 		});
-		var requestAmount = parseFloat(checkoutAmount || 0);
-		if (isNaN(requestAmount) || requestAmount <= 0) {
-			requestAmount = this.getCheckoutRequestAmount();
-		}
+		// achAmount / cardAmount must always be derived from the canonical base ACH amount,
+		// NOT from the displayed total (which already includes the processing fee when the
+		// user is on the card tab). Otherwise cardAmount ends up with the fee applied twice.
+		var baseAchAmount = this.getBaseAchAmount();
+		var requestAchAmount = parseFloat(baseAchAmount || 0);
+		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
+		// `amount` represents the actual charge (ACH base on ach tab, card-with-fee on card tab).
+		var requestAmount = (paymentType === 'card_payment') ? requestCardAmount : requestAchAmount;
 		console.log("[SummerCheckout] credit button final amount", {
 			creditAction: applyCredit ? "yes_apply_credit" : "no_do_not_apply_credit",
+			paymentType: paymentType,
+			baseAchAmount: baseAchAmount,
 			finalRequestAmount: requestAmount
 		});
 		// Credit application is handled server-side; client only relays the user's choice via applyCredit flag.
-		var requestAchAmount = parseFloat(requestAmount || 0);
-		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
 		console.log("[SummerCheckout] post-credit request amount", {
 			applyCredit: applyCredit,
 			checkoutAmount: this.getDisplayedCheckoutAmount(),
@@ -884,22 +888,24 @@ class CheckOutWebflow {
 			if (paymentData.prevStudent) {
 				prevStudent.value = paymentData.prevStudent;
 			}
-			if (paymentData.updateData.locationId == 1) {
+			// Guard against partial local storage where user never completed session/location step.
+			var restoredUpdateData = paymentData.updateData || {};
+			if (restoredUpdateData.locationId == 1) {
 				fort_lee_location.checked = true;
-			} else if(paymentData.updateData.locationId == 4){
+			} else if(restoredUpdateData.locationId == 4){
 				livingston_location.checked = true;
-			} else if(paymentData.updateData.locationId == 6){
+			} else if(restoredUpdateData.locationId == 6){
 				white_plains_location.checked = true;
-			}else {
+			} else if(restoredUpdateData.locationId) {
 				glen_rock_location.checked = true;
 			}
 			this.syncLocationContainerSelection();
-			if(paymentData.updateData.locationId){
+			if(restoredUpdateData.locationId){
 				document.querySelector('.cart-location-container').style.display = "block";
 			}
 			const sessionEls = document.querySelectorAll('input[data-name="Checkbox"]');
 			sessionEls.forEach(el=>{
-				if(el.value == paymentData.updateData.summerSessionId){
+				if(restoredUpdateData.summerSessionId && el.value == restoredUpdateData.summerSessionId){
 					el.checked = true;
 					var sessionCard = el.closest('.core-session-container.core-product-container');
 					if (sessionCard) {
@@ -1788,6 +1794,37 @@ class CheckOutWebflow {
 		}
 		var amount = parseFloat(String(rawText).replace(/[^0-9.]/g, ""));
 		return isNaN(amount) ? 0 : amount;
+	}
+
+	getBaseAchAmount() {
+		// Canonical base ACH amount (before card processing fee) used to derive achAmount/cardAmount
+		// for the checkout payload. Independent of which payment tab is active, so switching to the
+		// card tab (which shows fee-inclusive totals) does not leak fees into achAmount.
+		var selectedSum = this.$selectedProgram.reduce((total, program) => {
+			var amount = parseFloat(String(program.amount || 0).replace(/,/g, ""));
+			return total + (isNaN(amount) ? 0 : amount);
+		}, 0);
+		if (selectedSum > 0) {
+			console.log("[SummerCheckout] getBaseAchAmount -> selectedProgram sum", selectedSum);
+			return selectedSum;
+		}
+		var coreProductPriceEl = document.getElementById("core_product_price");
+		if (coreProductPriceEl && coreProductPriceEl.value) {
+			var coreVal = parseFloat(String(coreProductPriceEl.value).replace(/,/g, ""));
+			if (!isNaN(coreVal) && coreVal > 0) {
+				console.log("[SummerCheckout] getBaseAchAmount -> core_product_price", coreVal);
+				return coreVal;
+			}
+		}
+		if (this.memberData && this.memberData.achAmount) {
+			var memberVal = parseFloat(String(this.memberData.achAmount).replace(/,/g, ""));
+			if (!isNaN(memberVal) && memberVal > 0) {
+				console.log("[SummerCheckout] getBaseAchAmount -> memberData.achAmount", memberVal);
+				return memberVal;
+			}
+		}
+		console.log("[SummerCheckout] getBaseAchAmount -> fallback 0");
+		return 0;
 	}
 
 	getCheckoutRequestAmount() {
