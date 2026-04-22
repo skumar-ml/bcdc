@@ -1542,8 +1542,18 @@ class CheckOutWebflow {
       discountPrice.setAttribute("data-addon", "discount-price");
       //let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
       // removed deposit amount
-      let amount = singleBundleData.amount;
-      discountPrice.textContent = singleBundleData.amount
+      // For the core card, always show the bundle-DISCOUNTED price here
+      // (e.g. $1,750) even though singleBundleData.amount starts at the full
+      // base (e.g. $1,800) until the user actually bundles. The strikethrough
+      // "originalPrice" above carries the pre-discount value, so this field
+      // represents "what you'll pay once you bundle".
+      let amount;
+      if (type === "core" && singleBundleData._bundleDiscountedAmount) {
+        amount = singleBundleData._bundleDiscountedAmount;
+      } else {
+        amount = singleBundleData.amount;
+      }
+      discountPrice.textContent = amount
         ? `$${this.numberWithCommas(amount)}`
         : "$3,350";
       if(type === "core"){
