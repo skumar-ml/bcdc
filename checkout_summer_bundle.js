@@ -1381,7 +1381,12 @@ class CheckOutWebflow {
 			discountedAmount: discounted_amount
 		});
 		var coreData = {
-			"amount": discounted_amount,
+			// Start at the full base amount (e.g. 1800). The bundle discount
+			// (e.g. $50 off) is only applied once the user actually bundles —
+			// i.e. selects at least one upsell checkbox. See the checkbox
+			// change handler in createBundleCard where we swap this between
+			// _baseAmount and _bundleDiscountedAmount.
+			"amount": disc_amount,
 			"bundle_type": "Summer",
 			"desc": (item.desc ? item.desc : ""),
 			"disc_amount": this.numberWithCommas(disc_amount),
@@ -1389,7 +1394,11 @@ class CheckOutWebflow {
 			"label": "Summer",
 			"sessionId": 2,
 			"upsellProgramId": 99,
-			"yearId": item.yearId
+			"yearId": item.yearId,
+			// Bundle-discount metadata (not sent to API; used internally).
+			"_baseAmount": disc_amount,
+			"_bundleDiscountedAmount": discounted_amount,
+			"_bundleDiscount": item.disc_amount || 0
 		}
 		console.log("[SummerCheckout][bundle] coreData created", coreData);
 		// Paint initial totals immediately so users see price without waiting for full card render loop.
@@ -1586,8 +1595,23 @@ class CheckOutWebflow {
           }
         });
 
-        
-        
+        // Apply / revert the bundle discount on the core program based on
+        // whether ANY upsell is currently selected. The discount is only
+        // earned when the user actually bundles (core + at least one addon).
+        // When they deselect the last upsell, core snaps back to its base
+        // (pre-discount) price. Since $coreData and the core entry in
+        // $selectedProgram reference the same object, mutating .amount here
+        // flows through to updateAmount()'s reduce() below.
+        if (this.$coreData && this.$coreData._baseAmount != null) {
+          var coreId = this.$coreData.upsellProgramId;
+          var hasAnyUpsell = this.$selectedProgram.some(function (p) {
+            return p && p.upsellProgramId !== coreId;
+          });
+          this.$coreData.amount = hasAnyUpsell
+            ? this.$coreData._bundleDiscountedAmount
+            : this.$coreData._baseAmount;
+        }
+
         $this.updateAmount(event.target.value);
         
       });
