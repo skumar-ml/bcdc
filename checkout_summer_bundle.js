@@ -1737,7 +1737,9 @@ class CheckOutWebflow {
           // single source of truth, so multiple bound listeners (duplicate
           // Webflow symbols / multiple class instances) all produce the same
           // correct value instead of clobbering each other with stale data.
-          $this.applyTotalsForTab(tab);
+          // Force=true because a tab click is explicit user intent to see the
+          // ACH vs card price, even before any upsell has been selected.
+          $this.applyTotalsForTab(tab, true);
 
           // Addon sidebar prices still need a per-tab refresh (fee vs. no fee).
           let addonDepositPrices = document.querySelectorAll(
@@ -1806,17 +1808,18 @@ class CheckOutWebflow {
 		return { achTotal: achTotal, cardTotal: cardTotal, programCount: programCount };
 	}
 
-	applyTotalsForTab(tabName) {
+	applyTotalsForTab(tabName, force) {
 		// Single renderer for the payment-area total. Called from both updateAmount
 		// (on every selection change) AND the tab click handler, so the UI updates
 		// immediately regardless of which instance's listener fires.
 		var totals = this.computeDisplayedTotals();
 		// Don't override the visible price until the user has actually toggled
-		// an upsell checkbox. Before that, leave the initial Webflow CMS-rendered
-		// price alone. We still refresh the per-row addon prices (they only
-		// render anything when upsells exist in the sidebar, so this is a no-op
-		// on initial load).
-		if (!this._upsellInteracted) {
+		// an upsell checkbox OR clicked a payment tab (force=true). Tab clicks
+		// are explicit user intent to see the card-vs-ACH price, so they always
+		// paint even before any upsell is selected. We still refresh the per-row
+		// addon prices (they only render anything when upsells exist in the
+		// sidebar, so that part is a no-op on initial load).
+		if (!this._upsellInteracted && force !== true) {
 			this.renderAddonRowPrices(tabName);
 			return;
 		}
