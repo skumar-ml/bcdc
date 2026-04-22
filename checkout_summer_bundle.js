@@ -34,6 +34,13 @@ class CheckOutWebflow {
 	$selectedProgram = [];
 	$backRestoreTs = 0;
 	$locationSelectionBound = false;
+	// Becomes true the first time the user toggles an upsell checkbox. Until then
+	// the visible price in the cart sidebar / payment area is NOT rewritten —
+	// we leave the initial Webflow CMS-rendered price untouched. All internal
+	// state (#totalAmount hidden input, #suppProIds, $selectedProgram) still
+	// tracks the core program from page load; only the on-screen price waits
+	// for an actual user interaction before updating.
+	_upsellInteracted = false;
 	// Initializes the checkout process with API URL and member data
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
@@ -1146,30 +1153,40 @@ class CheckOutWebflow {
             .toFixed(2)
         );
       }
+      // Only rewrite the visible price elements after the user has interacted
+      // with an upsell checkbox. Before that first interaction we leave the
+      // Webflow CMS-rendered price alone, as requested.
+      var canPaintVisible = this._upsellInteracted === true;
       totalPriceAllText.forEach(totalPriceText=>{
         var sumOfSelectedPrograms = 0;
 		if(this.$selectedProgram.length > 0){
 			 sumOfSelectedPrograms = (
 			this.$selectedProgram.reduce((total, program) => total + (parseFloat((program.amount + "").replace(/,/g, "")) || 0), 0)
 			).toFixed(2);
-			totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
-			totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(sumOfSelectedPrograms));
+			if (canPaintVisible) {
+				totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
+				totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(sumOfSelectedPrograms));
+			}
 		}else{
 			var dataStripePrice = totalPriceText.getAttribute("data-stripe-price");
       if(dataStripePrice){
         dataStripePrice = dataStripePrice.replace(/,/g, '');
       }
       dataStripePrice = parseFloat(dataStripePrice);
-      totalPriceText.innerHTML = "$" + this.numberWithCommas(dataStripePrice);
-      totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(dataStripePrice));
+      if (canPaintVisible) {
+        totalPriceText.innerHTML = "$" + this.numberWithCommas(dataStripePrice);
+        totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(dataStripePrice));
+      }
       if (totalPriceAllText.length && totalPriceText === totalPriceAllText[0]) {
         cartLineTotal = dataStripePrice;
       }
 		}
 
-		const grayElem = document.querySelector(".current-price-gray");
-		if (grayElem) {
-			grayElem.innerHTML = totalPriceText.innerHTML;
+		if (canPaintVisible) {
+			const grayElem = document.querySelector(".current-price-gray");
+			if (grayElem) {
+				grayElem.innerHTML = totalPriceText.innerHTML;
+			}
 		}
        
         
@@ -1421,21 +1438,17 @@ class CheckOutWebflow {
 	applyInitialBundleTotals(amount) {
 		var parsed = parseFloat(String(amount || "0").replace(/,/g, ""));
 		if (isNaN(parsed)) parsed = 0;
-		var formatted = "$" + this.numberWithCommas(parsed.toFixed(2));
-		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
-			el.innerHTML = formatted;
-		});
-		var grayElem = document.querySelector(".current-price-gray");
-		if (grayElem) {
-			grayElem.innerHTML = formatted;
-		}
+		// Only seed the hidden #totalAmount input so downstream payload /
+		// request-amount helpers have the correct core baseline. The visible
+		// price ([data-stripe='totalDepositPrice'], .current-price-gray) is
+		// intentionally NOT touched here — we want the Webflow CMS-rendered
+		// price to stay on screen until the user actually selects an upsell.
 		var totalAmountInput = document.getElementById("totalAmount");
 		if (totalAmountInput) {
 			totalAmountInput.value = String(parsed);
 		}
-		console.log("[SummerCheckout][amount] initial bundle totals applied", {
-			amount: parsed,
-			formatted: formatted
+		console.log("[SummerCheckout][amount] initial bundle totals applied (hidden input only)", {
+			amount: parsed
 		});
 	}
 
@@ -1545,6 +1558,12 @@ class CheckOutWebflow {
           checked: event.target.checked,
           type: type
         });
+        // Unlock visible price updates the first time a real upsell checkbox
+        // is toggled by the user. The "core" row is pre-selected programmatically
+        // on load, so we specifically gate on the "upsell" type here.
+        if (type === "upsell") {
+          this._upsellInteracted = true;
+        }
         if (event.target.checked) {
           if (!this.$selectedProgram.includes(singleBundleData)) {
             this.$selectedProgram.push(singleBundleData);
@@ -1768,11 +1787,12 @@ class CheckOutWebflow {
 		// (on every selection change) AND the tab click handler, so the UI updates
 		// immediately regardless of which instance's listener fires.
 		var totals = this.computeDisplayedTotals();
-		// Only override the displayed total when real upsells are selected
-		// (programCount > 1 = core + at least one upsell). On initial page load
-		// or after deselecting all upsells, leave the initial price painted by
-		// applyInitialBundleTotals / Webflow CMS untouched.
-		if (totals.programCount <= 1) {
+		// Don't override the visible price until the user has actually toggled
+		// an upsell checkbox. Before that, leave the initial Webflow CMS-rendered
+		// price alone. We still refresh the per-row addon prices (they only
+		// render anything when upsells exist in the sidebar, so this is a no-op
+		// on initial load).
+		if (!this._upsellInteracted) {
 			this.renderAddonRowPrices(tabName);
 			return;
 		}
