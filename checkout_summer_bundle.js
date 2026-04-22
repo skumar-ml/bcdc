@@ -34,6 +34,13 @@ class CheckOutWebflow {
 	$selectedProgram = [];
 	$backRestoreTs = 0;
 	$locationSelectionBound = false;
+	// Becomes true the first time the user toggles an upsell checkbox. Until then
+	// the visible price in the cart sidebar / payment area is NOT rewritten —
+	// we leave the initial Webflow CMS-rendered price untouched. All internal
+	// state (#totalAmount hidden input, #suppProIds, $selectedProgram) still
+	// tracks the core program from page load; only the on-screen price waits
+	// for an actual user interaction before updating.
+	_upsellInteracted = false;
 	// Initializes the checkout process with API URL and member data
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
@@ -1037,30 +1044,40 @@ class CheckOutWebflow {
             .toFixed(2)
         );
       }
+      // Only rewrite the visible price elements after the user has interacted
+      // with an upsell checkbox. Before that first interaction we leave the
+      // Webflow CMS-rendered price alone, as requested.
+      var canPaintVisible = this._upsellInteracted === true;
       totalPriceAllText.forEach(totalPriceText=>{
         var sumOfSelectedPrograms = 0;
 		if(this.$selectedProgram.length > 0){
 			 sumOfSelectedPrograms = (
 			this.$selectedProgram.reduce((total, program) => total + (parseFloat((program.amount + "").replace(/,/g, "")) || 0), 0)
 			).toFixed(2);
-			totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
-			totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(sumOfSelectedPrograms));
+			if (canPaintVisible) {
+				totalPriceText.innerHTML = "$" + this.numberWithCommas(sumOfSelectedPrograms);
+				totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(sumOfSelectedPrograms));
+			}
 		}else{
 			var dataStripePrice = totalPriceText.getAttribute("data-stripe-price");
       if(dataStripePrice){
         dataStripePrice = dataStripePrice.replace(/,/g, '');
       }
       dataStripePrice = parseFloat(dataStripePrice);
-      totalPriceText.innerHTML = "$" + this.numberWithCommas(dataStripePrice);
-      totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(dataStripePrice));
+      if (canPaintVisible) {
+        totalPriceText.innerHTML = "$" + this.numberWithCommas(dataStripePrice);
+        totalPriceText.setAttribute("data-stripe-price", this.numberWithCommas(dataStripePrice));
+      }
       if (totalPriceAllText.length && totalPriceText === totalPriceAllText[0]) {
         cartLineTotal = dataStripePrice;
       }
 		}
 
-		const grayElem = document.querySelector(".current-price-gray");
-		if (grayElem) {
-			grayElem.innerHTML = totalPriceText.innerHTML;
+		if (canPaintVisible) {
+			const grayElem = document.querySelector(".current-price-gray");
+			if (grayElem) {
+				grayElem.innerHTML = totalPriceText.innerHTML;
+			}
 		}
        
         
@@ -1242,7 +1259,12 @@ class CheckOutWebflow {
 			discounted_amount = (achAmount - parseFloat(item.disc_amount)).toFixed(2);
 		}
 		var coreData = {
-			"amount": discounted_amount,
+			// Start at the full base amount (e.g. 1800). The bundle discount
+			// (e.g. $50 off) is only applied once the user actually bundles —
+			// i.e. selects at least one upsell checkbox. See the checkbox
+			// change handler in createBundleCard where we swap this between
+			// _baseAmount and _bundleDiscountedAmount.
+			"amount": disc_amount,
 			"bundle_type": "Summer",
 			"desc": (item.desc ? item.desc : ""),
 			"disc_amount": this.numberWithCommas(disc_amount),
@@ -1250,7 +1272,11 @@ class CheckOutWebflow {
 			"label": "Summer",
 			"sessionId": 2,
 			"upsellProgramId": 99,
-			"yearId": item.yearId
+			"yearId": item.yearId,
+			// Bundle-discount metadata (not sent to API; used internally).
+			"_baseAmount": disc_amount,
+			"_bundleDiscountedAmount": discounted_amount,
+			"_bundleDiscount": item.disc_amount || 0
 		}
 		// Paint initial totals immediately so users see price without waiting for full card render loop.
 		this.applyInitialBundleTotals(coreData.amount);
@@ -1298,14 +1324,11 @@ class CheckOutWebflow {
 	applyInitialBundleTotals(amount) {
 		var parsed = parseFloat(String(amount || "0").replace(/,/g, ""));
 		if (isNaN(parsed)) parsed = 0;
-		var formatted = "$" + this.numberWithCommas(parsed.toFixed(2));
-		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
-			el.innerHTML = formatted;
-		});
-		var grayElem = document.querySelector(".current-price-gray");
-		if (grayElem) {
-			grayElem.innerHTML = formatted;
-		}
+		// Only seed the hidden #totalAmount input so downstream payload /
+		// request-amount helpers have the correct core baseline. The visible
+		// price ([data-stripe='totalDepositPrice'], .current-price-gray) is
+		// intentionally NOT touched here — we want the Webflow CMS-rendered
+		// price to stay on screen until the user actually selects an upsell.
 		var totalAmountInput = document.getElementById("totalAmount");
 		if (totalAmountInput) {
 			totalAmountInput.value = String(parsed);
@@ -1379,6 +1402,8 @@ class CheckOutWebflow {
       const priceFlex = creEl("div", "bundle-sem-popup-price-flex-wrapper");
       const originalPrice = creEl("div", "bundle-sem-popup-price-gray");
       originalPrice.setAttribute("data-addon", "price");
+      if (type === "core") {
+      }
       originalPrice.textContent = singleBundleData.disc_amount
         ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
         : "$3,770";
@@ -1386,8 +1411,18 @@ class CheckOutWebflow {
       discountPrice.setAttribute("data-addon", "discount-price");
       //let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
       // removed deposit amount
-      let amount = singleBundleData.amount;
-      discountPrice.textContent = singleBundleData.amount
+      // For the core card, always show the bundle-DISCOUNTED price here
+      // (e.g. $1,750) even though singleBundleData.amount starts at the full
+      // base (e.g. $1,800) until the user actually bundles. The strikethrough
+      // "originalPrice" above carries the pre-discount value, so this field
+      // represents "what you'll pay once you bundle".
+      let amount;
+      if (type === "core" && singleBundleData._bundleDiscountedAmount) {
+        amount = singleBundleData._bundleDiscountedAmount;
+      } else {
+        amount = singleBundleData.amount;
+      }
+      discountPrice.textContent = amount
         ? `$${this.numberWithCommas(amount)}`
         : "$3,350";
       if(type === "core"){
@@ -1406,6 +1441,12 @@ class CheckOutWebflow {
       // Checkbox logic
       input.addEventListener("change", (event) => {
         event.preventDefault();
+        // Unlock visible price updates the first time a real upsell checkbox
+        // is toggled by the user. The "core" row is pre-selected programmatically
+        // on load, so we specifically gate on the "upsell" type here.
+        if (type === "upsell") {
+          this._upsellInteracted = true;
+        }
         if (event.target.checked) {
           if (!this.$selectedProgram.includes(singleBundleData)) {
             this.$selectedProgram.push(singleBundleData);
@@ -1428,8 +1469,23 @@ class CheckOutWebflow {
           }
         });
 
-        
-        
+        // Apply / revert the bundle discount on the core program based on
+        // whether ANY upsell is currently selected. The discount is only
+        // earned when the user actually bundles (core + at least one addon).
+        // When they deselect the last upsell, core snaps back to its base
+        // (pre-discount) price. Since $coreData and the core entry in
+        // $selectedProgram reference the same object, mutating .amount here
+        // flows through to updateAmount()'s reduce() below.
+        if (this.$coreData && this.$coreData._baseAmount != null) {
+          var coreId = this.$coreData.upsellProgramId;
+          var hasAnyUpsell = this.$selectedProgram.some(function (p) {
+            return p && p.upsellProgramId !== coreId;
+          });
+          this.$coreData.amount = hasAnyUpsell
+            ? this.$coreData._bundleDiscountedAmount
+            : this.$coreData._baseAmount;
+        }
+
         $this.updateAmount(event.target.value);
         
       });
@@ -1555,7 +1611,9 @@ class CheckOutWebflow {
           // single source of truth, so multiple bound listeners (duplicate
           // Webflow symbols / multiple class instances) all produce the same
           // correct value instead of clobbering each other with stale data.
-          $this.applyTotalsForTab(tab);
+          // Force=true because a tab click is explicit user intent to see the
+          // ACH vs card price, even before any upsell has been selected.
+          $this.applyTotalsForTab(tab, true);
 
           // Addon sidebar prices still need a per-tab refresh (fee vs. no fee).
           let addonDepositPrices = document.querySelectorAll(
@@ -1624,11 +1682,21 @@ class CheckOutWebflow {
 		return { achTotal: achTotal, cardTotal: cardTotal, programCount: programCount };
 	}
 
-	applyTotalsForTab(tabName) {
+	applyTotalsForTab(tabName, force) {
 		// Single renderer for the payment-area total. Called from both updateAmount
 		// (on every selection change) AND the tab click handler, so the UI updates
 		// immediately regardless of which instance's listener fires.
 		var totals = this.computeDisplayedTotals();
+		// Don't override the visible price until the user has actually toggled
+		// an upsell checkbox OR clicked a payment tab (force=true). Tab clicks
+		// are explicit user intent to see the card-vs-ACH price, so they always
+		// paint even before any upsell is selected. We still refresh the per-row
+		// addon prices (they only render anything when upsells exist in the
+		// sidebar, so that part is a no-op on initial load).
+		if (!this._upsellInteracted && force !== true) {
+			this.renderAddonRowPrices(tabName);
+			return;
+		}
 		var amountToShow = (tabName === "Tab 2") ? totals.cardTotal : totals.achTotal;
 		var formatted = this.numberWithCommas(amountToShow.toFixed(2));
 		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
