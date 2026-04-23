@@ -1174,21 +1174,28 @@ class CheckOutWebflow {
 
         this.$selectedProgram = this.$selectedProgram.filter((item) => item.upsellProgramId != suppId);
 
+        // Revert the core bundle discount if no upsell remains after this removal.
+        // This mirrors the swap inside the checkbox `change` handler, which does
+        // NOT fire when we programmatically toggle `checkbox.checked` below. Without
+        // this, the core stays pinned to _bundleDiscountedAmount (e.g. $1,750) even
+        // after the last upsell is removed via the sidebar "Remove" button.
+        if (this.$coreData && this.$coreData._baseAmount != null) {
+          var coreId = this.$coreData.upsellProgramId;
+          var hasAnyUpsell = this.$selectedProgram.some(function (p) {
+            return p && p.upsellProgramId !== coreId;
+          });
+          this.$coreData.amount = hasAnyUpsell
+            ? this.$coreData._bundleDiscountedAmount
+            : this.$coreData._baseAmount;
+        }
+
         checkboxEl.forEach((checkbox) => {
           let programDetailId = checkbox.getAttribute("programDetailId");
           if (programDetailId == suppId) {
-            // Find the closest parent div
-            const parentDiv = checkbox.closest("div").parentElement;
-            //if (checkbox.checked) {
-              checkbox.checked = !checkbox.checked;
-              this.updateAmount(checkbox.value);
-            //}
-  
-            
+            checkbox.checked = !checkbox.checked;
+            this.updateAmount(checkbox.value);
           }
         });
-        
-		
       }
 	  this.disableEnableBuyNowButton();
     }
