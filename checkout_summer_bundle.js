@@ -1201,7 +1201,7 @@ class CheckOutWebflow {
     }
 	// Fetches and displays supplementary programs
 	async displaySupplementaryProgram() {
-		var suppData = await this.fetchData("getUpsellProgram1", this.memberData.eTypeBaseUrl);
+		var suppData = await this.fetchData("getUpsellProgramOne", this.memberData.eTypeBaseUrl);
         // Check if there are any upsell programs
         var academicSuppData = suppData.find((item) => {
           return item.sessionId == 2;
@@ -1580,37 +1580,30 @@ class CheckOutWebflow {
     // Sets up event listeners for "No Thanks" and close buttons on the modal
     noThanksEvent() {
       var $this = this;
-      const closeLinks = document.querySelectorAll(".upsell-close-link");
       const semesterBundleModal = document.getElementById(
         "semester-bundle-modal"
       );
   
       const learnMore = document.getElementById("learn-more");
-      closeLinks.forEach(function (closeLink) {
-        closeLink.addEventListener("click", function (event) {
+      if (!this._modalCloseDelegatedBound) {
+        document.addEventListener("click", (event) => {
+          const closeTarget = event.target.closest(".upsell-close-link, [data-modal='close']");
+          if (!closeTarget) return;
           event.preventDefault();
           $this.closeModal(semesterBundleModal);
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
-      });
-  
-      let closeModal = document.querySelectorAll("[data-modal='close']");
-      if (closeModal.length > 0) {
-        closeModal.forEach((close_modal_link) => {
-          close_modal_link.addEventListener("click", function (event) {
-            event.preventDefault();
-            $this.closeModal(semesterBundleModal);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          });
-        });
+        this._modalCloseDelegatedBound = true;
       }
 	  
 	  // data-upSell="learn-more"
-      learnMore.addEventListener("click", function (event) {
-		event.preventDefault()
-        semesterBundleModal.classList.add("show");
-        semesterBundleModal.style.display = "flex";
-      });
+      if (learnMore) {
+        learnMore.addEventListener("click", function (event) {
+		  event.preventDefault()
+          semesterBundleModal.classList.add("show");
+          semesterBundleModal.style.display = "flex";
+        });
+      }
   
       //$this.addToCart();
       //$this.handleUpSellSelection();
