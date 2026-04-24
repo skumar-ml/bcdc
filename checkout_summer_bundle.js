@@ -47,8 +47,8 @@ class CheckOutWebflow {
 		this.memberData = memberData;
 		this.renderPortalData();
 		this.displaySupplementaryProgram();
-		this.updatePriceForCardPayment()
-		
+		this.updatePriceForCardPayment();
+		this._bindAddToCartDelegated();
 	}
 
 	// Displays summer session data with checkboxes
@@ -988,44 +988,52 @@ class CheckOutWebflow {
 	}
 
 
-	// Handles adding supplementary programs to the cart
+	// Handles adding supplementary programs to the cart (delegated; see _bindAddToCartDelegated)
 	addToCart() {
-      // Select all 'add-to-card' buttons
-      const addToCartButtons = document.querySelectorAll(".add-to-cart");
-      var $this = this;
-      addToCartButtons.forEach((button) => { 
-        button.addEventListener("click", function (event) {
-			event.preventDefault()
-          // bundleProgram checkbox
-          const checkboxes = document.querySelectorAll(".bundleProgram");
-          checkboxes.forEach((checkbox) => {
-            //if (checkbox.checked) {
-              // Toggle the checkbox state
-              //checkbox.checked = !checkbox.checked;
-              let upsellProgramId =  parseInt(checkbox.getAttribute("programDetailId"));
-              // upsellProgramId already available in selectProgramData don't update the amount
-              var suppProIdE = document.getElementById("suppProIds");
-              let selectedIds = JSON.parse(suppProIdE.value);
-              //if (!selectedIds.includes(upsellProgramId)) {
-                $this.updateAmount(checkbox.value);
-              //}
-            //}
+      // Binding is in constructor via _bindAddToCartDelegated so it runs after dynamic banner render.
+    }
+
+	// Clicks the Main "add-to-cart" / "bundle-add-to-cart" button select upsells the way checked checkboxes used to
+	_bindAddToCartDelegated() {
+      if (this._addToCartDelegatedBound) {
+        return;
+      }
+      this._addToCartDelegatedBound = true;
+      const $this = this;
+      document.addEventListener("click", (event) => {
+        const btn = event.target.closest(".add-to-cart, .bundle-add-to-cart");
+        if (!btn) {
+          return;
+        }
+        if (!document.querySelector(".bundleProgram")) {
+          return;
+        }
+        event.preventDefault();
+
+        const bannerCheckboxes = document.querySelectorAll(
+          ".banner-price-flex-wapper .bundleProgram, .banner-price-flex-wrapper .bundleProgram"
+        );
+        $this._upsellInteracted = true;
+        if (bannerCheckboxes.length > 0) {
+          var anyToggled = false;
+          bannerCheckboxes.forEach((cb) => {
+            if (!cb.checked) {
+              cb.checked = true;
+              cb.dispatchEvent(new Event("change", { bubbles: true }));
+              anyToggled = true;
+            }
           });
-          // Update the button text based on the checkbox state
-          button.textContent = Array.from(checkboxes).some(checkbox => checkbox.checked) ? "Update Cart" : "Add to Cart"; 
-          // Optional: Add or remove a disabled class (if needed)
-          button.classList.toggle("disabled", Array.from(checkboxes).some(checkbox => checkbox.checked));
-          button.classList.toggle("active", Array.from(checkboxes).some(checkbox => checkbox.checked)); 
-          // Close the modal after adding to cart
-          const semesterBundleModal = document.getElementById("semester-bundle-modal");
-          $this.closeModal(semesterBundleModal);
-          // Scroll to top after closing the modal
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          // Update tab
-          
-          $this.disableEnableBuyNowButton();
-          //$this.updateCheckOutData({upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram});
-        });
+          if (!anyToggled) {
+            $this.updateAmount(0);
+          }
+        } else {
+          $this.updateAmount(0);
+        }
+
+        const semesterBundleModal = document.getElementById("semester-bundle-modal");
+        $this.closeModal(semesterBundleModal);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        $this.disableEnableBuyNowButton();
       });
     }
 
@@ -1201,7 +1209,7 @@ class CheckOutWebflow {
     }
 	// Fetches and displays supplementary programs
 	async displaySupplementaryProgram() {
-		var suppData = await this.fetchData("getUpsellProgramOne", this.memberData.eTypeBaseUrl);
+		var suppData = await this.fetchData("getUpsellProgramOne?session=summer", this.memberData.eTypeBaseUrl);
         const normalizedSuppData = Array.isArray(suppData) ? suppData : [];
         // Pick the first row that has upsellPrograms.
         var academicSuppData = normalizedSuppData.find((item) => {
@@ -1238,14 +1246,18 @@ class CheckOutWebflow {
       const modalCardContainer = document.querySelector(
         "[data-upSell='modal-card-container']"
       );
-      if (!cardContainer) {
+      const hasBanner = document.querySelector(
+        ".banner-price-flex-wapper, .banner-price-flex-wrapper"
+      );
+      if (!cardContainer && !hasBanner) {
         return;
       }
-      if (!modalCardContainer) {
-        return;
+      if (modalCardContainer) {
+        modalCardContainer.innerHTML = "";
       }
-      modalCardContainer.innerHTML = ""; // Clear existing content
-      cardContainer.innerHTML = ""; // Clear existing content
+      if (cardContainer) {
+        cardContainer.innerHTML = "";
+      }
       // getUpsellProgram1 response may not use top-level sessionId=2.
       // Render every row that has upsellPrograms.
       academicData = (Array.isArray(academicData) ? academicData : []).filter((item) => {
@@ -1259,15 +1271,6 @@ class CheckOutWebflow {
         var currentSessionId = item.sessionId;
         
 		var bundleData = item.upsellPrograms;
-        const bundlePortalAmountTotal = (Array.isArray(bundleData) ? bundleData : []).reduce((acc, bundle) => {
-          return acc + (Number(bundle && bundle.portal_amount) || 0);
-        }, 0);
-        const bundleDiscAmountTotal = (Array.isArray(bundleData) ? bundleData : []).reduce((acc, bundle) => {
-          return acc + (Number(bundle && bundle.disc_amount) || 0);
-        }, 0);
-        const bundleAmountTotal = (Array.isArray(bundleData) ? bundleData : []).reduce((acc, bundle) => {
-          return acc + (Number(bundle && bundle.amount) || 0);
-        }, 0);
 
 		var disc_amount = "";
 		var discounted_amount = "";
@@ -1300,10 +1303,7 @@ class CheckOutWebflow {
 			// Bundle-discount metadata (not sent to API; used internally).
 			"_baseAmount": disc_amount,
 			"_bundleDiscountedAmount": discounted_amount,
-			"_bundleDiscount": item.disc_amount || 0,
-            "_bannerPortalAmountTotal": bundlePortalAmountTotal,
-            "_bannerDiscAmountTotal": bundleDiscAmountTotal,
-            "_bannerAmountTotal": bundleAmountTotal
+			"_bundleDiscount": item.disc_amount || 0
 		}
 		// Paint initial totals immediately so users see price without waiting for full card render loop.
 		this.applyInitialBundleTotals(coreData.amount);
@@ -1329,20 +1329,29 @@ class CheckOutWebflow {
 
         var coreCard = this.createBundleCard(coreData, 'core', "", coreData);
   
-        cardContainer.appendChild(coreCard);
-        cardContainer.appendChild(bundlePopUpText);
-        cardContainer.appendChild(addonHeading);
+        if (cardContainer) {
+          cardContainer.appendChild(coreCard);
+          cardContainer.appendChild(bundlePopUpText);
+          cardContainer.appendChild(addonHeading);
+        }
 
-        modalCardContainer.appendChild(coreCard.cloneNode(true));
-        modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
-        modalCardContainer.appendChild(addonHeading.cloneNode(true));
+        if (modalCardContainer) {
+          modalCardContainer.appendChild(coreCard.cloneNode(true));
+          modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
+          modalCardContainer.appendChild(addonHeading.cloneNode(true));
+        }
         
         bundleData.forEach((singleBundleData) => {
-          var card = this.createBundleCard(singleBundleData, "upsell", "page", coreData);
-          cardContainer.appendChild(card);
-          var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
-          modalCardContainer.appendChild(modelCard);
+          if (cardContainer) {
+            var card = this.createBundleCard(singleBundleData, "upsell", "", coreData);
+            cardContainer.appendChild(card);
+          }
+          if (modalCardContainer) {
+            var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
+            modalCardContainer.appendChild(modelCard);
+          }
         });
+        this.renderBannerPriceLayout(Array.isArray(bundleData) ? bundleData : []);
         this.updateAmount(0);
         this.displayTotalDiscount(item.upsellPrograms, item.disc_amount, coreData);
       });
@@ -1393,15 +1402,134 @@ class CheckOutWebflow {
       });
     }
 
+	// Fills static Webflow `.banner-price-flex-wapper` with API-driven layout:
+	// [total] | [program 1] + [program 2] + …
+	renderBannerPriceLayout(bundleData) {
+      const wrappers = document.querySelectorAll(
+        ".banner-price-flex-wapper, .banner-price-flex-wrapper"
+      );
+      if (wrappers.length === 0) {
+        return;
+      }
+      const programs = (Array.isArray(bundleData) ? [...bundleData] : [])
+        .filter((p) => p)
+        .sort((a, b) => (Number(a.sessionId) || 0) - (Number(b.sessionId) || 0));
+      wrappers.forEach((wrap) => {
+        wrap.innerHTML = "";
+      });
+      if (programs.length === 0) {
+        return;
+      }
+      const discTotal = programs.reduce((acc, p) => acc + (Number(p.disc_amount) || 0), 0);
+      const amountTotal = programs.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+
+      wrappers.forEach((wrap) => {
+
+        const totalCard = creEl("div", "banner-price-info-card");
+        const totalGray = creEl("div", "bundle-sem-popup-price-gray");
+        totalGray.setAttribute("data-addon", "price");
+        totalGray.textContent = "$" + this.numberWithCommas(discTotal);
+        const totalRed = creEl("div", "bundle-sem-pop-up-total-price-text");
+        totalRed.setAttribute("data-addon", "discount-price");
+        totalRed.textContent = "$" + this.numberWithCommas(amountTotal);
+        totalCard.appendChild(totalGray);
+        totalCard.appendChild(totalRed);
+        wrap.appendChild(totalCard);
+
+        const divider = creEl("div", "vertical-divider");
+        wrap.appendChild(divider);
+
+        programs.forEach((p, i) => {
+          const programCard = creEl("div", "banner-price-info-card");
+          const wEmbed = creEl("div", "w-embed");
+          const input = creEl("input", "bundle-sem-checkbox bundleProgram");
+          input.type = "checkbox";
+          input.name = "bundle-sem";
+          input.setAttribute("programDetailId", p.upsellProgramId);
+          input.value = p.amount != null ? String(p.amount) : "0";
+          input.style.display = "none";
+          wEmbed.appendChild(input);
+          programCard.appendChild(wEmbed);
+
+          const gray = creEl("div", "bundle-sem-popup-price-gray");
+          gray.setAttribute("data-addon", "price");
+          gray.textContent = p.disc_amount != null
+            ? "$" + this.numberWithCommas(p.disc_amount)
+            : "";
+          const red = creEl("div", "bundle-sem-pop-up-price-text-red");
+          red.setAttribute("data-addon", "discount-price");
+          red.textContent = p.amount != null
+            ? "$" + this.numberWithCommas(p.amount)
+            : "";
+          const desc = creEl("div", "bundle-sem-dec-small");
+          desc.textContent = (p.desc || "").trim();
+          programCard.appendChild(gray);
+          programCard.appendChild(red);
+          programCard.appendChild(desc);
+
+          this._bindUpsellSelection(input, p, programCard);
+
+          wrap.appendChild(programCard);
+          if (i < programs.length - 1) {
+            const plusBlock = creEl("div", "plus-icon-wrapper");
+            const plusP = creEl("p", "plus-icon");
+            plusP.textContent = "+";
+            plusBlock.appendChild(plusP);
+            wrap.appendChild(plusBlock);
+          }
+        });
+      });
+    }
+
+	// Shared selection behavior for list rows and banner price cards (card rows are not clickable; use Add to Cart in the new banner)
+	_bindUpsellSelection(input, programData, borderEl) {
+      const $this = this;
+      input.addEventListener("change", (event) => {
+        event.preventDefault();
+        this._upsellInteracted = true;
+        if (event.target.checked) {
+          if (!this.$selectedProgram.includes(programData)) {
+            this.$selectedProgram.push(programData);
+          }
+          borderEl.classList.add("border-brown-red");
+        } else {
+          this.$selectedProgram = this.$selectedProgram.filter(
+            (program) => program.upsellProgramId !== programData.upsellProgramId
+          );
+          borderEl.classList.remove("border-brown-red");
+        }
+
+        const allCheckboxes = document.querySelectorAll("[programDetailId]");
+        allCheckboxes.forEach((checkbox) => {
+          if (checkbox.getAttribute("programDetailId") == programData.upsellProgramId) {
+            checkbox.checked = event.target.checked;
+            const cardContainerEl = checkbox.closest(
+              ".bundle-sem-content-flex-container, .banner-price-info-card"
+            );
+            cardContainerEl?.classList.toggle("border-brown-red", event.target.checked);
+          }
+        });
+
+        if (this.$coreData && this.$coreData._baseAmount != null) {
+          var coreId = this.$coreData.upsellProgramId;
+          var hasAnyUpsell = this.$selectedProgram.some(function (p) {
+            return p && p.upsellProgramId !== coreId;
+          });
+          this.$coreData.amount = hasAnyUpsell
+            ? this.$coreData._bundleDiscountedAmount
+            : this.$coreData._baseAmount;
+        }
+
+        $this.updateAmount(event.target.value);
+      });
+      if (input.checked) {
+        borderEl.classList.add("border-brown-red");
+      }
+    }
+
 	// Creates a single bundle program card
 	createBundleCard(singleBundleData, type="upsell", position="", coreData) {
-      var $this = this;
       var flexContainer = creEl("div", "bundle-sem-content-flex-container");
-      // Container
-      if(position == "page"){
-        flexContainer = creEl("div", "banner-price-flex-wapper margin-bottom-10");
-      }
-      
       if (type !== "upsell") flexContainer.classList.add("border-brown-red");
 
       // Checkbox + title/info
@@ -1437,19 +1565,11 @@ class CheckOutWebflow {
       titleInfoDiv.appendChild(titleP);
       titleInfoDiv.appendChild(infoP);
 
-      if (position === "page") {
-        input.style.display = "none";
-        textWithCheckbox.appendChild(titleInfoDiv);
-      } else {
-        textWithCheckbox.appendChild(wEmbed);
-        textWithCheckbox.appendChild(titleInfoDiv);
-      }
+      textWithCheckbox.appendChild(wEmbed);
+      textWithCheckbox.appendChild(titleInfoDiv);
 
       // Price
-      const priceFlex = creEl(
-        "div",
-        position === "page" ? "banner-price-info-card" : "bundle-sem-popup-price-flex-wrapper"
-      );
+      const priceFlex = creEl("div", "bundle-sem-popup-price-flex-wrapper");
       const originalPrice = creEl("div", "bundle-sem-popup-price-gray");
       originalPrice.setAttribute("data-addon", "price");
       if (type === "core") {
@@ -1457,15 +1577,7 @@ class CheckOutWebflow {
       originalPrice.textContent = singleBundleData.disc_amount
         ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
         : "$3,770";
-      if (type === "core" && position === "page" && singleBundleData._bannerDiscAmountTotal) {
-        originalPrice.textContent = `$${this.numberWithCommas(singleBundleData._bannerDiscAmountTotal)}`;
-      }
-      const discountPrice = creEl(
-        "div",
-        position === "page"
-          ? (type === "core" ? "bundle-sem-pop-up-total-price-text" : "bundle-sem-pop-up-price-text-red")
-          : "bundle-sem-pop-up-price-text"
-      );
+      const discountPrice = creEl("div", "bundle-sem-pop-up-price-text");
       discountPrice.setAttribute("data-addon", "discount-price");
       //let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
       // removed deposit amount
@@ -1480,16 +1592,9 @@ class CheckOutWebflow {
       } else {
         amount = singleBundleData.amount;
       }
-      if (type === "core" && position === "page" && singleBundleData._bannerAmountTotal) {
-        amount = singleBundleData._bannerAmountTotal;
-      }
       discountPrice.textContent = amount
         ? `$${this.numberWithCommas(amount)}`
         : "$3,350";
-      const priceDesc = creEl("div", "bundle-sem-dec-small");
-      priceDesc.textContent = singleBundleData.desc
-        ? singleBundleData.desc
-        : "Fall Tuition + Early Bird (With Deposit)";
       if(type === "core"){
         if(singleBundleData.original_desc_amount){
           priceFlex.appendChild(originalPrice);
@@ -1498,78 +1603,15 @@ class CheckOutWebflow {
         priceFlex.appendChild(originalPrice);
       }
       priceFlex.appendChild(discountPrice);
-      if (position === "page") {
-        priceFlex.appendChild(priceDesc);
-      }
 
       // Assemble
       flexContainer.appendChild(textWithCheckbox);
       flexContainer.appendChild(priceFlex);
 
-      // Checkbox logic
-      input.addEventListener("change", (event) => {
-        event.preventDefault();
-        // Unlock visible price updates the first time a real upsell checkbox
-        // is toggled by the user. The "core" row is pre-selected programmatically
-        // on load, so we specifically gate on the "upsell" type here.
-        if (type === "upsell") {
-          this._upsellInteracted = true;
-        }
-        if (event.target.checked) {
-          if (!this.$selectedProgram.includes(singleBundleData)) {
-            this.$selectedProgram.push(singleBundleData);
-            // console.log("push selected program", this.$selectedProgram)
-          }
-          flexContainer.classList.add("border-brown-red");
-        } else {
-          this.$selectedProgram = this.$selectedProgram.filter(
-            (program) => program.upsellProgramId !== singleBundleData.upsellProgramId
-          );
-         // console.log("single pop selected program", this.$selectedProgram)
-          flexContainer.classList.remove("border-brown-red");
-        }
-
-        const allCheckboxes = document.querySelectorAll("[programDetailId]");
-        allCheckboxes.forEach((checkbox) => {
-          if (checkbox.getAttribute("programDetailId") == singleBundleData.upsellProgramId) {
-            checkbox.checked = event.target.checked;
-            const cardContainerEl = checkbox.closest(".bundle-sem-content-flex-container");
-            cardContainerEl?.classList.toggle("border-brown-red", event.target.checked);
-          }
-        });
-
-        // Apply / revert the bundle discount on the core program based on
-        // whether ANY upsell is currently selected. The discount is only
-        // earned when the user actually bundles (core + at least one addon).
-        // When they deselect the last upsell, core snaps back to its base
-        // (pre-discount) price. Since $coreData and the core entry in
-        // $selectedProgram reference the same object, mutating .amount here
-        // flows through to updateAmount()'s reduce() below.
-        if (this.$coreData && this.$coreData._baseAmount != null) {
-          var coreId = this.$coreData.upsellProgramId;
-          var hasAnyUpsell = this.$selectedProgram.some(function (p) {
-            return p && p.upsellProgramId !== coreId;
-          });
-          this.$coreData.amount = hasAnyUpsell
-            ? this.$coreData._bundleDiscountedAmount
-            : this.$coreData._baseAmount;
-        }
-
-        $this.updateAmount(event.target.value);
-        
-      });
-      if (input.checked) {
+      if (type === "upsell") {
+        this._bindUpsellSelection(input, singleBundleData, flexContainer);
+      } else if (input.checked) {
         flexContainer.classList.add("border-brown-red");
-      }
-      if (position === "page" && type === "upsell") {
-        flexContainer.style.cursor = "pointer";
-        flexContainer.addEventListener("click", (event) => {
-          if (event.target && event.target.closest("a, button, input, select, textarea, label")) {
-            return;
-          }
-          input.checked = !input.checked;
-          input.dispatchEvent(new Event("change", { bubbles: true }));
-        });
       }
 
       return flexContainer;
