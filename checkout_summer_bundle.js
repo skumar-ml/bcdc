@@ -1329,19 +1329,16 @@ class CheckOutWebflow {
         }
 
         if (modalCardContainer) {
-          modalCardContainer.appendChild(coreCard.cloneNode(true));
           modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
           modalCardContainer.appendChild(addonHeading.cloneNode(true));
+          const modalBannerRow = creEl("div", "banner-price-flex-wapper");
+          modalCardContainer.appendChild(modalBannerRow);
         }
         
         bundleData.forEach((singleBundleData) => {
           if (cardContainer) {
             var card = this.createBundleCard(singleBundleData, "upsell", "", coreData);
             cardContainer.appendChild(card);
-          }
-          if (modalCardContainer) {
-            var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
-            modalCardContainer.appendChild(modelCard);
           }
         });
         this.renderBannerPriceLayout(Array.isArray(bundleData) ? bundleData : []);
