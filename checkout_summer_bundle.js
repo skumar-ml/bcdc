@@ -732,6 +732,206 @@ class CheckOutWebflow {
 			}
 		}
 	}
+	// Populates previous students dropdown and binds selection behavior
+	async updateOldStudentList() {
+		const selectBox = document.getElementById("existing-students");
+		if (!selectBox) {
+			return;
+		}
+		var $this = this;
+		try {
+			var response = await fetch("https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/getAllPreviousStudents/" + this.memberData.memberId + "/current");
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+			var data = await response.json();
+			if (data == "No data Found" || !Array.isArray(data) || data.length === 0) {
+				selectBox.disabled = true;
+				selectBox.innerHTML = '<option value="">No previous students found</option>';
+				return;
+			}
+			data = data.filter(i => i.studentName != null && i.studentName != undefined && i.studentName != "");
+			const filterData = data
+				.filter(
+					(item, index, self) =>
+						index === self.findIndex((obj) => obj.studentName === item.studentName)
+				)
+				.sort(function (a, b) {
+					return a.studentName.trim().localeCompare(b.studentName.trim());
+				});
+
+			selectBox.innerHTML = "";
+			const defaultOption = document.createElement("option");
+			defaultOption.value = "";
+			defaultOption.textContent = "Select Student Name";
+			selectBox.appendChild(defaultOption);
+
+			filterData.forEach((item, index) => {
+				const option = document.createElement("option");
+				option.value = index;
+				option.textContent = item.studentName;
+				option.setAttribute("data-student-name", item.studentName);
+				selectBox.appendChild(option);
+			});
+
+			this.createCustomSelectDisplay(selectBox);
+
+			selectBox.addEventListener("change", function (event) {
+				if (event.target.value === "") {
+					return;
+				}
+				const selectedStudent = filterData[event.target.value];
+				if (!selectedStudent) {
+					return;
+				}
+				let studentName = selectedStudent.studentName.split(" ", 2);
+				var studentFirstName = document.getElementById('Student-First-Name');
+				var studentLastName = document.getElementById('Student-Last-Name');
+				var studentEmail = document.getElementById('Student-Email');
+				var studentGrade = document.getElementById('Student-Grade');
+				var studentSchool = document.getElementById('Student-School');
+				var studentGender = document.getElementById('Student-Gender');
+				var prevStudent = document.getElementById('prevStudent-2');
+
+				var basicData = {
+					studentEmail: selectedStudent.studentEmail,
+					firstName: studentName[0] || "",
+					lastName: studentName[1] || "",
+					grade: selectedStudent.studentGrade,
+					school: selectedStudent.school,
+					gender: selectedStudent.gender,
+					prevStudent: selectedStudent.prevStudent ? selectedStudent.prevStudent : "",
+				};
+
+				localStorage.setItem("checkOutBasicData", JSON.stringify(basicData));
+
+				studentEmail.value = basicData.studentEmail || "";
+				studentFirstName.value = basicData.firstName || "";
+				studentLastName.value = basicData.lastName || "";
+				if (basicData.grade) {
+					studentGrade.value = basicData.grade;
+				}
+				if (basicData.school) {
+					studentSchool.value = basicData.school;
+				}
+				if (basicData.gender) {
+					studentGender.value = basicData.gender;
+				}
+				if (prevStudent) {
+					prevStudent.value = basicData.prevStudent;
+				}
+				$this.initializeStripePayment();
+			});
+		} catch (error) {
+			console.error("Error fetching API data:", error);
+			selectBox.innerHTML = '<option value="">Student Details not available</option>';
+		}
+	}
+	// Creates custom dropdown UI for existing student select
+	createCustomSelectDisplay(selectBox) {
+		const existingWrapper = selectBox.parentElement.querySelector('.custom-select-display-wrapper');
+		if (existingWrapper) {
+			existingWrapper.remove();
+		}
+
+		const wrapper = document.createElement('div');
+		wrapper.className = 'custom-select-display-wrapper';
+
+		const displayDiv = document.createElement('div');
+		displayDiv.className = 'custom-select-display';
+
+		const textContainer = document.createElement('span');
+		textContainer.className = 'custom-select-display-text';
+
+		const arrowIcon = document.createElement('span');
+		arrowIcon.className = 'custom-select-arrow';
+		arrowIcon.innerHTML = '▼';
+
+		const dropdownOptions = document.createElement('div');
+		dropdownOptions.className = 'custom-select-dropdown';
+
+		selectBox.className = (selectBox.className ? selectBox.className + ' ' : '') + 'custom-select-hidden';
+
+		const parent = selectBox.parentElement;
+		parent.insertBefore(wrapper, selectBox);
+		wrapper.appendChild(selectBox);
+		wrapper.appendChild(displayDiv);
+		displayDiv.appendChild(textContainer);
+		displayDiv.appendChild(arrowIcon);
+		wrapper.appendChild(dropdownOptions);
+
+		const createOptionHTML = (option) => {
+			return option.getAttribute('data-student-name') || option.textContent;
+		};
+
+		const buildDropdownOptions = () => {
+			dropdownOptions.innerHTML = '';
+
+			const defaultOptionDiv = document.createElement('div');
+			defaultOptionDiv.className = 'custom-select-option custom-select-option-default';
+			defaultOptionDiv.textContent = 'Select Student Name';
+			defaultOptionDiv.addEventListener('click', function () {
+				selectBox.selectedIndex = 0;
+				selectBox.dispatchEvent(new Event('change'));
+				toggleDropdown();
+			});
+			dropdownOptions.appendChild(defaultOptionDiv);
+
+			for (let i = 1; i < selectBox.options.length; i++) {
+				const option = selectBox.options[i];
+				const optionDiv = document.createElement('div');
+				optionDiv.className = 'custom-select-option';
+				optionDiv.innerHTML = createOptionHTML(option);
+				optionDiv.setAttribute('data-value', option.value);
+
+				optionDiv.addEventListener('click', function () {
+					selectBox.selectedIndex = parseInt(this.getAttribute('data-value')) + 1;
+					selectBox.dispatchEvent(new Event('change'));
+					toggleDropdown();
+				});
+
+				dropdownOptions.appendChild(optionDiv);
+			}
+		};
+
+		const toggleDropdown = () => {
+			const isOpen = dropdownOptions.classList.contains('show');
+			if (isOpen) {
+				dropdownOptions.classList.remove('show');
+				arrowIcon.classList.remove('rotated');
+			} else {
+				buildDropdownOptions();
+				dropdownOptions.classList.add('show');
+				arrowIcon.classList.add('rotated');
+			}
+		};
+
+		const updateDisplay = () => {
+			const selectedOption = selectBox.options[selectBox.selectedIndex];
+			if (selectedOption && selectedOption.value !== '') {
+				textContainer.innerHTML = createOptionHTML(selectedOption);
+				displayDiv.classList.remove('custom-select-display-placeholder');
+			} else {
+				textContainer.textContent = 'Select Student Name';
+				displayDiv.classList.add('custom-select-display-placeholder');
+			}
+		};
+
+		displayDiv.addEventListener('click', function (e) {
+			e.stopPropagation();
+			toggleDropdown();
+		});
+
+		document.addEventListener('click', function (e) {
+			if (!wrapper.contains(e.target)) {
+				dropdownOptions.classList.remove('show');
+				arrowIcon.classList.remove('rotated');
+			}
+		});
+
+		selectBox.addEventListener('change', updateDisplay);
+		updateDisplay();
+	}
 	// Handles click events for different payment options (ACH, card, pay later)
 	handlePaymentEvent() {
 		var ach_payment = document.getElementById('ach_payment');
@@ -974,6 +1174,7 @@ class CheckOutWebflow {
 			this.attachChromeBackRefreshHandler();
 			// Update basic data
 			this.updateBasicData();
+			this.updateOldStudentList();
 			// Hide spinner 
 			spinner.style.display = 'none';
 		} catch (error) {
