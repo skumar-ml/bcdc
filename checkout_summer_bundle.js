@@ -1520,93 +1520,79 @@ class CheckOutWebflow {
       }
     }
 
-	// Creates a single bundle program card
+	// Creates a single bundle program card — new layout only: same as renderBannerPriceLayout (one banner-price-info-card, no left title/checkbox column)
 	createBundleCard(singleBundleData, type="upsell", position="", coreData) {
       var flexContainer = creEl("div", "bundle-sem-content-flex-container");
       if (type !== "upsell") flexContainer.classList.add("border-brown-red");
 
-      // Checkbox + title/info
-      const textWithCheckbox = creEl("div", "bundle-sem-text-with-checkbox");
-
-      // Checkbox
-      const wEmbed = creEl("div", "w-embed");
-	  var input = creEl("input", "bundle-sem-checkbox bundleProgram");
-		if (type !== "upsell"){
-			input = creEl("input", "bundle-sem-checkbox");
-	   	}
+      var input = creEl("input", "bundle-sem-checkbox bundleProgram");
+      if (type !== "upsell") {
+        input = creEl("input", "bundle-sem-checkbox");
+      }
       input.type = "checkbox";
       input.name = "bundle-sem";
       input.setAttribute("programDetailId", singleBundleData.upsellProgramId);
-      input.value = singleBundleData.amount ? singleBundleData.amount : "3350";
+      input.value = singleBundleData.amount != null && singleBundleData.amount !== ""
+        ? String(singleBundleData.amount)
+        : (type === "upsell" ? "0" : "3350");
+      input.style.display = "none";
       if (type !== "upsell") {
         input.checked = true;
         input.setAttribute("disabled", true);
-        
       }
-      wEmbed.appendChild(input);
 
-      // Title and info
-      const titleInfoDiv = creEl("div");
-      const titleP = creEl("p", "bundle-sem-title");
-      titleP.textContent = type === "upsell"
-        ? `${singleBundleData.label} (${singleBundleData.yearId})`
-        : "Summer ("+coreData.yearId+")";
-      const infoP = creEl("p", "bundle-sem-info");
-      infoP.textContent = (singleBundleData.desc )
-        ? (singleBundleData.desc || "")
-        : "Fall Tuition + Early Bird (With Deposit)";
-      titleInfoDiv.appendChild(titleP);
-      titleInfoDiv.appendChild(infoP);
-
-      textWithCheckbox.appendChild(wEmbed);
-      textWithCheckbox.appendChild(titleInfoDiv);
-
-      // Price
-      const priceFlex = creEl("div", "bundle-sem-popup-price-flex-wrapper");
-      const originalPrice = creEl("div", "bundle-sem-popup-price-gray");
-      originalPrice.setAttribute("data-addon", "price");
-      if (type === "core") {
-      }
-      originalPrice.textContent = singleBundleData.disc_amount
-        ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
-        : "$3,770";
-      const discountPrice = creEl("div", "bundle-sem-pop-up-price-text");
-      discountPrice.setAttribute("data-addon", "discount-price");
-      //let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
-      // removed deposit amount
-      // For the core card, always show the bundle-DISCOUNTED price here
-      // (e.g. $1,750) even though singleBundleData.amount starts at the full
-      // base (e.g. $1,800) until the user actually bundles. The strikethrough
-      // "originalPrice" above carries the pre-discount value, so this field
-      // represents "what you'll pay once you bundle".
-      let amount;
-      if (type === "core" && singleBundleData._bundleDiscountedAmount) {
-        amount = singleBundleData._bundleDiscountedAmount;
-      } else {
-        amount = singleBundleData.amount;
-      }
-      discountPrice.textContent = amount
-        ? `$${this.numberWithCommas(amount)}`
-        : "$3,350";
-      if(type === "core"){
-        if(singleBundleData.original_desc_amount){
-          priceFlex.appendChild(originalPrice);
-        }
-      }else {
-        priceFlex.appendChild(originalPrice);
-      }
-      priceFlex.appendChild(discountPrice);
-
-      // Assemble
-      flexContainer.appendChild(textWithCheckbox);
-      flexContainer.appendChild(priceFlex);
+      const priceCard = creEl("div", "banner-price-info-card");
+      const wPrice = creEl("div", "w-embed");
+      wPrice.appendChild(input);
+      priceCard.appendChild(wPrice);
 
       if (type === "upsell") {
-        this._bindUpsellSelection(input, singleBundleData, flexContainer);
-      } else if (input.checked) {
-        flexContainer.classList.add("border-brown-red");
+        const gray = creEl("div", "bundle-sem-popup-price-gray");
+        gray.setAttribute("data-addon", "price");
+        gray.textContent = singleBundleData.disc_amount != null
+          ? "$" + this.numberWithCommas(singleBundleData.disc_amount)
+          : "";
+        const red = creEl("div", "bundle-sem-pop-up-price-text-red");
+        red.setAttribute("data-addon", "discount-price");
+        red.textContent = singleBundleData.amount != null
+          ? "$" + this.numberWithCommas(singleBundleData.amount)
+          : "";
+        const desc = creEl("div", "bundle-sem-dec-small");
+        desc.textContent = (singleBundleData.desc || "").trim();
+
+        priceCard.appendChild(gray);
+        priceCard.appendChild(red);
+        priceCard.appendChild(desc);
+        this._bindUpsellSelection(input, singleBundleData, priceCard);
+      } else {
+        const totalGray = creEl("div", "bundle-sem-popup-price-gray");
+        totalGray.setAttribute("data-addon", "price");
+        totalGray.textContent = singleBundleData.disc_amount
+          ? "$" + this.numberWithCommas(singleBundleData.disc_amount)
+          : "$3,770";
+        const totalRed = creEl("div", "bundle-sem-pop-up-total-price-text");
+        totalRed.setAttribute("data-addon", "discount-price");
+        const coreAmt = singleBundleData._bundleDiscountedAmount
+          ? singleBundleData._bundleDiscountedAmount
+          : singleBundleData.amount;
+        totalRed.textContent = coreAmt
+          ? "$" + this.numberWithCommas(coreAmt)
+          : "$3,350";
+        const desc = creEl("div", "bundle-sem-dec-small");
+        desc.textContent = (singleBundleData.desc || "").trim() ||
+          "Last Year's Locked-In Tuition + $50 Off | Full-Day Enrollment";
+
+        if (singleBundleData.original_desc_amount) {
+          priceCard.appendChild(totalGray);
+        }
+        priceCard.appendChild(totalRed);
+        priceCard.appendChild(desc);
+        if (input.checked) {
+          priceCard.classList.add("border-brown-red");
+        }
       }
 
+      flexContainer.appendChild(priceCard);
       return flexContainer;
     }
 
