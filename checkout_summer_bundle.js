@@ -993,7 +993,8 @@ class CheckOutWebflow {
       // Binding is in constructor via _bindAddToCartDelegated so it runs after dynamic banner render.
     }
 
-	// Clicks the Main "add-to-cart" / "bundle-add-to-cart" button select upsells the way checked checkboxes used to
+	// Clicks the primary cart CTA (e.g. .Button-wine-red): same price refresh as the checkbox flow,
+	// but does not auto-check every future-session upsell in the banner.
 	_bindAddToCartDelegated() {
       if (this._addToCartDelegatedBound) {
         return;
@@ -1001,7 +1002,9 @@ class CheckOutWebflow {
       this._addToCartDelegatedBound = true;
       const $this = this;
       document.addEventListener("click", (event) => {
-        const btn = event.target.closest(".add-to-cart, .bundle-add-to-cart");
+        const btn = event.target.closest(
+          ".add-to-cart, .bundle-add-to-cart, .Button-wine-red"
+        );
         if (!btn) {
           return;
         }
@@ -1010,25 +1013,8 @@ class CheckOutWebflow {
         }
         event.preventDefault();
 
-        const bannerCheckboxes = document.querySelectorAll(
-          ".banner-price-flex-wapper .bundleProgram, .banner-price-flex-wrapper .bundleProgram"
-        );
         $this._upsellInteracted = true;
-        if (bannerCheckboxes.length > 0) {
-          var anyToggled = false;
-          bannerCheckboxes.forEach((cb) => {
-            if (!cb.checked) {
-              cb.checked = true;
-              cb.dispatchEvent(new Event("change", { bubbles: true }));
-              anyToggled = true;
-            }
-          });
-          if (!anyToggled) {
-            $this.updateAmount(0);
-          }
-        } else {
-          $this.updateAmount(0);
-        }
+        $this.updateAmount(0);
 
         const semesterBundleModal = document.getElementById("semester-bundle-modal");
         $this.closeModal(semesterBundleModal);
@@ -1238,18 +1224,25 @@ class CheckOutWebflow {
       }
     }
 
+	// Mount for modal upsell list (prefers a node inside #semester-bundle-modal so the page list is not targeted by mistake)
+	getModalCardContainerEl() {
+      const modal = document.getElementById("semester-bundle-modal");
+      return (
+        (modal && modal.querySelector("[data-upSell='modal-card-container']")) ||
+        document.querySelector("[data-upSell='modal-card-container']")
+      );
+	}
+
 	// Creates bundle program cards for display
 	createBundlePrograms(academicData) {
       const cardContainer = document.querySelector(
         "[data-upSell='card-container']"
       );
-      const modalCardContainer = document.querySelector(
-        "[data-upSell='modal-card-container']"
-      );
+      const modalCardContainer = this.getModalCardContainerEl();
       const hasBanner = document.querySelector(
         ".banner-price-flex-wapper, .banner-price-flex-wrapper"
       );
-      if (!cardContainer && !hasBanner) {
+      if (!cardContainer && !hasBanner && !modalCardContainer) {
         return;
       }
       if (modalCardContainer) {
@@ -1620,7 +1613,9 @@ class CheckOutWebflow {
     // Disables or enables the "Add to Cart" / "Update Cart" button
     disableEnableBuyNowButton() {
       // is selected program is empty then disable the buy now button
-      const buyNowButton = document.querySelectorAll(".add-to-cart, .bundle-add-to-cart");
+      const buyNowButton = document.querySelectorAll(
+        ".add-to-cart, .bundle-add-to-cart, .Button-wine-red"
+      );
       if (this.$selectedProgram.length === 0) {
         buyNowButton.forEach((button) => {
           button.innerHTML = "Add to Cart"; // Disable each button
