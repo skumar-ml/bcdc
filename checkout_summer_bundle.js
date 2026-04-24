@@ -1201,7 +1201,7 @@ class CheckOutWebflow {
     }
 	// Fetches and displays supplementary programs
 	async displaySupplementaryProgram() {
-		var suppData = await this.fetchData("getUpsellProgram", this.memberData.eTypeBaseUrl);
+		var suppData = await this.fetchData("getUpsellProgram1", this.memberData.eTypeBaseUrl);
         // Check if there are any upsell programs
         var academicSuppData = suppData.find((item) => {
           return item.sessionId == 2;
@@ -1324,7 +1324,7 @@ class CheckOutWebflow {
           modalCardContainer.appendChild(modelCard);
         });
         this.updateAmount(0);
-        this.displayTotalDiscount(item.upsellPrograms, item.disc_amount);
+        this.displayTotalDiscount(item.upsellPrograms, item.disc_amount, coreData);
       });
       this.disableEnableBuyNowButton();
     }
@@ -1343,19 +1343,34 @@ class CheckOutWebflow {
 	}
 
 	// Displays the total discount amount
-	displayTotalDiscount(bundleData, discAmount){
+	displayTotalDiscount(bundleData, discAmount, coreData){
       var totalDiscount = bundleData.reduce((acc, bundle) => {
           const amount = Number(bundle.portal_amount) || 0;
           const discAmount = Number(bundle.portal_disc_amount) || 0;
           return acc + (discAmount - amount);
         }, 0);
+      var totalOriginalPrice = bundleData.reduce((acc, bundle) => {
+          const discAmount = Number(bundle.portal_disc_amount) || 0;
+          return acc + discAmount;
+      }, 0);
 		if(discAmount){
 			totalDiscount += parseFloat(discAmount);
 		}
+      var coreOriginalAmount = Number(coreData && coreData.disc_amount ? String(coreData.disc_amount).replace(/,/g, "") : 0) || 0;
+      if (coreOriginalAmount > 0) {
+        totalOriginalPrice += coreOriginalAmount;
+      }
 		const discountEl = document.querySelectorAll('[data-addon="discount"]')
       discountEl.forEach(el=>{
         el.innerHTML = "$"+this.numberWithCommas(totalDiscount);
       })
+      const discountPercentageEl = document.querySelectorAll(".bundle-sem-discount-prices");
+      const discountPercent = totalOriginalPrice > 0
+        ? Math.round((totalDiscount / totalOriginalPrice) * 100)
+        : 0;
+      discountPercentageEl.forEach((el) => {
+        el.textContent = `${discountPercent}%`;
+      });
     }
 
 	// Creates a single bundle program card
@@ -1364,7 +1379,7 @@ class CheckOutWebflow {
       var flexContainer = creEl("div", "bundle-sem-content-flex-container");
       // Container
       if(position == "page"){
-        flexContainer = creEl("div", "bundle-sem-info-flex-wrapper margin-bottom-10");
+        flexContainer = creEl("div", "banner-price-flex-wapper margin-bottom-10");
       }
       
       if (type !== "upsell") flexContainer.classList.add("border-brown-red");
@@ -1402,11 +1417,19 @@ class CheckOutWebflow {
       titleInfoDiv.appendChild(titleP);
       titleInfoDiv.appendChild(infoP);
 
-      textWithCheckbox.appendChild(wEmbed);
-      textWithCheckbox.appendChild(titleInfoDiv);
+      if (position === "page") {
+        input.style.display = "none";
+        textWithCheckbox.appendChild(titleInfoDiv);
+      } else {
+        textWithCheckbox.appendChild(wEmbed);
+        textWithCheckbox.appendChild(titleInfoDiv);
+      }
 
       // Price
-      const priceFlex = creEl("div", "bundle-sem-popup-price-flex-wrapper");
+      const priceFlex = creEl(
+        "div",
+        position === "page" ? "banner-price-info-card" : "bundle-sem-popup-price-flex-wrapper"
+      );
       const originalPrice = creEl("div", "bundle-sem-popup-price-gray");
       originalPrice.setAttribute("data-addon", "price");
       if (type === "core") {
@@ -1414,7 +1437,12 @@ class CheckOutWebflow {
       originalPrice.textContent = singleBundleData.disc_amount
         ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
         : "$3,770";
-      const discountPrice = creEl("div", "bundle-sem-pop-up-price-text");
+      const discountPrice = creEl(
+        "div",
+        position === "page"
+          ? (type === "core" ? "bundle-sem-pop-up-total-price-text" : "bundle-sem-pop-up-price-text-red")
+          : "bundle-sem-pop-up-price-text"
+      );
       discountPrice.setAttribute("data-addon", "discount-price");
       //let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
       // removed deposit amount
@@ -1432,6 +1460,10 @@ class CheckOutWebflow {
       discountPrice.textContent = amount
         ? `$${this.numberWithCommas(amount)}`
         : "$3,350";
+      const priceDesc = creEl("div", "bundle-sem-dec-small");
+      priceDesc.textContent = singleBundleData.desc
+        ? singleBundleData.desc
+        : "Fall Tuition + Early Bird (With Deposit)";
       if(type === "core"){
         if(singleBundleData.original_desc_amount){
           priceFlex.appendChild(originalPrice);
@@ -1440,6 +1472,9 @@ class CheckOutWebflow {
         priceFlex.appendChild(originalPrice);
       }
       priceFlex.appendChild(discountPrice);
+      if (position === "page") {
+        priceFlex.appendChild(priceDesc);
+      }
 
       // Assemble
       flexContainer.appendChild(textWithCheckbox);
@@ -1472,7 +1507,8 @@ class CheckOutWebflow {
         allCheckboxes.forEach((checkbox) => {
           if (checkbox.getAttribute("programDetailId") == singleBundleData.upsellProgramId) {
             checkbox.checked = event.target.checked;
-            checkbox.closest(".bundle-sem-content-flex-container")?.classList.toggle("border-brown-red", event.target.checked);
+            const cardContainerEl = checkbox.closest(".bundle-sem-content-flex-container");
+            cardContainerEl?.classList.toggle("border-brown-red", event.target.checked);
           }
         });
 
@@ -1498,6 +1534,16 @@ class CheckOutWebflow {
       });
       if (input.checked) {
         flexContainer.classList.add("border-brown-red");
+      }
+      if (position === "page" && type === "upsell") {
+        flexContainer.style.cursor = "pointer";
+        flexContainer.addEventListener("click", (event) => {
+          if (event.target && event.target.closest("a, button, input, select, textarea, label")) {
+            return;
+          }
+          input.checked = !input.checked;
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        });
       }
 
       return flexContainer;
