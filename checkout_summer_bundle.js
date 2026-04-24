@@ -1202,14 +1202,18 @@ class CheckOutWebflow {
 	// Fetches and displays supplementary programs
 	async displaySupplementaryProgram() {
 		var suppData = await this.fetchData("getUpsellProgramOne", this.memberData.eTypeBaseUrl);
-        // Check if there are any upsell programs
-        var academicSuppData = suppData.find((item) => {
-          return item.sessionId == 2;
-        });
-        //this.$suppPro = academicSuppData ? academicSuppData.upsellPrograms : [];
-        this.updateSupplementaryProgramData(academicSuppData ? academicSuppData.upsellPrograms : [])
+        const normalizedSuppData = Array.isArray(suppData) ? suppData : [];
+        // Pick the first row that has upsellPrograms.
+        var academicSuppData = normalizedSuppData.find((item) => {
+          return item && Array.isArray(item.upsellPrograms) && item.upsellPrograms.length > 0;
+        }) || normalizedSuppData[0];
+        this.updateSupplementaryProgramData(
+          academicSuppData && Array.isArray(academicSuppData.upsellPrograms)
+            ? academicSuppData.upsellPrograms
+            : []
+        );
 		
-		this.createBundlePrograms(suppData);
+		this.createBundlePrograms(normalizedSuppData);
 		this.noThanksEvent();
 	}	
 
@@ -1242,15 +1246,28 @@ class CheckOutWebflow {
       }
       modalCardContainer.innerHTML = ""; // Clear existing content
       cardContainer.innerHTML = ""; // Clear existing content
-      // remove remove session data based on summerSessionId 2
-      academicData = academicData.filter((item) => {
-        return  item.sessionId == 2;
+      // getUpsellProgram1 response may not use top-level sessionId=2.
+      // Render every row that has upsellPrograms.
+      academicData = (Array.isArray(academicData) ? academicData : []).filter((item) => {
+        return item && Array.isArray(item.upsellPrograms) && item.upsellPrograms.length > 0;
       });
+      if (academicData.length === 0) {
+        return;
+      }
 
       academicData.forEach((item) => {
         var currentSessionId = item.sessionId;
         
 		var bundleData = item.upsellPrograms;
+        const bundlePortalAmountTotal = (Array.isArray(bundleData) ? bundleData : []).reduce((acc, bundle) => {
+          return acc + (Number(bundle && bundle.portal_amount) || 0);
+        }, 0);
+        const bundleDiscAmountTotal = (Array.isArray(bundleData) ? bundleData : []).reduce((acc, bundle) => {
+          return acc + (Number(bundle && bundle.disc_amount) || 0);
+        }, 0);
+        const bundleAmountTotal = (Array.isArray(bundleData) ? bundleData : []).reduce((acc, bundle) => {
+          return acc + (Number(bundle && bundle.amount) || 0);
+        }, 0);
 
 		var disc_amount = "";
 		var discounted_amount = "";
@@ -1283,7 +1300,10 @@ class CheckOutWebflow {
 			// Bundle-discount metadata (not sent to API; used internally).
 			"_baseAmount": disc_amount,
 			"_bundleDiscountedAmount": discounted_amount,
-			"_bundleDiscount": item.disc_amount || 0
+			"_bundleDiscount": item.disc_amount || 0,
+            "_bannerPortalAmountTotal": bundlePortalAmountTotal,
+            "_bannerDiscAmountTotal": bundleDiscAmountTotal,
+            "_bannerAmountTotal": bundleAmountTotal
 		}
 		// Paint initial totals immediately so users see price without waiting for full card render loop.
 		this.applyInitialBundleTotals(coreData.amount);
@@ -1437,6 +1457,9 @@ class CheckOutWebflow {
       originalPrice.textContent = singleBundleData.disc_amount
         ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
         : "$3,770";
+      if (type === "core" && position === "page" && singleBundleData._bannerDiscAmountTotal) {
+        originalPrice.textContent = `$${this.numberWithCommas(singleBundleData._bannerDiscAmountTotal)}`;
+      }
       const discountPrice = creEl(
         "div",
         position === "page"
@@ -1456,6 +1479,9 @@ class CheckOutWebflow {
         amount = singleBundleData._bundleDiscountedAmount;
       } else {
         amount = singleBundleData.amount;
+      }
+      if (type === "core" && position === "page" && singleBundleData._bannerAmountTotal) {
+        amount = singleBundleData._bannerAmountTotal;
       }
       discountPrice.textContent = amount
         ? `$${this.numberWithCommas(amount)}`
