@@ -47,8 +47,8 @@ class CheckOutWebflow {
 		this.memberData = memberData;
 		this.renderPortalData();
 		this.displaySupplementaryProgram();
-		this.updatePriceForCardPayment()
-		
+		this.updatePriceForCardPayment();
+		this._bindAddToCartDelegated();
 	}
 
 	// Displays summer session data with checkboxes
@@ -466,7 +466,16 @@ class CheckOutWebflow {
 		// `amount` represents the actual charge (ACH base on ach tab, card-with-fee on card tab).
 		var requestAmount = (paymentType === 'card_payment') ? requestCardAmount : requestAchAmount;
 		// Credit application is handled server-side; client only relays the user's choice via applyCredit flag.
-		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
+		var coreLabel = String((this.$coreData && this.$coreData.label) || "").trim().toLowerCase();
+		var selectedUpsellIds = this.$selectedProgram
+			.filter(item => item && item.upsellProgramId != null)
+			.filter(item => {
+				// when core/base already represents that semester.
+				if (!coreLabel) return true;
+				var itemLabel = String(item.label || "").trim().toLowerCase();
+				return itemLabel !== coreLabel || item.upsellProgramId === (this.$coreData && this.$coreData.upsellProgramId);
+			})
+			.map(item => item.upsellProgramId);
 		// Drop core id so the array only carries true addons; if none selected, fall back to [coreId]
 		// so backend still receives the baseline program id (matches legacy behavior).
 		if (this.$coreData && this.$coreData.upsellProgramId) {
@@ -988,45 +997,132 @@ class CheckOutWebflow {
 	}
 
 
-	// Handles adding supplementary programs to the cart
+	// Handles adding supplementary programs to the cart (delegated; see _bindAddToCartDelegated)
 	addToCart() {
-      // Select all 'add-to-card' buttons
-      const addToCartButtons = document.querySelectorAll(".add-to-cart");
-      var $this = this;
-      addToCartButtons.forEach((button) => { 
-        button.addEventListener("click", function (event) {
-			event.preventDefault()
-          // bundleProgram checkbox
-          const checkboxes = document.querySelectorAll(".bundleProgram");
-          checkboxes.forEach((checkbox) => {
-            //if (checkbox.checked) {
-              // Toggle the checkbox state
-              //checkbox.checked = !checkbox.checked;
-              let upsellProgramId =  parseInt(checkbox.getAttribute("programDetailId"));
-              // upsellProgramId already available in selectProgramData don't update the amount
-              var suppProIdE = document.getElementById("suppProIds");
-              let selectedIds = JSON.parse(suppProIdE.value);
-              //if (!selectedIds.includes(upsellProgramId)) {
-                $this.updateAmount(checkbox.value);
-              //}
-            //}
-          });
-          // Update the button text based on the checkbox state
-          button.textContent = Array.from(checkboxes).some(checkbox => checkbox.checked) ? "Update Cart" : "Add to Cart"; 
-          // Optional: Add or remove a disabled class (if needed)
-          button.classList.toggle("disabled", Array.from(checkboxes).some(checkbox => checkbox.checked));
-          button.classList.toggle("active", Array.from(checkboxes).some(checkbox => checkbox.checked)); 
-          // Close the modal after adding to cart
-          const semesterBundleModal = document.getElementById("semester-bundle-modal");
-          $this.closeModal(semesterBundleModal);
-          // Scroll to top after closing the modal
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          // Update tab
-          
-          $this.disableEnableBuyNowButton();
-          //$this.updateCheckOutData({upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram});
-        });
+      // Binding is in constructor via _bindAddToCartDelegated so it runs after dynamic banner render.
+    }
+
+	// Clicks the primary cart CTA (e.g. .Button-wine-red): same price refresh as the checkbox flow,
+	// but does not auto-check every future-session upsell in the banner.
+	_bindAddToCartDelegated() {
+      if (this._addToCartDelegatedBound) {
+        return;
+      }
+      this._addToCartDelegatedBound = true;
+      const $this = this;
+      const addToCartSelector = ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red";
+      console.log("[SummerCheckout][AddToCart] delegated bind ready", {
+        selector: addToCartSelector
       });
+      document.addEventListener("click", (event) => {
+        const btn = event.target.closest(
+          addToCartSelector
+        );
+        if (!btn) {
+          return;
+        }
+        const isWineRedButton = btn.classList.contains("Button-wine-red") || btn.classList.contains("button-wine-red");
+        console.log("[SummerCheckout][AddToCart] click captured", {
+          isWineRedButton: isWineRedButton,
+          text: (btn.textContent || "").trim(),
+          classes: btn.className
+        });
+        if (isWineRedButton) {
+          console.log("[SummerCheckout][Button-wine-red] click detected", {
+            text: (btn.textContent || "").trim(),
+            classes: btn.className
+          });
+        }
+        const coreLabel = String(($this.$coreData && $this.$coreData.label) || "").trim().toLowerCase();
+        const apiUpsellPrograms = (Array.isArray($this.$suppPro) ? $this.$suppPro : []).filter((program) => {
+          if (!program || program.upsellProgramId == null) {
+            return false;
+          }
+          // Do not auto-select current semester from API upsells (ex: Summer),
+          // because core/base is already that semester in cart state.
+          if (coreLabel) {
+            var label = String(program.label || "").trim().toLowerCase();
+            if (label === coreLabel) {
+              return false;
+            }
+          }
+          return true;
+        });
+        console.log("🚀 ~ CheckOutWebflow ~ _bindAddToCartDelegated ~ apiUpsellPrograms:", apiUpsellPrograms)
+        if (apiUpsellPrograms.length === 0) {
+          if (isWineRedButton) {
+            console.log("[SummerCheckout][Button-wine-red] no upsell programs from API");
+          }
+          return;
+        }
+        event.preventDefault();
+
+        $this._upsellInteracted = true;
+        const coreId = $this.$coreData && $this.$coreData.upsellProgramId;
+        const selectedById = new Set(
+          (Array.isArray($this.$selectedProgram) ? $this.$selectedProgram : [])
+            .map((program) => program && program.upsellProgramId)
+            .filter((id) => id != null)
+        );
+
+        // existing `change` flow; if not, add directly into selected state.
+        var autoCheckedCount = 0;
+        apiUpsellPrograms.forEach((program) => {
+          const programId = program.upsellProgramId;
+          if (programId == null || programId === coreId) {
+            return;
+          }
+          const matchingCheckboxes = document.querySelectorAll(
+            '.bundleProgram[programDetailId="' + programId + '"]'
+          );
+          if (matchingCheckboxes.length > 0) {
+            matchingCheckboxes.forEach((checkbox) => {
+              if (!checkbox.checked) {
+                checkbox.checked = true;
+                checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+                autoCheckedCount += 1;
+              }
+            });
+            return;
+          }
+          if (!selectedById.has(programId)) {
+            $this.$selectedProgram.push(program);
+            selectedById.add(programId);
+          }
+        });
+        if (isWineRedButton) {
+          console.log("[SummerCheckout][Button-wine-red] selection sync complete", {
+            apiUpsellPrograms: apiUpsellPrograms.length,
+            autoCheckedCount: autoCheckedCount,
+            selectedProgramCount: Array.isArray($this.$selectedProgram) ? $this.$selectedProgram.length : 0
+          });
+        }
+
+        // Hard de-dupe by upsellProgramId to avoid duplicate totals.
+        $this.$selectedProgram = $this.$selectedProgram.filter((program, index, arr) => {
+          return index === arr.findIndex((item) => item && item.upsellProgramId === program.upsellProgramId);
+        });
+
+        if ($this.$coreData && $this.$coreData._baseAmount != null) {
+          const hasAnyUpsell = $this.$selectedProgram.some((program) => {
+            return program && program.upsellProgramId !== coreId;
+          });
+          $this.$coreData.amount = hasAnyUpsell
+            ? $this.$coreData._bundleDiscountedAmount
+            : $this.$coreData._baseAmount;
+        }
+        $this.updateAmount(0);
+        if (isWineRedButton) {
+          console.log("[SummerCheckout][Button-wine-red] updateAmount executed", {
+            selectedProgramCount: Array.isArray($this.$selectedProgram) ? $this.$selectedProgram.length : 0
+          });
+        }
+
+        const semesterBundleModal = document.getElementById("semester-bundle-modal");
+        $this.closeModal(semesterBundleModal);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        $this.disableEnableBuyNowButton();
+      }, true);
     }
 
 	// Updates the total amount displayed in the cart
@@ -1201,15 +1297,19 @@ class CheckOutWebflow {
     }
 	// Fetches and displays supplementary programs
 	async displaySupplementaryProgram() {
-		var suppData = await this.fetchData("getUpsellProgram", this.memberData.eTypeBaseUrl);
-        // Check if there are any upsell programs
-        var academicSuppData = suppData.find((item) => {
-          return item.sessionId == 2;
-        });
-        //this.$suppPro = academicSuppData ? academicSuppData.upsellPrograms : [];
-        this.updateSupplementaryProgramData(academicSuppData ? academicSuppData.upsellPrograms : [])
+		var suppData = await this.fetchData("getUpsellProgramOne?session=summer", this.memberData.eTypeBaseUrl);
+        const normalizedSuppData = Array.isArray(suppData) ? suppData : [];
+        // Pick the first row that has upsellPrograms.
+        var academicSuppData = normalizedSuppData.find((item) => {
+          return item && Array.isArray(item.upsellPrograms) && item.upsellPrograms.length > 0;
+        }) || normalizedSuppData[0];
+        this.updateSupplementaryProgramData(
+          academicSuppData && Array.isArray(academicSuppData.upsellPrograms)
+            ? academicSuppData.upsellPrograms
+            : []
+        );
 		
-		this.createBundlePrograms(suppData);
+		this.createBundlePrograms(normalizedSuppData);
 		this.noThanksEvent();
 	}	
 
@@ -1226,26 +1326,41 @@ class CheckOutWebflow {
       }
     }
 
+	// Mount for modal upsell list (prefers a node inside #semester-bundle-modal so the page list is not targeted by mistake)
+	getModalCardContainerEl() {
+      const modal = document.getElementById("semester-bundle-modal");
+      return (
+        (modal && modal.querySelector("[data-upSell='modal-card-container']")) ||
+        document.querySelector("[data-upSell='modal-card-container']")
+      );
+	}
+
 	// Creates bundle program cards for display
 	createBundlePrograms(academicData) {
       const cardContainer = document.querySelector(
         "[data-upSell='card-container']"
       );
-      const modalCardContainer = document.querySelector(
-        "[data-upSell='modal-card-container']"
+      const modalCardContainer = this.getModalCardContainerEl();
+      const hasBanner = document.querySelector(
+        ".banner-price-flex-wapper, .banner-price-flex-wrapper"
       );
-      if (!cardContainer) {
+      if (!cardContainer && !hasBanner && !modalCardContainer) {
         return;
       }
-      if (!modalCardContainer) {
-        return;
+      if (modalCardContainer) {
+        modalCardContainer.innerHTML = "";
       }
-      modalCardContainer.innerHTML = ""; // Clear existing content
-      cardContainer.innerHTML = ""; // Clear existing content
-      // remove remove session data based on summerSessionId 2
-      academicData = academicData.filter((item) => {
-        return  item.sessionId == 2;
+      if (cardContainer) {
+        cardContainer.innerHTML = "";
+      }
+      // getUpsellProgram1 response may not use top-level sessionId=2.
+      // Render every row that has upsellPrograms.
+      academicData = (Array.isArray(academicData) ? academicData : []).filter((item) => {
+        return item && Array.isArray(item.upsellPrograms) && item.upsellPrograms.length > 0;
       });
+      if (academicData.length === 0) {
+        return;
+      }
 
       academicData.forEach((item) => {
         var currentSessionId = item.sessionId;
@@ -1309,22 +1424,28 @@ class CheckOutWebflow {
 
         var coreCard = this.createBundleCard(coreData, 'core', "", coreData);
   
-        cardContainer.appendChild(coreCard);
-        cardContainer.appendChild(bundlePopUpText);
-        cardContainer.appendChild(addonHeading);
+        if (cardContainer) {
+          cardContainer.appendChild(coreCard);
+          cardContainer.appendChild(bundlePopUpText);
+          cardContainer.appendChild(addonHeading);
+        }
 
-        modalCardContainer.appendChild(coreCard.cloneNode(true));
-        modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
-        modalCardContainer.appendChild(addonHeading.cloneNode(true));
+        if (modalCardContainer) {
+          modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
+          modalCardContainer.appendChild(addonHeading.cloneNode(true));
+          const modalBannerRow = creEl("div", "banner-price-flex-wapper");
+          modalCardContainer.appendChild(modalBannerRow);
+        }
         
         bundleData.forEach((singleBundleData) => {
-          var card = this.createBundleCard(singleBundleData, "upsell", "page", coreData);
-          cardContainer.appendChild(card);
-          var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
-          modalCardContainer.appendChild(modelCard);
+          if (cardContainer) {
+            var card = this.createBundleCard(singleBundleData, "upsell", "", coreData);
+            cardContainer.appendChild(card);
+          }
         });
+        this.renderBannerPriceLayout(Array.isArray(bundleData) ? bundleData : []);
         this.updateAmount(0);
-        this.displayTotalDiscount(item.upsellPrograms, item.disc_amount);
+        this.displayTotalDiscount(item.upsellPrograms, item.disc_amount, coreData);
       });
       this.disableEnableBuyNowButton();
     }
@@ -1343,146 +1464,151 @@ class CheckOutWebflow {
 	}
 
 	// Displays the total discount amount
-	displayTotalDiscount(bundleData, discAmount){
+	displayTotalDiscount(bundleData, discAmount, coreData){
       var totalDiscount = bundleData.reduce((acc, bundle) => {
           const amount = Number(bundle.portal_amount) || 0;
           const discAmount = Number(bundle.portal_disc_amount) || 0;
           return acc + (discAmount - amount);
         }, 0);
-		if(discAmount){
+      var totalOriginalPrice = bundleData.reduce((acc, bundle) => {
+          const discAmount = Number(bundle.portal_disc_amount) || 0;
+          return acc + discAmount;
+      }, 0);
+      var coreLabel = String((coreData && coreData.label) || "").trim().toLowerCase();
+      var hasCoreInBundleData = (Array.isArray(bundleData) ? bundleData : []).some((bundle) => {
+        var label = String((bundle && bundle.label) || "").trim().toLowerCase();
+        return coreLabel && label === coreLabel;
+      });
+      // Avoid double-counting core discount when API already includes current semester
+      // (e.g., Summer) inside bundleData.
+		if(discAmount && !hasCoreInBundleData){
 			totalDiscount += parseFloat(discAmount);
 		}
+      var coreOriginalAmount = Number(coreData && coreData.disc_amount ? String(coreData.disc_amount).replace(/,/g, "") : 0) || 0;
+      if (coreOriginalAmount > 0 && !hasCoreInBundleData) {
+        totalOriginalPrice += coreOriginalAmount;
+      }
 		const discountEl = document.querySelectorAll('[data-addon="discount"]')
       discountEl.forEach(el=>{
         el.innerHTML = "$"+this.numberWithCommas(totalDiscount);
       })
+      const discountPercentageEl = document.querySelectorAll(".bundle-sem-discount-prices");
+      const discountPercent = totalOriginalPrice > 0
+        ? Math.round((totalDiscount / totalOriginalPrice) * 100)
+        : 0;
+      discountPercentageEl.forEach((el) => {
+        el.textContent = `${discountPercent}%`;
+      });
     }
 
-	// Creates a single bundle program card
-	createBundleCard(singleBundleData, type="upsell", position="", coreData) {
-      var $this = this;
-      var flexContainer = creEl("div", "bundle-sem-content-flex-container");
-      // Container
-      if(position == "page"){
-        flexContainer = creEl("div", "bundle-sem-info-flex-wrapper margin-bottom-10");
+	// Fills static Webflow `.banner-price-flex-wapper` with API-driven layout:
+	// [total] | [program 1] + [program 2] + …
+	renderBannerPriceLayout(bundleData) {
+      const wrappers = document.querySelectorAll(
+        ".banner-price-flex-wapper, .banner-price-flex-wrapper"
+      );
+      if (wrappers.length === 0) {
+        return;
       }
-      
-      if (type !== "upsell") flexContainer.classList.add("border-brown-red");
-
-      // Checkbox + title/info
-      const textWithCheckbox = creEl("div", "bundle-sem-text-with-checkbox");
-
-      // Checkbox
-      const wEmbed = creEl("div", "w-embed");
-	  var input = creEl("input", "bundle-sem-checkbox bundleProgram");
-		if (type !== "upsell"){
-			input = creEl("input", "bundle-sem-checkbox");
-	   	}
-      input.type = "checkbox";
-      input.name = "bundle-sem";
-      input.setAttribute("programDetailId", singleBundleData.upsellProgramId);
-      input.value = singleBundleData.amount ? singleBundleData.amount : "3350";
-      if (type !== "upsell") {
-        input.checked = true;
-        input.setAttribute("disabled", true);
-        
+      const programs = (Array.isArray(bundleData) ? [...bundleData] : [])
+        .filter((p) => p)
+        .sort((a, b) => (Number(a.sessionId) || 0) - (Number(b.sessionId) || 0));
+      wrappers.forEach((wrap) => {
+        wrap.innerHTML = "";
+      });
+      if (programs.length === 0) {
+        return;
       }
-      wEmbed.appendChild(input);
+      const discTotal = programs.reduce((acc, p) => acc + (Number(p.disc_amount) || 0), 0);
+      const amountTotal = programs.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
 
-      // Title and info
-      const titleInfoDiv = creEl("div");
-      const titleP = creEl("p", "bundle-sem-title");
-      titleP.textContent = type === "upsell"
-        ? `${singleBundleData.label} (${singleBundleData.yearId})`
-        : "Summer ("+coreData.yearId+")";
-      const infoP = creEl("p", "bundle-sem-info");
-      infoP.textContent = (singleBundleData.desc )
-        ? (singleBundleData.desc || "")
-        : "Fall Tuition + Early Bird (With Deposit)";
-      titleInfoDiv.appendChild(titleP);
-      titleInfoDiv.appendChild(infoP);
+      wrappers.forEach((wrap) => {
 
-      textWithCheckbox.appendChild(wEmbed);
-      textWithCheckbox.appendChild(titleInfoDiv);
+        const totalCard = creEl("div", "banner-price-info-card");
+        const totalGray = creEl("div", "bundle-sem-popup-price-gray-del");
+        totalGray.setAttribute("data-addon", "price");
+        totalGray.textContent = "$" + this.numberWithCommas(discTotal);
+        const totalRed = creEl("div", "bundle-sem-pop-up-total-price-text");
+        totalRed.setAttribute("data-addon", "discount-price");
+        totalRed.textContent = "$" + this.numberWithCommas(amountTotal);
+        totalCard.appendChild(totalGray);
+        totalCard.appendChild(totalRed);
+        wrap.appendChild(totalCard);
 
-      // Price
-      const priceFlex = creEl("div", "bundle-sem-popup-price-flex-wrapper");
-      const originalPrice = creEl("div", "bundle-sem-popup-price-gray");
-      originalPrice.setAttribute("data-addon", "price");
-      if (type === "core") {
-      }
-      originalPrice.textContent = singleBundleData.disc_amount
-        ? `$${this.numberWithCommas(singleBundleData.disc_amount)}`
-        : "$3,770";
-      const discountPrice = creEl("div", "bundle-sem-pop-up-price-text");
-      discountPrice.setAttribute("data-addon", "discount-price");
-      //let amount = (type !== "upsell") ? parseFloat(singleBundleData.amount) + parseFloat(this.amount) : singleBundleData.amount;
-      // removed deposit amount
-      // For the core card, always show the bundle-DISCOUNTED price here
-      // (e.g. $1,750) even though singleBundleData.amount starts at the full
-      // base (e.g. $1,800) until the user actually bundles. The strikethrough
-      // "originalPrice" above carries the pre-discount value, so this field
-      // represents "what you'll pay once you bundle".
-      let amount;
-      if (type === "core" && singleBundleData._bundleDiscountedAmount) {
-        amount = singleBundleData._bundleDiscountedAmount;
-      } else {
-        amount = singleBundleData.amount;
-      }
-      discountPrice.textContent = amount
-        ? `$${this.numberWithCommas(amount)}`
-        : "$3,350";
-      if(type === "core"){
-        if(singleBundleData.original_desc_amount){
-          priceFlex.appendChild(originalPrice);
-        }
-      }else {
-        priceFlex.appendChild(originalPrice);
-      }
-      priceFlex.appendChild(discountPrice);
+        const divider = creEl("div", "vertical-divider");
+        wrap.appendChild(divider);
 
-      // Assemble
-      flexContainer.appendChild(textWithCheckbox);
-      flexContainer.appendChild(priceFlex);
+        programs.forEach((p, i) => {
+          const programCard = creEl("div", "banner-price-info-card");
+          const wEmbed = creEl("div", "w-embed");
+          const input = creEl("input", "bundle-sem-checkbox bundleProgram");
+          input.type = "checkbox";
+          input.name = "bundle-sem";
+          input.setAttribute("programDetailId", p.upsellProgramId);
+          input.value = p.amount != null ? String(p.amount) : "0";
+          input.style.display = "none";
+          wEmbed.appendChild(input);
+          programCard.appendChild(wEmbed);
 
-      // Checkbox logic
+          const gray = creEl("div", "bundle-sem-popup-price-gray-del");
+          gray.setAttribute("data-addon", "price");
+          gray.textContent = p.disc_amount != null
+            ? "$" + this.numberWithCommas(p.disc_amount)
+            : "";
+          const red = creEl("div", "bundle-sem-pop-up-price-text-red");
+          red.setAttribute("data-addon", "discount-price");
+          red.textContent = p.amount != null
+            ? "$" + this.numberWithCommas(p.amount)
+            : "";
+          const desc = creEl("div", "bundle-sem-dec-small");
+          desc.textContent = (p.desc || "").trim();
+          programCard.appendChild(gray);
+          programCard.appendChild(red);
+          programCard.appendChild(desc);
+
+          this._bindUpsellSelection(input, p, programCard);
+
+          wrap.appendChild(programCard);
+          if (i < programs.length - 1) {
+            const plusBlock = creEl("div", "plus-icon-wrapper");
+            const plusP = creEl("p", "plus-icon");
+            plusP.textContent = "+";
+            plusBlock.appendChild(plusP);
+            wrap.appendChild(plusBlock);
+          }
+        });
+      });
+    }
+
+	// Shared selection behavior for list rows and banner price cards (card rows are not clickable; use Add to Cart in the new banner)
+	_bindUpsellSelection(input, programData, borderEl) {
+      const $this = this;
       input.addEventListener("change", (event) => {
         event.preventDefault();
-        // Unlock visible price updates the first time a real upsell checkbox
-        // is toggled by the user. The "core" row is pre-selected programmatically
-        // on load, so we specifically gate on the "upsell" type here.
-        if (type === "upsell") {
-          this._upsellInteracted = true;
-        }
+        this._upsellInteracted = true;
         if (event.target.checked) {
-          if (!this.$selectedProgram.includes(singleBundleData)) {
-            this.$selectedProgram.push(singleBundleData);
-            // console.log("push selected program", this.$selectedProgram)
+          if (!this.$selectedProgram.includes(programData)) {
+            this.$selectedProgram.push(programData);
           }
-          flexContainer.classList.add("border-brown-red");
+          borderEl.classList.add("border-brown-red");
         } else {
           this.$selectedProgram = this.$selectedProgram.filter(
-            (program) => program.upsellProgramId !== singleBundleData.upsellProgramId
+            (program) => program.upsellProgramId !== programData.upsellProgramId
           );
-         // console.log("single pop selected program", this.$selectedProgram)
-          flexContainer.classList.remove("border-brown-red");
+          borderEl.classList.remove("border-brown-red");
         }
 
         const allCheckboxes = document.querySelectorAll("[programDetailId]");
         allCheckboxes.forEach((checkbox) => {
-          if (checkbox.getAttribute("programDetailId") == singleBundleData.upsellProgramId) {
+          if (checkbox.getAttribute("programDetailId") == programData.upsellProgramId) {
             checkbox.checked = event.target.checked;
-            checkbox.closest(".bundle-sem-content-flex-container")?.classList.toggle("border-brown-red", event.target.checked);
+            const cardContainerEl = checkbox.closest(
+              ".bundle-sem-content-flex-container, .banner-price-info-card"
+            );
+            cardContainerEl?.classList.toggle("border-brown-red", event.target.checked);
           }
         });
 
-        // Apply / revert the bundle discount on the core program based on
-        // whether ANY upsell is currently selected. The discount is only
-        // earned when the user actually bundles (core + at least one addon).
-        // When they deselect the last upsell, core snaps back to its base
-        // (pre-discount) price. Since $coreData and the core entry in
-        // $selectedProgram reference the same object, mutating .amount here
-        // flows through to updateAmount()'s reduce() below.
         if (this.$coreData && this.$coreData._baseAmount != null) {
           var coreId = this.$coreData.upsellProgramId;
           var hasAnyUpsell = this.$selectedProgram.some(function (p) {
@@ -1494,19 +1620,94 @@ class CheckOutWebflow {
         }
 
         $this.updateAmount(event.target.value);
-        
       });
       if (input.checked) {
-        flexContainer.classList.add("border-brown-red");
+        borderEl.classList.add("border-brown-red");
+      }
+    }
+
+	// Creates a single bundle program card — new layout only: same as renderBannerPriceLayout (one banner-price-info-card, no left title/checkbox column)
+	createBundleCard(singleBundleData, type="upsell", position="", coreData) {
+      var flexContainer = creEl("div", "bundle-sem-content-flex-container");
+      if (type !== "upsell") flexContainer.classList.add("border-brown-red");
+
+      var input = creEl("input", "bundle-sem-checkbox bundleProgram");
+      if (type !== "upsell") {
+        input = creEl("input", "bundle-sem-checkbox");
+      }
+      input.type = "checkbox";
+      input.name = "bundle-sem";
+      input.setAttribute("programDetailId", singleBundleData.upsellProgramId);
+      input.value = singleBundleData.amount != null && singleBundleData.amount !== ""
+        ? String(singleBundleData.amount)
+        : (type === "upsell" ? "0" : "3350");
+      input.style.display = "none";
+      if (type !== "upsell") {
+        input.checked = true;
+        input.setAttribute("disabled", true);
       }
 
+      const priceCard = creEl("div", "banner-price-info-card");
+      const wPrice = creEl("div", "w-embed");
+      wPrice.appendChild(input);
+      priceCard.appendChild(wPrice);
+
+      if (type === "upsell") {
+        const gray = creEl("div", "bundle-sem-popup-price-gray-del");
+        gray.setAttribute("data-addon", "price");
+        gray.textContent = singleBundleData.disc_amount != null
+          ? "$" + this.numberWithCommas(singleBundleData.disc_amount)
+          : "";
+        const red = creEl("div", "bundle-sem-pop-up-price-text-red");
+        red.setAttribute("data-addon", "discount-price");
+        red.textContent = singleBundleData.amount != null
+          ? "$" + this.numberWithCommas(singleBundleData.amount)
+          : "";
+        const desc = creEl("div", "bundle-sem-dec-small");
+        desc.textContent = (singleBundleData.desc || "").trim();
+
+        priceCard.appendChild(gray);
+        priceCard.appendChild(red);
+        priceCard.appendChild(desc);
+        this._bindUpsellSelection(input, singleBundleData, priceCard);
+      } else {
+        const totalGray = creEl("div", "bundle-sem-popup-price-gray-del");
+        totalGray.setAttribute("data-addon", "price");
+        totalGray.textContent = singleBundleData.disc_amount
+          ? "$" + this.numberWithCommas(singleBundleData.disc_amount)
+          : "$3,770";
+        const totalRed = creEl("div", "bundle-sem-pop-up-total-price-text");
+        totalRed.setAttribute("data-addon", "discount-price");
+        const coreAmt = singleBundleData._bundleDiscountedAmount
+          ? singleBundleData._bundleDiscountedAmount
+          : singleBundleData.amount;
+        totalRed.textContent = coreAmt
+          ? "$" + this.numberWithCommas(coreAmt)
+          : "$3,350";
+        const desc = creEl("div", "bundle-sem-dec-small");
+        desc.textContent = (singleBundleData.desc || "").trim() ||
+          "Last Year's Locked-In Tuition + $50 Off | Full-Day Enrollment";
+
+        if (singleBundleData.original_desc_amount) {
+          priceCard.appendChild(totalGray);
+        }
+        priceCard.appendChild(totalRed);
+        priceCard.appendChild(desc);
+        if (input.checked) {
+          priceCard.classList.add("border-brown-red");
+        }
+      }
+
+      flexContainer.appendChild(priceCard);
       return flexContainer;
     }
 
     // Disables or enables the "Add to Cart" / "Update Cart" button
     disableEnableBuyNowButton() {
       // is selected program is empty then disable the buy now button
-      const buyNowButton = document.querySelectorAll(".add-to-cart, .bundle-add-to-cart");
+      const buyNowButton = document.querySelectorAll(
+        ".add-to-cart, .bundle-add-to-cart, .Button-wine-red"
+      );
       if (this.$selectedProgram.length === 0) {
         buyNowButton.forEach((button) => {
           button.innerHTML = "Add to Cart"; // Disable each button
@@ -1534,37 +1735,30 @@ class CheckOutWebflow {
     // Sets up event listeners for "No Thanks" and close buttons on the modal
     noThanksEvent() {
       var $this = this;
-      const closeLinks = document.querySelectorAll(".upsell-close-link");
       const semesterBundleModal = document.getElementById(
         "semester-bundle-modal"
       );
   
       const learnMore = document.getElementById("learn-more");
-      closeLinks.forEach(function (closeLink) {
-        closeLink.addEventListener("click", function (event) {
+      if (!this._modalCloseDelegatedBound) {
+        document.addEventListener("click", (event) => {
+          const closeTarget = event.target.closest(".upsell-close-link, [data-modal='close']");
+          if (!closeTarget) return;
           event.preventDefault();
           $this.closeModal(semesterBundleModal);
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
-      });
-  
-      let closeModal = document.querySelectorAll("[data-modal='close']");
-      if (closeModal.length > 0) {
-        closeModal.forEach((close_modal_link) => {
-          close_modal_link.addEventListener("click", function (event) {
-            event.preventDefault();
-            $this.closeModal(semesterBundleModal);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          });
-        });
+        this._modalCloseDelegatedBound = true;
       }
 	  
 	  // data-upSell="learn-more"
-      learnMore.addEventListener("click", function (event) {
-		event.preventDefault()
-        semesterBundleModal.classList.add("show");
-        semesterBundleModal.style.display = "flex";
-      });
+      if (learnMore) {
+        learnMore.addEventListener("click", function (event) {
+		  event.preventDefault()
+          semesterBundleModal.classList.add("show");
+          semesterBundleModal.style.display = "flex";
+        });
+      }
   
       //$this.addToCart();
       //$this.handleUpSellSelection();
