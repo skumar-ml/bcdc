@@ -466,7 +466,16 @@ class CheckOutWebflow {
 		// `amount` represents the actual charge (ACH base on ach tab, card-with-fee on card tab).
 		var requestAmount = (paymentType === 'card_payment') ? requestCardAmount : requestAchAmount;
 		// Credit application is handled server-side; client only relays the user's choice via applyCredit flag.
-		var selectedUpsellIds = this.$selectedProgram.map(item => item.upsellProgramId);
+		var coreLabel = String((this.$coreData && this.$coreData.label) || "").trim().toLowerCase();
+		var selectedUpsellIds = this.$selectedProgram
+			.filter(item => item && item.upsellProgramId != null)
+			.filter(item => {
+				// when core/base already represents that semester.
+				if (!coreLabel) return true;
+				var itemLabel = String(item.label || "").trim().toLowerCase();
+				return itemLabel !== coreLabel || item.upsellProgramId === (this.$coreData && this.$coreData.upsellProgramId);
+			})
+			.map(item => item.upsellProgramId);
 		// Drop core id so the array only carries true addons; if none selected, fall back to [coreId]
 		// so backend still receives the baseline program id (matches legacy behavior).
 		if (this.$coreData && this.$coreData.upsellProgramId) {
@@ -1024,8 +1033,20 @@ class CheckOutWebflow {
             classes: btn.className
           });
         }
+        const coreLabel = String(($this.$coreData && $this.$coreData.label) || "").trim().toLowerCase();
         const apiUpsellPrograms = (Array.isArray($this.$suppPro) ? $this.$suppPro : []).filter((program) => {
-          return program && program.upsellProgramId != null;
+          if (!program || program.upsellProgramId == null) {
+            return false;
+          }
+          // Do not auto-select current semester from API upsells (ex: Summer),
+          // because core/base is already that semester in cart state.
+          if (coreLabel) {
+            var label = String(program.label || "").trim().toLowerCase();
+            if (label === coreLabel) {
+              return false;
+            }
+          }
+          return true;
         });
         console.log("🚀 ~ CheckOutWebflow ~ _bindAddToCartDelegated ~ apiUpsellPrograms:", apiUpsellPrograms)
         if (apiUpsellPrograms.length === 0) {
