@@ -1008,10 +1008,20 @@ class CheckOutWebflow {
         if (!btn) {
           return;
         }
+        const isButtonWineRed = btn.classList.contains("Button-wine-red");
+        if (isButtonWineRed) {
+          console.log("[SummerCheckout][Button-wine-red] click detected", {
+            text: (btn.textContent || "").trim(),
+            classes: btn.className
+          });
+        }
         const apiUpsellPrograms = (Array.isArray($this.$suppPro) ? $this.$suppPro : []).filter((program) => {
           return program && program.upsellProgramId != null;
         });
         if (apiUpsellPrograms.length === 0) {
+          if (isButtonWineRed) {
+            console.log("[SummerCheckout][Button-wine-red] no upsell programs from API");
+          }
           return;
         }
         event.preventDefault();
@@ -1025,6 +1035,7 @@ class CheckOutWebflow {
         );
 
         // existing `change` flow; if not, add directly into selected state.
+        var autoCheckedCount = 0;
         apiUpsellPrograms.forEach((program) => {
           const programId = program.upsellProgramId;
           if (programId == null || programId === coreId) {
@@ -1038,6 +1049,7 @@ class CheckOutWebflow {
               if (!checkbox.checked) {
                 checkbox.checked = true;
                 checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+                autoCheckedCount += 1;
               }
             });
             return;
@@ -1047,6 +1059,13 @@ class CheckOutWebflow {
             selectedById.add(programId);
           }
         });
+        if (isButtonWineRed) {
+          console.log("[SummerCheckout][Button-wine-red] selection sync complete", {
+            apiUpsellPrograms: apiUpsellPrograms.length,
+            autoCheckedCount: autoCheckedCount,
+            selectedProgramCount: Array.isArray($this.$selectedProgram) ? $this.$selectedProgram.length : 0
+          });
+        }
 
         // Hard de-dupe by upsellProgramId to avoid duplicate totals.
         $this.$selectedProgram = $this.$selectedProgram.filter((program, index, arr) => {
@@ -1062,6 +1081,11 @@ class CheckOutWebflow {
             : $this.$coreData._baseAmount;
         }
         $this.updateAmount(0);
+        if (isButtonWineRed) {
+          console.log("[SummerCheckout][Button-wine-red] updateAmount executed", {
+            selectedProgramCount: Array.isArray($this.$selectedProgram) ? $this.$selectedProgram.length : 0
+          });
+        }
 
         const semesterBundleModal = document.getElementById("semester-bundle-modal");
         $this.closeModal(semesterBundleModal);
