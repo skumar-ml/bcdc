@@ -1498,15 +1498,6 @@ class CheckOutWebflow {
         : 0;
       discountPercentageEl.forEach((el) => {
         el.textContent = `${discountPercent}%`;
-        var parent = el.parentElement;
-        if (!parent) return;
-        var offText = parent.querySelector(".bundle-sem-off-text");
-        if (!offText) {
-          offText = document.createElement("span");
-          offText.className = "bundle-sem-off-text";
-          offText.textContent = "OFF";
-          parent.appendChild(offText);
-        }
       });
     }
 
