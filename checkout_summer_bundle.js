@@ -1485,7 +1485,7 @@ class CheckOutWebflow {
 			totalDiscount += parseFloat(discAmount);
 		}
       var coreOriginalAmount = Number(coreData && coreData.disc_amount ? String(coreData.disc_amount).replace(/,/g, "") : 0) || 0;
-      if (coreOriginalAmount > 0) {
+      if (coreOriginalAmount > 0 && !hasCoreInBundleData) {
         totalOriginalPrice += coreOriginalAmount;
       }
 		const discountEl = document.querySelectorAll('[data-addon="discount"]')
@@ -1498,6 +1498,15 @@ class CheckOutWebflow {
         : 0;
       discountPercentageEl.forEach((el) => {
         el.textContent = `${discountPercent}%`;
+        var parent = el.parentElement;
+        if (!parent) return;
+        var offText = parent.querySelector(".bundle-sem-off-text");
+        if (!offText) {
+          offText = document.createElement("span");
+          offText.className = "bundle-sem-off-text";
+          offText.textContent = "OFF";
+          parent.appendChild(offText);
+        }
       });
     }
 
@@ -1525,7 +1534,7 @@ class CheckOutWebflow {
       wrappers.forEach((wrap) => {
 
         const totalCard = creEl("div", "banner-price-info-card");
-        const totalGray = creEl("div", "bundle-sem-popup-price-gray");
+        const totalGray = creEl("div", "bundle-sem-popup-price-gray-del");
         totalGray.setAttribute("data-addon", "price");
         totalGray.textContent = "$" + this.numberWithCommas(discTotal);
         const totalRed = creEl("div", "bundle-sem-pop-up-total-price-text");
@@ -1550,7 +1559,7 @@ class CheckOutWebflow {
           wEmbed.appendChild(input);
           programCard.appendChild(wEmbed);
 
-          const gray = creEl("div", "bundle-sem-popup-price-gray");
+          const gray = creEl("div", "bundle-sem-popup-price-gray-del");
           gray.setAttribute("data-addon", "price");
           gray.textContent = p.disc_amount != null
             ? "$" + this.numberWithCommas(p.disc_amount)
@@ -1653,7 +1662,7 @@ class CheckOutWebflow {
       priceCard.appendChild(wPrice);
 
       if (type === "upsell") {
-        const gray = creEl("div", "bundle-sem-popup-price-gray");
+        const gray = creEl("div", "bundle-sem-popup-price-gray-del");
         gray.setAttribute("data-addon", "price");
         gray.textContent = singleBundleData.disc_amount != null
           ? "$" + this.numberWithCommas(singleBundleData.disc_amount)
@@ -1671,7 +1680,7 @@ class CheckOutWebflow {
         priceCard.appendChild(desc);
         this._bindUpsellSelection(input, singleBundleData, priceCard);
       } else {
-        const totalGray = creEl("div", "bundle-sem-popup-price-gray");
+        const totalGray = creEl("div", "bundle-sem-popup-price-gray-del");
         totalGray.setAttribute("data-addon", "price");
         totalGray.textContent = singleBundleData.disc_amount
           ? "$" + this.numberWithCommas(singleBundleData.disc_amount)
