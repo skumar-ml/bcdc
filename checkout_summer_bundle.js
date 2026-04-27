@@ -1008,12 +1008,59 @@ class CheckOutWebflow {
         if (!btn) {
           return;
         }
-        if (!document.querySelector(".bundleProgram")) {
+        const apiUpsellPrograms = (Array.isArray($this.$suppPro) ? $this.$suppPro : []).filter((program) => {
+          return program && program.upsellProgramId != null;
+        });
+        if (apiUpsellPrograms.length === 0) {
           return;
         }
         event.preventDefault();
 
         $this._upsellInteracted = true;
+        const coreId = $this.$coreData && $this.$coreData.upsellProgramId;
+        const selectedById = new Set(
+          (Array.isArray($this.$selectedProgram) ? $this.$selectedProgram : [])
+            .map((program) => program && program.upsellProgramId)
+            .filter((id) => id != null)
+        );
+
+        // existing `change` flow; if not, add directly into selected state.
+        apiUpsellPrograms.forEach((program) => {
+          const programId = program.upsellProgramId;
+          if (programId == null || programId === coreId) {
+            return;
+          }
+          const matchingCheckboxes = document.querySelectorAll(
+            '.bundleProgram[programDetailId="' + programId + '"]'
+          );
+          if (matchingCheckboxes.length > 0) {
+            matchingCheckboxes.forEach((checkbox) => {
+              if (!checkbox.checked) {
+                checkbox.checked = true;
+                checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+              }
+            });
+            return;
+          }
+          if (!selectedById.has(programId)) {
+            $this.$selectedProgram.push(program);
+            selectedById.add(programId);
+          }
+        });
+
+        // Hard de-dupe by upsellProgramId to avoid duplicate totals.
+        $this.$selectedProgram = $this.$selectedProgram.filter((program, index, arr) => {
+          return index === arr.findIndex((item) => item && item.upsellProgramId === program.upsellProgramId);
+        });
+
+        if ($this.$coreData && $this.$coreData._baseAmount != null) {
+          const hasAnyUpsell = $this.$selectedProgram.some((program) => {
+            return program && program.upsellProgramId !== coreId;
+          });
+          $this.$coreData.amount = hasAnyUpsell
+            ? $this.$coreData._bundleDiscountedAmount
+            : $this.$coreData._baseAmount;
+        }
         $this.updateAmount(0);
 
         const semesterBundleModal = document.getElementById("semester-bundle-modal");
