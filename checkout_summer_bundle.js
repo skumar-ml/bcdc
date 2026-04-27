@@ -1474,7 +1474,14 @@ class CheckOutWebflow {
           const discAmount = Number(bundle.portal_disc_amount) || 0;
           return acc + discAmount;
       }, 0);
-		if(discAmount){
+      var coreLabel = String((coreData && coreData.label) || "").trim().toLowerCase();
+      var hasCoreInBundleData = (Array.isArray(bundleData) ? bundleData : []).some((bundle) => {
+        var label = String((bundle && bundle.label) || "").trim().toLowerCase();
+        return coreLabel && label === coreLabel;
+      });
+      // Avoid double-counting core discount when API already includes current semester
+      // (e.g., Summer) inside bundleData.
+		if(discAmount && !hasCoreInBundleData){
 			totalDiscount += parseFloat(discAmount);
 		}
       var coreOriginalAmount = Number(coreData && coreData.disc_amount ? String(coreData.disc_amount).replace(/,/g, "") : 0) || 0;
