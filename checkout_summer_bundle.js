@@ -1001,15 +1001,24 @@ class CheckOutWebflow {
       }
       this._addToCartDelegatedBound = true;
       const $this = this;
+      const addToCartSelector = ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red";
+      console.log("[SummerCheckout][AddToCart] delegated bind ready", {
+        selector: addToCartSelector
+      });
       document.addEventListener("click", (event) => {
         const btn = event.target.closest(
-          ".add-to-cart, .bundle-add-to-cart, .Button-wine-red"
+          addToCartSelector
         );
         if (!btn) {
           return;
         }
-        const isButtonWineRed = btn.classList.contains("Button-wine-red");
-        if (isButtonWineRed) {
+        const isWineRedButton = btn.classList.contains("Button-wine-red") || btn.classList.contains("button-wine-red");
+        console.log("[SummerCheckout][AddToCart] click captured", {
+          isWineRedButton: isWineRedButton,
+          text: (btn.textContent || "").trim(),
+          classes: btn.className
+        });
+        if (isWineRedButton) {
           console.log("[SummerCheckout][Button-wine-red] click detected", {
             text: (btn.textContent || "").trim(),
             classes: btn.className
@@ -1018,8 +1027,9 @@ class CheckOutWebflow {
         const apiUpsellPrograms = (Array.isArray($this.$suppPro) ? $this.$suppPro : []).filter((program) => {
           return program && program.upsellProgramId != null;
         });
+        console.log("🚀 ~ CheckOutWebflow ~ _bindAddToCartDelegated ~ apiUpsellPrograms:", apiUpsellPrograms)
         if (apiUpsellPrograms.length === 0) {
-          if (isButtonWineRed) {
+          if (isWineRedButton) {
             console.log("[SummerCheckout][Button-wine-red] no upsell programs from API");
           }
           return;
@@ -1059,7 +1069,7 @@ class CheckOutWebflow {
             selectedById.add(programId);
           }
         });
-        if (isButtonWineRed) {
+        if (isWineRedButton) {
           console.log("[SummerCheckout][Button-wine-red] selection sync complete", {
             apiUpsellPrograms: apiUpsellPrograms.length,
             autoCheckedCount: autoCheckedCount,
@@ -1081,7 +1091,7 @@ class CheckOutWebflow {
             : $this.$coreData._baseAmount;
         }
         $this.updateAmount(0);
-        if (isButtonWineRed) {
+        if (isWineRedButton) {
           console.log("[SummerCheckout][Button-wine-red] updateAmount executed", {
             selectedProgramCount: Array.isArray($this.$selectedProgram) ? $this.$selectedProgram.length : 0
           });
@@ -1091,7 +1101,7 @@ class CheckOutWebflow {
         $this.closeModal(semesterBundleModal);
         window.scrollTo({ top: 0, behavior: "smooth" });
         $this.disableEnableBuyNowButton();
-      });
+      }, true);
     }
 
 	// Updates the total amount displayed in the cart
