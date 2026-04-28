@@ -1735,7 +1735,9 @@ class classDetailsStripe extends parentLogin {
 
 
   addToCart() {
-    const addToCartButtons = document.querySelectorAll(".add-to-cart");
+    const addToCartButtons = document.querySelectorAll(
+      ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red"
+    );
     var $this = this;
     addToCartButtons.forEach((button) => {
       button.addEventListener("click", function (event) {
@@ -2635,19 +2637,147 @@ class classDetailsStripe extends parentLogin {
       cardContainer.appendChild(bundlePopUpText);
       cardContainer.appendChild(addonHeading);
 
-      modalCardContainer.appendChild(coreCard.cloneNode(true));
       modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
       modalCardContainer.appendChild(addonHeading.cloneNode(true));
+      const modalBannerRow = creEl("div", "banner-price-flex-wapper");
+      modalCardContainer.appendChild(modalBannerRow);
 
       bundleData.forEach((singleBundleData) => {
         var card = this.createBundleCard(singleBundleData, "upsell", "page", coreData);
         cardContainer.appendChild(card);
-        var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
-        modalCardContainer.appendChild(modelCard);
       });
+      this.renderBannerPriceLayout(Array.isArray(bundleData) ? bundleData : []);
       this.displayTotalDiscount(item.upsellPrograms);
     });
     this.disableEnableBuyNowButton();
+  }
+
+  // Fills static Webflow `.banner-price-flex-wapper` with API-driven layout:
+  // [total] | [program 1] + [program 2] + …
+  renderBannerPriceLayout(bundleData) {
+    const wrappers = document.querySelectorAll(
+      ".banner-price-flex-wapper, .banner-price-flex-wrapper"
+    );
+    if (wrappers.length === 0) {
+      return;
+    }
+    const programs = (Array.isArray(bundleData) ? [...bundleData] : [])
+      .filter((p) => p)
+      .sort((a, b) => (Number(a.sessionId) || 0) - (Number(b.sessionId) || 0));
+    wrappers.forEach((wrap) => {
+      wrap.innerHTML = "";
+    });
+    if (programs.length === 0) {
+      return;
+    }
+
+    const discTotal = programs.reduce((acc, p) => acc + (Number(p.disc_amount) || 0), 0);
+    const amountTotal = programs.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+
+    wrappers.forEach((wrap) => {
+      const totalCard = creEl("div", "banner-price-info-card");
+      const totalGray = creEl("div", "bundle-sem-popup-price-gray-del");
+      totalGray.setAttribute("data-addon", "price");
+      totalGray.textContent = "$" + this.numberWithCommas(discTotal);
+      const totalRed = creEl("div", "bundle-sem-pop-up-total-price-text");
+      totalRed.setAttribute("data-addon", "discount-price");
+      totalRed.textContent = "$" + this.numberWithCommas(amountTotal);
+      totalCard.appendChild(totalGray);
+      totalCard.appendChild(totalRed);
+      wrap.appendChild(totalCard);
+
+      const divider = creEl("div", "vertical-divider");
+      wrap.appendChild(divider);
+
+      programs.forEach((p, i) => {
+        const programCard = creEl("div", "banner-price-info-card");
+        const wEmbed = creEl("div", "w-embed");
+        const input = creEl("input", "bundle-sem-checkbox bundleProgram");
+        input.type = "checkbox";
+        input.name = "bundle-sem";
+        input.setAttribute("programDetailId", p.upsellProgramId);
+        input.value = p.amount != null ? String(p.amount) : "0";
+        input.style.display = "none";
+        wEmbed.appendChild(input);
+        programCard.appendChild(wEmbed);
+
+        const gray = creEl("div", "bundle-sem-popup-price-gray-del");
+        gray.setAttribute("data-addon", "price");
+        gray.textContent = p.disc_amount != null
+          ? "$" + this.numberWithCommas(p.disc_amount)
+          : "";
+        const red = creEl("div", "bundle-sem-pop-up-price-text-red");
+        red.setAttribute("data-addon", "discount-price");
+        red.textContent = p.amount != null
+          ? "$" + this.numberWithCommas(p.amount)
+          : "";
+        const desc = creEl("div", "bundle-sem-dec-small");
+        desc.textContent = (p.desc || "").trim();
+        programCard.appendChild(gray);
+        programCard.appendChild(red);
+        programCard.appendChild(desc);
+
+        this._bindUpsellSelection(input, p, programCard);
+        wrap.appendChild(programCard);
+
+        if (i < programs.length - 1) {
+          const plusBlock = creEl("div", "plus-icon-wrapper");
+          const plusP = creEl("p", "plus-icon");
+          plusP.textContent = "+";
+          plusBlock.appendChild(plusP);
+          wrap.appendChild(plusBlock);
+        }
+      });
+    });
+  }
+
+  // Shared selection behavior for list rows and banner price cards
+  _bindUpsellSelection(input, programData, borderEl) {
+    var $this = this;
+    input.addEventListener("change", (event) => {
+      event.preventDefault();
+      if (event.target.checked) {
+        if (!this.$selectedProgram.includes(programData)) {
+          this.$selectedProgram.push(programData);
+        }
+        borderEl.classList.add("border-brown-red");
+      } else {
+        this.$selectedProgram = this.$selectedProgram.filter(
+          (program) => program.upsellProgramId !== programData.upsellProgramId
+        );
+        borderEl.classList.remove("border-brown-red");
+      }
+
+      const allCheckboxes = document.querySelectorAll("[programDetailId]");
+      allCheckboxes.forEach((checkbox) => {
+        if (checkbox.getAttribute("programDetailId") == programData.upsellProgramId) {
+          checkbox.checked = event.target.checked;
+          const cardContainerEl = checkbox.closest(
+            ".bundle-sem-content-flex-container, .banner-price-info-card"
+          );
+          cardContainerEl?.classList.toggle("border-brown-red", event.target.checked);
+        }
+      });
+
+      $this.updateCoreData("upsell");
+      $this.disableEnableBuyNowButton(false);
+      $this.updateAmount(event.target.value);
+      let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+      if (paymentTab.length > 0) {
+        paymentTab[0].click();
+      }
+      $this.hideShowNewStudentFee("none");
+      $this.updateCheckOutData({
+        upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId),
+        suppPro: $this.$suppPro,
+        selectedProgram: $this.$selectedProgram
+      });
+      $this.$oldSelectedProgram = $this.$selectedProgram;
+      $this.resetPaymentOption();
+    });
+    if (input.checked) {
+      borderEl.classList.add("border-brown-red");
+    }
   }
 
   displayTotalDiscount(bundleData) {
@@ -2813,7 +2943,9 @@ class classDetailsStripe extends parentLogin {
   }
   disableEnableBuyNowButton(isUpdateText = true) {
     // is selected program is empty then disable the buy now button
-    const buyNowButton = document.querySelectorAll(".add-to-cart, .bundle-add-to-cart");
+    const buyNowButton = document.querySelectorAll(
+      ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red"
+    );
     if (isUpdateText) {
       if (this.$selectedProgram.length === 0) {
         buyNowButton.forEach((button) => {
