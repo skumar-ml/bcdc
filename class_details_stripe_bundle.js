@@ -1760,30 +1760,20 @@ class classDetailsStripe extends parentLogin {
       const allProgramCheckboxes = Array.from(document.querySelectorAll(".bundleProgram"));
       // Keep core out of auto-select by ignoring disabled (core) rows.
       const upsellCheckboxes = allProgramCheckboxes.filter((checkbox) => !checkbox.disabled);
-      const hasCheckedUpsell = upsellCheckboxes.some((checkbox) => checkbox.checked);
 
-      // Match summer add-to-cart behavior: if user clicks Add to Cart without
-      // selecting a future session, auto-select available upsells and run the
-      // same checkbox `change` pipeline so right sidebar totals refresh.
-      if (!hasCheckedUpsell) {
-        upsellCheckboxes.forEach((checkbox) => {
+      // Always re-apply full bundle selection on button click so any removed
+      // future session (e.g. Winter/Spring) is added back and reflected in the
+      // top-right order summary through the same checkbox change flow.
+      upsellCheckboxes.forEach((checkbox) => {
+        if (!checkbox.checked) {
           checkbox.checked = true;
-          checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-        });
-      } else {
-        // Re-trigger selected rows to ensure all duplicated wrappers/symbols
-        // sync and top-right order section refreshes.
-        upsellCheckboxes.forEach((checkbox) => {
-          if (checkbox.checked) {
-            checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-          }
-        });
-      }
+        }
+        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+      });
 
-      const hasAnyCheckedUpsell = upsellCheckboxes.some((checkbox) => checkbox.checked);
-      button.textContent = hasAnyCheckedUpsell ? "Update Cart" : "Add to Cart";
-      button.classList.toggle("disabled", hasAnyCheckedUpsell);
-      button.classList.toggle("active", hasAnyCheckedUpsell);
+      button.textContent = "Add to Cart";
+      button.classList.remove("disabled");
+      button.classList.add("active");
 
       const semesterBundleModal = document.getElementById("semester-bundle-modal");
       $this.closeModal(semesterBundleModal);
@@ -2998,33 +2988,10 @@ class classDetailsStripe extends parentLogin {
     const buyNowButton = document.querySelectorAll(
       ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red"
     );
-    if (isUpdateText) {
-      if (this.$selectedProgram.length === 0) {
-        buyNowButton.forEach((button) => {
-          button.innerHTML = "Add to Cart";
-          if (this.$oldSelectedProgram.length == 0 && isUpdateText) {
-            button.classList.add("disabled");
-          }
-        });
-      } else {
-        buyNowButton.forEach((button) => {
-          button.innerHTML = "Update Cart";
-          button.classList.remove("disabled");
-        });
-      }
-    } else {
-      if (this.$selectedProgram.length === 0) {
-        buyNowButton.forEach((button) => {
-          if (this.$oldSelectedProgram.length == 0 && !isUpdateText) {
-            button.classList.add("disabled");
-          }
-        });
-      } else {
-        buyNowButton.forEach((button) => {
-          button.classList.remove("disabled");
-        });
-      }
-    }
+    buyNowButton.forEach((button) => {
+      button.innerHTML = "Add to Cart";
+      button.classList.remove("disabled");
+    });
   }
   // display Original Price 
   updateOriginPrice() {
