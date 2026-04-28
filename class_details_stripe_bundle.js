@@ -312,6 +312,7 @@ class classDetailsStripe extends parentLogin {
     this.renderCheckoutData();
     this.initializeToolTips();
     this.updatePriceForCardPayment();
+    this.addToCart();
     this.initiateLightbox();
     this.initBriefs();
     this.displayTopicData("none")
@@ -849,8 +850,17 @@ class classDetailsStripe extends parentLogin {
   // formatting price in comma based value
 
   numberWithCommas(x) {
-    x = parseFloat(x).toFixed(2)
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    var num = parseFloat(String(x).replace(/,/g, ""));
+    if (isNaN(num)) {
+      return "0";
+    }
+    var rounded = Math.round(num * 100) / 100;
+    var value = Number.isInteger(rounded)
+      ? String(rounded)
+      : rounded.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+    var parts = value.split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
   }
 
   // trim to 2 decimal places without rounding
@@ -1735,47 +1745,46 @@ class classDetailsStripe extends parentLogin {
 
 
   addToCart() {
-    const addToCartButtons = document.querySelectorAll(
-      ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red"
-    );
+    if (this._addToCartDelegatedBound) {
+      return;
+    }
+    this._addToCartDelegatedBound = true;
     var $this = this;
-    addToCartButtons.forEach((button) => {
-      button.addEventListener("click", function (event) {
-        // Select all 'add-to-card' buttons
-        // bundleProgram checkbox
-        const checkboxes = document.querySelectorAll(".bundleProgram");
-        checkboxes.forEach((checkbox) => {
-          if (checkbox.checked) {
-            // Toggle the checkbox state
-            //checkbox.checked = !checkbox.checked;
-            let upsellProgramId = parseInt(checkbox.getAttribute("programDetailId"));
-            // upsellProgramId already available in selectProgramData don't update the amount
-            var suppProIdE = document.getElementById("suppProIds");
-            let selectedIds = JSON.parse(suppProIdE.value);
-            //if (!selectedIds.includes(upsellProgramId)) {
-            $this.updateAmount(checkbox.value);
-            //}
-          }
-        });
-        // Update the button text based on the checkbox state
-        button.textContent = Array.from(checkboxes).some(checkbox => checkbox.checked) ? "Update Cart" : "Add to Cart";
-        // Optional: Add or remove a disabled class (if needed)
-        button.classList.toggle("disabled", Array.from(checkboxes).some(checkbox => checkbox.checked));
-        button.classList.toggle("active", Array.from(checkboxes).some(checkbox => checkbox.checked));
-        // Close the modal after adding to cart
-        const semesterBundleModal = document.getElementById("semester-bundle-modal");
-        $this.closeModal(semesterBundleModal);
-        // Scroll to top after closing the modal
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        // Update tab
-        let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
-        paymentTab[0].click();
-        $this.hideShowNewStudentFee("none");
-        $this.disableEnableBuyNowButton();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        $this.updateCheckOutData({ upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram });
-        $this.$oldSelectedProgram = $this.$selectedProgram;
+    const addToCartSelector = ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red";
+    document.addEventListener("click", function (event) {
+      const button = event.target.closest(addToCartSelector);
+      if (!button) {
+        return;
+      }
+      event.preventDefault();
+      const checkboxes = document.querySelectorAll(".bundleProgram");
+      checkboxes.forEach((checkbox) => {
+        if (checkbox.checked) {
+          $this.updateAmount(checkbox.value);
+        }
       });
+      button.textContent = Array.from(checkboxes).some((checkbox) => checkbox.checked)
+        ? "Update Cart"
+        : "Add to Cart";
+      button.classList.toggle("disabled", Array.from(checkboxes).some((checkbox) => checkbox.checked));
+      button.classList.toggle("active", Array.from(checkboxes).some((checkbox) => checkbox.checked));
+
+      const semesterBundleModal = document.getElementById("semester-bundle-modal");
+      $this.closeModal(semesterBundleModal);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+      if (paymentTab.length > 0) {
+        paymentTab[0].click();
+      }
+      $this.hideShowNewStudentFee("none");
+      $this.disableEnableBuyNowButton();
+      $this.updateCheckOutData({
+        upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId),
+        suppPro: $this.$suppPro,
+        selectedProgram: $this.$selectedProgram
+      });
+      $this.$oldSelectedProgram = $this.$selectedProgram;
     });
   }
 
@@ -2595,12 +2604,13 @@ class classDetailsStripe extends parentLogin {
 
     academicData.forEach((item) => {
       var currentSessionId = item.sessionId;
+      var bannerData = Array.isArray(item.upsellPrograms) ? item.upsellPrograms : [];
       // remove current Session Data based on summerSessionId item.
       var bundleData = item.upsellPrograms.filter(
-        (bundle) => bundle.sessionId !== currentSessionId
+        (bundle) => Number(bundle.sessionId) !== Number(currentSessionId)
       );
       var coreData = item.upsellPrograms.find(
-        (bundle) => bundle.sessionId == currentSessionId
+        (bundle) => Number(bundle.sessionId) === Number(currentSessionId)
       );
       if (!coreData && item.upsellPrograms.length > 0) {
         coreData = item.upsellPrograms[0];
@@ -2671,7 +2681,7 @@ class classDetailsStripe extends parentLogin {
           cardContainer.appendChild(card);
         }
       });
-      this.renderBannerPriceLayout(Array.isArray(bundleData) ? bundleData : []);
+      this.renderBannerPriceLayout(bannerData);
       this.displayTotalDiscount(item.upsellPrograms);
     });
     this.disableEnableBuyNowButton();
