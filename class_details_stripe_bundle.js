@@ -1658,15 +1658,20 @@ class classDetailsStripe extends parentLogin {
     };
   }
 
-  showSemesterBundleModal() {
+  showSemesterBundleModal(forceOpen) {
     const check_semester_bundle = this.checkSemesterBundleModalOpen();
     if (check_semester_bundle) {
-      return;
+      if (forceOpen !== true) {
+        return;
+      }
     }
 
     const semesterBundleModal = document.getElementById(
       "semester-bundle-modal"
     );
+    if (!semesterBundleModal) {
+      return;
+    }
     semesterBundleModal.classList.add("show");
     semesterBundleModal.style.display = "flex";
   }
@@ -1699,8 +1704,9 @@ class classDetailsStripe extends parentLogin {
 
     if (learnMore) {
       learnMore.addEventListener("click", function (event) {
+        console.log("learnMore clicked");
         event.preventDefault();
-        $this.showSemesterBundleModal();
+        $this.showSemesterBundleModal(true);
       });
     }
     if (!this._learnMoreDelegatedBound) {
@@ -1710,7 +1716,7 @@ class classDetailsStripe extends parentLogin {
           return;
         }
         event.preventDefault();
-        $this.showSemesterBundleModal();
+        $this.showSemesterBundleModal(true);
       });
       this._learnMoreDelegatedBound = true;
     }

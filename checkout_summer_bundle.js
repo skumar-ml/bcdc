@@ -1720,15 +1720,22 @@ class CheckOutWebflow {
     }
 
 	// Displays the semester bundle modal
-	showSemesterBundleModal() {
+	showSemesterBundleModal(forceOpen) {
       const check_semester_bundle = this.checkSemesterBundleModalOpen();
       if (check_semester_bundle) {
-        return;
+        if (forceOpen === true) {
+          // Learn More should always open the modal regardless of cookie/selection state.
+        } else {
+          return;
+        }
       }
   
       const semesterBundleModal = document.getElementById(
         "semester-bundle-modal"
       );
+      if (!semesterBundleModal) {
+        return;
+      }
       semesterBundleModal.classList.add("show");
       semesterBundleModal.style.display = "flex";
     }
@@ -1755,7 +1762,7 @@ class CheckOutWebflow {
       if (learnMore) {
         learnMore.addEventListener("click", function (event) {
 		  event.preventDefault()
-          $this.showSemesterBundleModal();
+          $this.showSemesterBundleModal(true);
         });
       }
       if (!this._learnMoreDelegatedBound) {
@@ -1765,7 +1772,7 @@ class CheckOutWebflow {
             return;
           }
           event.preventDefault();
-          $this.showSemesterBundleModal();
+          $this.showSemesterBundleModal(true);
         });
         this._learnMoreDelegatedBound = true;
       }
