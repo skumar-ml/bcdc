@@ -1697,10 +1697,23 @@ class classDetailsStripe extends parentLogin {
       });
     }
 
-    learnMore.addEventListener("click", function () {
-      semesterBundleModal.classList.add("show");
-      semesterBundleModal.style.display = "flex";
-    });
+    if (learnMore) {
+      learnMore.addEventListener("click", function (event) {
+        event.preventDefault();
+        $this.showSemesterBundleModal();
+      });
+    }
+    if (!this._learnMoreDelegatedBound) {
+      document.addEventListener("click", function (event) {
+        const learnMoreTarget = event.target.closest("#learn-more, [data-upSell='learn-more']");
+        if (!learnMoreTarget) {
+          return;
+        }
+        event.preventDefault();
+        $this.showSemesterBundleModal();
+      });
+      this._learnMoreDelegatedBound = true;
+    }
 
     //$this.addToCart();
     //$this.handleUpSellSelection();
