@@ -2558,7 +2558,7 @@ class classDetailsStripe extends parentLogin {
 
   createBundlePrograms(academicData) {
     var academicData = academicData;
-    if (academicData.length == 0) {
+    if (!Array.isArray(academicData) || academicData.length === 0) {
       return;
     }
     const cardContainer = document.querySelector(
@@ -2567,18 +2567,31 @@ class classDetailsStripe extends parentLogin {
     const modalCardContainer = document.querySelector(
       "[data-upSell='modal-card-container']"
     );
-    if (!cardContainer) {
+    const hasBanner = document.querySelector(
+      ".banner-price-flex-wapper, .banner-price-flex-wrapper"
+    );
+    // Match summer behavior: render as long as at least one target exists.
+    if (!cardContainer && !modalCardContainer && !hasBanner) {
       return;
     }
-    if (!modalCardContainer) {
-      return;
+    if (modalCardContainer) {
+      modalCardContainer.innerHTML = ""; // Clear existing modal content
     }
-    modalCardContainer.innerHTML = ""; // Clear existing content
-    cardContainer.innerHTML = ""; // Clear existing content
+    if (cardContainer) {
+      cardContainer.innerHTML = ""; // Clear existing page content
+    }
     // remove remove session data based on summerSessionId 2
     academicData = academicData.filter((item) => {
-      return item.sessionId !== 2;
+      return (
+        item &&
+        Array.isArray(item.upsellPrograms) &&
+        item.upsellPrograms.length > 0 &&
+        item.sessionId !== 2
+      );
     });
+    if (academicData.length === 0) {
+      return;
+    }
 
     academicData.forEach((item) => {
       var currentSessionId = item.sessionId;
@@ -2589,6 +2602,12 @@ class classDetailsStripe extends parentLogin {
       var coreData = item.upsellPrograms.find(
         (bundle) => bundle.sessionId == currentSessionId
       );
+      if (!coreData && item.upsellPrograms.length > 0) {
+        coreData = item.upsellPrograms[0];
+      }
+      if (!coreData) {
+        return;
+      }
       
       // Select  [data-stripe='totalDepositPrice'] and get data-stripe-price attribute value
       //var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
@@ -2633,18 +2652,24 @@ class classDetailsStripe extends parentLogin {
 
       var coreCard = this.createBundleCard(coreData, 'core', "", coreData);
 
-      cardContainer.appendChild(coreCard);
-      cardContainer.appendChild(bundlePopUpText);
-      cardContainer.appendChild(addonHeading);
+      if (cardContainer) {
+        cardContainer.appendChild(coreCard);
+        cardContainer.appendChild(bundlePopUpText);
+        cardContainer.appendChild(addonHeading);
+      }
 
-      modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
-      modalCardContainer.appendChild(addonHeading.cloneNode(true));
-      const modalBannerRow = creEl("div", "banner-price-flex-wapper");
-      modalCardContainer.appendChild(modalBannerRow);
+      if (modalCardContainer) {
+        modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
+        modalCardContainer.appendChild(addonHeading.cloneNode(true));
+        const modalBannerRow = creEl("div", "banner-price-flex-wapper");
+        modalCardContainer.appendChild(modalBannerRow);
+      }
 
       bundleData.forEach((singleBundleData) => {
         var card = this.createBundleCard(singleBundleData, "upsell", "page", coreData);
-        cardContainer.appendChild(card);
+        if (cardContainer) {
+          cardContainer.appendChild(card);
+        }
       });
       this.renderBannerPriceLayout(Array.isArray(bundleData) ? bundleData : []);
       this.displayTotalDiscount(item.upsellPrograms);
