@@ -1224,7 +1224,7 @@ class classDetailsStripe extends parentLogin {
         this.webflowMemberId
       );
       this.viewClassLocations(data);
-      var suppData = await this.fetchData("getUpsellProgram", this.typeEBaseUrl);
+      var suppData = await this.fetchData("getUpsellProgramOne?session=fall", this.typeEBaseUrl);
       this.$allSuppData = suppData;
       // Check if there are any upsell programs
       var academicSuppData = suppData.find((item) => {
