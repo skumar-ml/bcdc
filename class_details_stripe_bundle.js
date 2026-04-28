@@ -1757,17 +1757,33 @@ class classDetailsStripe extends parentLogin {
         return;
       }
       event.preventDefault();
-      const checkboxes = document.querySelectorAll(".bundleProgram");
-      checkboxes.forEach((checkbox) => {
-        if (checkbox.checked) {
-          $this.updateAmount(checkbox.value);
-        }
-      });
-      button.textContent = Array.from(checkboxes).some((checkbox) => checkbox.checked)
-        ? "Update Cart"
-        : "Add to Cart";
-      button.classList.toggle("disabled", Array.from(checkboxes).some((checkbox) => checkbox.checked));
-      button.classList.toggle("active", Array.from(checkboxes).some((checkbox) => checkbox.checked));
+      const allProgramCheckboxes = Array.from(document.querySelectorAll(".bundleProgram"));
+      // Keep core out of auto-select by ignoring disabled (core) rows.
+      const upsellCheckboxes = allProgramCheckboxes.filter((checkbox) => !checkbox.disabled);
+      const hasCheckedUpsell = upsellCheckboxes.some((checkbox) => checkbox.checked);
+
+      // Match summer add-to-cart behavior: if user clicks Add to Cart without
+      // selecting a future session, auto-select available upsells and run the
+      // same checkbox `change` pipeline so right sidebar totals refresh.
+      if (!hasCheckedUpsell) {
+        upsellCheckboxes.forEach((checkbox) => {
+          checkbox.checked = true;
+          checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      } else {
+        // Re-trigger selected rows to ensure all duplicated wrappers/symbols
+        // sync and top-right order section refreshes.
+        upsellCheckboxes.forEach((checkbox) => {
+          if (checkbox.checked) {
+            checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        });
+      }
+
+      const hasAnyCheckedUpsell = upsellCheckboxes.some((checkbox) => checkbox.checked);
+      button.textContent = hasAnyCheckedUpsell ? "Update Cart" : "Add to Cart";
+      button.classList.toggle("disabled", hasAnyCheckedUpsell);
+      button.classList.toggle("active", hasAnyCheckedUpsell);
 
       const semesterBundleModal = document.getElementById("semester-bundle-modal");
       $this.closeModal(semesterBundleModal);
@@ -1777,6 +1793,7 @@ class classDetailsStripe extends parentLogin {
       if (paymentTab.length > 0) {
         paymentTab[0].click();
       }
+      $this.updateAmount(0);
       $this.hideShowNewStudentFee("none");
       $this.disableEnableBuyNowButton();
       $this.updateCheckOutData({
