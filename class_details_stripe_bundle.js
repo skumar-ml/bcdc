@@ -2722,9 +2722,10 @@ class classDetailsStripe extends parentLogin {
     if (wrappers.length === 0) {
       return;
     }
-    const programs = (Array.isArray(bundleData) ? [...bundleData] : [])
-      .filter((p) => p)
-      .sort((a, b) => (Number(a.sessionId) || 0) - (Number(b.sessionId) || 0));
+    // Preserve API order
+    const programs = (Array.isArray(bundleData) ? [...bundleData] : []).filter(
+      (p) => p
+    );
     wrappers.forEach((wrap) => {
       wrap.innerHTML = "";
     });
@@ -2752,15 +2753,13 @@ class classDetailsStripe extends parentLogin {
 
       programs.forEach((p, i) => {
         const programCard = creEl("div", "banner-price-info-card");
-        const wEmbed = creEl("div", "w-embed");
         const input = creEl("input", "bundle-sem-checkbox bundleProgram");
         input.type = "checkbox";
         input.name = "bundle-sem";
         input.setAttribute("programDetailId", p.upsellProgramId);
         input.value = p.amount != null ? String(p.amount) : "0";
         input.style.display = "none";
-        wEmbed.appendChild(input);
-        programCard.appendChild(wEmbed);
+        programCard.appendChild(input);
 
         const gray = creEl("div", "bundle-sem-popup-price-gray-del");
         gray.setAttribute("data-addon", "price");
@@ -2867,7 +2866,6 @@ class classDetailsStripe extends parentLogin {
     const textWithCheckbox = creEl("div", "bundle-sem-text-with-checkbox");
 
     // Checkbox
-    const wEmbed = creEl("div", "w-embed");
     const input = creEl("input", "bundle-sem-checkbox bundleProgram");
     input.type = "checkbox";
     input.name = "bundle-sem";
@@ -2878,7 +2876,6 @@ class classDetailsStripe extends parentLogin {
       input.setAttribute("disabled", true);
 
     }
-    wEmbed.appendChild(input);
 
     // Title and info
     const titleInfoDiv = creEl("div");
@@ -2893,7 +2890,7 @@ class classDetailsStripe extends parentLogin {
     titleInfoDiv.appendChild(titleP);
     titleInfoDiv.appendChild(infoP);
 
-    textWithCheckbox.appendChild(wEmbed);
+    textWithCheckbox.appendChild(input);
     textWithCheckbox.appendChild(titleInfoDiv);
 
     // Price

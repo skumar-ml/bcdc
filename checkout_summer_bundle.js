@@ -1540,15 +1540,13 @@ class CheckOutWebflow {
 
         programs.forEach((p, i) => {
           const programCard = creEl("div", "banner-price-info-card");
-          const wEmbed = creEl("div", "w-embed");
           const input = creEl("input", "bundle-sem-checkbox bundleProgram");
           input.type = "checkbox";
           input.name = "bundle-sem";
           input.setAttribute("programDetailId", p.upsellProgramId);
           input.value = p.amount != null ? String(p.amount) : "0";
           input.style.display = "none";
-          wEmbed.appendChild(input);
-          programCard.appendChild(wEmbed);
+          programCard.appendChild(input);
 
           const gray = creEl("div", "bundle-sem-popup-price-gray-del");
           gray.setAttribute("data-addon", "price");
@@ -1648,9 +1646,7 @@ class CheckOutWebflow {
       }
 
       const priceCard = creEl("div", "banner-price-info-card");
-      const wPrice = creEl("div", "w-embed");
-      wPrice.appendChild(input);
-      priceCard.appendChild(wPrice);
+      priceCard.appendChild(input);
 
       if (type === "upsell") {
         const gray = creEl("div", "bundle-sem-popup-price-gray-del");
