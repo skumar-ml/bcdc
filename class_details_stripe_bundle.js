@@ -2667,8 +2667,8 @@ class classDetailsStripe extends parentLogin {
     const hasBanner = document.querySelector(
       ".banner-price-flex-wapper, .banner-price-flex-wrapper"
     );
-    // Match summer behavior: render as long as at least one target exists.
-    if (!cardContainer && !modalCardContainer && !hasBanner) {
+    // Do not render into page card container for new flow.
+    if (!modalCardContainer && !hasBanner) {
       return;
     }
     if (modalCardContainer) {
@@ -2693,10 +2693,6 @@ class classDetailsStripe extends parentLogin {
     academicData.forEach((item) => {
       var currentSessionId = item.sessionId;
       var bannerData = Array.isArray(item.upsellPrograms) ? item.upsellPrograms : [];
-      // remove current Session Data based on summerSessionId item.
-      var bundleData = item.upsellPrograms.filter(
-        (bundle) => Number(bundle.sessionId) !== Number(currentSessionId)
-      );
       var coreData = item.upsellPrograms.find(
         (bundle) => Number(bundle.sessionId) === Number(currentSessionId)
       );
@@ -2748,27 +2744,12 @@ class classDetailsStripe extends parentLogin {
         }
       }
 
-      var coreCard = this.createBundleCard(coreData, 'core', "", coreData);
-
-      if (cardContainer) {
-        cardContainer.appendChild(coreCard);
-        cardContainer.appendChild(bundlePopUpText);
-        cardContainer.appendChild(addonHeading);
-      }
-
       if (modalCardContainer) {
         modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
         modalCardContainer.appendChild(addonHeading.cloneNode(true));
         const modalBannerRow = creEl("div", "banner-price-flex-wapper");
         modalCardContainer.appendChild(modalBannerRow);
       }
-
-      bundleData.forEach((singleBundleData) => {
-        var card = this.createBundleCard(singleBundleData, "upsell", "page", coreData);
-        if (cardContainer) {
-          cardContainer.appendChild(card);
-        }
-      });
       this.renderBannerPriceLayout(bannerData);
       this.displayTotalDiscount(item.upsellPrograms);
     });
