@@ -1352,7 +1352,8 @@ class CheckOutWebflow {
       const hasBanner = document.querySelector(
         ".banner-price-flex-wapper, .banner-price-flex-wrapper"
       );
-      if (!cardContainer && !hasBanner && !modalCardContainer) {
+      // Page card container is intentionally no-render for this flow.
+      if (!hasBanner && !modalCardContainer) {
         return;
       }
       if (modalCardContainer) {
@@ -1430,27 +1431,13 @@ class CheckOutWebflow {
         addonSubHeading.innerHTML = "(select at least one to bundle)";
         addonHeading.appendChild(addonSubHeading)
 
-        var coreCard = this.createBundleCard(coreData, 'core', "", coreData);
-  
-        if (cardContainer) {
-          cardContainer.appendChild(coreCard);
-          cardContainer.appendChild(bundlePopUpText);
-          cardContainer.appendChild(addonHeading);
-        }
-
         if (modalCardContainer) {
           modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
           modalCardContainer.appendChild(addonHeading.cloneNode(true));
           const modalBannerRow = creEl("div", "banner-price-flex-wapper");
           modalCardContainer.appendChild(modalBannerRow);
         }
-        
-        bundleData.forEach((singleBundleData) => {
-          if (cardContainer) {
-            var card = this.createBundleCard(singleBundleData, "upsell", "", coreData);
-            cardContainer.appendChild(card);
-          }
-        });
+
         this.renderBannerPriceLayout(Array.isArray(bundleData) ? bundleData : []);
         this.updateAmount(0);
         this.displayTotalDiscount(item.upsellPrograms, item.disc_amount, coreData);
