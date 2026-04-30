@@ -2799,7 +2799,7 @@ class classDetailsStripe extends parentLogin {
     const amountTotal = programs.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
 
     wrappers.forEach((wrap) => {
-      const totalCard = creEl("div", "banner-price-info-card");
+      const totalCard = creEl("div", "banner-price-total-info-card");
       const totalGray = creEl("div", "bundle-sem-popup-price-gray-del");
       totalGray.setAttribute("data-addon", "price");
       totalGray.textContent = "$" + this.numberWithCommas(discTotal);
@@ -2835,9 +2835,24 @@ class classDetailsStripe extends parentLogin {
           : "";
         const desc = creEl("div", "bundle-sem-dec-small");
         desc.textContent = (p.desc || "").trim();
-        programCard.appendChild(gray);
-        programCard.appendChild(red);
-        programCard.appendChild(desc);
+        if (i === 0) {
+          const grayWrap = creEl("div", "banner-price");
+          grayWrap.appendChild(gray);
+          programCard.appendChild(grayWrap);
+
+          const dividerWrap = creEl("div", "banner-divider-wapper");
+          const innerDivider = creEl("div", "vertical-divider");
+          const priceWrap = creEl("div", "banner-price");
+          priceWrap.appendChild(red);
+          priceWrap.appendChild(desc);
+          dividerWrap.appendChild(innerDivider);
+          dividerWrap.appendChild(priceWrap);
+          programCard.appendChild(dividerWrap);
+        } else {
+          programCard.appendChild(gray);
+          programCard.appendChild(red);
+          programCard.appendChild(desc);
+        }
 
         this._bindUpsellSelection(input, p, programCard);
         wrap.appendChild(programCard);
