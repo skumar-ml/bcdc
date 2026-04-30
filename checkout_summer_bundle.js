@@ -1033,21 +1033,7 @@ class CheckOutWebflow {
             classes: btn.className
           });
         }
-        const coreLabel = String(($this.$coreData && $this.$coreData.label) || "").trim().toLowerCase();
-        const apiUpsellPrograms = (Array.isArray($this.$suppPro) ? $this.$suppPro : []).filter((program) => {
-          if (!program || program.upsellProgramId == null) {
-            return false;
-          }
-          // Do not auto-select current semester from API upsells (ex: Summer),
-          // because core/base is already that semester in cart state.
-          if (coreLabel) {
-            var label = String(program.label || "").trim().toLowerCase();
-            if (label === coreLabel) {
-              return false;
-            }
-          }
-          return true;
-        });
+        const apiUpsellPrograms = $this._getBannerAutoUpsellPrograms();
         console.log("🚀 ~ CheckOutWebflow ~ _bindAddToCartDelegated ~ apiUpsellPrograms:", apiUpsellPrograms)
         if (apiUpsellPrograms.length === 0) {
           if (isWineRedButton) {
@@ -1055,15 +1041,37 @@ class CheckOutWebflow {
           }
           return;
         }
-        event.preventDefault();
 
-        $this._upsellInteracted = true;
         const coreId = $this.$coreData && $this.$coreData.upsellProgramId;
         const selectedById = new Set(
           (Array.isArray($this.$selectedProgram) ? $this.$selectedProgram : [])
             .map((program) => program && program.upsellProgramId)
             .filter((id) => id != null)
         );
+
+        if (isWineRedButton) {
+          const bannerProgramIds = apiUpsellPrograms
+            .map((p) => p && p.upsellProgramId)
+            .filter((id) => id != null && id !== coreId);
+          const allBannerUpsellsSelected =
+            bannerProgramIds.length > 0 &&
+            bannerProgramIds.every((id) => selectedById.has(id));
+          if (allBannerUpsellsSelected) {
+            event.preventDefault();
+            bannerProgramIds.forEach((id) => {
+              $this.removeSuppProgram(id);
+            });
+            const semesterBundleModalRm = document.getElementById("semester-bundle-modal");
+            $this.closeModal(semesterBundleModalRm);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            $this.disableEnableBuyNowButton();
+            return;
+          }
+        }
+
+        event.preventDefault();
+
+        $this._upsellInteracted = true;
 
         // existing `change` flow; if not, add directly into selected state.
         var autoCheckedCount = 0;
@@ -1618,6 +1626,7 @@ class CheckOutWebflow {
         }
 
         $this.updateAmount(event.target.value);
+        $this._syncWineRedBannerButtonLabels();
       });
       if (input.checked) {
         borderEl.classList.add("border-brown-red");
@@ -1698,21 +1707,61 @@ class CheckOutWebflow {
       return flexContainer;
     }
 
+    // Upsells the year-long banner auto-adds (excludes same-label-as-core rows).
+    _getBannerAutoUpsellPrograms() {
+      const coreLabel = String((this.$coreData && this.$coreData.label) || "").trim().toLowerCase();
+      return (Array.isArray(this.$suppPro) ? this.$suppPro : []).filter((program) => {
+        if (!program || program.upsellProgramId == null) {
+          return false;
+        }
+        if (coreLabel) {
+          var label = String(program.label || "").trim().toLowerCase();
+          if (label === coreLabel) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    _syncWineRedBannerButtonLabels() {
+      const coreId = this.$coreData && this.$coreData.upsellProgramId;
+      const selectedById = new Set(
+        (Array.isArray(this.$selectedProgram) ? this.$selectedProgram : [])
+          .map((program) => program && program.upsellProgramId)
+          .filter((id) => id != null)
+      );
+      const bannerProgramIds = this._getBannerAutoUpsellPrograms()
+        .map((p) => p && p.upsellProgramId)
+        .filter((id) => id != null && id !== coreId);
+      const allSelected =
+        bannerProgramIds.length > 0 &&
+        bannerProgramIds.every((id) => selectedById.has(id));
+
+      document.querySelectorAll(".Button-wine-red, .button-wine-red").forEach((button) => {
+        button.innerHTML = allSelected ? "Remove" : "Add to Cart";
+      });
+    }
+
     // Disables or enables the "Add to Cart" / "Update Cart" button
     disableEnableBuyNowButton() {
-      // is selected program is empty then disable the buy now button
       const buyNowButton = document.querySelectorAll(
-        ".add-to-cart, .bundle-add-to-cart, .Button-wine-red"
+        ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red"
       );
-      if (this.$selectedProgram.length === 0) {
-        buyNowButton.forEach((button) => {
-          button.innerHTML = "Add to Cart"; // Disable each button
-        });
-      } else {
-        buyNowButton.forEach((button) => {
-          button.innerHTML = "Update Cart"; // Enable each button
-        });
-      } 
+      buyNowButton.forEach((button) => {
+        const isWine =
+          button.classList.contains("Button-wine-red") ||
+          button.classList.contains("button-wine-red");
+        if (isWine) {
+          return;
+        }
+        if (this.$selectedProgram.length === 0) {
+          button.innerHTML = "Add to Cart";
+        } else {
+          button.innerHTML = "Update Cart";
+        }
+      });
+      this._syncWineRedBannerButtonLabels();
     }
 
 	// Displays the semester bundle modal
