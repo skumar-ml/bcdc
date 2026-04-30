@@ -3093,6 +3093,7 @@ class classDetailsStripe extends parentLogin {
 
     document.querySelectorAll(".Button-wine-red, .button-wine-red").forEach((button) => {
       button.innerHTML = allSelected ? "Remove" : "Add to Cart";
+      button.classList.toggle("gray", allSelected);
       button.classList.remove("disabled");
     });
   }
