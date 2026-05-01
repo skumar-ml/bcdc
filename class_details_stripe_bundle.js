@@ -312,6 +312,7 @@ class classDetailsStripe extends parentLogin {
     this.renderCheckoutData();
     this.initializeToolTips();
     this.updatePriceForCardPayment();
+    this.addToCart();
     this.initiateLightbox();
     this.initBriefs();
     this.displayTopicData("none")
@@ -849,8 +850,17 @@ class classDetailsStripe extends parentLogin {
   // formatting price in comma based value
 
   numberWithCommas(x) {
-    x = parseFloat(x).toFixed(2)
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    var num = parseFloat(String(x).replace(/,/g, ""));
+    if (isNaN(num)) {
+      return "0";
+    }
+    var rounded = Math.round(num * 100) / 100;
+    var value = Number.isInteger(rounded)
+      ? String(rounded)
+      : rounded.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+    var parts = value.split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
   }
 
   // trim to 2 decimal places without rounding
@@ -1224,7 +1234,7 @@ class classDetailsStripe extends parentLogin {
         this.webflowMemberId
       );
       this.viewClassLocations(data);
-      var suppData = await this.fetchData("getUpsellProgram", this.typeEBaseUrl);
+      var suppData = await this.fetchData("getUpsellProgramOne?session=fall", this.typeEBaseUrl);
       this.$allSuppData = suppData;
       // Check if there are any upsell programs
       var academicSuppData = suppData.find((item) => {
@@ -1648,15 +1658,20 @@ class classDetailsStripe extends parentLogin {
     };
   }
 
-  showSemesterBundleModal() {
+  showSemesterBundleModal(forceOpen) {
     const check_semester_bundle = this.checkSemesterBundleModalOpen();
     if (check_semester_bundle) {
-      return;
+      if (forceOpen !== true) {
+        return;
+      }
     }
 
     const semesterBundleModal = document.getElementById(
       "semester-bundle-modal"
     );
+    if (!semesterBundleModal) {
+      return;
+    }
     semesterBundleModal.classList.add("show");
     semesterBundleModal.style.display = "flex";
   }
@@ -1687,10 +1702,24 @@ class classDetailsStripe extends parentLogin {
       });
     }
 
-    learnMore.addEventListener("click", function () {
-      semesterBundleModal.classList.add("show");
-      semesterBundleModal.style.display = "flex";
-    });
+    if (learnMore) {
+      learnMore.addEventListener("click", function (event) {
+        console.log("learnMore clicked");
+        event.preventDefault();
+        $this.showSemesterBundleModal(true);
+      });
+    }
+    if (!this._learnMoreDelegatedBound) {
+      document.addEventListener("click", function (event) {
+        const learnMoreTarget = event.target.closest("#learn-more, [data-upSell='learn-more']");
+        if (!learnMoreTarget) {
+          return;
+        }
+        event.preventDefault();
+        $this.showSemesterBundleModal(true);
+      });
+      this._learnMoreDelegatedBound = true;
+    }
 
     //$this.addToCart();
     //$this.handleUpSellSelection();
@@ -1735,45 +1764,115 @@ class classDetailsStripe extends parentLogin {
 
 
   addToCart() {
-    const addToCartButtons = document.querySelectorAll(".add-to-cart");
+    if (this._addToCartDelegatedBound) {
+      return;
+    }
+    this._addToCartDelegatedBound = true;
     var $this = this;
-    addToCartButtons.forEach((button) => {
-      button.addEventListener("click", function (event) {
-        // Select all 'add-to-card' buttons
-        // bundleProgram checkbox
-        const checkboxes = document.querySelectorAll(".bundleProgram");
-        checkboxes.forEach((checkbox) => {
-          if (checkbox.checked) {
-            // Toggle the checkbox state
-            //checkbox.checked = !checkbox.checked;
-            let upsellProgramId = parseInt(checkbox.getAttribute("programDetailId"));
-            // upsellProgramId already available in selectProgramData don't update the amount
-            var suppProIdE = document.getElementById("suppProIds");
-            let selectedIds = JSON.parse(suppProIdE.value);
-            //if (!selectedIds.includes(upsellProgramId)) {
-            $this.updateAmount(checkbox.value);
-            //}
-          }
-        });
-        // Update the button text based on the checkbox state
-        button.textContent = Array.from(checkboxes).some(checkbox => checkbox.checked) ? "Update Cart" : "Add to Cart";
-        // Optional: Add or remove a disabled class (if needed)
-        button.classList.toggle("disabled", Array.from(checkboxes).some(checkbox => checkbox.checked));
-        button.classList.toggle("active", Array.from(checkboxes).some(checkbox => checkbox.checked));
-        // Close the modal after adding to cart
-        const semesterBundleModal = document.getElementById("semester-bundle-modal");
-        $this.closeModal(semesterBundleModal);
-        // Scroll to top after closing the modal
+    const addToCartSelector = ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red";
+    document.addEventListener("click", function (event) {
+      const button = event.target.closest(addToCartSelector);
+      if (!button) {
+        return;
+      }
+      const isWineRedButton =
+        button.classList.contains("Button-wine-red") ||
+        button.classList.contains("button-wine-red");
+
+      const apiUpsellPrograms = $this._getBannerAutoUpsellPrograms();
+      if (isWineRedButton && apiUpsellPrograms.length === 0) {
+        return;
+      }
+
+      const coreId = $this.$coreData && $this.$coreData.upsellProgramId;
+      const selectedById = new Set(
+        (Array.isArray($this.$selectedProgram) ? $this.$selectedProgram : [])
+          .map((program) => program && program.upsellProgramId)
+          .filter((id) => id != null)
+      );
+
+      if (isWineRedButton) {
+        event.preventDefault();
+        const bannerProgramIds = apiUpsellPrograms
+          .map((p) => p && p.upsellProgramId)
+          .filter((id) => id != null && id !== coreId);
+        const allBannerUpsellsSelected =
+          bannerProgramIds.length > 0 &&
+          bannerProgramIds.every((id) => selectedById.has(id));
+
+        if (allBannerUpsellsSelected) {
+          bannerProgramIds.forEach((id) => {
+            $this.removeSuppProgram(id);
+          });
+        } else {
+          const allProgramCheckboxes = Array.from(document.querySelectorAll(".bundleProgram"));
+          const upsellCheckboxes = allProgramCheckboxes.filter((checkbox) => !checkbox.disabled);
+          upsellCheckboxes.forEach((checkbox) => {
+            if (!checkbox.checked) {
+              checkbox.checked = true;
+            }
+            checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+          });
+          button.classList.remove("disabled");
+          button.classList.add("active");
+        }
+
+        const semesterBundleModalWine = document.getElementById("semester-bundle-modal");
+        $this.closeModal(semesterBundleModalWine);
         window.scrollTo({ top: 0, behavior: "smooth" });
-        // Update tab
-        let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
-        paymentTab[0].click();
+
+        let paymentTabWine = document.querySelectorAll(".payment-cards-tab-link");
+        if (paymentTabWine.length > 0) {
+          paymentTabWine[0].click();
+        }
+        $this.updateAmount(0);
         $this.hideShowNewStudentFee("none");
         $this.disableEnableBuyNowButton();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        $this.updateCheckOutData({ upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId), suppPro: $this.$suppPro, selectedProgram: $this.$selectedProgram });
+        $this.updateCheckOutData({
+          upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId),
+          suppPro: $this.$suppPro,
+          selectedProgram: $this.$selectedProgram
+        });
         $this.$oldSelectedProgram = $this.$selectedProgram;
+        return;
+      }
+
+      event.preventDefault();
+      const allProgramCheckboxes = Array.from(document.querySelectorAll(".bundleProgram"));
+      // Keep core out of auto-select by ignoring disabled (core) rows.
+      const upsellCheckboxes = allProgramCheckboxes.filter((checkbox) => !checkbox.disabled);
+
+      // Always re-apply full bundle selection on button click so any removed
+      // future session (e.g. Winter/Spring) is added back and reflected in the
+      // top-right order summary through the same checkbox change flow.
+      upsellCheckboxes.forEach((checkbox) => {
+        if (!checkbox.checked) {
+          checkbox.checked = true;
+        }
+        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
       });
+
+      button.textContent = "Add to Cart";
+      button.classList.remove("disabled");
+      button.classList.add("active");
+
+      const semesterBundleModal = document.getElementById("semester-bundle-modal");
+      $this.closeModal(semesterBundleModal);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+      if (paymentTab.length > 0) {
+        paymentTab[0].click();
+      }
+      $this.updateAmount(0);
+      $this.hideShowNewStudentFee("none");
+      $this.disableEnableBuyNowButton();
+      $this.updateCheckOutData({
+        upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId),
+        suppPro: $this.$suppPro,
+        selectedProgram: $this.$selectedProgram
+      });
+      $this.$oldSelectedProgram = $this.$selectedProgram;
     });
   }
 
@@ -2556,7 +2655,7 @@ class classDetailsStripe extends parentLogin {
 
   createBundlePrograms(academicData) {
     var academicData = academicData;
-    if (academicData.length == 0) {
+    if (!Array.isArray(academicData) || academicData.length === 0) {
       return;
     }
     const cardContainer = document.querySelector(
@@ -2565,28 +2664,44 @@ class classDetailsStripe extends parentLogin {
     const modalCardContainer = document.querySelector(
       "[data-upSell='modal-card-container']"
     );
-    if (!cardContainer) {
+    const hasBanner = document.querySelector(
+      ".banner-price-flex-wapper, .banner-price-flex-wrapper"
+    );
+    // Do not render into page card container for new flow.
+    if (!modalCardContainer && !hasBanner) {
       return;
     }
-    if (!modalCardContainer) {
-      return;
+    if (modalCardContainer) {
+      modalCardContainer.innerHTML = ""; // Clear existing modal content
     }
-    modalCardContainer.innerHTML = ""; // Clear existing content
-    cardContainer.innerHTML = ""; // Clear existing content
+    if (cardContainer) {
+      cardContainer.innerHTML = ""; // Clear existing page content
+    }
     // remove remove session data based on summerSessionId 2
     academicData = academicData.filter((item) => {
-      return item.sessionId !== 2;
+      return (
+        item &&
+        Array.isArray(item.upsellPrograms) &&
+        item.upsellPrograms.length > 0 &&
+        item.sessionId !== 2
+      );
     });
+    if (academicData.length === 0) {
+      return;
+    }
 
     academicData.forEach((item) => {
       var currentSessionId = item.sessionId;
-      // remove current Session Data based on summerSessionId item.
-      var bundleData = item.upsellPrograms.filter(
-        (bundle) => bundle.sessionId !== currentSessionId
-      );
+      var bannerData = Array.isArray(item.upsellPrograms) ? item.upsellPrograms : [];
       var coreData = item.upsellPrograms.find(
-        (bundle) => bundle.sessionId == currentSessionId
+        (bundle) => Number(bundle.sessionId) === Number(currentSessionId)
       );
+      if (!coreData && item.upsellPrograms.length > 0) {
+        coreData = item.upsellPrograms[0];
+      }
+      if (!coreData) {
+        return;
+      }
       
       // Select  [data-stripe='totalDepositPrice'] and get data-stripe-price attribute value
       //var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
@@ -2629,25 +2744,158 @@ class classDetailsStripe extends parentLogin {
         }
       }
 
-      var coreCard = this.createBundleCard(coreData, 'core', "", coreData);
-
-      cardContainer.appendChild(coreCard);
-      cardContainer.appendChild(bundlePopUpText);
-      cardContainer.appendChild(addonHeading);
-
-      modalCardContainer.appendChild(coreCard.cloneNode(true));
-      modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
-      modalCardContainer.appendChild(addonHeading.cloneNode(true));
-
-      bundleData.forEach((singleBundleData) => {
-        var card = this.createBundleCard(singleBundleData, "upsell", "page", coreData);
-        cardContainer.appendChild(card);
-        var modelCard = this.createBundleCard(singleBundleData, "upsell", "modal", coreData);
-        modalCardContainer.appendChild(modelCard);
-      });
+      if (modalCardContainer) {
+        modalCardContainer.appendChild(bundlePopUpText.cloneNode(true));
+        modalCardContainer.appendChild(addonHeading.cloneNode(true));
+        const modalBannerRow = creEl("div", "banner-price-flex-wapper");
+        modalCardContainer.appendChild(modalBannerRow);
+      }
+      this.renderBannerPriceLayout(bannerData);
       this.displayTotalDiscount(item.upsellPrograms);
     });
     this.disableEnableBuyNowButton();
+  }
+
+  // Fills static Webflow `.banner-price-flex-wapper` with API-driven layout:
+  // [total] | [program 1] + [program 2] + …
+  renderBannerPriceLayout(bundleData) {
+    const wrappers = document.querySelectorAll(
+      ".banner-price-flex-wapper, .banner-price-flex-wrapper"
+    );
+    if (wrappers.length === 0) {
+      return;
+    }
+    // Preserve API order
+    const programs = (Array.isArray(bundleData) ? [...bundleData] : []).filter(
+      (p) => p
+    );
+    wrappers.forEach((wrap) => {
+      wrap.innerHTML = "";
+    });
+    if (programs.length === 0) {
+      return;
+    }
+
+    const discTotal = programs.reduce((acc, p) => acc + (Number(p.disc_amount) || 0), 0);
+    const amountTotal = programs.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+
+    wrappers.forEach((wrap) => {
+      const totalCard = creEl("div", "banner-price-total-info-card");
+      const totalGray = creEl("div", "bundle-sem-popup-price-gray-del");
+      totalGray.setAttribute("data-addon", "price");
+      totalGray.textContent = "$" + this.numberWithCommas(discTotal);
+      const totalRed = creEl("div", "bundle-sem-pop-up-total-price-text");
+      totalRed.setAttribute("data-addon", "discount-price");
+      totalRed.textContent = "$" + this.numberWithCommas(amountTotal);
+      totalCard.appendChild(totalGray);
+      totalCard.appendChild(totalRed);
+      wrap.appendChild(totalCard);
+
+      const divider = creEl("div", "vertical-divider");
+      wrap.appendChild(divider);
+
+      programs.forEach((p, i) => {
+        const programCard = creEl("div", "banner-price-info-card");
+        const input = creEl("input", "bundle-sem-checkbox bundleProgram");
+        input.type = "checkbox";
+        input.name = "bundle-sem";
+        input.setAttribute("programDetailId", p.upsellProgramId);
+        input.value = p.amount != null ? String(p.amount) : "0";
+        input.style.display = "none";
+        programCard.appendChild(input);
+
+        const gray = creEl("div", "bundle-sem-popup-price-gray-del");
+        gray.setAttribute("data-addon", "price");
+        gray.textContent = p.disc_amount != null
+          ? "$" + this.numberWithCommas(p.disc_amount)
+          : "";
+        const red = creEl("div", "bundle-sem-pop-up-price-text-red");
+        red.setAttribute("data-addon", "discount-price");
+        red.textContent = p.amount != null
+          ? "$" + this.numberWithCommas(p.amount)
+          : "";
+        const desc = creEl("div", "bundle-sem-dec-small");
+        desc.textContent = (p.desc || "").trim();
+        if (i === 0) {
+          const grayWrap = creEl("div", "banner-price");
+          grayWrap.appendChild(gray);
+          programCard.appendChild(grayWrap);
+
+          const dividerWrap = creEl("div", "banner-divider-wapper");
+          const innerDivider = creEl("div", "vertical-divider");
+          const priceWrap = creEl("div", "banner-price");
+          priceWrap.appendChild(red);
+          priceWrap.appendChild(desc);
+          dividerWrap.appendChild(innerDivider);
+          dividerWrap.appendChild(priceWrap);
+          programCard.appendChild(dividerWrap);
+        } else {
+          programCard.appendChild(gray);
+          programCard.appendChild(red);
+          programCard.appendChild(desc);
+        }
+
+        this._bindUpsellSelection(input, p, programCard);
+        wrap.appendChild(programCard);
+
+        if (i < programs.length - 1) {
+          const plusBlock = creEl("div", "plus-icon-wrapper");
+          const plusP = creEl("p", "plus-icon");
+          plusP.textContent = "+";
+          plusBlock.appendChild(plusP);
+          wrap.appendChild(plusBlock);
+        }
+      });
+    });
+  }
+
+  // Shared selection behavior for list rows and banner price cards
+  _bindUpsellSelection(input, programData, borderEl) {
+    var $this = this;
+    input.addEventListener("change", (event) => {
+      event.preventDefault();
+      if (event.target.checked) {
+        if (!this.$selectedProgram.includes(programData)) {
+          this.$selectedProgram.push(programData);
+        }
+        borderEl.classList.add("border-brown-red");
+      } else {
+        this.$selectedProgram = this.$selectedProgram.filter(
+          (program) => program.upsellProgramId !== programData.upsellProgramId
+        );
+        borderEl.classList.remove("border-brown-red");
+      }
+
+      const allCheckboxes = document.querySelectorAll("[programDetailId]");
+      allCheckboxes.forEach((checkbox) => {
+        if (checkbox.getAttribute("programDetailId") == programData.upsellProgramId) {
+          checkbox.checked = event.target.checked;
+          const cardContainerEl = checkbox.closest(
+            ".bundle-sem-content-flex-container, .banner-price-info-card"
+          );
+          cardContainerEl?.classList.toggle("border-brown-red", event.target.checked);
+        }
+      });
+
+      $this.updateCoreData("upsell");
+      $this.disableEnableBuyNowButton(false);
+      $this.updateAmount(event.target.value);
+      let paymentTab = document.querySelectorAll(".payment-cards-tab-link");
+      if (paymentTab.length > 0) {
+        paymentTab[0].click();
+      }
+      $this.hideShowNewStudentFee("none");
+      $this.updateCheckOutData({
+        upsellProgramIds: $this.$selectedProgram.map(item => item.upsellProgramId),
+        suppPro: $this.$suppPro,
+        selectedProgram: $this.$selectedProgram
+      });
+      $this.$oldSelectedProgram = $this.$selectedProgram;
+      $this.resetPaymentOption();
+    });
+    if (input.checked) {
+      borderEl.classList.add("border-brown-red");
+    }
   }
 
   displayTotalDiscount(bundleData) {
@@ -2676,7 +2924,6 @@ class classDetailsStripe extends parentLogin {
     const textWithCheckbox = creEl("div", "bundle-sem-text-with-checkbox");
 
     // Checkbox
-    const wEmbed = creEl("div", "w-embed");
     const input = creEl("input", "bundle-sem-checkbox bundleProgram");
     input.type = "checkbox";
     input.name = "bundle-sem";
@@ -2687,7 +2934,6 @@ class classDetailsStripe extends parentLogin {
       input.setAttribute("disabled", true);
 
     }
-    wEmbed.appendChild(input);
 
     // Title and info
     const titleInfoDiv = creEl("div");
@@ -2702,7 +2948,7 @@ class classDetailsStripe extends parentLogin {
     titleInfoDiv.appendChild(titleP);
     titleInfoDiv.appendChild(infoP);
 
-    textWithCheckbox.appendChild(wEmbed);
+    textWithCheckbox.appendChild(input);
     textWithCheckbox.appendChild(titleInfoDiv);
 
     // Price
@@ -2811,36 +3057,60 @@ class classDetailsStripe extends parentLogin {
       }
     }
   }
+  _getBannerAutoUpsellPrograms() {
+    const coreLabel = String((this.$coreData && this.$coreData.label) || "").trim().toLowerCase();
+    return (Array.isArray(this.$suppPro) ? this.$suppPro : []).filter((program) => {
+      if (!program || program.upsellProgramId == null) {
+        return false;
+      }
+      if (coreLabel) {
+        var label = String(program.label || "").trim().toLowerCase();
+        if (label === coreLabel) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  _syncWineRedBannerButtonLabels() {
+    const coreId = this.$coreData && this.$coreData.upsellProgramId;
+    const selectedById = new Set(
+      (Array.isArray(this.$selectedProgram) ? this.$selectedProgram : [])
+        .map((program) => program && program.upsellProgramId)
+        .filter((id) => id != null)
+    );
+    const bannerProgramIds = this._getBannerAutoUpsellPrograms()
+      .map((p) => p && p.upsellProgramId)
+      .filter((id) => id != null && id !== coreId);
+    const allSelected =
+      bannerProgramIds.length > 0 &&
+      bannerProgramIds.every((id) => selectedById.has(id));
+
+    document.querySelectorAll(".Button-wine-red, .button-wine-red").forEach((button) => {
+      button.innerHTML = allSelected ? "Remove" : "Add to Cart";
+      button.classList.toggle("gray", allSelected);
+      button.classList.remove("disabled");
+    });
+  }
+
   disableEnableBuyNowButton(isUpdateText = true) {
-    // is selected program is empty then disable the buy now button
-    const buyNowButton = document.querySelectorAll(".add-to-cart, .bundle-add-to-cart");
-    if (isUpdateText) {
-      if (this.$selectedProgram.length === 0) {
-        buyNowButton.forEach((button) => {
-          button.innerHTML = "Add to Cart";
-          if (this.$oldSelectedProgram.length == 0 && isUpdateText) {
-            button.classList.add("disabled");
-          }
-        });
-      } else {
-        buyNowButton.forEach((button) => {
-          button.innerHTML = "Update Cart";
-          button.classList.remove("disabled");
-        });
+    const buyNowButton = document.querySelectorAll(
+      ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red"
+    );
+    buyNowButton.forEach((button) => {
+      const isWine =
+        button.classList.contains("Button-wine-red") ||
+        button.classList.contains("button-wine-red");
+      if (isWine) {
+        return;
       }
-    } else {
-      if (this.$selectedProgram.length === 0) {
-        buyNowButton.forEach((button) => {
-          if (this.$oldSelectedProgram.length == 0 && !isUpdateText) {
-            button.classList.add("disabled");
-          }
-        });
-      } else {
-        buyNowButton.forEach((button) => {
-          button.classList.remove("disabled");
-        });
+      if (isUpdateText !== false) {
+        button.innerHTML = "Add to Cart";
       }
-    }
+      button.classList.remove("disabled");
+    });
+    this._syncWineRedBannerButtonLabels();
   }
   // display Original Price 
   updateOriginPrice() {
