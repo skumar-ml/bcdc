@@ -1494,15 +1494,20 @@ class classDetailsStripe extends parentLogin {
           paymentMethodsDiv.classList.add("hide");
         } else if ($this.$isCheckoutFlow == "Bundle-Purchase") {
           pre_registration_btn.classList.remove("hide");
+          pre_registration_btn.style.display = "";
+          submitClassPayment.style.display = "none";
           // Hide payment methods for bundle purchase and not as supplementary program
           var upsellProgramIds = $this.getSelectedBundleProgram();
           if (upsellProgramIds.length == 0 && $this.selectedBriefs.length == 0) {
             paymentMethodsDiv.classList.add("hide");
-            submitClassPayment.style.display = "block";
           } else {
             paymentMethodsDiv.classList.remove("hide");
-            submitClassPayment.style.display = "none";
           }
+          // Swap to Pay Now (#submit-class) if the bundle is already added
+          // (e.g. after back navigation restore).
+          $this._syncBundlePurchaseCheckoutButton(
+            $this._isBundleFullyAdded()
+          );
         } else {
           paymentMethodsDiv.classList.remove("hide");
         }
@@ -3073,7 +3078,9 @@ class classDetailsStripe extends parentLogin {
     });
   }
 
-  _syncWineRedBannerButtonLabels() {
+  // Returns true when every non-core banner upsell program is currently selected
+  // (i.e. the wine-red banner button shows "Remove" and the bundle is "added").
+  _isBundleFullyAdded() {
     const coreId = this.$coreData && this.$coreData.upsellProgramId;
     const selectedById = new Set(
       (Array.isArray(this.$selectedProgram) ? this.$selectedProgram : [])
@@ -3083,15 +3090,58 @@ class classDetailsStripe extends parentLogin {
     const bannerProgramIds = this._getBannerAutoUpsellPrograms()
       .map((p) => p && p.upsellProgramId)
       .filter((id) => id != null && id !== coreId);
-    const allSelected =
+    return (
       bannerProgramIds.length > 0 &&
-      bannerProgramIds.every((id) => selectedById.has(id));
+      bannerProgramIds.every((id) => selectedById.has(id))
+    );
+  }
+
+  _syncWineRedBannerButtonLabels() {
+    const allSelected = this._isBundleFullyAdded();
 
     document.querySelectorAll(".Button-wine-red, .button-wine-red").forEach((button) => {
       button.innerHTML = allSelected ? "Remove" : "Add to Cart";
       button.classList.toggle("gray", allSelected);
       button.classList.remove("disabled");
     });
+
+    this._syncBundlePurchaseCheckoutButton(allSelected);
+  }
+
+  // Swap the bottom CTA between "Pre-Register" (#pre_registration_btn) and
+  // "Pay Now" (#submit-class) depending on whether the bundle is added.
+  // Both buttons trigger the same checkout handler; this is purely a
+  // display:none / display:block toggle so users see the correct intent.
+  _syncBundlePurchaseCheckoutButton(bundleAdded) {
+    if (this.$isCheckoutFlow !== "Bundle-Purchase") {
+      return;
+    }
+    const preRegistrationBtn = document.getElementById("pre_registration_btn");
+    const submitClassPayment = document.getElementById("submit-class");
+    if (!preRegistrationBtn || !submitClassPayment) {
+      return;
+    }
+    // Only manage visibility once a class time has been selected; otherwise
+    // both buttons should remain in the hidden state controlled by updateClassTimes.
+    const classTimeSelected = document.querySelector(
+      ".class-time.class-time-with-brown-white-style"
+    );
+    if (!classTimeSelected) {
+      return;
+    }
+    // Avoid clobbering transient states (e.g. "Processing..." during checkout).
+    if (preRegistrationBtn.disabled || submitClassPayment.disabled) {
+      return;
+    }
+    if (bundleAdded) {
+      preRegistrationBtn.classList.add("hide");
+      preRegistrationBtn.style.display = "none";
+      submitClassPayment.style.display = "block";
+    } else {
+      preRegistrationBtn.classList.remove("hide");
+      preRegistrationBtn.style.display = "";
+      submitClassPayment.style.display = "none";
+    }
   }
 
   disableEnableBuyNowButton(isUpdateText = true) {
