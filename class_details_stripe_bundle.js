@@ -277,6 +277,7 @@ class classDetailsStripe extends parentLogin {
   $oldSelectedProgram = [];
   $coreData = [];
   $isCheckoutFlow = "Normal"; // Normal | Pre-Registration-Info | Bundle-Purchase
+  $preRegistrationPeriodActive = false;
   $selectedBundleProgram = null;
   $allBundlePrograms = [];
   $allSuppData = [];
@@ -333,6 +334,8 @@ class classDetailsStripe extends parentLogin {
     // Logic to check if the program is a bundle
     await this.fetchData("getYearLongBundleDetails/" + this.webflowMemberId)
       .then((data) => {
+        this.$preRegistrationPeriodActive =
+          data.message === "Pre-registration is going on";
         if (data.message && data.data.length == 0 && data.message == "Either pre-registration not yet started or already ended") {
           isBundle = "Normal";
         }
@@ -653,7 +656,9 @@ class classDetailsStripe extends parentLogin {
           this.$isCheckoutFlow = "Bundle-Purchase";
         } else {
           this.$selectedBundleProgram = null;
-          this.$isCheckoutFlow = "Normal";
+          this.$isCheckoutFlow = this.$preRegistrationPeriodActive
+            ? "Pre-Registration-Info"
+            : "Normal";
         }
       }
 
@@ -1338,8 +1343,15 @@ class classDetailsStripe extends parentLogin {
     }
     checkOutLocalData = JSON.parse(checkOutLocalData);
     var finalPrice = this.amount * 100;
-    if (this.$isCheckoutFlow === "Pre-Registration-Info") {
-      finalPrice = Math.round(this._getSelectedProgramsPayTotalDollars() * 100);
+    var sumCartDollars = this._getSelectedProgramsPayTotalDollars();
+    var useCartTotalForCheckout =
+      sumCartDollars > 0 &&
+      (this.$isCheckoutFlow === "Pre-Registration-Info" ||
+        (this.$preRegistrationPeriodActive &&
+          this.$isCheckoutFlow === "Normal") ||
+        this.$isCheckoutFlow === "Bundle-Purchase");
+    if (useCartTotalForCheckout) {
+      finalPrice = Math.round(sumCartDollars * 100);
     } else if (this.$selectedProgram.length > 0) {
       finalPrice = this.$coreData.amount * 100;
     }
@@ -1847,6 +1859,9 @@ class classDetailsStripe extends parentLogin {
           selectedProgram: $this.$selectedProgram
         });
         $this.$oldSelectedProgram = $this.$selectedProgram;
+        queueMicrotask(function () {
+          $this.syncPreRegistrationPrimaryButton();
+        });
         return;
       }
 
@@ -1886,6 +1901,9 @@ class classDetailsStripe extends parentLogin {
         selectedProgram: $this.$selectedProgram
       });
       $this.$oldSelectedProgram = $this.$selectedProgram;
+      queueMicrotask(function () {
+        $this.syncPreRegistrationPrimaryButton();
+      });
     });
   }
 
@@ -2346,12 +2364,15 @@ class classDetailsStripe extends parentLogin {
           preRegistrationTag.forEach(preRegistrationTagEl => preRegistrationTagEl.style.display = "block");
         } else {
           $this.$selectedBundleProgram = null;
-          $this.$isCheckoutFlow = "Normal";
+          $this.$isCheckoutFlow = $this.$preRegistrationPeriodActive
+            ? "Pre-Registration-Info"
+            : "Normal";
           preRegistrationTag.forEach(preRegistrationTagEl => preRegistrationTagEl.style.display = "none");
         }
 
         localStorage.setItem("checkOutBasicData", JSON.stringify(data));
         $this.updateBasicData('old_student');
+        $this.syncPreRegistrationPrimaryButton();
       });
     } catch (error) {
       console.error("Error fetching API data:", error);
@@ -2517,7 +2538,9 @@ class classDetailsStripe extends parentLogin {
       preRegistrationTag.forEach(preRegistrationTagEl => preRegistrationTagEl.style.display = "block");
     } else {
       this.$selectedBundleProgram = null;
-      this.$isCheckoutFlow = "Normal";
+      this.$isCheckoutFlow = this.$preRegistrationPeriodActive
+        ? "Pre-Registration-Info"
+        : "Normal";
       preRegistrationTag.forEach(preRegistrationTagEl => preRegistrationTagEl.style.display = "none");
     }
   }
@@ -3086,29 +3109,54 @@ class classDetailsStripe extends parentLogin {
     });
   }
 
+  _parseMoneyNumber(val) {
+    if (val == null || val === "") {
+      return 0;
+    }
+    if (typeof val === "number" && !Number.isNaN(val)) {
+      return val;
+    }
+    var n = parseFloat(String(val).replace(/[$,\s]/g, ""));
+    return Number.isNaN(n) ? 0 : n;
+  }
+
   /** Sum of selected bundle row amounts plus briefs (matches sidebar “due now”). */
   _getSelectedProgramsPayTotalDollars() {
     const progTotal = (Array.isArray(this.$selectedProgram) ? this.$selectedProgram : []).reduce(
-      (t, p) => t + (parseFloat(p.amount) || 0),
+      (t, p) => t + this._parseMoneyNumber(p && p.amount),
       0
     );
     const briefsTotal = (Array.isArray(this.selectedBriefs) ? this.selectedBriefs : []).reduce(
-      (s, b) => s + (parseFloat(b.price) || 0),
+      (s, b) => s + this._parseMoneyNumber(b && b.price),
       0
     );
     return progTotal + briefsTotal;
   }
 
-  _shouldShowPayNowPreRegistration() {
+  /** Pay Now when cart has a balance during pre-reg offer or bundle-checkout continuation. */
+  _shouldShowPayNowForCheckout() {
+    if (this._getSelectedProgramsPayTotalDollars() <= 0) {
+      return false;
+    }
     return (
-      this.$isCheckoutFlow === "Pre-Registration-Info" &&
-      this._getSelectedProgramsPayTotalDollars() > 0
+      this.$isCheckoutFlow === "Pre-Registration-Info" ||
+      (this.$preRegistrationPeriodActive &&
+        this.$isCheckoutFlow === "Normal") ||
+      this.$isCheckoutFlow === "Bundle-Purchase"
     );
   }
 
+  _needsCheckoutPrimaryButtonSync() {
+    return (
+      this.$isCheckoutFlow === "Pre-Registration-Info" ||
+      this.$isCheckoutFlow === "Bundle-Purchase" ||
+      (this.$preRegistrationPeriodActive &&
+        this.$isCheckoutFlow === "Normal")
+    );
+  }
 
   syncPreRegistrationPrimaryButton() {
-    if (this.$isCheckoutFlow !== "Pre-Registration-Info") {
+    if (!this._needsCheckoutPrimaryButtonSync()) {
       return;
     }
     var submitBtn = document.getElementById("submit-class");
@@ -3120,7 +3168,7 @@ class classDetailsStripe extends parentLogin {
       }
     });
     if (!submitBtn) return;
-    var label = this._shouldShowPayNowPreRegistration()
+    var label = this._shouldShowPayNowForCheckout()
       ? "Pay Now"
       : submitBtn.dataset.defaultText;
     submitBtn.innerHTML = label;
