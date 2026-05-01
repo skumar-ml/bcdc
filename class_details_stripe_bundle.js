@@ -381,6 +381,7 @@ class classDetailsStripe extends parentLogin {
       }
     }
     this.updateOldStudentList();
+    this.syncPreRegistrationPrimaryButton();
     return isBundle;
   }
   // Creating main dom for location
@@ -718,6 +719,7 @@ class classDetailsStripe extends parentLogin {
       btn.disabled = false;
       btn.innerHTML = btn.dataset.defaultText;
     });
+    this.syncPreRegistrationPrimaryButton();
   }
   attachChromeBackRestoreHandler() {
     var $this = this;
@@ -1319,9 +1321,11 @@ class classDetailsStripe extends parentLogin {
     locationActionLink.innerHTML = "Processing...";
     locationActionLink.disabled = true;
     locationActionLink.style.pointerEvents = "none";
-    preRegistrationDiv.innerHTML = "Processing...";
-    preRegistrationDiv.disabled = true;
-    preRegistrationDiv.style.pointerEvents = "none";
+    if (preRegistrationDiv) {
+      preRegistrationDiv.innerHTML = "Processing...";
+      preRegistrationDiv.disabled = true;
+      preRegistrationDiv.style.pointerEvents = "none";
+    }
     //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
     var cancelUrl = new URL(window.location.href);
     //console.log(window.location.href)
@@ -1334,7 +1338,9 @@ class classDetailsStripe extends parentLogin {
     }
     checkOutLocalData = JSON.parse(checkOutLocalData);
     var finalPrice = this.amount * 100;
-    if (this.$selectedProgram.length > 0) {
+    if (this.$isCheckoutFlow === "Pre-Registration-Info") {
+      finalPrice = Math.round(this._getSelectedProgramsPayTotalDollars() * 100);
+    } else if (this.$selectedProgram.length > 0) {
       finalPrice = this.$coreData.amount * 100;
     }
     var data = {
@@ -1461,7 +1467,9 @@ class classDetailsStripe extends parentLogin {
     const submitClassPayment = document.getElementById("submit-class");
     var $this = this;
     let pre_registration_btn = document.querySelector('[data-checkout="pre-registration-btn"]');
-    pre_registration_btn.classList.add("hide");
+    if (pre_registration_btn) {
+      pre_registration_btn.classList.add("hide");
+    }
     classTimesContainer.innerHTML = ""; // Clear previous times
     paymentMethodsDiv.classList.add("hide"); // Hide payment methods initially
 
@@ -1493,7 +1501,9 @@ class classDetailsStripe extends parentLogin {
         if ($this.accountType === "student") {
           paymentMethodsDiv.classList.add("hide");
         } else if ($this.$isCheckoutFlow == "Bundle-Purchase") {
-          pre_registration_btn.classList.remove("hide");
+          if (pre_registration_btn) {
+            pre_registration_btn.classList.remove("hide");
+          }
           // Hide payment methods for bundle purchase and not as supplementary program
           var upsellProgramIds = $this.getSelectedBundleProgram();
           if (upsellProgramIds.length == 0 && $this.selectedBriefs.length == 0) {
@@ -1519,7 +1529,9 @@ class classDetailsStripe extends parentLogin {
           } else {
             paymentMethodsDiv.classList.remove("hide");
           }
-          pre_registration_btn.classList.add("hide");
+          if (pre_registration_btn) {
+            pre_registration_btn.classList.add("hide");
+          }
           payment_option.classList.add("hide"); // Show payment methods
         } else {
           payment_option.classList.remove("hide");
@@ -1540,6 +1552,7 @@ class classDetailsStripe extends parentLogin {
             submitClassPayment.style.display = "block";
           }
         }
+        $this.syncPreRegistrationPrimaryButton();
       });
 
       // Hover effect: Add yellow border on hover
@@ -3073,6 +3086,49 @@ class classDetailsStripe extends parentLogin {
     });
   }
 
+  /** Sum of selected bundle row amounts plus briefs (matches sidebar “due now”). */
+  _getSelectedProgramsPayTotalDollars() {
+    const progTotal = (Array.isArray(this.$selectedProgram) ? this.$selectedProgram : []).reduce(
+      (t, p) => t + (parseFloat(p.amount) || 0),
+      0
+    );
+    const briefsTotal = (Array.isArray(this.selectedBriefs) ? this.selectedBriefs : []).reduce(
+      (s, b) => s + (parseFloat(b.price) || 0),
+      0
+    );
+    return progTotal + briefsTotal;
+  }
+
+  _shouldShowPayNowPreRegistration() {
+    return (
+      this.$isCheckoutFlow === "Pre-Registration-Info" &&
+      this._getSelectedProgramsPayTotalDollars() > 0
+    );
+  }
+
+
+  syncPreRegistrationPrimaryButton() {
+    if (this.$isCheckoutFlow !== "Pre-Registration-Info") {
+      return;
+    }
+    var submitBtn = document.getElementById("submit-class");
+    var preRegBtn = document.getElementById("pre_registration_btn");
+    [submitBtn, preRegBtn].forEach((btn) => {
+      if (!btn) return;
+      if (!btn.dataset.defaultText) {
+        btn.dataset.defaultText = btn.innerHTML;
+      }
+    });
+    if (!submitBtn) return;
+    var label = this._shouldShowPayNowPreRegistration()
+      ? "Pay Now"
+      : submitBtn.dataset.defaultText;
+    submitBtn.innerHTML = label;
+    if (preRegBtn) {
+      preRegBtn.innerHTML = label;
+    }
+  }
+
   _syncWineRedBannerButtonLabels() {
     const coreId = this.$coreData && this.$coreData.upsellProgramId;
     const selectedById = new Set(
@@ -3111,6 +3167,7 @@ class classDetailsStripe extends parentLogin {
       button.classList.remove("disabled");
     });
     this._syncWineRedBannerButtonLabels();
+    this.syncPreRegistrationPrimaryButton();
   }
   // display Original Price 
   updateOriginPrice() {
