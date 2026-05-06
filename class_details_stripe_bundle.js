@@ -1755,6 +1755,8 @@ class classDetailsStripe extends parentLogin {
       "[data-upSell='modal-card-container']",
       ".banner-price-flex-wapper",
       ".banner-price-flex-wrapper",
+      ".payment-gateway-banner.summer.banner-discount",
+      ".payment-gateway-banner",
     ];
     selectors.forEach((selector) => {
       document.querySelectorAll(selector).forEach((el) => {
@@ -2708,6 +2710,7 @@ class classDetailsStripe extends parentLogin {
   createBundlePrograms(academicData) {
     var academicData = academicData;
     if (!Array.isArray(academicData) || academicData.length === 0) {
+      this.hideUpsellModalAndData();
       return;
     }
     const cardContainer = document.querySelector(
@@ -2739,6 +2742,7 @@ class classDetailsStripe extends parentLogin {
       );
     });
     if (academicData.length === 0) {
+      this.hideUpsellModalAndData();
       return;
     }
 
