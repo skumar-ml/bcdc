@@ -1673,6 +1673,11 @@ class classDetailsStripe extends parentLogin {
   }
 
   showSemesterBundleModal(forceOpen) {
+    const hasValidUpsells = this._getBannerAutoUpsellPrograms().length > 0;
+    if (!hasValidUpsells) {
+      this.hideUpsellModalAndData();
+      return;
+    }
     const check_semester_bundle = this.checkSemesterBundleModalOpen();
     if (check_semester_bundle) {
       if (forceOpen !== true) {
@@ -1784,20 +1789,6 @@ class classDetailsStripe extends parentLogin {
       semesterBundleModal.style.display !== "none"
     ) {
       isOpen = true;
-    }
-    // check bundleModalClosed cookie date time for 1 hour. no need to show if less then 1 hour
-    const bundleModalClosed = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("bundleModalClosed="));
-    if (bundleModalClosed) {
-      const closedTime = new Date(
-        decodeURIComponent(bundleModalClosed.split("=")[1])
-      );
-      const currentTime = new Date();
-      const oneHour = 60 * 60 * 1000;
-      if (currentTime - closedTime < oneHour) {
-        isOpen = true;
-      }
     }
     return isOpen;
   }
