@@ -1362,6 +1362,7 @@ class CheckOutWebflow {
         );
       } else {
         console.error("Supplementary program data is empty or not available.");
+        this.hideUpsellModalAndData();
       }
     }
 
