@@ -1234,21 +1234,26 @@ class classDetailsStripe extends parentLogin {
         this.webflowMemberId
       );
       this.viewClassLocations(data);
-      var suppData = await this.fetchData("getUpsellProgramOne?session=fall", this.typeEBaseUrl);
-      this.$allSuppData = suppData;
-      // Check if there are any upsell programs
-      var academicSuppData = suppData.find((item) => {
-        return item.sessionId !== 2;
-      });
-      //this.$suppPro = academicSuppData ? academicSuppData.upsellPrograms : [];
-      this.updateSupplementaryProgramData(academicSuppData ? academicSuppData.upsellPrograms : [])
-      //this.updateAddonProgram();
+      try {
+        var suppData = await this.fetchData("getUpsellProgramOne?session=fall", this.typeEBaseUrl);
+        this.$allSuppData = suppData;
+        // Check if there are any upsell programs
+        var academicSuppData = suppData.find((item) => {
+          return item.sessionId !== 2;
+        });
+        //this.$suppPro = academicSuppData ? academicSuppData.upsellPrograms : [];
+        this.updateSupplementaryProgramData(academicSuppData ? academicSuppData.upsellPrograms : [])
+        //this.updateAddonProgram();
+        // Onload render bundle programs
+        this.createBundlePrograms(suppData);
+      } catch (upsellError) {
+        console.error("Error fetching getUpsellProgramOne (fall):", upsellError);
+        this.hideUpsellModalAndData();
+      }
       // Setup back button for browser and stripe checkout page
       this.setUpBackButtonTab();
       this.resetSubmitClassButtons();
       this.attachChromeBackRestoreHandler();
-      // Onload render bundle programs
-      this.createBundlePrograms(suppData);
 
       this.spinner.style.display = "none";
 
@@ -1735,6 +1740,23 @@ class classDetailsStripe extends parentLogin {
       modal.classList.remove("show");
       modal.style.display = "none";
     }
+  }
+
+  // Hides upsell modal and data sections when upsell API fails.
+  hideUpsellModalAndData() {
+    const semesterBundleModal = document.getElementById("semester-bundle-modal");
+    this.closeModal(semesterBundleModal);
+    const selectors = [
+      "[data-upSell='card-container']",
+      "[data-upSell='modal-card-container']",
+      ".banner-price-flex-wapper",
+      ".banner-price-flex-wrapper",
+    ];
+    selectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => {
+        el.style.display = "none";
+      });
+    });
   }
   activeBreadCrumb(activeId) {
     let breadCrumbList = document.querySelectorAll(" ul.c-stepper li");
