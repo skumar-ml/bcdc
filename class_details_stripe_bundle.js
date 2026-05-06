@@ -2745,6 +2745,21 @@ class classDetailsStripe extends parentLogin {
       this.hideUpsellModalAndData();
       return;
     }
+    // If these sections were hidden during a previous failed/empty response,
+    // make them visible again before rendering valid upsell data.
+    const showSelectors = [
+      "[data-upSell='card-container']",
+      "[data-upSell='modal-card-container']",
+      ".banner-price-flex-wapper",
+      ".banner-price-flex-wrapper",
+      ".payment-gateway-banner.summer.banner-discount",
+      ".payment-gateway-banner",
+    ];
+    showSelectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => {
+        el.style.display = "";
+      });
+    });
 
     academicData.forEach((item) => {
       var currentSessionId = item.sessionId;
