@@ -1331,20 +1331,25 @@ class CheckOutWebflow {
     }
 	// Fetches and displays supplementary programs
 	async displaySupplementaryProgram() {
-		var suppData = await this.fetchData("getUpsellProgramOne?session=summer", this.memberData.eTypeBaseUrl);
-        const normalizedSuppData = Array.isArray(suppData) ? suppData : [];
-        // Pick the first row that has upsellPrograms.
-        var academicSuppData = normalizedSuppData.find((item) => {
-          return item && Array.isArray(item.upsellPrograms) && item.upsellPrograms.length > 0;
-        }) || normalizedSuppData[0];
-        this.updateSupplementaryProgramData(
-          academicSuppData && Array.isArray(academicSuppData.upsellPrograms)
-            ? academicSuppData.upsellPrograms
-            : []
-        );
-		
-		this.createBundlePrograms(normalizedSuppData);
-		this.noThanksEvent();
+		try {
+          var suppData = await this.fetchData("getUpsellProgramOne?session=summer", this.memberData.eTypeBaseUrl);
+          const normalizedSuppData = Array.isArray(suppData) ? suppData : [];
+          // Pick the first row that has upsellPrograms.
+          var academicSuppData = normalizedSuppData.find((item) => {
+            return item && Array.isArray(item.upsellPrograms) && item.upsellPrograms.length > 0;
+          }) || normalizedSuppData[0];
+          this.updateSupplementaryProgramData(
+            academicSuppData && Array.isArray(academicSuppData.upsellPrograms)
+              ? academicSuppData.upsellPrograms
+              : []
+          );
+		  
+		  this.createBundlePrograms(normalizedSuppData);
+		  this.noThanksEvent();
+        } catch (error) {
+          console.error("Error fetching getUpsellProgramOne (summer):", error);
+          this.hideUpsellModalAndData();
+        }
 	}	
 
 	// Updates the internal list of supplementary program data
@@ -1368,6 +1373,25 @@ class CheckOutWebflow {
         document.querySelector("[data-upSell='modal-card-container']")
       );
 	}
+
+    // Hides upsell modal and containers when upsell API fails.
+    hideUpsellModalAndData() {
+      const semesterBundleModal = document.getElementById("semester-bundle-modal");
+      this.closeModal(semesterBundleModal);
+      const selectors = [
+        "[data-upSell='card-container']",
+        "[data-upSell='modal-card-container']",
+        ".banner-price-flex-wapper",
+        ".banner-price-flex-wrapper",
+        ".payment-gateway-banner.summer.banner-discount",
+        ".payment-gateway-banner",
+      ];
+      selectors.forEach((selector) => {
+        document.querySelectorAll(selector).forEach((el) => {
+          el.style.display = "none";
+        });
+      });
+    }
 
 	// Creates bundle program cards for display
 	createBundlePrograms(academicData) {
@@ -1394,8 +1418,23 @@ class CheckOutWebflow {
         return item && Array.isArray(item.upsellPrograms) && item.upsellPrograms.length > 0;
       });
       if (academicData.length === 0) {
+        this.hideUpsellModalAndData();
         return;
       }
+      // If hidden due to previous empty/error response, restore visibility before rendering.
+      const showSelectors = [
+        "[data-upSell='card-container']",
+        "[data-upSell='modal-card-container']",
+        ".banner-price-flex-wapper",
+        ".banner-price-flex-wrapper",
+        ".payment-gateway-banner.summer.banner-discount",
+        ".payment-gateway-banner",
+      ];
+      showSelectors.forEach((selector) => {
+        document.querySelectorAll(selector).forEach((el) => {
+          el.style.display = "";
+        });
+      });
 
       academicData.forEach((item) => {
         var currentSessionId = item.sessionId;
