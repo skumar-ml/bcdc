@@ -1738,9 +1738,11 @@ class classDetailsStripe extends parentLogin {
     //$this.addToCart();
     //$this.handleUpSellSelection();
   }
-  closeModal(modal) {
+  closeModal(modal, persistDismissal = true) {
     if (modal) {
-      document.cookie = "bundleModalClosed=" + encodeURIComponent(new Date().toISOString()) + "; path=/";
+      if (persistDismissal) {
+        document.cookie = "bundleModalClosed=" + encodeURIComponent(new Date().toISOString()) + "; path=/";
+      }
       modal.classList.remove("show");
       modal.style.display = "none";
     }
@@ -1749,7 +1751,10 @@ class classDetailsStripe extends parentLogin {
   // Hides upsell modal and data sections when upsell API fails.
   hideUpsellModalAndData() {
     const semesterBundleModal = document.getElementById("semester-bundle-modal");
-    this.closeModal(semesterBundleModal);
+    // Programmatic hide should not mark modal as user-dismissed.
+    this.closeModal(semesterBundleModal, false);
+    // Ensure stale dismissal cookie does not block next valid modal open.
+    document.cookie = "bundleModalClosed=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     const selectors = [
       "[data-upSell='card-container']",
       "[data-upSell='modal-card-container']",
@@ -1772,9 +1777,12 @@ class classDetailsStripe extends parentLogin {
 
   checkSemesterBundleModalOpen() {
     let isOpen = false;
-    // check for core program checkbox and upsell program checkbox checked. selected leanght should be greater than 2.
-    const checkedBundleCheckboxes = Array.from(document.querySelectorAll(".bundleProgram:checked"));
-    if (checkedBundleCheckboxes.length > 2) {
+    const semesterBundleModal = document.getElementById("semester-bundle-modal");
+    if (
+      semesterBundleModal &&
+      semesterBundleModal.classList.contains("show") &&
+      semesterBundleModal.style.display !== "none"
+    ) {
       isOpen = true;
     }
     // check bundleModalClosed cookie date time for 1 hour. no need to show if less then 1 hour
