@@ -45,10 +45,36 @@ class CheckOutWebflow {
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
 		this.memberData = memberData;
+		// Wipe stale checkout localStorage if the user just came back from a
+		// successful Stripe payment (referrer = /payment-confirmation). Must
+		// run before any localStorage reads so the form doesn't prefill old
+		// data.
+		this._clearStaleCheckoutAfterPayment();
 		this.renderPortalData();
 		this.displaySupplementaryProgram();
 		this.updatePriceForCardPayment();
 		this._bindAddToCartDelegated();
+	}
+
+	// Clear stale per-checkout localStorage when the user returns to this page
+	// from a successful Stripe payment. The Stripe success URL points to
+	// /payment-confirmation, while the cancel URL points back here with
+	// returnType=back, so referrer-based detection won't false-trigger on
+	// cancellation. Other localStorage keys (parent/UTM/referral/memberstack
+	// etc.) are intentionally left untouched.
+	_clearStaleCheckoutAfterPayment() {
+		try {
+			var referrer = document.referrer || "";
+			var query = new URLSearchParams(window.location.search);
+			var cameFromConfirmation = referrer.indexOf("/payment-confirmation") !== -1;
+			var isCancelReturn = query.get("returnType") === "back";
+			if (cameFromConfirmation && !isCancelReturn) {
+				localStorage.removeItem("checkOutData");
+				localStorage.removeItem("checkOutBasicData");
+			}
+		} catch (e) {
+			console.warn("Failed to clear stale checkout localStorage:", e);
+		}
 	}
 
 	// Displays summer session data with checkboxes
