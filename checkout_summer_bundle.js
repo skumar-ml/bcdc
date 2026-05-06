@@ -1361,7 +1361,7 @@ class CheckOutWebflow {
           index === self.findIndex((obj) => obj.upsellProgramId === item.upsellProgramId)
         );
       } else {
-        console.error("Supplementary program data is empty or not available.");
+        console.error("Supplementary program data is empty or not available y.");
         this.hideUpsellModalAndData();
       }
     }
@@ -1835,6 +1835,11 @@ class CheckOutWebflow {
 
 	// Displays the semester bundle modal
 	showSemesterBundleModal(forceOpen) {
+      const hasValidUpsells = this._getBannerAutoUpsellPrograms().length > 0;
+      if (!hasValidUpsells) {
+        this.hideUpsellModalAndData();
+        return;
+      }
       const check_semester_bundle = this.checkSemesterBundleModalOpen();
       if (check_semester_bundle) {
         if (forceOpen === true) {
