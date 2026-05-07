@@ -581,14 +581,16 @@ class DisplaySuppProgram {
       });
   }
   getEligibleStudentsBySelectedProgram(students) {
-    const selectedUpsellIds = this.$selectedProgram.map((program) =>
+    let selectedUpsellIds = this.$selectedProgram.map((program) =>
       Number(program.upsellProgramId)
     );
-    console.log("Selected upsell ids for student filter", selectedUpsellIds);
+    // When no program is selected yet, evaluate eligibility against visible upsell programs
     if (selectedUpsellIds.length === 0) {
-      // Keep default state simple until program selection is made
-      return this.$nonBundledStudents.length > 0 ? this.$nonBundledStudents : students;
+      selectedUpsellIds = this.$bundleData.map((program) =>
+        Number(program.upsellProgramId)
+      );
     }
+    console.log("Selected upsell ids for student filter", selectedUpsellIds);
     return students.filter((student) => {
       if (!student.isBundled) {
         return true;
