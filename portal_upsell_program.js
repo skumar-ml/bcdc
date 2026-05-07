@@ -15,6 +15,8 @@ class DisplaySuppProgram {
   $suppPro = [];
   $bundleData = [];
   $previousStudents = [];
+  $nonBundledStudents = [];
+  $bundledStudents = [];
   // Initializes the class with member data
   constructor(memberData) {
     this.spinner = document.getElementById("half-circle-spinner");
@@ -516,11 +518,22 @@ class DisplaySuppProgram {
       memberId: this.memberData.memberId,
     });
     try {
-      // Get all students from selling endpoint and filter in UI by selected program
-      const allStudents = await this.fetchData(
-        "getAllPreviousStudents/" + this.memberData.memberId + "/selling?isBundled=false",
-        this.memberData.fTypeBaseUrl
-      );
+      // Fetch non-bundled and bundled students separately from API
+      const [nonBundledStudents, bundledStudents] = await Promise.all([
+        this.fetchData(
+          "getAllPreviousStudents/" + this.memberData.memberId + "/selling?isBundled=false",
+          this.memberData.fTypeBaseUrl
+        ),
+        this.fetchData(
+          "getAllPreviousStudents/" + this.memberData.memberId + "/selling?isBundled=true",
+          this.memberData.fTypeBaseUrl
+        ),
+      ]);
+      const safeNonBundledStudents = Array.isArray(nonBundledStudents) ? nonBundledStudents : [];
+      const safeBundledStudents = Array.isArray(bundledStudents) ? bundledStudents : [];
+      this.$nonBundledStudents = this.getDedupedStudents(safeNonBundledStudents);
+      this.$bundledStudents = this.getDedupedStudents(safeBundledStudents);
+      const allStudents = [...this.$nonBundledStudents, ...this.$bundledStudents];
       if (allStudents.length === 0) {
         console.log("No previous students found");
         this.upSellEls.forEach((el) => {
@@ -534,6 +547,8 @@ class DisplaySuppProgram {
       console.log("Student list prepared", {
         totalStudents: allStudents.length,
         uniqueStudents: filterData.length,
+        nonBundledCount: this.$nonBundledStudents.length,
+        bundledCount: this.$bundledStudents.length,
       });
       this.refreshStudentListBySelectedProgram();
     } catch (error) {
@@ -566,8 +581,27 @@ class DisplaySuppProgram {
       });
   }
   getEligibleStudentsBySelectedProgram(students) {
-    // API already returns non-bundled students via isBundled=false
-    return students;
+    const selectedUpsellIds = this.$selectedProgram.map((program) =>
+      Number(program.upsellProgramId)
+    );
+    console.log("Selected upsell ids for student filter", selectedUpsellIds);
+    if (selectedUpsellIds.length === 0) {
+      // Keep default state simple until program selection is made
+      return this.$nonBundledStudents.length > 0 ? this.$nonBundledStudents : students;
+    }
+    return students.filter((student) => {
+      if (!student.isBundled) {
+        return true;
+      }
+      const bundledProgramIds = Array.isArray(student.upsellProgramIds)
+        ? student.upsellProgramIds.map((id) => Number(id))
+        : [];
+      const hasOverlap = selectedUpsellIds.some((id) =>
+        bundledProgramIds.includes(id)
+      );
+      // Student bought different program(s), so still eligible for selected one(s)
+      return !hasOverlap;
+    });
   }
   renderStudentOptions(students) {
     const selectBox = document.getElementById("portal-students");
