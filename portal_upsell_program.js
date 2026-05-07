@@ -232,7 +232,7 @@ class DisplaySuppProgram {
         }
       });
       $this.disableEnableBuyNowButton();
-      $console.log("Main card selection updated", {
+      console.log("Main card selection updated", {
         selectedCount: this.$selectedProgram.length,
       });
     });
@@ -351,7 +351,7 @@ class DisplaySuppProgram {
         }
       });
       $this.disableEnableBuyNowButton();
-      $console.log("Modal card selection updated", {
+      console.log("Modal card selection updated", {
         selectedCount: this.$selectedProgram.length,
       });
     });
@@ -415,7 +415,7 @@ class DisplaySuppProgram {
     closeLinks.forEach(function (closeLink) {
       closeLink.addEventListener("click", function (event) {
         event.preventDefault();
-        $console.log("Semester modal close clicked");
+        console.log("Semester modal close clicked");
         $this.hideModal(semesterBundleModal);
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
@@ -426,7 +426,7 @@ class DisplaySuppProgram {
       closeModal.forEach((close_modal_link) => {
         close_modal_link.addEventListener("click", function (event) {
           event.preventDefault();
-          $console.log("Modal close element clicked");
+          console.log("Modal close element clicked");
           $this.hideModal(semesterBundleModal);
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
@@ -437,7 +437,7 @@ class DisplaySuppProgram {
     // Add click event listener to the learn more button
     allLearnMore.addEventListener("click", function (event) {
       event.preventDefault();
-      $console.log("Learn more clicked; opening semester modal");
+      console.log("Learn more clicked; opening semester modal");
       semesterBundleModal.classList.add("show");
       semesterBundleModal.style.display = "flex";
     });
@@ -455,7 +455,7 @@ class DisplaySuppProgram {
     addToCartButtons.forEach((button) => {
       button.addEventListener("click", function (event) {
         event.preventDefault();
-        $console.log("Add to cart clicked", {
+        console.log("Add to cart clicked", {
           selectedCount: $this.$selectedProgram.length,
         });
         // $this.$selectedProgram = item;
@@ -667,14 +667,14 @@ class DisplaySuppProgram {
   attachBackRestoreHandler() {
     var $this = this;
     window.addEventListener("pageshow", function (event) {
-      $console.log("pageshow triggered", { persisted: event.persisted });
+      console.log("pageshow triggered", { persisted: event.persisted });
       const navEntries = performance.getEntriesByType("navigation");
       const isHistoryNav =
         navEntries &&
         navEntries.length > 0 &&
         navEntries[0].type === "back_forward";
       if (!(event.persisted || isHistoryNav)) {
-        $console.log("pageshow ignored; not a history navigation");
+        console.log("pageshow ignored; not a history navigation");
         return;
       }
       var stored = null;
@@ -682,14 +682,14 @@ class DisplaySuppProgram {
         stored = sessionStorage.getItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY);
       } catch (e) {}
       if (stored) {
-        $console.log("Found stored cancel URL", { stored: stored });
+        console.log("Found stored cancel URL", { stored: stored });
         try {
           var storedU = new URL(stored);
           var currentU = new URL(window.location.href);
           var storedKey = storedU.origin + storedU.pathname + storedU.search;
           var currentKey = currentU.origin + currentU.pathname + currentU.search;
           if (storedKey !== currentKey && storedU.origin === currentU.origin) {
-            $console.log("Restoring page via stored cancel URL");
+            console.log("Restoring page via stored cancel URL");
             window.location.replace(stored);
             return;
           }
@@ -706,7 +706,7 @@ class DisplaySuppProgram {
     const payBtn = document.getElementById("pay-supp-program");
     payBtn.addEventListener("click", function (event) {
       event.preventDefault();
-      $console.log("Pay button clicked", {
+      console.log("Pay button clicked", {
         selectedCount: $this.$selectedProgram.length,
       });
 
@@ -726,7 +726,7 @@ class DisplaySuppProgram {
         ).toFixed(2);
         // Check if the program name, upsellProgramId, amount, and paymentId are defined
         let paymentId = studentEl.value;
-        $console.log("Payment input prepared", {
+        console.log("Payment input prepared", {
           paymentId: paymentId,
           programName: programName,
           amount: amount,
@@ -739,11 +739,11 @@ class DisplaySuppProgram {
             amount
           );
         } else {
-          $console.log("Payment blocked; missing required fields");
+          console.log("Payment blocked; missing required fields");
           $this.resetPaySuppProgramButton();
         }
       } else {
-        $console.log("Payment blocked; student not selected");
+        console.log("Payment blocked; student not selected");
         alert("Please select student");
         $this.resetPaySuppProgramButton();
       }
