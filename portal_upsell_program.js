@@ -590,10 +590,42 @@ class DisplaySuppProgram {
         Number(program.upsellProgramId)
       );
     }
+    const summerUpsellIds = this.$bundleData
+      .filter((program) => {
+        const label = (program.label || "").toLowerCase();
+        return program.sessionId === 2 || label.indexOf("summer") >= 0;
+      })
+      .map((program) => Number(program.upsellProgramId));
+    const isSummerSelection = selectedUpsellIds.some((id) =>
+      summerUpsellIds.includes(id)
+    );
     console.log("Selected upsell ids for student filter", selectedUpsellIds);
+    // Step 1 rule: if exactly one program is selected, show only non-bundled students
+    if (this.$selectedProgram.length === 1) {
+      return students.filter((student) => {
+        const includeStudent = !student.isBundled;
+        console.log("Single-program filter check", {
+          studentName: student.studentName,
+          paymentId: student.paymentId,
+          isBundled: student.isBundled,
+          isSummerProgram: student.isSummerProgram,
+          includeStudent: includeStudent,
+        });
+        return includeStudent;
+      });
+    }
     return students.filter((student) => {
       if (!student.isBundled) {
         return true;
+      }
+      // If summer program is selected, hide bundled students flagged as summer program.
+      if (isSummerSelection && student.isSummerProgram) {
+        console.log("Excluding bundled summer student for summer selection", {
+          studentName: student.studentName,
+          paymentId: student.paymentId,
+          selectedUpsellIds: selectedUpsellIds,
+        });
+        return false;
       }
       const bundledProgramIds = Array.isArray(student.upsellProgramIds)
         ? student.upsellProgramIds.map((id) => Number(id))
