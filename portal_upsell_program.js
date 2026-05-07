@@ -15,7 +15,6 @@ class DisplaySuppProgram {
   $suppPro = [];
   $bundleData = [];
   $previousStudents = [];
-  $summerUpsellProgramIds = [];
   // Initializes the class with member data
   constructor(memberData) {
     this.spinner = document.getElementById("half-circle-spinner");
@@ -157,26 +156,7 @@ class DisplaySuppProgram {
       this.$bundleData = bundleData;
       this.renderPayNowModalCards();
     });
-    this.$summerUpsellProgramIds = this.getSummerUpsellProgramIds(academicData);
-    console.log("Detected summer upsell program ids", this.$summerUpsellProgramIds);
     this.disableEnableBuyNowButton();
-  }
-  getSummerUpsellProgramIds(academicData) {
-    const summerIds = [];
-    academicData.forEach((item) => {
-      if (!Array.isArray(item.upsellPrograms)) {
-        return;
-      }
-      item.upsellPrograms.forEach((program) => {
-        const isSummerLabel =
-          typeof program.label === "string" &&
-          program.label.toLowerCase().indexOf("summer") >= 0;
-        if (program.sessionId === 2 || isSummerLabel) {
-          summerIds.push(Number(program.upsellProgramId));
-        }
-      });
-    });
-    return [...new Set(summerIds)];
   }
   // Displays the total discount amount
   displayTotalDiscount(bundleData){
@@ -199,7 +179,6 @@ class DisplaySuppProgram {
     );
     // Create the label with required classes
     const label = this.creEl("label", "bundle-sem-content-block");
-    label.setAttribute("data-upsell-card-id", singleBundleData.upsellProgramId);
     // Checkbox container
     const checkboxDiv = this.creEl("div");
     const input = this.creEl("input", "bundle-sem-checkbox");
@@ -320,7 +299,6 @@ class DisplaySuppProgram {
     );
     // Outer grid div
     const grid = this.creEl("div", "bundle-sem-content-flex-container");
-    grid.setAttribute("data-upsell-card-id", singleBundleData.upsellProgramId);
     // Checkbox
     const textWithCheckbox = this.creEl("div", "bundle-sem-text-with-checkbox")
     const checkboxDiv = this.creEl("div", "w-embed");
@@ -540,7 +518,7 @@ class DisplaySuppProgram {
     try {
       // Get all students from selling endpoint and filter in UI by selected program
       const allStudents = await this.fetchData(
-        "getAllPreviousStudents/" + this.memberData.memberId + "/selling",
+        "getAllPreviousStudents/" + this.memberData.memberId + "/selling?isBundled=false",
         this.memberData.fTypeBaseUrl
       );
       if (allStudents.length === 0) {
@@ -558,8 +536,6 @@ class DisplaySuppProgram {
         uniqueStudents: filterData.length,
       });
       this.refreshStudentListBySelectedProgram();
-      this.attachStudentChangeHandler();
-      this.applyStudentProgramVisibilityByPaymentId(selectBox.value);
     } catch (error) {
       console.error("Error fetching API data:", error);
       console.log("updateOldStudentList failed", { error: error.message });
@@ -590,36 +566,8 @@ class DisplaySuppProgram {
       });
   }
   getEligibleStudentsBySelectedProgram(students) {
-    const selectedUpsellIds = this.$selectedProgram.map((program) =>
-      Number(program.upsellProgramId)
-    );
-    console.log("Selected upsell ids for student filter", selectedUpsellIds);
-    if (selectedUpsellIds.length === 0) {
-      // Default list should show only students who never bought upsell
-      return students.filter((student) => !student.isBundled);
-    }
-    return students.filter((student) => {
-      if (!student.isBundled) {
-        console.log("Including student (not bundled)", {
-          studentName: student.studentName,
-          paymentId: student.paymentId,
-        });
-        return true;
-      }
-      const bundledProgramIds = Array.isArray(student.upsellProgramIds)
-        ? student.upsellProgramIds.map((id) => Number(id))
-        : [];
-      const hasOverlap = selectedUpsellIds.some((id) =>
-        bundledProgramIds.includes(id)
-      );
-      console.log("Evaluating bundled student", {
-        studentName: student.studentName,
-        paymentId: student.paymentId,
-        bundledProgramIds: bundledProgramIds,
-        hasOverlap: hasOverlap,
-      });
-      return !hasOverlap;
-    });
+    // API already returns non-bundled students via isBundled=false
+    return students;
   }
   renderStudentOptions(students) {
     const selectBox = document.getElementById("portal-students");
@@ -656,88 +604,6 @@ class DisplaySuppProgram {
       isBundled: s.isBundled,
       upsellProgramIds: s.upsellProgramIds,
     })));
-  }
-  attachStudentChangeHandler() {
-    const selectBox = document.getElementById("portal-students");
-    if (!selectBox) {
-      return;
-    }
-    if (selectBox.dataset.portalUpsellStudentHandlerAttached === "true") {
-      return;
-    }
-    // Keep student-program visibility in sync with selected student
-    selectBox.addEventListener("change", (event) => {
-      this.applyStudentProgramVisibilityByPaymentId(event.target.value);
-    });
-    selectBox.dataset.portalUpsellStudentHandlerAttached = "true";
-  }
-  applyStudentProgramVisibilityByPaymentId(paymentId) {
-    if (!paymentId) {
-      this.toggleUpsellProgramsByIds(this.$summerUpsellProgramIds, false);
-      return;
-    }
-    const selectedStudent = this.$previousStudents.find(
-      (student) => student.paymentId === paymentId
-    );
-    if (!selectedStudent) {
-      this.toggleUpsellProgramsByIds(this.$summerUpsellProgramIds, false);
-      return;
-    }
-    const shouldHideSummer = Boolean(selectedStudent.isSummerProgram);
-    console.log("Applying student program visibility", {
-      paymentId: paymentId,
-      studentName: selectedStudent.studentName,
-      isSummerProgram: selectedStudent.isSummerProgram,
-      shouldHideSummer: shouldHideSummer,
-    });
-    this.toggleUpsellProgramsByIds(this.$summerUpsellProgramIds, shouldHideSummer);
-  }
-  toggleUpsellProgramsByIds(programIds, shouldHide) {
-    if (!Array.isArray(programIds) || programIds.length === 0) {
-      return;
-    }
-    const hiddenProgramIds = programIds.map((id) => Number(id));
-    // Remove hidden programs from selected list to avoid stale checkout data
-    if (shouldHide) {
-      this.$selectedProgram = this.$selectedProgram.filter(
-        (program) => !hiddenProgramIds.includes(Number(program.upsellProgramId))
-      );
-    }
-    hiddenProgramIds.forEach((programId) => {
-      const cardElements = document.querySelectorAll(
-        `[data-upsell-card-id="${programId}"]`
-      );
-      cardElements.forEach((el) => {
-        el.style.display = shouldHide ? "none" : "";
-      });
-      const inputElements = document.querySelectorAll(
-        `[data-upsell-program-id="${programId}"]`
-      );
-      inputElements.forEach((inputEl) => {
-        if (shouldHide && inputEl.checked) {
-          inputEl.checked = false;
-        }
-      });
-    });
-    this.renderPayNowModalCards();
-    this.refreshSelectedProgramTotals();
-    this.disableEnableBuyNowButton();
-  }
-  refreshSelectedProgramTotals() {
-    const upSellAmount = document.querySelectorAll(
-      "[data-cart-total='cart-total-price']"
-    );
-    if (upSellAmount.length === 0) {
-      return;
-    }
-    const totalAmount = this.$selectedProgram.reduce(
-      (acc, program) => acc + program.portal_amount,
-      0
-    );
-    upSellAmount.forEach((upSellPrice) => {
-      upSellPrice.innerHTML = "$" + this.numberWithCommas(totalAmount);
-    });
-    this.updateCreditModalAmount(totalAmount);
   }
   refreshStudentListBySelectedProgram() {
     if (!Array.isArray(this.$previousStudents) || this.$previousStudents.length === 0) {
@@ -973,7 +839,6 @@ class DisplaySuppProgram {
 
     // Outer grid wrapper (initially without border-brown-red)
     const wrapper = this.creEl("div", "bundle-sem-content-inner-div");
-    wrapper.setAttribute("data-upsell-card-id", singleBundleData.upsellProgramId);
     const isSelected = this.$selectedProgram.find(
       (program) => program.upsellProgramId === singleBundleData.upsellProgramId
     );
