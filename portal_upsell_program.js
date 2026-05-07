@@ -14,6 +14,7 @@ class DisplaySuppProgram {
   $selectedProgram = [];
   $suppPro = [];
   $bundleData = [];
+  $previousStudents = [];
   // Initializes the class with member data
   constructor(memberData) {
     this.spinner = document.getElementById("half-circle-spinner");
@@ -527,47 +528,14 @@ class DisplaySuppProgram {
         });
         return;
       }
-      //finding unique value and sorting by firstName
-      const filterData = data
-        .filter((item, index, self) => {
-          const dedupeKey = item.studentEmail && item.studentEmail.trim()
-            ? `email:${item.studentEmail.trim().toLowerCase()}`
-            : `payment:${item.paymentId}`;
-          return (
-            index ===
-            self.findIndex((obj) => {
-              const objKey = obj.studentEmail && obj.studentEmail.trim()
-                ? `email:${obj.studentEmail.trim().toLowerCase()}`
-                : `payment:${obj.paymentId}`;
-              return objKey === dedupeKey;
-            })
-          );
-        })
-        .sort(function (a, b) {
-          return a.studentName.trim().localeCompare(b.studentName.trim());
-        });
+      // Find unique students and sort by studentName
+      const filterData = this.getDedupedStudents(data);
+      this.$previousStudents = filterData;
       console.log("Student list prepared", {
         totalStudents: data.length,
         uniqueStudents: filterData.length,
       });
-      // Clear existing options
-      selectBox.innerHTML = "";
-      // Add a "Please select" option
-      const defaultOption = document.createElement("option");
-      defaultOption.value = "";
-      defaultOption.textContent = "Select a student";
-      selectBox.appendChild(defaultOption);
-      // Add new options from the API data
-      filterData.forEach((item, index) => {
-        const option = document.createElement("option");
-        option.value = item.paymentId;
-        // Add selected if filterData length is 1
-        if (filterData.length === 1) {
-          option.selected = true;
-        }
-        option.textContent = `${item.studentName}`;
-        selectBox.appendChild(option);
-      });
+      this.refreshStudentListBySelectedProgram();
     } catch (error) {
       console.error("Error fetching API data:", error);
       console.log("updateOldStudentList failed", { error: error.message });
@@ -576,6 +544,81 @@ class DisplaySuppProgram {
       selectBox.innerHTML =
         '<option value="">Student Details not available</option>';
     }
+  }
+  getDedupedStudents(data) {
+    return data
+      .filter((item, index, self) => {
+        const dedupeKey = item.studentEmail && item.studentEmail.trim()
+          ? `email:${item.studentEmail.trim().toLowerCase()}`
+          : `payment:${item.paymentId}`;
+        return (
+          index ===
+          self.findIndex((obj) => {
+            const objKey = obj.studentEmail && obj.studentEmail.trim()
+              ? `email:${obj.studentEmail.trim().toLowerCase()}`
+              : `payment:${obj.paymentId}`;
+            return objKey === dedupeKey;
+          })
+        );
+      })
+      .sort(function (a, b) {
+        return a.studentName.trim().localeCompare(b.studentName.trim());
+      });
+  }
+  getEligibleStudentsBySelectedProgram(students) {
+    const selectedUpsellIds = this.$selectedProgram.map((program) =>
+      Number(program.upsellProgramId)
+    );
+    if (selectedUpsellIds.length === 0) {
+      return students;
+    }
+    return students.filter((student) => {
+      if (!student.isBundled) {
+        return true;
+      }
+      const bundledProgramIds = Array.isArray(student.upsellProgramIds)
+        ? student.upsellProgramIds.map((id) => Number(id))
+        : [];
+      const hasOverlap = selectedUpsellIds.some((id) =>
+        bundledProgramIds.includes(id)
+      );
+      return !hasOverlap;
+    });
+  }
+  renderStudentOptions(students) {
+    const selectBox = document.getElementById("portal-students");
+    if (!selectBox) {
+      console.log("portal-students select box not found");
+      return;
+    }
+    // Rebuild student options for current eligible list
+    selectBox.innerHTML = "";
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Select a student";
+    selectBox.appendChild(defaultOption);
+    students.forEach((item) => {
+      const option = document.createElement("option");
+      option.value = item.paymentId;
+      option.textContent = `${item.studentName}`;
+      if (students.length === 1) {
+        option.selected = true;
+      }
+      selectBox.appendChild(option);
+    });
+  }
+  refreshStudentListBySelectedProgram() {
+    if (!Array.isArray(this.$previousStudents) || this.$previousStudents.length === 0) {
+      console.log("No cached students available for filtering");
+      return;
+    }
+    const eligibleStudents = this.getEligibleStudentsBySelectedProgram(this.$previousStudents);
+    console.log("Filtered student list by selected program", {
+      selectedProgramIds: this.$selectedProgram.map((p) => p.upsellProgramId),
+      totalStudents: this.$previousStudents.length,
+      eligibleStudents: eligibleStudents.length,
+    });
+    this.renderStudentOptions(eligibleStudents);
   }
 
   async initSupplementaryPayment(paymentId, upsellProgramId, programName, amount) {
@@ -786,7 +829,8 @@ class DisplaySuppProgram {
       console.log("Buy now buttons enabled", {
         selectedCount: this.$selectedProgram.length,
       });
-    } 
+    }
+    this.refreshStudentListBySelectedProgram();
   }
   // Generate a card for payNow-modal-card-container
   createPayNowModalCard(singleBundleData) {
