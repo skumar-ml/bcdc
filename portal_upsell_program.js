@@ -512,16 +512,16 @@ class DisplaySuppProgram {
   //updateOldStudentList
   async updateOldStudentList() {
     const selectBox = document.getElementById("portal-students");
-    var $this = this;
     console.log("updateOldStudentList started", {
       memberId: this.memberData.memberId,
     });
     try {
-      const data = await this.fetchData(
+      // Get all students from selling endpoint and filter in UI by selected program
+      const allStudents = await this.fetchData(
         "getAllPreviousStudents/" + this.memberData.memberId + "/selling",
         this.memberData.fTypeBaseUrl
       );
-      if (data == "No data Found") {
+      if (allStudents.length === 0) {
         console.log("No previous students found");
         this.upSellEls.forEach((el) => {
           el.style.display = "none";
@@ -529,10 +529,10 @@ class DisplaySuppProgram {
         return;
       }
       // Find unique students and sort by studentName
-      const filterData = this.getDedupedStudents(data);
+      const filterData = this.getDedupedStudents(allStudents);
       this.$previousStudents = filterData;
       console.log("Student list prepared", {
-        totalStudents: data.length,
+        totalStudents: allStudents.length,
         uniqueStudents: filterData.length,
       });
       this.refreshStudentListBySelectedProgram();
@@ -569,11 +569,17 @@ class DisplaySuppProgram {
     const selectedUpsellIds = this.$selectedProgram.map((program) =>
       Number(program.upsellProgramId)
     );
+    console.log("Selected upsell ids for student filter", selectedUpsellIds);
     if (selectedUpsellIds.length === 0) {
-      return students;
+      // Default list should show only students who never bought upsell
+      return students.filter((student) => !student.isBundled);
     }
     return students.filter((student) => {
       if (!student.isBundled) {
+        console.log("Including student (not bundled)", {
+          studentName: student.studentName,
+          paymentId: student.paymentId,
+        });
         return true;
       }
       const bundledProgramIds = Array.isArray(student.upsellProgramIds)
@@ -582,6 +588,12 @@ class DisplaySuppProgram {
       const hasOverlap = selectedUpsellIds.some((id) =>
         bundledProgramIds.includes(id)
       );
+      console.log("Evaluating bundled student", {
+        studentName: student.studentName,
+        paymentId: student.paymentId,
+        bundledProgramIds: bundledProgramIds,
+        hasOverlap: hasOverlap,
+      });
       return !hasOverlap;
     });
   }
@@ -597,6 +609,14 @@ class DisplaySuppProgram {
     defaultOption.value = "";
     defaultOption.textContent = "Select a student";
     selectBox.appendChild(defaultOption);
+    if (students.length === 0) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "No eligible students";
+      selectBox.appendChild(option);
+      console.log("No eligible students available for current selection");
+      return;
+    }
     students.forEach((item) => {
       const option = document.createElement("option");
       option.value = item.paymentId;
@@ -606,6 +626,12 @@ class DisplaySuppProgram {
       }
       selectBox.appendChild(option);
     });
+    console.log("Rendered portal-students options", students.map((s) => ({
+      studentName: s.studentName,
+      paymentId: s.paymentId,
+      isBundled: s.isBundled,
+      upsellProgramIds: s.upsellProgramIds,
+    })));
   }
   refreshStudentListBySelectedProgram() {
     if (!Array.isArray(this.$previousStudents) || this.$previousStudents.length === 0) {
