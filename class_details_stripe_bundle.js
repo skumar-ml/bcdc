@@ -1239,7 +1239,7 @@ class classDetailsStripe extends parentLogin {
       );
       this.viewClassLocations(data);
       try {
-        var suppData = await this.fetchData("getUpsellProgramOne?session=fall", this.typeEBaseUrl);
+        var suppData = await this.fetchData("getUpsellProgram?session=fall", this.typeEBaseUrl);
         this.$allSuppData = suppData;
         // Check if there are any upsell programs
         var academicSuppData = suppData.find((item) => {
