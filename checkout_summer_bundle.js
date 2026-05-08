@@ -1332,7 +1332,7 @@ class CheckOutWebflow {
 	// Fetches and displays supplementary programs
 	async displaySupplementaryProgram() {
 		try {
-          var suppData = await this.fetchData("getUpsellProgramOne?session=summer", this.memberData.eTypeBaseUrl);
+          var suppData = await this.fetchData("getUpsellProgram?session=summer", this.memberData.eTypeBaseUrl);
           const normalizedSuppData = Array.isArray(suppData) ? suppData : [];
           // Pick the first row that has upsellPrograms.
           var academicSuppData = normalizedSuppData.find((item) => {
@@ -1347,7 +1347,7 @@ class CheckOutWebflow {
 		  this.createBundlePrograms(normalizedSuppData);
 		  this.noThanksEvent();
         } catch (error) {
-          console.error("Error fetching getUpsellProgramOne (summer):", error);
+          console.error("Error fetching getUpsellProgram (summer):", error);
           this.hideUpsellModalAndData();
         }
 	}	
