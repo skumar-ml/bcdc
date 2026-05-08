@@ -580,6 +580,30 @@ class DisplaySuppProgram {
         return a.studentName.trim().localeCompare(b.studentName.trim());
       });
   }
+  getStudentIdentityKey(student) {
+    if (student && student.studentEmail && student.studentEmail.trim()) {
+      return `email:${student.studentEmail.trim().toLowerCase()}`;
+    }
+    if (student && student.studentName && student.studentName.trim()) {
+      return `name:${student.studentName.trim().toLowerCase()}`;
+    }
+    return `payment:${student && student.paymentId ? student.paymentId : ""}`;
+  }
+  hasStudentPurchasedSelectedUpsell(student, selectedUpsellIds) {
+    if (!Array.isArray(selectedUpsellIds) || selectedUpsellIds.length === 0) {
+      return false;
+    }
+    const identityKey = this.getStudentIdentityKey(student);
+    const studentHistory = (this.$previousStudents || []).filter(
+      (item) => this.getStudentIdentityKey(item) === identityKey
+    );
+    return studentHistory.some((historyItem) => {
+      const purchasedIds = Array.isArray(historyItem.upsellProgramIds)
+        ? historyItem.upsellProgramIds.map((id) => Number(id))
+        : [];
+      return selectedUpsellIds.some((id) => purchasedIds.includes(id));
+    });
+  }
   getEligibleStudentsBySelectedProgram(students) {
     let selectedUpsellIds = this.$selectedProgram.map((program) =>
       Number(program.upsellProgramId)
@@ -605,6 +629,18 @@ class DisplaySuppProgram {
       // For summer selection, keep only non-bundled students
       if (isSummerSelection) {
         return students.filter((student) => {
+          const alreadyPurchasedSelectedProgram = this.hasStudentPurchasedSelectedUpsell(
+            student,
+            selectedUpsellIds
+          );
+          if (alreadyPurchasedSelectedProgram) {
+            console.log("Excluding student already purchased selected upsell", {
+              studentName: student.studentName,
+              paymentId: student.paymentId,
+              selectedUpsellIds: selectedUpsellIds,
+            });
+            return false;
+          }
           const includeStudent = !student.isBundled;
           console.log("Single-program summer filter check", {
             studentName: student.studentName,
@@ -618,6 +654,18 @@ class DisplaySuppProgram {
       }
       // For non-summer selection, include bundled students if program was not already purchased
       return students.filter((student) => {
+        const alreadyPurchasedSelectedProgram = this.hasStudentPurchasedSelectedUpsell(
+          student,
+          selectedUpsellIds
+        );
+        if (alreadyPurchasedSelectedProgram) {
+          console.log("Excluding student already purchased selected upsell", {
+            studentName: student.studentName,
+            paymentId: student.paymentId,
+            selectedUpsellIds: selectedUpsellIds,
+          });
+          return false;
+        }
         if (!student.isBundled) {
           console.log("Single-program non-summer filter check", {
             studentName: student.studentName,
@@ -647,6 +695,18 @@ class DisplaySuppProgram {
       });
     }
     return students.filter((student) => {
+      const alreadyPurchasedSelectedProgram = this.hasStudentPurchasedSelectedUpsell(
+        student,
+        selectedUpsellIds
+      );
+      if (alreadyPurchasedSelectedProgram) {
+        console.log("Excluding student already purchased selected upsell", {
+          studentName: student.studentName,
+          paymentId: student.paymentId,
+          selectedUpsellIds: selectedUpsellIds,
+        });
+        return false;
+      }
       if (!student.isBundled) {
         return true;
       }
