@@ -15,8 +15,7 @@ class DisplaySuppProgram {
   $suppPro = [];
   $bundleData = [];
   $previousStudents = [];
-  $nonBundledStudents = [];
-  $bundledStudents = [];
+  $allStudentHistory = [];
   // Initializes the class with member data
   constructor(memberData) {
     this.spinner = document.getElementById("half-circle-spinner");
@@ -518,22 +517,14 @@ class DisplaySuppProgram {
       memberId: this.memberData.memberId,
     });
     try {
-      // Fetch non-bundled and bundled students separately from API
-      const [nonBundledStudents, bundledStudents] = await Promise.all([
-        this.fetchData(
-          "getAllPreviousStudents/" + this.memberData.memberId + "/selling?isBundled=false",
-          this.memberData.fTypeBaseUrl
-        ),
-        this.fetchData(
-          "getAllPreviousStudents/" + this.memberData.memberId + "/selling?isBundled=true",
-          this.memberData.fTypeBaseUrl
-        ),
-      ]);
-      const safeNonBundledStudents = Array.isArray(nonBundledStudents) ? nonBundledStudents : [];
-      const safeBundledStudents = Array.isArray(bundledStudents) ? bundledStudents : [];
-      this.$nonBundledStudents = this.getDedupedStudents(safeNonBundledStudents);
-      this.$bundledStudents = this.getDedupedStudents(safeBundledStudents);
-      const allStudents = [...this.$nonBundledStudents, ...this.$bundledStudents];
+      // Use selling endpoint and apply only selected-program conditions in UI
+      const allStudentsResponse = await this.fetchData(
+        "getAllPreviousStudents/" + this.memberData.memberId + "/selling",
+        this.memberData.fTypeBaseUrl
+      );
+      const allStudents = Array.isArray(allStudentsResponse) ? allStudentsResponse : [];
+      // Keep full API history rows for purchased-program checks
+      this.$allStudentHistory = allStudents;
       if (allStudents.length === 0) {
         console.log("No previous students found");
         this.upSellEls.forEach((el) => {
@@ -547,8 +538,6 @@ class DisplaySuppProgram {
       console.log("Student list prepared", {
         totalStudents: allStudents.length,
         uniqueStudents: filterData.length,
-        nonBundledCount: this.$nonBundledStudents.length,
-        bundledCount: this.$bundledStudents.length,
       });
       this.refreshStudentListBySelectedProgram();
     } catch (error) {
@@ -594,7 +583,11 @@ class DisplaySuppProgram {
       return false;
     }
     const identityKey = this.getStudentIdentityKey(student);
-    const studentHistory = (this.$previousStudents || []).filter(
+    const studentHistorySource =
+      Array.isArray(this.$allStudentHistory) && this.$allStudentHistory.length > 0
+        ? this.$allStudentHistory
+        : this.$previousStudents || [];
+    const studentHistory = studentHistorySource.filter(
       (item) => this.getStudentIdentityKey(item) === identityKey
     );
     return studentHistory.some((historyItem) => {
@@ -605,128 +598,36 @@ class DisplaySuppProgram {
     });
   }
   getEligibleStudentsBySelectedProgram(students) {
-    let selectedUpsellIds = this.$selectedProgram.map((program) =>
+    const selectedUpsellIds = this.$selectedProgram.map((program) =>
       Number(program.upsellProgramId)
     );
-    // When no program is selected yet, evaluate eligibility against visible upsell programs
-    if (selectedUpsellIds.length === 0) {
-      selectedUpsellIds = this.$bundleData.map((program) =>
-        Number(program.upsellProgramId)
-      );
-    }
-    const summerUpsellIds = this.$bundleData
-      .filter((program) => {
-        const label = (program.label || "").toLowerCase();
-        return program.sessionId === 2 || label.indexOf("summer") >= 0;
-      })
-      .map((program) => Number(program.upsellProgramId));
-    const isSummerSelection = selectedUpsellIds.some((id) =>
-      summerUpsellIds.includes(id)
-    );
     console.log("Selected upsell ids for student filter", selectedUpsellIds);
-    // Step rules for single-program selection
-    if (this.$selectedProgram.length === 1) {
-      // For summer selection, keep only non-bundled students
-      if (isSummerSelection) {
-        return students.filter((student) => {
-          const alreadyPurchasedSelectedProgram = this.hasStudentPurchasedSelectedUpsell(
-            student,
-            selectedUpsellIds
-          );
-          if (alreadyPurchasedSelectedProgram) {
-            console.log("Excluding student already purchased selected upsell", {
-              studentName: student.studentName,
-              paymentId: student.paymentId,
-              selectedUpsellIds: selectedUpsellIds,
-            });
-            return false;
-          }
-          const includeStudent = !student.isBundled;
-          console.log("Single-program summer filter check", {
-            studentName: student.studentName,
-            paymentId: student.paymentId,
-            isBundled: student.isBundled,
-            isSummerProgram: student.isSummerProgram,
-            includeStudent: includeStudent,
-          });
-          return includeStudent;
-        });
-      }
-      // For non-summer selection, include bundled students if program was not already purchased
-      return students.filter((student) => {
-        const alreadyPurchasedSelectedProgram = this.hasStudentPurchasedSelectedUpsell(
-          student,
-          selectedUpsellIds
-        );
-        if (alreadyPurchasedSelectedProgram) {
-          console.log("Excluding student already purchased selected upsell", {
-            studentName: student.studentName,
-            paymentId: student.paymentId,
-            selectedUpsellIds: selectedUpsellIds,
-          });
-          return false;
-        }
-        if (!student.isBundled) {
-          console.log("Single-program non-summer filter check", {
-            studentName: student.studentName,
-            paymentId: student.paymentId,
-            isBundled: student.isBundled,
-            includeStudent: true,
-          });
-          return true;
-        }
-        const bundledProgramIds = Array.isArray(student.upsellProgramIds)
-          ? student.upsellProgramIds.map((id) => Number(id))
-          : [];
-        const hasOverlap = selectedUpsellIds.some((id) =>
-          bundledProgramIds.includes(id)
-        );
-        const includeStudent = !hasOverlap;
-        console.log("Single-program non-summer bundled check", {
-          studentName: student.studentName,
-          paymentId: student.paymentId,
-          isBundled: student.isBundled,
-          bundledProgramIds: bundledProgramIds,
-          selectedUpsellIds: selectedUpsellIds,
-          hasOverlap: hasOverlap,
-          includeStudent: includeStudent,
-        });
-        return includeStudent;
-      });
+    if (selectedUpsellIds.length === 0) {
+      return students;
     }
     return students.filter((student) => {
-      const alreadyPurchasedSelectedProgram = this.hasStudentPurchasedSelectedUpsell(
+      // Condition 1: if selected program already purchased, hide student
+      const hasSelectedProgramAlready = this.hasStudentPurchasedSelectedUpsell(
         student,
         selectedUpsellIds
       );
-      if (alreadyPurchasedSelectedProgram) {
-        console.log("Excluding student already purchased selected upsell", {
+      if (hasSelectedProgramAlready) {
+        console.log("Excluding student: already purchased selected program", {
           studentName: student.studentName,
           paymentId: student.paymentId,
           selectedUpsellIds: selectedUpsellIds,
         });
         return false;
       }
-      if (!student.isBundled) {
-        return true;
-      }
-      // If summer program is selected, hide bundled students flagged as summer program.
-      if (isSummerSelection && student.isSummerProgram) {
-        console.log("Excluding bundled summer student for summer selection", {
+      // Condition 2: if 106 selected and student is summer student, hide student
+      if (selectedUpsellIds.includes(106) && student.isSummerProgram) {
+        console.log("Excluding student: 106 selected with summer student", {
           studentName: student.studentName,
           paymentId: student.paymentId,
-          selectedUpsellIds: selectedUpsellIds,
         });
         return false;
       }
-      const bundledProgramIds = Array.isArray(student.upsellProgramIds)
-        ? student.upsellProgramIds.map((id) => Number(id))
-        : [];
-      const hasOverlap = selectedUpsellIds.some((id) =>
-        bundledProgramIds.includes(id)
-      );
-      // Student bought different program(s), so still eligible for selected one(s)
-      return !hasOverlap;
+      return true;
     });
   }
   renderStudentOptions(students) {
