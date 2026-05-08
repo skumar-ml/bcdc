@@ -60,6 +60,19 @@ class DisplaySuppProgram {
     }
     return el;
   }
+  // Toggle checkbox when container row is clicked.
+  attachCheckboxRowToggle(rowEl, inputEl) {
+    if (!rowEl || !inputEl) {
+      return;
+    }
+    rowEl.addEventListener("click", (event) => {
+      if (event.target === inputEl) {
+        return;
+      }
+      inputEl.checked = !inputEl.checked;
+      inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
   // Fetches data from the specified API endpoint
   async fetchData(endpoint, baseUrl) {
     console.log("Fetching data", { endpoint: endpoint, baseUrl: baseUrl });
@@ -386,6 +399,7 @@ class DisplaySuppProgram {
     // Assemble
     textWithCheckbox.appendChild(checkboxDiv);
     textWithCheckbox.appendChild(headingWrapper);
+    this.attachCheckboxRowToggle(textWithCheckbox, input);
     grid.appendChild(textWithCheckbox);
     grid.appendChild(priceWrapper);
 
@@ -952,6 +966,7 @@ class DisplaySuppProgram {
       const nameText = this.creEl("p", "bundle-sem-name-text");
       nameText.textContent = `${singleBundleData.label || "Winter/Spring"} (${singleBundleData.yearId || "2026"})`;
       textWithCheckbox.appendChild(nameText);
+      this.attachCheckboxRowToggle(textWithCheckbox, input);
 
       flexWrapper.appendChild(textWithCheckbox);
 
