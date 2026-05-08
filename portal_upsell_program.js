@@ -600,15 +600,47 @@ class DisplaySuppProgram {
       summerUpsellIds.includes(id)
     );
     console.log("Selected upsell ids for student filter", selectedUpsellIds);
-    // Step 1 rule: if exactly one program is selected, show only non-bundled students
+    // Step rules for single-program selection
     if (this.$selectedProgram.length === 1) {
+      // For summer selection, keep only non-bundled students
+      if (isSummerSelection) {
+        return students.filter((student) => {
+          const includeStudent = !student.isBundled;
+          console.log("Single-program summer filter check", {
+            studentName: student.studentName,
+            paymentId: student.paymentId,
+            isBundled: student.isBundled,
+            isSummerProgram: student.isSummerProgram,
+            includeStudent: includeStudent,
+          });
+          return includeStudent;
+        });
+      }
+      // For non-summer selection, include bundled students if program was not already purchased
       return students.filter((student) => {
-        const includeStudent = !student.isBundled;
-        console.log("Single-program filter check", {
+        if (!student.isBundled) {
+          console.log("Single-program non-summer filter check", {
+            studentName: student.studentName,
+            paymentId: student.paymentId,
+            isBundled: student.isBundled,
+            includeStudent: true,
+          });
+          return true;
+        }
+        const bundledProgramIds = Array.isArray(student.upsellProgramIds)
+          ? student.upsellProgramIds.map((id) => Number(id))
+          : [];
+        const hasOverlap = selectedUpsellIds.some((id) =>
+          bundledProgramIds.includes(id)
+        );
+        const includeStudent = !hasOverlap;
+        console.log("Single-program non-summer bundled check", {
           studentName: student.studentName,
           paymentId: student.paymentId,
           isBundled: student.isBundled,
-          isSummerProgram: student.isSummerProgram,
+          bundledProgramIds: bundledProgramIds,
+          selectedUpsellIds: selectedUpsellIds,
+          hasOverlap: hasOverlap,
           includeStudent: includeStudent,
         });
         return includeStudent;
