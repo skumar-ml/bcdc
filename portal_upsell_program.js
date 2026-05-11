@@ -708,9 +708,26 @@ class DisplaySuppProgram {
         if (show) {
           el.style.removeProperty("display");
         } else {
-          el.style.display = "none";
+          el.style.setProperty("display", "none", "important");
         }
       });
+    });
+  }
+  /** Copy upsell id onto buy-now modal flex rows so show/hide matches Webflow layout. */
+  hydrateBuyNowModalProgramRows() {
+    const modal = document.getElementById("buyNowModal");
+    if (!modal) {
+      return;
+    }
+    modal.querySelectorAll(".bundle-sem-content-flex-wrapper").forEach((row) => {
+      const input = row.querySelector("[data-upsell-program-id]");
+      if (!input) {
+        return;
+      }
+      const id = input.getAttribute("data-upsell-program-id");
+      if (id !== null && id !== "") {
+        row.setAttribute("data-upsell-program-card", id);
+      }
     });
   }
   /** Hide cards for currently checked programs when no student matches the combined selection. */
@@ -718,7 +735,7 @@ class DisplaySuppProgram {
     this.$selectedProgram.forEach((program) => {
       const id = program.upsellProgramId;
       document.querySelectorAll(`[data-upsell-program-card="${id}"]`).forEach((el) => {
-        el.style.display = "none";
+        el.style.setProperty("display", "none", "important");
       });
     });
   }
@@ -777,6 +794,7 @@ class DisplaySuppProgram {
       eligibleStudents: eligibleStudents.length,
     });
     this.renderStudentOptions(eligibleStudents);
+    this.hydrateBuyNowModalProgramRows();
     this.syncPerProgramCardVisibility();
     if (this.$selectedProgram.length > 0 && eligibleStudents.length === 0) {
       this.hideProgramCardsWhenComboExcludesAllStudents();
@@ -1019,6 +1037,7 @@ class DisplaySuppProgram {
       wrapper.appendChild(title);
       
       const flexWrapper = this.creEl("div", "bundle-sem-content-flex-wrapper");
+      flexWrapper.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
       const nameText = this.creEl("p", "bundle-sem-name-text");
       nameText.textContent = `${singleBundleData.label || "Winter/Spring"} (${singleBundleData.yearId || "2026"})`;
       flexWrapper.appendChild(nameText);
@@ -1047,6 +1066,7 @@ class DisplaySuppProgram {
       wrapper.appendChild(title);
 
       const flexWrapper = this.creEl("div", "bundle-sem-content-flex-wrapper");
+      flexWrapper.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
       const textWithCheckbox = this.creEl("div", "bundle-sem-text-with-checkbox");
       const checkboxDiv = this.creEl("div", "w-embed");
       const input = this.creEl("input", "bundle-sem-checkbox");
@@ -1143,12 +1163,28 @@ class DisplaySuppProgram {
       bundleCount: programs.length,
       selectedCount: this.$selectedProgram.length,
     });
-    if(this.$selectedProgram.length == programs.length){
-      payNowContainer.innerHTML = '';
-      console.log("Skipping pay now cards because all programs selected");
+    if (this.$selectedProgram.length == programs.length) {
+      payNowContainer.innerHTML = "";
+      const allPrograms = Array.isArray(this.$bundleData) ? this.$bundleData : programs;
+      let isFirstCard = true;
+      allPrograms.forEach((program) => {
+        const card = this.createPayNowModalCard(program);
+        if (!isFirstCard) {
+          const titleEl = card.querySelector(".bundle-sem-title-text");
+          if (titleEl) {
+            titleEl.remove();
+          }
+        }
+        isFirstCard = false;
+        payNowContainer.appendChild(card);
+      });
+      console.log("Pay now modal: all programs selected; rendered rows for hide sync", {
+        renderedCount: allPrograms.length,
+      });
+      this.hydrateBuyNowModalProgramRows();
       return;
     }
-    payNowContainer.innerHTML = '';
+    payNowContainer.innerHTML = "";
     // Sort programs: selected programs first, then the rest
     programs = [
       ...programs.filter(p => this.$selectedProgram.some(sel => sel.upsellProgramId === p.upsellProgramId)),
@@ -1160,6 +1196,7 @@ class DisplaySuppProgram {
       payNowContainer.appendChild(card);
     });
     console.log("Pay now modal cards rendered", { renderedCount: programs.length });
+    this.hydrateBuyNowModalProgramRows();
   }
 
   updateCreditModalAmount(amount) {
