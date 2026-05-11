@@ -713,6 +713,15 @@ class DisplaySuppProgram {
       });
     });
   }
+  /** Hide cards for currently checked programs when no student matches the combined selection. */
+  hideProgramCardsWhenComboExcludesAllStudents() {
+    this.$selectedProgram.forEach((program) => {
+      const id = program.upsellProgramId;
+      document.querySelectorAll(`[data-upsell-program-card="${id}"]`).forEach((el) => {
+        el.style.display = "none";
+      });
+    });
+  }
   renderStudentOptions(students) {
     const selectBoxes = this.getPortalStudentSelectElements();
     if (!selectBoxes.length) {
@@ -769,6 +778,9 @@ class DisplaySuppProgram {
     });
     this.renderStudentOptions(eligibleStudents);
     this.syncPerProgramCardVisibility();
+    if (this.$selectedProgram.length > 0 && eligibleStudents.length === 0) {
+      this.hideProgramCardsWhenComboExcludesAllStudents();
+    }
   }
 
   async initSupplementaryPayment(paymentId, upsellProgramId, programName, amount) {
