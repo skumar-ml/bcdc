@@ -720,6 +720,9 @@ class DisplaySuppProgram {
       return;
     }
     modal.querySelectorAll(".bundle-sem-content-flex-wrapper").forEach((row) => {
+      if (row.closest(".bundle-sem-content-inner-div[data-upsell-program-card]")) {
+        return;
+      }
       const input = row.querySelector("[data-upsell-program-id]");
       if (!input) {
         return;
@@ -728,15 +731,6 @@ class DisplaySuppProgram {
       if (id !== null && id !== "") {
         row.setAttribute("data-upsell-program-card", id);
       }
-    });
-  }
-  /** Hide cards for currently checked programs when no student matches the combined selection. */
-  hideProgramCardsWhenComboExcludesAllStudents() {
-    this.$selectedProgram.forEach((program) => {
-      const id = program.upsellProgramId;
-      document.querySelectorAll(`[data-upsell-program-card="${id}"]`).forEach((el) => {
-        el.style.setProperty("display", "none", "important");
-      });
     });
   }
   renderStudentOptions(students) {
@@ -796,9 +790,6 @@ class DisplaySuppProgram {
     this.renderStudentOptions(eligibleStudents);
     this.hydrateBuyNowModalProgramRows();
     this.syncPerProgramCardVisibility();
-    if (this.$selectedProgram.length > 0 && eligibleStudents.length === 0) {
-      this.hideProgramCardsWhenComboExcludesAllStudents();
-    }
   }
 
   async initSupplementaryPayment(paymentId, upsellProgramId, programName, amount) {
@@ -1023,7 +1014,7 @@ class DisplaySuppProgram {
       "[data-cart-total='cart-total-price']"
     );
 
-    // Outer grid wrapper (initially without border-brown-red)
+    // Outer card wrapper — one data-upsell-program-card per pay-now program (matches hide scope)
     const wrapper = this.creEl("div", "bundle-sem-content-inner-div");
     wrapper.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
     const isSelected = this.$selectedProgram.find(
@@ -1037,7 +1028,6 @@ class DisplaySuppProgram {
       wrapper.appendChild(title);
       
       const flexWrapper = this.creEl("div", "bundle-sem-content-flex-wrapper");
-      flexWrapper.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
       const nameText = this.creEl("p", "bundle-sem-name-text");
       nameText.textContent = `${singleBundleData.label || "Winter/Spring"} (${singleBundleData.yearId || "2026"})`;
       flexWrapper.appendChild(nameText);
@@ -1066,7 +1056,6 @@ class DisplaySuppProgram {
       wrapper.appendChild(title);
 
       const flexWrapper = this.creEl("div", "bundle-sem-content-flex-wrapper");
-      flexWrapper.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
       const textWithCheckbox = this.creEl("div", "bundle-sem-text-with-checkbox");
       const checkboxDiv = this.creEl("div", "w-embed");
       const input = this.creEl("input", "bundle-sem-checkbox");
@@ -1182,6 +1171,7 @@ class DisplaySuppProgram {
         renderedCount: allPrograms.length,
       });
       this.hydrateBuyNowModalProgramRows();
+      this.syncPerProgramCardVisibility();
       return;
     }
     payNowContainer.innerHTML = "";
@@ -1197,6 +1187,7 @@ class DisplaySuppProgram {
     });
     console.log("Pay now modal cards rendered", { renderedCount: programs.length });
     this.hydrateBuyNowModalProgramRows();
+    this.syncPerProgramCardVisibility();
   }
 
   updateCreditModalAmount(amount) {
