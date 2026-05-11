@@ -525,8 +525,13 @@ class DisplaySuppProgram {
     });
   }
   //updateOldStudentList
+  /** Returns all native selects for portal student (page + modal may duplicate id). */
+  getPortalStudentSelectElements() {
+    return Array.from(document.querySelectorAll("#portal-students")).filter(
+      (el) => el && el.tagName === "SELECT"
+    );
+  }
   async updateOldStudentList() {
-    const selectBox = document.getElementById("portal-students");
     console.log("updateOldStudentList started", {
       memberId: this.memberData.memberId,
     });
@@ -559,8 +564,10 @@ class DisplaySuppProgram {
       console.log("updateOldStudentList failed", { error: error.message });
 
       // Handle errors (optional)
-      selectBox.innerHTML =
-        '<option value="">Student Details not available</option>';
+      this.getPortalStudentSelectElements().forEach((selectBox) => {
+        selectBox.innerHTML =
+          '<option value="">Student Details not available</option>';
+      });
     }
   }
   getDedupedStudents(data) {
@@ -645,40 +652,57 @@ class DisplaySuppProgram {
     });
   }
   renderStudentOptions(students) {
-    const selectBox = document.getElementById("portal-students");
-    if (!selectBox) {
+    const selectBoxes = this.getPortalStudentSelectElements();
+    if (!selectBoxes.length) {
       console.log("portal-students select box not found");
       return;
     }
-    // Rebuild student options for current eligible list
-    selectBox.innerHTML = "";
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "Select a student";
-    selectBox.appendChild(defaultOption);
-    if (students.length === 0) {
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = "No eligible students";
-      selectBox.appendChild(option);
-      console.log("No eligible students available for current selection");
-      return;
-    }
-    students.forEach((item) => {
-      const option = document.createElement("option");
-      option.value = item.paymentId;
-      option.textContent = `${item.studentName}`;
-      if (students.length === 1) {
-        option.selected = true;
+    const previousValue = selectBoxes[0].value;
+    // Rebuild student options on every matching select (page + modal duplicates).
+    selectBoxes.forEach((selectBox) => {
+      selectBox.innerHTML = "";
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Select a student";
+      selectBox.appendChild(defaultOption);
+      if (students.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No eligible students";
+        selectBox.appendChild(option);
+        return;
       }
-      selectBox.appendChild(option);
+      students.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.paymentId;
+        option.textContent = `${item.studentName}`;
+        if (students.length === 1) {
+          option.selected = true;
+        }
+        selectBox.appendChild(option);
+      });
     });
-    console.log("Rendered portal-students options", students.map((s) => ({
-      studentName: s.studentName,
-      paymentId: s.paymentId,
-      isBundled: s.isBundled,
-      upsellProgramIds: s.upsellProgramIds,
-    })));
+    if (students.length === 0) {
+      console.log("No eligible students available for current selection");
+    }
+    const stillValid =
+      previousValue &&
+      students.some((s) => String(s.paymentId) === String(previousValue));
+    const valueToSet = stillValid ? previousValue : "";
+    selectBoxes.forEach((selectBox) => {
+      selectBox.value = valueToSet;
+      selectBox.dispatchEvent(new Event("change", { bubbles: true }));
+      selectBox.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    console.log("Rendered portal-students options", {
+      selectCount: selectBoxes.length,
+      students: students.map((s) => ({
+        studentName: s.studentName,
+        paymentId: s.paymentId,
+        isBundled: s.isBundled,
+        upsellProgramIds: s.upsellProgramIds,
+      })),
+    });
   }
   refreshStudentListBySelectedProgram() {
     if (!Array.isArray(this.$previousStudents) || this.$previousStudents.length === 0) {
@@ -826,8 +850,12 @@ class DisplaySuppProgram {
         selectedCount: $this.$selectedProgram.length,
       });
 
-      const studentEl = document.getElementById("portal-students");
-      if (studentEl.value) {
+      const portalSelects = $this.getPortalStudentSelectElements();
+      const studentEl =
+        portalSelects.find((el) => el.offsetParent !== null && el.value) ||
+        portalSelects.find((el) => el.value) ||
+        portalSelects[0];
+      if (studentEl && studentEl.value) {
         payBtn.innerHTML = "Processing...";
         payBtn.style.pointerEvents = "none";
         payBtn.disabled = true;
