@@ -38,31 +38,10 @@ class DisplaySuppProgram {
     this.discount_amount = parseInt(memberData.amount);
     
   }
-  /** Hide upsell wrapper and program cards when student API has no usable data. */
+  /** Hide upsell wrapper when student API has no usable data. */
   hidePortalUpsellSection() {
     this.upSellEls.forEach((el) => {
       el.style.display = "none";
-    });
-    document.querySelectorAll(".bundle-sem-cards-container").forEach((el) => {
-      el.style.display = "none";
-    });
-  }
-  /** Show or hide program cards when selection leaves no eligible students. */
-  syncUpsellCardsContainerVisibility(eligibleStudents) {
-    const containers = document.querySelectorAll(".bundle-sem-cards-container");
-    if (!containers.length) {
-      return;
-    }
-    const shouldHide =
-      this.$selectedProgram.length > 0 &&
-      Array.isArray(eligibleStudents) &&
-      eligibleStudents.length === 0;
-    containers.forEach((el) => {
-      if (shouldHide) {
-        el.style.display = "none";
-        return;
-      }
-      el.style.removeProperty("display");
     });
   }
   logDebug(message, payload) {
@@ -203,6 +182,8 @@ class DisplaySuppProgram {
       this.renderPayNowModalCards();
     });
     this.disableEnableBuyNowButton();
+    // Per-program visibility when student list loaded before or after this build
+    this.syncPerProgramCardVisibility();
   }
   // Displays the total discount amount
   displayTotalDiscount(bundleData){
@@ -225,6 +206,7 @@ class DisplaySuppProgram {
     );
     // Create the label with required classes
     const label = this.creEl("label", "bundle-sem-content-block");
+    label.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
     // Checkbox container
     const checkboxDiv = this.creEl("div");
     const input = this.creEl("input", "bundle-sem-checkbox");
@@ -345,6 +327,7 @@ class DisplaySuppProgram {
     );
     // Outer grid div
     const grid = this.creEl("div", "bundle-sem-content-flex-container");
+    grid.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
     // Checkbox
     const textWithCheckbox = this.creEl("div", "bundle-sem-text-with-checkbox")
     const checkboxDiv = this.creEl("div", "w-embed");
@@ -640,6 +623,41 @@ class DisplaySuppProgram {
     }
     return `payment:${student && student.paymentId ? student.paymentId : ""}`;
   }
+  /** Filter students using the same rules as current selection, for arbitrary upsell id list. */
+  getEligibleStudentsBySelectedUpsellIds(students, selectedUpsellIds, quietLog) {
+    const ids = (selectedUpsellIds || [])
+      .map((id) => Number(id))
+      .filter((id) => !Number.isNaN(id));
+    if (ids.length === 0) {
+      return students;
+    }
+    return students.filter((student) => {
+      const hasSelectedProgramAlready = this.hasStudentPurchasedSelectedUpsell(
+        student,
+        ids
+      );
+      if (hasSelectedProgramAlready) {
+        if (!quietLog) {
+          console.log("Excluding student: already purchased selected program", {
+            studentName: student.studentName,
+            paymentId: student.paymentId,
+            selectedUpsellIds: ids,
+          });
+        }
+        return false;
+      }
+      if (ids.includes(106) && student.isSummerProgram) {
+        if (!quietLog) {
+          console.log("Excluding student: 106 selected with summer student", {
+            studentName: student.studentName,
+            paymentId: student.paymentId,
+          });
+        }
+        return false;
+      }
+      return true;
+    });
+  }
   hasStudentPurchasedSelectedUpsell(student, selectedUpsellIds) {
     if (!Array.isArray(selectedUpsellIds) || selectedUpsellIds.length === 0) {
       return false;
@@ -664,32 +682,35 @@ class DisplaySuppProgram {
       Number(program.upsellProgramId)
     );
     console.log("Selected upsell ids for student filter", selectedUpsellIds);
-    if (selectedUpsellIds.length === 0) {
-      return students;
+    return this.getEligibleStudentsBySelectedUpsellIds(
+      students,
+      selectedUpsellIds,
+      false
+    );
+  }
+  /** Show or hide each program card based on eligibility if only that program applied (on load / student refresh). */
+  syncPerProgramCardVisibility() {
+    if (!Array.isArray(this.$bundleData) || this.$bundleData.length === 0) {
+      return;
     }
-    return students.filter((student) => {
-      // Condition 1: if selected program already purchased, hide student
-      const hasSelectedProgramAlready = this.hasStudentPurchasedSelectedUpsell(
-        student,
-        selectedUpsellIds
+    if (!Array.isArray(this.$previousStudents) || this.$previousStudents.length === 0) {
+      return;
+    }
+    this.$bundleData.forEach((program) => {
+      const id = program.upsellProgramId;
+      const eligible = this.getEligibleStudentsBySelectedUpsellIds(
+        this.$previousStudents,
+        [id],
+        true
       );
-      if (hasSelectedProgramAlready) {
-        console.log("Excluding student: already purchased selected program", {
-          studentName: student.studentName,
-          paymentId: student.paymentId,
-          selectedUpsellIds: selectedUpsellIds,
-        });
-        return false;
-      }
-      // Condition 2: if 106 selected and student is summer student, hide student
-      if (selectedUpsellIds.includes(106) && student.isSummerProgram) {
-        console.log("Excluding student: 106 selected with summer student", {
-          studentName: student.studentName,
-          paymentId: student.paymentId,
-        });
-        return false;
-      }
-      return true;
+      const show = eligible.length > 0;
+      document.querySelectorAll(`[data-upsell-program-card="${id}"]`).forEach((el) => {
+        if (show) {
+          el.style.removeProperty("display");
+        } else {
+          el.style.display = "none";
+        }
+      });
     });
   }
   renderStudentOptions(students) {
@@ -746,8 +767,8 @@ class DisplaySuppProgram {
       totalStudents: this.$previousStudents.length,
       eligibleStudents: eligibleStudents.length,
     });
-    this.syncUpsellCardsContainerVisibility(eligibleStudents);
     this.renderStudentOptions(eligibleStudents);
+    this.syncPerProgramCardVisibility();
   }
 
   async initSupplementaryPayment(paymentId, upsellProgramId, programName, amount) {
@@ -974,6 +995,7 @@ class DisplaySuppProgram {
 
     // Outer grid wrapper (initially without border-brown-red)
     const wrapper = this.creEl("div", "bundle-sem-content-inner-div");
+    wrapper.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
     const isSelected = this.$selectedProgram.find(
       (program) => program.upsellProgramId === singleBundleData.upsellProgramId
     );
