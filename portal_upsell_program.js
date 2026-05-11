@@ -16,6 +16,8 @@ class DisplaySuppProgram {
   $bundleData = [];
   $previousStudents = [];
   $allStudentHistory = [];
+  /** False when selling API has no students so upsell shell stays hidden. */
+  $portalStudentDataAvailable = null;
   // Initializes the class with member data
   constructor(memberData) {
     this.spinner = document.getElementById("half-circle-spinner");
@@ -35,6 +37,33 @@ class DisplaySuppProgram {
     this.attachBackRestoreHandler();
     this.discount_amount = parseInt(memberData.amount);
     
+  }
+  /** Hide upsell wrapper and program cards when student API has no usable data. */
+  hidePortalUpsellSection() {
+    this.upSellEls.forEach((el) => {
+      el.style.display = "none";
+    });
+    document.querySelectorAll(".bundle-sem-cards-container").forEach((el) => {
+      el.style.display = "none";
+    });
+  }
+  /** Show or hide program cards when selection leaves no eligible students. */
+  syncUpsellCardsContainerVisibility(eligibleStudents) {
+    const containers = document.querySelectorAll(".bundle-sem-cards-container");
+    if (!containers.length) {
+      return;
+    }
+    const shouldHide =
+      this.$selectedProgram.length > 0 &&
+      Array.isArray(eligibleStudents) &&
+      eligibleStudents.length === 0;
+    containers.forEach((el) => {
+      if (shouldHide) {
+        el.style.display = "none";
+        return;
+      }
+      el.style.removeProperty("display");
+    });
   }
   logDebug(message, payload) {
     if (payload !== undefined) {
@@ -156,9 +185,12 @@ class DisplaySuppProgram {
           el.style.display = "none";
         });
       }else {
-        this.upSellEls.forEach((el) => {
-          el.style.display = "block";
-        });
+        // Skip revealing upsell shell when student API already said no data
+        if (this.$portalStudentDataAvailable !== false) {
+          this.upSellEls.forEach((el) => {
+            el.style.display = "block";
+          });
+        }
       }
       bundleData.forEach((singleBundleData) => {
         var card = this.createBundleCard(singleBundleData);
@@ -541,14 +573,21 @@ class DisplaySuppProgram {
         "getAllPreviousStudents/" + this.memberData.memberId + "/selling",
         this.memberData.fTypeBaseUrl
       );
+      const isNoDataMessage =
+        allStudentsResponse === "No data Found" ||
+        (typeof allStudentsResponse === "string" &&
+          allStudentsResponse.toLowerCase().indexOf("no data") >= 0);
+      if (isNoDataMessage) {
+        console.log("Student API returned no data; hiding portal upsell UI");
+        this.hidePortalUpsellSection();
+        return;
+      }
       const allStudents = Array.isArray(allStudentsResponse) ? allStudentsResponse : [];
       // Keep full API history rows for purchased-program checks
       this.$allStudentHistory = allStudents;
       if (allStudents.length === 0) {
         console.log("No previous students found");
-        this.upSellEls.forEach((el) => {
-          el.style.display = "none";
-        });
+        this.hidePortalUpsellSection();
         return;
       }
       // Find unique students and sort by studentName
@@ -562,6 +601,8 @@ class DisplaySuppProgram {
     } catch (error) {
       console.error("Error fetching API data:", error);
       console.log("updateOldStudentList failed", { error: error.message });
+      this.$portalStudentDataAvailable = false;
+      this.hidePortalUpsellSection();
 
       // Handle errors (optional)
       this.getPortalStudentSelectElements().forEach((selectBox) => {
@@ -665,13 +706,6 @@ class DisplaySuppProgram {
       defaultOption.value = "";
       defaultOption.textContent = "Select a student";
       selectBox.appendChild(defaultOption);
-      if (students.length === 0) {
-        const option = document.createElement("option");
-        option.value = "";
-        option.textContent = "No eligible students";
-        selectBox.appendChild(option);
-        return;
-      }
       students.forEach((item) => {
         const option = document.createElement("option");
         option.value = item.paymentId;
@@ -682,9 +716,6 @@ class DisplaySuppProgram {
         selectBox.appendChild(option);
       });
     });
-    if (students.length === 0) {
-      console.log("No eligible students available for current selection");
-    }
     const stillValid =
       previousValue &&
       students.some((s) => String(s.paymentId) === String(previousValue));
@@ -715,6 +746,7 @@ class DisplaySuppProgram {
       totalStudents: this.$previousStudents.length,
       eligibleStudents: eligibleStudents.length,
     });
+    this.syncUpsellCardsContainerVisibility(eligibleStudents);
     this.renderStudentOptions(eligibleStudents);
   }
 
