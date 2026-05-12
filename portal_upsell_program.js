@@ -22,9 +22,9 @@ class DisplaySuppProgram {
   constructor(memberData) {
     this.spinner = document.getElementById("half-circle-spinner");
     this.upSellEls = document.querySelectorAll(".bundle-sem-rounded-red-div");
-    // initial hide the up sell program
+    // Keep shell hidden until student eligibility + programs are both evaluated (avoids load flash)
     this.upSellEls.forEach((el) => {
-      el.style.display = "none";
+      el.style.setProperty("display", "none", "important");
     });
     this.memberData = memberData;
     console.log("Constructor initialized", {
@@ -41,7 +41,7 @@ class DisplaySuppProgram {
   /** Hide upsell wrapper when student API has no usable data. */
   hidePortalUpsellSection() {
     this.upSellEls.forEach((el) => {
-      el.style.display = "none";
+      el.style.setProperty("display", "none", "important");
     });
   }
   logDebug(message, payload) {
@@ -161,16 +161,10 @@ class DisplaySuppProgram {
       // if bundle data empty hide upSellEls
       if(bundleData.length == 0){
         this.upSellEls.forEach((el) => {
-          el.style.display = "none";
+          el.style.setProperty("display", "none", "important");
         });
-      }else {
-        // Skip revealing upsell shell when student API already said no data
-        if (this.$portalStudentDataAvailable !== false) {
-          this.upSellEls.forEach((el) => {
-            el.style.display = "block";
-          });
-        }
       }
+      // Do not show shell here — wait for syncUpsellRoundedShellVisibility after student API + eligibility
       bundleData.forEach((singleBundleData) => {
         var card = this.createBundleCard(singleBundleData);
         cardContainer.appendChild(card);
@@ -562,6 +556,7 @@ class DisplaySuppProgram {
           allStudentsResponse.toLowerCase().indexOf("no data") >= 0);
       if (isNoDataMessage) {
         console.log("Student API returned no data; hiding portal upsell UI");
+        this.$portalStudentDataAvailable = false;
         this.hidePortalUpsellSection();
         return;
       }
@@ -570,12 +565,14 @@ class DisplaySuppProgram {
       this.$allStudentHistory = allStudents;
       if (allStudents.length === 0) {
         console.log("No previous students found");
+        this.$portalStudentDataAvailable = false;
         this.hidePortalUpsellSection();
         return;
       }
       // Find unique students and sort by studentName
       const filterData = this.getDedupedStudents(allStudents);
       this.$previousStudents = filterData;
+      this.$portalStudentDataAvailable = true;
       console.log("Student list prepared", {
         totalStudents: allStudents.length,
         uniqueStudents: filterData.length,
