@@ -712,6 +712,36 @@ class DisplaySuppProgram {
         }
       });
     });
+    this.syncUpsellRoundedShellVisibility();
+  }
+  /** Hide outer upsell wrapper when no program has any eligible student. */
+  syncUpsellRoundedShellVisibility() {
+    if (!Array.isArray(this.$bundleData) || this.$bundleData.length === 0) {
+      return;
+    }
+    if (!Array.isArray(this.$previousStudents) || this.$previousStudents.length === 0) {
+      return;
+    }
+    const anyProgramHasEligibleStudent = this.$bundleData.some((program) => {
+      const eligible = this.getEligibleStudentsBySelectedUpsellIds(
+        this.$previousStudents,
+        [program.upsellProgramId],
+        true
+      );
+      return eligible.length > 0;
+    });
+    if (!anyProgramHasEligibleStudent) {
+      this.upSellEls.forEach((el) => {
+        el.style.setProperty("display", "none", "important");
+      });
+      console.log("[PortalUpsell] Hiding bundle-sem-rounded-red-div; no eligible students for any program");
+      return;
+    }
+    if (this.$portalStudentDataAvailable !== false) {
+      this.upSellEls.forEach((el) => {
+        el.style.removeProperty("display");
+      });
+    }
   }
   /** Copy upsell id onto buy-now modal flex rows so show/hide matches Webflow layout. */
   hydrateBuyNowModalProgramRows() {
