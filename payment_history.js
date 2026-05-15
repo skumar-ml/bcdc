@@ -7,9 +7,13 @@ Brief Logic: Fetches portal detail and millions transaction data from API, creat
 Are there any dependent JS files: No
 
 */
+// Bump when debugging deposit date so console confirms latest script loaded
+const PAYMENT_HISTORY_DEPOSIT_FIX_VERSION = 'deposit-fix-2026-05-15-v3';
+
 class PaymentHistory {
     // Initializes the PaymentHistory instance
     constructor(data) {
+        console.log('[PaymentHistory] script loaded', PAYMENT_HISTORY_DEPOSIT_FIX_VERSION);
         this.data = data;
         this.spinner = document.getElementById("half-circle-spinner");
         this.no_record = document.querySelector('[data-container="no-record-found"]');
@@ -683,6 +687,17 @@ class PaymentHistory {
 
     // Finds created_on from earliest completed invoice where deposit was paid
     getDepositPaidOnDate(studentData, invoice) {
+        console.log('[PaymentHistory][Deposit] getDepositPaidOnDate start', {
+            version: PAYMENT_HISTORY_DEPOSIT_FIX_VERSION,
+            clickedInvoice: invoice ? {
+                invoice_id: invoice.invoice_id,
+                invoiceName: invoice.invoiceName,
+                created_on: invoice.created_on,
+                is_completed: invoice.is_completed,
+                status: invoice.status,
+            } : null,
+        });
+
         const depositPaidInvoices = [];
         const sessions = [
             ...(studentData?.currentSession || []),
@@ -690,13 +705,24 @@ class PaymentHistory {
             ...(studentData?.futureSession || []),
         ];
 
-        sessions.forEach((session) => {
+        sessions.forEach((session, sessionIndex) => {
             if (!session?.invoiceList || !Array.isArray(session.invoiceList)) return;
             session.invoiceList.forEach((inv) => {
                 if (!inv?.created_on) return;
                 const deposit = inv.breakDownList?.['Deposit'];
                 if (!deposit || deposit <= 0) return;
                 const isPaid = inv.is_completed === true || inv.status === 'Complete';
+                console.log('[PaymentHistory][Deposit] invoice scanned', {
+                    sessionIndex,
+                    sessionCreatedOn: session.createdOn,
+                    invoice_id: inv.invoice_id,
+                    invoiceName: inv.invoiceName,
+                    created_on: inv.created_on,
+                    deposit,
+                    is_completed: inv.is_completed,
+                    status: inv.status,
+                    isPaid,
+                });
                 if (isPaid) depositPaidInvoices.push(inv);
             });
         });
@@ -705,13 +731,25 @@ class PaymentHistory {
             depositPaidInvoices.sort(
                 (a, b) => new Date(a.created_on) - new Date(b.created_on)
             );
-            return depositPaidInvoices[0].created_on;
+            const selected = depositPaidInvoices[0].created_on;
+            console.log('[PaymentHistory][Deposit] using earliest completed deposit invoice', {
+                selected_created_on: selected,
+                formatted: this.formatDepositDisplayDate(selected),
+                allCandidates: depositPaidInvoices.map((inv) => ({
+                    invoice_id: inv.invoice_id,
+                    invoiceName: inv.invoiceName,
+                    created_on: inv.created_on,
+                })),
+            });
+            return selected;
         }
 
         if (invoice?.created_on && (invoice.is_completed || invoice.status === 'Complete')) {
+            console.log('[PaymentHistory][Deposit] fallback to clicked completed invoice', invoice.created_on);
             return invoice.created_on;
         }
 
+        console.log('[PaymentHistory][Deposit] no deposit paid date found');
         return null;
     }
 
@@ -838,7 +876,15 @@ class PaymentHistory {
                 // Use completed invoice where deposit was actually paid
                 const depositPaidOn = this.getDepositPaidOnDate(studentData, invoice);
                 const depositDate = this.formatDepositDisplayDate(depositPaidOn);
-                depositTitleEl.textContent = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
+                const depositTitle = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
+                console.log('[PaymentHistory][Deposit] modal title set', {
+                    version: PAYMENT_HISTORY_DEPOSIT_FIX_VERSION,
+                    depositPaidOnRaw: depositPaidOn,
+                    depositDateFormatted: depositDate,
+                    depositTitle,
+                    previousTitle: depositTitleEl.textContent,
+                });
+                depositTitleEl.textContent = depositTitle;
                 if (breakdown['Deposit'] == 0) {
                     depositTitleEl.parentElement.style.display = 'none';
                 } else {
@@ -925,21 +971,29 @@ class PaymentHistory {
                     if (invoiceDataStr) {
                         try {
                             invoice = JSON.parse(invoiceDataStr);
+                            console.log('[PaymentHistory][Deposit] breakdown click - invoice', invoice);
                         } catch (e) {
-                            console.error('Error parsing invoice data:', e);
+                            console.error('[PaymentHistory][Deposit] error parsing invoice data:', e);
                         }
                     }
 
                     if (studentDataStr) {
                         try {
                             studentData = JSON.parse(studentDataStr);
+                            console.log('[PaymentHistory][Deposit] breakdown click - studentData sessions', {
+                                currentSessionCount: studentData?.currentSession?.length,
+                                futureSessionCount: studentData?.futureSession?.length,
+                                pastSessionCount: studentData?.pastSession?.length,
+                                currentSession0CreatedOn: studentData?.currentSession?.[0]?.createdOn,
+                            });
                         } catch (e) {
-                            console.error('Error parsing student data:', e);
+                            console.error('[PaymentHistory][Deposit] error parsing student data:', e);
                         }
                     }
 
                     // Only show modal if "Semester Tuition" exists in breakDownList
                     if (invoice && invoice.breakDownList && invoice.breakDownList['Semester Tuition'] !== undefined) {
+                        console.log('[PaymentHistory][Deposit] opening modal', PAYMENT_HISTORY_DEPOSIT_FIX_VERSION);
                         $this.showInvoiceBreakdownModal(modal, invoice, studentData);
                     }
                 }
