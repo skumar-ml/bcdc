@@ -681,6 +681,52 @@ class PaymentHistory {
         return `Jan 1 - Dec 31, ${year}`;
     }
 
+    // Finds created_on from earliest completed invoice where deposit was paid
+    getDepositPaidOnDate(studentData, invoice) {
+        const depositPaidInvoices = [];
+        const sessions = [
+            ...(studentData?.currentSession || []),
+            ...(studentData?.pastSession || []),
+            ...(studentData?.futureSession || []),
+        ];
+
+        sessions.forEach((session) => {
+            if (!session?.invoiceList || !Array.isArray(session.invoiceList)) return;
+            session.invoiceList.forEach((inv) => {
+                if (!inv?.created_on) return;
+                const deposit = inv.breakDownList?.['Deposit'];
+                if (!deposit || deposit <= 0) return;
+                const isPaid = inv.is_completed === true || inv.status === 'Complete';
+                if (isPaid) depositPaidInvoices.push(inv);
+            });
+        });
+
+        if (depositPaidInvoices.length > 0) {
+            depositPaidInvoices.sort(
+                (a, b) => new Date(a.created_on) - new Date(b.created_on)
+            );
+            return depositPaidInvoices[0].created_on;
+        }
+
+        if (invoice?.created_on && (invoice.is_completed || invoice.status === 'Complete')) {
+            return invoice.created_on;
+        }
+
+        return null;
+    }
+
+    // Formats a date string for deposit title display
+    formatDepositDisplayDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    }
+
     // Updates the sidebar millions count
     updateSidebarMillionsCount(millionsData, studentName) {
         const sidebarCountEls = document.querySelectorAll(
@@ -789,22 +835,9 @@ class PaymentHistory {
             // Update Deposit Title with date
             const depositTitleEl = modal.querySelector('[invoice-breakdown-data="DepositTitle"]');
             if (depositTitleEl && breakdown['Deposit'] !== undefined) {
-                let depositDate = '';
-                // Use clicked invoice created_on from portal API
-                if (invoice && invoice.created_on) {
-                    try {
-                        const date = new Date(invoice.created_on);
-                        if (!isNaN(date.getTime())) {
-                            depositDate = date.toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit'
-                            });
-                        }
-                    } catch (e) {
-                        console.error('Error parsing deposit date:', e);
-                    }
-                }
+                // Use completed invoice where deposit was actually paid
+                const depositPaidOn = this.getDepositPaidOnDate(studentData, invoice);
+                const depositDate = this.formatDepositDisplayDate(depositPaidOn);
                 depositTitleEl.textContent = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
                 if (breakdown['Deposit'] == 0) {
                     depositTitleEl.parentElement.style.display = 'none';
