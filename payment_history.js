@@ -7,13 +7,9 @@ Brief Logic: Fetches portal detail and millions transaction data from API, creat
 Are there any dependent JS files: No
 
 */
-// Bump when debugging deposit date so console confirms latest script loaded
-const PAYMENT_HISTORY_DEPOSIT_FIX_VERSION = 'deposit-fix-2026-05-15-v4';
-
 class PaymentHistory {
     // Initializes the PaymentHistory instance
     constructor(data) {
-        console.log('[PaymentHistory] script loaded', PAYMENT_HISTORY_DEPOSIT_FIX_VERSION);
         this.data = data;
         this.spinner = document.getElementById("half-circle-spinner");
         this.no_record = document.querySelector('[data-container="no-record-found"]');
@@ -687,18 +683,6 @@ class PaymentHistory {
 
     // Finds created_on from earliest invoice where deposit was paid
     getDepositPaidOnDate(studentData, invoice) {
-        console.log('[PaymentHistory][Deposit] getDepositPaidOnDate start', {
-            version: PAYMENT_HISTORY_DEPOSIT_FIX_VERSION,
-            clickedInvoice: invoice ? {
-                invoice_id: invoice.invoice_id,
-                invoiceName: invoice.invoiceName,
-                created_on: invoice.created_on,
-                is_completed: invoice.is_completed,
-                status: invoice.status,
-                paymentId: invoice.paymentId,
-            } : null,
-        });
-
         const completedDepositInvoices = [];
         const paymentLinkedDepositInvoices = [];
         const sessions = [
@@ -707,7 +691,7 @@ class PaymentHistory {
             ...(studentData?.futureSession || []),
         ];
 
-        sessions.forEach((session, sessionIndex) => {
+        sessions.forEach((session) => {
             if (!session?.invoiceList || !Array.isArray(session.invoiceList)) return;
             session.invoiceList.forEach((inv) => {
                 if (!inv?.created_on) return;
@@ -715,64 +699,28 @@ class PaymentHistory {
                 if (!deposit || deposit <= 0) return;
                 const isCompleted = inv.is_completed === true || inv.status === 'Complete';
                 const hasPayment = !!inv.paymentId;
-                console.log('[PaymentHistory][Deposit] invoice scanned', {
-                    sessionIndex,
-                    sessionCreatedOn: session.createdOn,
-                    invoice_id: inv.invoice_id,
-                    invoiceName: inv.invoiceName,
-                    created_on: inv.created_on,
-                    deposit,
-                    is_completed: inv.is_completed,
-                    status: inv.status,
-                    paymentId: inv.paymentId,
-                    isCompleted,
-                    hasPayment,
-                });
                 if (isCompleted) completedDepositInvoices.push(inv);
                 else if (hasPayment) paymentLinkedDepositInvoices.push(inv);
             });
         });
 
-        const pickEarliest = (invoices, logLabel) => {
+        const pickEarliest = (invoices) => {
             if (!invoices.length) return null;
             invoices.sort((a, b) => new Date(a.created_on) - new Date(b.created_on));
-            const selected = invoices[0].created_on;
-            console.log(`[PaymentHistory][Deposit] ${logLabel}`, {
-                selected_created_on: selected,
-                formatted: this.formatDepositDisplayDate(selected),
-                allCandidates: invoices.map((inv) => ({
-                    invoice_id: inv.invoice_id,
-                    invoiceName: inv.invoiceName,
-                    created_on: inv.created_on,
-                    paymentId: inv.paymentId,
-                })),
-            });
-            return selected;
+            return invoices[0].created_on;
         };
 
-        const completedDate = pickEarliest(
-            completedDepositInvoices,
-            'using earliest completed deposit invoice'
-        );
+        const completedDate = pickEarliest(completedDepositInvoices);
         if (completedDate) return completedDate;
 
-        const paymentLinkedDate = pickEarliest(
-            paymentLinkedDepositInvoices,
-            'using earliest deposit invoice with paymentId'
-        );
+        const paymentLinkedDate = pickEarliest(paymentLinkedDepositInvoices);
         if (paymentLinkedDate) return paymentLinkedDate;
 
         const clickedDeposit = invoice?.breakDownList?.['Deposit'];
-        if (
-            invoice?.created_on &&
-            clickedDeposit > 0 &&
-            invoice.paymentId
-        ) {
-            console.log('[PaymentHistory][Deposit] fallback to clicked invoice with paymentId', invoice.created_on);
+        if (invoice?.created_on && clickedDeposit > 0 && invoice.paymentId) {
             return invoice.created_on;
         }
 
-        console.log('[PaymentHistory][Deposit] no deposit paid date found');
         return null;
     }
 
@@ -861,11 +809,8 @@ class PaymentHistory {
         var $this = this;
         if (!modal) return;
 
-        console.log('[PaymentHistory][Deposit] showInvoiceBreakdownModal start', PAYMENT_HISTORY_DEPOSIT_FIX_VERSION);
-
         // Don't show modal if "Semester Tuition" is not available
         if (!invoice || !invoice.breakDownList || invoice.breakDownList['Semester Tuition'] === undefined) {
-            console.log('[PaymentHistory][Deposit] modal aborted - no Semester Tuition on invoice');
             return;
         }
 
@@ -926,39 +871,16 @@ class PaymentHistory {
 
             // Update Deposit Title with date
             const depositTitleEl = this.findDepositTitleElement(modal);
-            console.log('[PaymentHistory][Deposit] depositTitleEl lookup', {
-                found: !!depositTitleEl,
-                depositInBreakdown: breakdown['Deposit'],
-                breakdownKeys: Object.keys(breakdown),
-                modalBreakdownAttrs: Array.from(
-                    modal.querySelectorAll('[invoice-breakdown-data]')
-                ).map((node) => ({
-                    attr: node.getAttribute('invoice-breakdown-data'),
-                    text: (node.textContent || '').trim().slice(0, 60),
-                })),
-            });
-
-            if (breakdown['Deposit'] !== undefined) {
-                if (depositTitleEl) {
-                    // Use completed invoice where deposit was actually paid
-                    const depositPaidOn = this.getDepositPaidOnDate(studentData, invoice);
-                    const depositDate = this.formatDepositDisplayDate(depositPaidOn);
-                    const depositTitle = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
-                    console.log('[PaymentHistory][Deposit] modal title set', {
-                        version: PAYMENT_HISTORY_DEPOSIT_FIX_VERSION,
-                        depositPaidOnRaw: depositPaidOn,
-                        depositDateFormatted: depositDate,
-                        depositTitle,
-                        previousTitle: depositTitleEl.textContent,
-                    });
-                    depositTitleEl.textContent = depositTitle;
-                    if (breakdown['Deposit'] == 0) {
-                        depositTitleEl.parentElement.style.display = 'none';
-                    } else {
-                        depositTitleEl.parentElement.style.display = 'flex';
-                    }
+            if (breakdown['Deposit'] !== undefined && depositTitleEl) {
+                const depositPaidOn = this.getDepositPaidOnDate(studentData, invoice);
+                const depositDate = this.formatDepositDisplayDate(depositPaidOn);
+                depositTitleEl.textContent = depositDate
+                    ? `Deposit - Paid on ${depositDate}`
+                    : 'Deposit';
+                if (breakdown['Deposit'] == 0) {
+                    depositTitleEl.parentElement.style.display = 'none';
                 } else {
-                    console.warn('[PaymentHistory][Deposit] deposit title element not found - date not updated');
+                    depositTitleEl.parentElement.style.display = 'flex';
                 }
             }
 
@@ -1043,29 +965,21 @@ class PaymentHistory {
                     if (invoiceDataStr) {
                         try {
                             invoice = JSON.parse(invoiceDataStr);
-                            console.log('[PaymentHistory][Deposit] breakdown click - invoice', invoice);
                         } catch (e) {
-                            console.error('[PaymentHistory][Deposit] error parsing invoice data:', e);
+                            console.error('Error parsing invoice data:', e);
                         }
                     }
 
                     if (studentDataStr) {
                         try {
                             studentData = JSON.parse(studentDataStr);
-                            console.log('[PaymentHistory][Deposit] breakdown click - studentData sessions', {
-                                currentSessionCount: studentData?.currentSession?.length,
-                                futureSessionCount: studentData?.futureSession?.length,
-                                pastSessionCount: studentData?.pastSession?.length,
-                                currentSession0CreatedOn: studentData?.currentSession?.[0]?.createdOn,
-                            });
                         } catch (e) {
-                            console.error('[PaymentHistory][Deposit] error parsing student data:', e);
+                            console.error('Error parsing student data:', e);
                         }
                     }
 
                     // Only show modal if "Semester Tuition" exists in breakDownList
                     if (invoice && invoice.breakDownList && invoice.breakDownList['Semester Tuition'] !== undefined) {
-                        console.log('[PaymentHistory][Deposit] opening modal', PAYMENT_HISTORY_DEPOSIT_FIX_VERSION);
                         $this.showInvoiceBreakdownModal(modal, invoice, studentData);
                     }
                 }
