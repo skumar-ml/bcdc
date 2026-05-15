@@ -8,7 +8,7 @@ Are there any dependent JS files: No
 
 */
 // Bump when debugging deposit date so console confirms latest script loaded
-const PAYMENT_HISTORY_DEPOSIT_FIX_VERSION = 'deposit-fix-2026-05-15-v3';
+const PAYMENT_HISTORY_DEPOSIT_FIX_VERSION = 'deposit-fix-2026-05-15-v4';
 
 class PaymentHistory {
     // Initializes the PaymentHistory instance
@@ -685,7 +685,7 @@ class PaymentHistory {
         return `Jan 1 - Dec 31, ${year}`;
     }
 
-    // Finds created_on from earliest completed invoice where deposit was paid
+    // Finds created_on from earliest invoice where deposit was paid
     getDepositPaidOnDate(studentData, invoice) {
         console.log('[PaymentHistory][Deposit] getDepositPaidOnDate start', {
             version: PAYMENT_HISTORY_DEPOSIT_FIX_VERSION,
@@ -695,10 +695,12 @@ class PaymentHistory {
                 created_on: invoice.created_on,
                 is_completed: invoice.is_completed,
                 status: invoice.status,
+                paymentId: invoice.paymentId,
             } : null,
         });
 
-        const depositPaidInvoices = [];
+        const completedDepositInvoices = [];
+        const paymentLinkedDepositInvoices = [];
         const sessions = [
             ...(studentData?.currentSession || []),
             ...(studentData?.pastSession || []),
@@ -711,7 +713,8 @@ class PaymentHistory {
                 if (!inv?.created_on) return;
                 const deposit = inv.breakDownList?.['Deposit'];
                 if (!deposit || deposit <= 0) return;
-                const isPaid = inv.is_completed === true || inv.status === 'Complete';
+                const isCompleted = inv.is_completed === true || inv.status === 'Complete';
+                const hasPayment = !!inv.paymentId;
                 console.log('[PaymentHistory][Deposit] invoice scanned', {
                     sessionIndex,
                     sessionCreatedOn: session.createdOn,
@@ -721,31 +724,51 @@ class PaymentHistory {
                     deposit,
                     is_completed: inv.is_completed,
                     status: inv.status,
-                    isPaid,
+                    paymentId: inv.paymentId,
+                    isCompleted,
+                    hasPayment,
                 });
-                if (isPaid) depositPaidInvoices.push(inv);
+                if (isCompleted) completedDepositInvoices.push(inv);
+                else if (hasPayment) paymentLinkedDepositInvoices.push(inv);
             });
         });
 
-        if (depositPaidInvoices.length > 0) {
-            depositPaidInvoices.sort(
-                (a, b) => new Date(a.created_on) - new Date(b.created_on)
-            );
-            const selected = depositPaidInvoices[0].created_on;
-            console.log('[PaymentHistory][Deposit] using earliest completed deposit invoice', {
+        const pickEarliest = (invoices, logLabel) => {
+            if (!invoices.length) return null;
+            invoices.sort((a, b) => new Date(a.created_on) - new Date(b.created_on));
+            const selected = invoices[0].created_on;
+            console.log(`[PaymentHistory][Deposit] ${logLabel}`, {
                 selected_created_on: selected,
                 formatted: this.formatDepositDisplayDate(selected),
-                allCandidates: depositPaidInvoices.map((inv) => ({
+                allCandidates: invoices.map((inv) => ({
                     invoice_id: inv.invoice_id,
                     invoiceName: inv.invoiceName,
                     created_on: inv.created_on,
+                    paymentId: inv.paymentId,
                 })),
             });
             return selected;
-        }
+        };
 
-        if (invoice?.created_on && (invoice.is_completed || invoice.status === 'Complete')) {
-            console.log('[PaymentHistory][Deposit] fallback to clicked completed invoice', invoice.created_on);
+        const completedDate = pickEarliest(
+            completedDepositInvoices,
+            'using earliest completed deposit invoice'
+        );
+        if (completedDate) return completedDate;
+
+        const paymentLinkedDate = pickEarliest(
+            paymentLinkedDepositInvoices,
+            'using earliest deposit invoice with paymentId'
+        );
+        if (paymentLinkedDate) return paymentLinkedDate;
+
+        const clickedDeposit = invoice?.breakDownList?.['Deposit'];
+        if (
+            invoice?.created_on &&
+            clickedDeposit > 0 &&
+            invoice.paymentId
+        ) {
+            console.log('[PaymentHistory][Deposit] fallback to clicked invoice with paymentId', invoice.created_on);
             return invoice.created_on;
         }
 
