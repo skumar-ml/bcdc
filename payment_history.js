@@ -765,6 +765,34 @@ class PaymentHistory {
         });
     }
 
+    // Finds deposit label element when DepositTitle attribute is missing in HTML
+    findDepositTitleElement(modal) {
+        let el = modal.querySelector('[invoice-breakdown-data="DepositTitle"]');
+        if (el) return el;
+
+        const depositAmountEl = modal.querySelector('[invoice-breakdown-data="Deposit"]');
+        if (!depositAmountEl) return null;
+
+        const row =
+            depositAmountEl.closest('.invoice-breakdown-row') ||
+            depositAmountEl.closest('.w-layout-grid') ||
+            depositAmountEl.parentElement?.parentElement;
+
+        if (!row) return null;
+
+        el = row.querySelector('[invoice-breakdown-data="DepositTitle"]');
+        if (el) return el;
+
+        const rowChildren = row.querySelectorAll('motion-div, div, p, span');
+        for (const child of rowChildren) {
+            if (child === depositAmountEl || child.contains(depositAmountEl)) continue;
+            const text = (child.textContent || '').trim();
+            if (text.includes('Deposit')) return child;
+        }
+
+        return null;
+    }
+
     // Updates the sidebar millions count
     updateSidebarMillionsCount(millionsData, studentName) {
         const sidebarCountEls = document.querySelectorAll(
@@ -810,8 +838,11 @@ class PaymentHistory {
         var $this = this;
         if (!modal) return;
 
+        console.log('[PaymentHistory][Deposit] showInvoiceBreakdownModal start', PAYMENT_HISTORY_DEPOSIT_FIX_VERSION);
+
         // Don't show modal if "Semester Tuition" is not available
         if (!invoice || !invoice.breakDownList || invoice.breakDownList['Semester Tuition'] === undefined) {
+            console.log('[PaymentHistory][Deposit] modal aborted - no Semester Tuition on invoice');
             return;
         }
 
@@ -871,24 +902,40 @@ class PaymentHistory {
             }
 
             // Update Deposit Title with date
-            const depositTitleEl = modal.querySelector('[invoice-breakdown-data="DepositTitle"]');
-            if (depositTitleEl && breakdown['Deposit'] !== undefined) {
-                // Use completed invoice where deposit was actually paid
-                const depositPaidOn = this.getDepositPaidOnDate(studentData, invoice);
-                const depositDate = this.formatDepositDisplayDate(depositPaidOn);
-                const depositTitle = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
-                console.log('[PaymentHistory][Deposit] modal title set', {
-                    version: PAYMENT_HISTORY_DEPOSIT_FIX_VERSION,
-                    depositPaidOnRaw: depositPaidOn,
-                    depositDateFormatted: depositDate,
-                    depositTitle,
-                    previousTitle: depositTitleEl.textContent,
-                });
-                depositTitleEl.textContent = depositTitle;
-                if (breakdown['Deposit'] == 0) {
-                    depositTitleEl.parentElement.style.display = 'none';
+            const depositTitleEl = this.findDepositTitleElement(modal);
+            console.log('[PaymentHistory][Deposit] depositTitleEl lookup', {
+                found: !!depositTitleEl,
+                depositInBreakdown: breakdown['Deposit'],
+                breakdownKeys: Object.keys(breakdown),
+                modalBreakdownAttrs: Array.from(
+                    modal.querySelectorAll('[invoice-breakdown-data]')
+                ).map((node) => ({
+                    attr: node.getAttribute('invoice-breakdown-data'),
+                    text: (node.textContent || '').trim().slice(0, 60),
+                })),
+            });
+
+            if (breakdown['Deposit'] !== undefined) {
+                if (depositTitleEl) {
+                    // Use completed invoice where deposit was actually paid
+                    const depositPaidOn = this.getDepositPaidOnDate(studentData, invoice);
+                    const depositDate = this.formatDepositDisplayDate(depositPaidOn);
+                    const depositTitle = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
+                    console.log('[PaymentHistory][Deposit] modal title set', {
+                        version: PAYMENT_HISTORY_DEPOSIT_FIX_VERSION,
+                        depositPaidOnRaw: depositPaidOn,
+                        depositDateFormatted: depositDate,
+                        depositTitle,
+                        previousTitle: depositTitleEl.textContent,
+                    });
+                    depositTitleEl.textContent = depositTitle;
+                    if (breakdown['Deposit'] == 0) {
+                        depositTitleEl.parentElement.style.display = 'none';
+                    } else {
+                        depositTitleEl.parentElement.style.display = 'flex';
+                    }
                 } else {
-                    depositTitleEl.parentElement.style.display = 'flex';
+                    console.warn('[PaymentHistory][Deposit] deposit title element not found - date not updated');
                 }
             }
 
@@ -959,6 +1006,8 @@ class PaymentHistory {
             const breakdownLink = e.target.closest('.invoice-breakdown-link');
             if (breakdownLink) {
                 e.preventDefault();
+                // Run before portal_new_ui bubble handler and block duplicate modal updates
+                e.stopImmediatePropagation();
                 const modal = document.getElementById('invoice-breakdown-modal');
                 if (modal) {
                     // Get full invoice and studentData from data attributes
@@ -998,7 +1047,7 @@ class PaymentHistory {
                     }
                 }
             }
-        });
+        }, true);
     }
 
     // Generates and downloads an invoice PDF
