@@ -791,8 +791,10 @@ class PaymentHistory {
             if (depositTitleEl && breakdown['Deposit'] !== undefined) {
                 let depositDate = '';
                 // Get date from currentSession.createdOn if available
+                console.log('Invoice breakdown deposit - raw studentData for deposit date:', studentData);
                 if (studentData && studentData.currentSession && studentData.currentSession.length > 0) {
                     const currentSession = studentData.currentSession[0];
+                    console.log('Invoice breakdown deposit - using currentSession for deposit date:', currentSession);
                     if (currentSession.createdOn) {
                         try {
                             const date = new Date(currentSession.createdOn);
@@ -893,6 +895,7 @@ class PaymentHistory {
                     if (invoiceDataStr) {
                         try {
                             invoice = JSON.parse(invoiceDataStr);
+                            console.log('Invoice breakdown click - invoice loaded for modal:', invoice);
                         } catch (e) {
                             console.error('Error parsing invoice data:', e);
                         }
@@ -901,6 +904,7 @@ class PaymentHistory {
                     if (studentDataStr) {
                         try {
                             studentData = JSON.parse(studentDataStr);
+                            console.log('Invoice breakdown click - studentData loaded for modal:', studentData);
                         } catch (e) {
                             console.error('Error parsing student data:', e);
                         }
