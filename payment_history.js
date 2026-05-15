@@ -790,22 +790,19 @@ class PaymentHistory {
             const depositTitleEl = modal.querySelector('[invoice-breakdown-data="DepositTitle"]');
             if (depositTitleEl && breakdown['Deposit'] !== undefined) {
                 let depositDate = '';
-                // Get date from currentSession.createdOn if available
-                console.log('Invoice breakdown deposit - raw studentData for deposit date:', studentData);
-                if (studentData && studentData.currentSession && studentData.currentSession.length > 0) {
-                    const currentSession = studentData.currentSession[0];
-                    console.log('Invoice breakdown deposit - using currentSession for deposit date:', currentSession);
-                    if (currentSession.createdOn) {
-                        try {
-                            const date = new Date(currentSession.createdOn);
+                // Use clicked invoice created_on from portal API
+                if (invoice && invoice.created_on) {
+                    try {
+                        const date = new Date(invoice.created_on);
+                        if (!isNaN(date.getTime())) {
                             depositDate = date.toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: '2-digit',
                                 day: '2-digit'
                             });
-                        } catch (e) {
-                            console.error('Error parsing date:', e);
                         }
+                    } catch (e) {
+                        console.error('Error parsing deposit date:', e);
                     }
                 }
                 depositTitleEl.textContent = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
@@ -895,7 +892,6 @@ class PaymentHistory {
                     if (invoiceDataStr) {
                         try {
                             invoice = JSON.parse(invoiceDataStr);
-                            console.log('Invoice breakdown click - invoice loaded for modal:', invoice);
                         } catch (e) {
                             console.error('Error parsing invoice data:', e);
                         }
@@ -904,7 +900,6 @@ class PaymentHistory {
                     if (studentDataStr) {
                         try {
                             studentData = JSON.parse(studentDataStr);
-                            console.log('Invoice breakdown click - studentData loaded for modal:', studentData);
                         } catch (e) {
                             console.error('Error parsing student data:', e);
                         }
