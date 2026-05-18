@@ -1122,6 +1122,9 @@ class CheckOutWebflow {
           if (!selectedById.has(programId)) {
             $this.$selectedProgram.push(program);
             selectedById.add(programId);
+            if (!$this.$suppPro.some(function (p) { return p && p.upsellProgramId === programId; })) {
+              $this.$suppPro.push(program);
+            }
           }
         });
         if (isWineRedButton) {
@@ -1227,15 +1230,50 @@ class CheckOutWebflow {
       // Uses DOM (#totalAmount + #suppProIds) so it is correct across instances.
       this.applyTotalsForTab(this.getCurrentPaymentTab());
     }
+
+	_hasAnyUpsellSelected() {
+      var coreId = this.$coreData && this.$coreData.upsellProgramId;
+      return (this.$selectedProgram || []).some(function (p) {
+        return p && p.upsellProgramId != null && p.upsellProgramId !== coreId;
+      });
+    }
+
+	// Sidebar line items when bundling
+	_getOrderDetailProgramsForDisplay(selectedIds) {
+      if (!this._hasAnyUpsellSelected()) {
+        return [];
+      }
+      var coreId = this.$coreData && this.$coreData.upsellProgramId;
+      var programs = [];
+      var coreProg = (this.$selectedProgram || []).find(function (p) {
+        return p && p.upsellProgramId === coreId;
+      }) || this.$coreData;
+      if (coreProg) {
+        programs.push(coreProg);
+      }
+      (Array.isArray(selectedIds) ? selectedIds : []).forEach((id) => {
+        if (id == null || id === coreId) {
+          return;
+        }
+        var prog = (this.$suppPro || []).find((p) => p && p.upsellProgramId == id)
+          || (this.$selectedProgram || []).find((p) => p && p.upsellProgramId == id);
+        if (prog && !programs.some((p) => p.upsellProgramId === prog.upsellProgramId)) {
+          programs.push(prog);
+        }
+      });
+      return programs;
+    }
+
 	// Displays selected supplementary programs in the sidebar
 	displaySelectedSuppProgram(selectedIds) {
+      var programsToShow = this._getOrderDetailProgramsForDisplay(selectedIds);
       var selectedSuppPro = document.getElementById("add-on-program-desktop");
       var selectedSuppProMob = document.getElementById("add-on-program-mobile");
   
       if (selectedSuppPro != null) {
         selectedSuppPro.innerHTML = "";
-        if (selectedIds.length > 0) {
-          this.displaySelectedSuppPrograms(selectedIds, selectedSuppPro);
+        if (programsToShow.length > 0) {
+          this.displaySelectedSuppPrograms(programsToShow, selectedSuppPro);
           selectedSuppPro.style.display = "block";
         }
         else {
@@ -1245,8 +1283,8 @@ class CheckOutWebflow {
   
       if (selectedSuppProMob != null) {
         selectedSuppProMob.innerHTML = "";
-        if (selectedIds.length > 0) {
-          this.displaySelectedSuppPrograms(selectedIds, selectedSuppProMob);
+        if (programsToShow.length > 0) {
+          this.displaySelectedSuppPrograms(programsToShow, selectedSuppProMob);
           selectedSuppProMob.style.display = "block";
         }
         else {
@@ -1255,12 +1293,11 @@ class CheckOutWebflow {
       }
     }
     // Helper to render selected supplementary programs
-   displaySelectedSuppPrograms(suppIds, selectedSuppPro) {
+   displaySelectedSuppPrograms(selectedData, selectedSuppPro) {
     var $this = this;
-    // Filtering selected Supplementary program id from all Supplementary program data
-    var selectedData = this.$suppPro.filter((item) =>
-      suppIds.some((d) => d == item.upsellProgramId)
-    );
+    if (!Array.isArray(selectedData)) {
+      selectedData = [];
+    }
     
       selectedData.forEach((sup) => {
         let mainGridWrapper = creEl("div", "cart-grid-wrapper");
