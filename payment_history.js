@@ -523,10 +523,15 @@ class PaymentHistory {
             return;
         }
 
-        // Remove duplicate sessions by year
+        // Remove duplicate sessions by program year
         allSessions = allSessions.filter(
             (session, index, self) =>
-                index === self.findIndex((t) => t.currentYear === session.currentYear)
+                index ===
+                self.findIndex(
+                    (t) =>
+                        (t.yearId || t.currentYear) ===
+                        (session.yearId || session.currentYear)
+                )
         );
 
         // Sort sessions by year (newest first)
@@ -580,75 +585,57 @@ class PaymentHistory {
         });
     }
 
-     // Retrieves all sessions (current and past) for a student
-     getAllSessions(studentData) {
+    // Collects class and summer sessions from a session list
+    collectSessionsFromList(sessionList) {
         const sessions = [];
+        if (!sessionList || sessionList.length === 0) return sessions;
 
-        // Process current sessions
-        if (studentData.currentSession && studentData.currentSession.length > 0) {
-            studentData.currentSession.forEach((session) => {
-                // Add class detail sessions
-                if (
-                    session.classDetail &&
-                    Object.keys(session.classDetail).length > 0
-                ) {
-                    var year =  year = this.getYearFromDateString(session.createdOn, session.classDetail.currentYear);
-                    sessions.push({ 
-                        ...session.classDetail,
-                        yearId: year,
-                        location: session.classLoactionDeatils?.locationName,
-                        sessionData: session,
-                    });
-                }
+        sessionList.forEach((session) => {
+            // Add class detail sessions
+            if (
+                session.classDetail &&
+                Object.keys(session.classDetail).length > 0
+            ) {
+                const year = this.getYearFromDateString(
+                    session.createdOn,
+                    session.classDetail.currentYear
+                );
+                sessions.push({
+                    ...session.classDetail,
+                    yearId: year,
+                    location: session.classLoactionDeatils?.locationName,
+                    sessionData: session,
+                });
+            }
 
-                // Add summer program detail sessions
-                if (
-                    session.summerProgramDetail &&
-                    Object.keys(session.summerProgramDetail).length > 0
-                ) {
-                    var year = this.getYearFromDateString(session.createdOn, session.summerProgramDetail.currentYear);
-                    sessions.push({
-                        ...session.summerProgramDetail,
-                        yearId: year,
-                        location: session.summerProgramDetail.location,   
-                        sessionData: session,
-                    });
-                }
-            });
-        }
+            // Add summer program detail sessions
+            if (
+                session.summerProgramDetail &&
+                Object.keys(session.summerProgramDetail).length > 0
+            ) {
+                const year = this.getYearFromDateString(
+                    session.createdOn,
+                    session.summerProgramDetail.currentYear
+                );
+                sessions.push({
+                    ...session.summerProgramDetail,
+                    yearId: year,
+                    location: session.summerProgramDetail.location,
+                    sessionData: session,
+                });
+            }
+        });
 
-        // Process past sessions
-        if (studentData.pastSession && studentData.pastSession.length > 0) {
-            studentData.pastSession.forEach((session) => {
-                // Add past class detail sessions
-                if (
-                    session.classDetail &&
-                    Object.keys(session.classDetail).length > 0
-                ) {
-                    var year = this.getYearFromDateString(session.createdOn, session.classDetail.currentYear);
-                    sessions.push({
-                        ...session.classDetail,
-                        yearId: year,
-                        location: session.classLoactionDeatils?.locationName,   
-                        sessionData: session,
-                    });
-                }
+        return sessions;
+    }
 
-                // Add past summer program detail sessions
-                if (
-                    session.summerProgramDetail &&
-                    Object.keys(session.summerProgramDetail).length > 0
-                ) {
-                    var year = this.getYearFromDateString(session.createdOn, session.summerProgramDetail.currentYear);
-                    sessions.push({
-                        ...session.summerProgramDetail,
-                        yearId: year,
-                        location: session.summerProgramDetail.location,
-                        sessionData: session,
-                    });
-                }
-            });
-        }
+    // Retrieves all sessions (current, past, and future) for a student
+    getAllSessions(studentData) {
+        const sessions = [
+            ...this.collectSessionsFromList(studentData.currentSession),
+            ...this.collectSessionsFromList(studentData.pastSession),
+            ...this.collectSessionsFromList(studentData.futureSession),
+        ];
 
         // Merge sessions with the same yearId into one object per year
         const byYear = {};
@@ -666,9 +653,13 @@ class PaymentHistory {
         return Object.values(byYear);
     }
 
-    // get year from date string
+    // Resolves program year for tax rows; prefers class currentYear over registration date
     getYearFromDateString(dateString, currentYear = null) {
-        if(!dateString){
+        if (currentYear != null && currentYear !== "") {
+            const programYear = parseInt(currentYear, 10);
+            if (!isNaN(programYear)) return programYear;
+        }
+        if (!dateString) {
             return currentYear;
         }
         const date = new Date(dateString.replace(" ", "T"));
