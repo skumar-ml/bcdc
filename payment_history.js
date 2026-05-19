@@ -681,6 +681,89 @@ class PaymentHistory {
         return `Jan 1 - Dec 31, ${year}`;
     }
 
+    // Finds created_on from earliest invoice where deposit was paid
+    getDepositPaidOnDate(studentData, invoice) {
+        const completedDepositInvoices = [];
+        const paymentLinkedDepositInvoices = [];
+        const sessions = [
+            ...(studentData?.currentSession || []),
+            ...(studentData?.pastSession || []),
+            ...(studentData?.futureSession || []),
+        ];
+
+        sessions.forEach((session) => {
+            if (!session?.invoiceList || !Array.isArray(session.invoiceList)) return;
+            session.invoiceList.forEach((inv) => {
+                if (!inv?.created_on) return;
+                const deposit = inv.breakDownList?.['Deposit'];
+                if (!deposit || deposit <= 0) return;
+                const isCompleted = inv.is_completed === true || inv.status === 'Complete';
+                const hasPayment = !!inv.paymentId;
+                if (isCompleted) completedDepositInvoices.push(inv);
+                else if (hasPayment) paymentLinkedDepositInvoices.push(inv);
+            });
+        });
+
+        const pickEarliest = (invoices) => {
+            if (!invoices.length) return null;
+            invoices.sort((a, b) => new Date(a.created_on) - new Date(b.created_on));
+            return invoices[0].created_on;
+        };
+
+        const completedDate = pickEarliest(completedDepositInvoices);
+        if (completedDate) return completedDate;
+
+        const paymentLinkedDate = pickEarliest(paymentLinkedDepositInvoices);
+        if (paymentLinkedDate) return paymentLinkedDate;
+
+        const clickedDeposit = invoice?.breakDownList?.['Deposit'];
+        if (invoice?.created_on && clickedDeposit > 0 && invoice.paymentId) {
+            return invoice.created_on;
+        }
+
+        return null;
+    }
+
+    // Formats a date string for deposit title display
+    formatDepositDisplayDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    }
+
+    // Finds deposit label element when DepositTitle attribute is missing in HTML
+    findDepositTitleElement(modal) {
+        let el = modal.querySelector('[invoice-breakdown-data="DepositTitle"]');
+        if (el) return el;
+
+        const depositAmountEl = modal.querySelector('[invoice-breakdown-data="Deposit"]');
+        if (!depositAmountEl) return null;
+
+        const row =
+            depositAmountEl.closest('.invoice-breakdown-row') ||
+            depositAmountEl.closest('.w-layout-grid') ||
+            depositAmountEl.parentElement?.parentElement;
+
+        if (!row) return null;
+
+        el = row.querySelector('[invoice-breakdown-data="DepositTitle"]');
+        if (el) return el;
+
+        const rowChildren = row.querySelectorAll('motion-div, div, p, span');
+        for (const child of rowChildren) {
+            if (child === depositAmountEl || child.contains(depositAmountEl)) continue;
+            const text = (child.textContent || '').trim();
+            if (text.includes('Deposit')) return child;
+        }
+
+        return null;
+    }
+
     // Updates the sidebar millions count
     updateSidebarMillionsCount(millionsData, studentName) {
         const sidebarCountEls = document.querySelectorAll(
@@ -787,26 +870,13 @@ class PaymentHistory {
             }
 
             // Update Deposit Title with date
-            const depositTitleEl = modal.querySelector('[invoice-breakdown-data="DepositTitle"]');
-            if (depositTitleEl && breakdown['Deposit'] !== undefined) {
-                let depositDate = '';
-                // Get date from currentSession.createdOn if available
-                if (studentData && studentData.currentSession && studentData.currentSession.length > 0) {
-                    const currentSession = studentData.currentSession[0];
-                    if (currentSession.createdOn) {
-                        try {
-                            const date = new Date(currentSession.createdOn);
-                            depositDate = date.toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit'
-                            });
-                        } catch (e) {
-                            console.error('Error parsing date:', e);
-                        }
-                    }
-                }
-                depositTitleEl.textContent = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
+            const depositTitleEl = this.findDepositTitleElement(modal);
+            if (breakdown['Deposit'] !== undefined && depositTitleEl) {
+                const depositPaidOn = this.getDepositPaidOnDate(studentData, invoice);
+                const depositDate = this.formatDepositDisplayDate(depositPaidOn);
+                depositTitleEl.textContent = depositDate
+                    ? `Deposit - Paid on ${depositDate}`
+                    : 'Deposit';
                 if (breakdown['Deposit'] == 0) {
                     depositTitleEl.parentElement.style.display = 'none';
                 } else {
@@ -881,6 +951,8 @@ class PaymentHistory {
             const breakdownLink = e.target.closest('.invoice-breakdown-link');
             if (breakdownLink) {
                 e.preventDefault();
+                // Run before portal_new_ui bubble handler and block duplicate modal updates
+                e.stopImmediatePropagation();
                 const modal = document.getElementById('invoice-breakdown-modal');
                 if (modal) {
                     // Get full invoice and studentData from data attributes
@@ -912,7 +984,7 @@ class PaymentHistory {
                     }
                 }
             }
-        });
+        }, true);
     }
 
     // Generates and downloads an invoice PDF
