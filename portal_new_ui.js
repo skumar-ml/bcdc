@@ -31,7 +31,6 @@ class Portal {
             const apiData = await response.json();
             return apiData;
         } catch (error) {
-            console.log(error);
             const portalMessage = document.querySelector('.portal-message')
             this.spinner.style.display = 'none';
             portalMessage.style.display = 'block';
@@ -1869,6 +1868,114 @@ class Portal {
         }
     }
 
+    // Finds created_on from earliest invoice where deposit was paid
+    getDepositPaidOnDate(studentData, invoice) {
+        const completedDepositInvoices = [];
+        const paymentLinkedDepositInvoices = [];
+        const sessions = [
+            ...(studentData?.currentSession || []),
+            ...(studentData?.pastSession || []),
+            ...(studentData?.futureSession || []),
+        ];
+
+        sessions.forEach((session) => {
+            if (!session?.invoiceList || !Array.isArray(session.invoiceList)) return;
+            session.invoiceList.forEach((inv) => {
+                if (!inv?.created_on) return;
+                const deposit = inv.breakDownList?.['Deposit'];
+                if (!deposit || deposit <= 0) return;
+                const isCompleted = inv.is_completed === true || inv.status === 'Complete';
+                const hasPayment = !!inv.paymentId;
+                if (isCompleted) completedDepositInvoices.push(inv);
+                else if (hasPayment) paymentLinkedDepositInvoices.push(inv);
+            });
+        });
+
+        const pickEarliest = (invoices) => {
+            if (!invoices.length) return null;
+            invoices.sort(
+                (a, b) =>
+                    new Date(a.created_on.replace(' ', 'T')) -
+                    new Date(b.created_on.replace(' ', 'T'))
+            );
+            return invoices[0].created_on;
+        };
+
+        const completedDate = pickEarliest(completedDepositInvoices);
+        if (completedDate) return completedDate;
+
+        const paymentLinkedDate = pickEarliest(paymentLinkedDepositInvoices);
+        if (paymentLinkedDate) return paymentLinkedDate;
+
+        const clickedDeposit = invoice?.breakDownList?.['Deposit'];
+        if (invoice?.created_on && clickedDeposit > 0 && invoice.paymentId) {
+            return invoice.created_on;
+        }
+
+        return null;
+    }
+
+    // Formats deposit paid date for modal label
+    formatDepositDisplayDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(String(dateString).replace(' ', 'T'));
+        if (isNaN(date.getTime())) return '';
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        });
+    }
+
+    // Collects deposit label nodes (not the amount column)
+    getDepositTitleElements(modal) {
+        const elements = [];
+        const seen = new Set();
+        const add = (el) => {
+            if (el && !seen.has(el)) {
+                seen.add(el);
+                elements.push(el);
+            }
+        };
+
+        modal.querySelectorAll('[invoice-breakdown-data="DepositTitle"]').forEach(add);
+
+        const depositAmountEl = modal.querySelector('[invoice-breakdown-data="Deposit"]');
+        if (!depositAmountEl) return elements;
+
+        const row =
+            depositAmountEl.closest('.invoice-breakdowm-info-flex') ||
+            depositAmountEl.closest('.invoice-breakdown-row') ||
+            depositAmountEl.closest('.w-layout-grid') ||
+            depositAmountEl.parentElement;
+
+        if (row) {
+            row.querySelectorAll('p.invoice-breakdown-text').forEach((el) => {
+                if (el.hasAttribute('invoice-breakdown-data')) return;
+                add(el);
+            });
+        }
+
+        return elements;
+    }
+
+    // Updates all deposit title labels in the breakdown modal
+    updateDepositTitleLabels(modal, studentData, invoice, breakdown) {
+        if (breakdown['Deposit'] === undefined) return;
+
+        const depositPaidOn = this.getDepositPaidOnDate(studentData, invoice);
+        const depositDate = this.formatDepositDisplayDate(depositPaidOn);
+        const labelText = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
+        const hide = breakdown['Deposit'] == 0;
+
+        this.getDepositTitleElements(modal).forEach((el) => {
+            el.textContent = labelText;
+            if (el.parentElement) {
+                el.parentElement.style.display = hide ? 'none' : 'flex';
+            }
+        });
+    }
+
     /**
      * Shows invoice breakdown modal and sets up close functionality
      * @param {HTMLElement} modal - The invoice breakdown modal element
@@ -1939,39 +2046,13 @@ class Portal {
             }
 
 
-            // Update Deposit Title with date
-            const depositTitleEl = modal.querySelector('[invoice-breakdown-data="DepositTitle"]');
-            if (depositTitleEl && breakdown['Deposit'] !== undefined) {
-                let depositDate = '';
-                // Get date from currentSession.createdOn if available
-                if (studentData && studentData.currentSession && studentData.currentSession.length > 0) {
-                    const currentSession = studentData.currentSession[0];
-                    if (currentSession.createdOn) {
-                        try {
-                            const date = new Date(currentSession.createdOn);
-                            depositDate = date.toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit'
-                            });
-                        } catch (e) {
-                            console.error('Error parsing date:', e);
-                        }
-                    }
-                }
-                depositTitleEl.textContent = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
-                if(breakdown['Deposit'] == 0){
-                    depositTitleEl.parentElement.style.display = 'none';
-                } else {
-                    depositTitleEl.parentElement.style.display = 'flex';
-                }
-            }
-
-            // Update Deposit amount
+            // Update Deposit amount, then deposit label (invoice-breakdown-text on dashboard)
             const depositEl = modal.querySelector('[invoice-breakdown-data="Deposit"]');
             if (depositEl && breakdown['Deposit'] !== undefined) {
                 depositEl.textContent = formatCurrency(-Math.abs(breakdown['Deposit'])); // Always show as negative
             }
+
+            this.updateDepositTitleLabels(modal, studentData, invoice, breakdown);
 
             // Calculate and update remaining balance
             const remainingBalanceEl = modal.querySelector('[data-cart-total="cart-total-price"]');
@@ -1983,7 +2064,7 @@ class Portal {
                 if (breakdown['Sibling Discount'] !== undefined) total += breakdown['Sibling Discount'];
                 if (breakdown['Deposit'] !== undefined) total -= Math.abs(breakdown['Deposit']); // Subtract deposit
 
-                remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;
+                remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;
             }
         }
 
