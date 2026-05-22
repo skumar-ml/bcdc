@@ -23,6 +23,7 @@ class PaymentHistory {
         );
         if (!response.ok) throw new Error("Network response was not ok");
         const apiData = await response.json();
+        this.logPortalDetailDepositDates(apiData);
         return apiData;
     }
 
@@ -672,10 +673,134 @@ class PaymentHistory {
         return `Jan 1 - Dec 31, ${year}`;
     }
 
-    // Finds created_on from earliest invoice where deposit was paid
+    // Pulls date-related fields from API invoice for console review
+    getInvoiceDateFields(inv) {
+        if (!inv || typeof inv !== "object") return {};
+        const fields = {};
+        Object.keys(inv).forEach((key) => {
+            if (/date|on|paid|time/i.test(key)) fields[key] = inv[key];
+        });
+        return fields;
+    }
+
+    // Logs deposit-related dates from getPortalDetail API response
+    logPortalDetailDepositDates(apiData) {
+        if (!Array.isArray(apiData)) {
+            console.log("[PaymentHistory][DepositDate] getPortalDetail response", apiData);
+            return;
+        }
+
+        const summary = apiData.map((studentObj) => {
+            const studentName = Object.keys(studentObj)[0];
+            const studentData = Object.values(studentObj)[0];
+            const sessionTypes = ["currentSession", "pastSession", "futureSession"];
+
+            const sessions = sessionTypes.flatMap((sessionType) =>
+                (studentData[sessionType] || []).map((session, index) => ({
+                    sessionType,
+                    index,
+                    sessionCreatedOn: session.createdOn,
+                    invoices: (session.invoiceList || [])
+                        .filter((inv) => (inv?.breakDownList?.["Deposit"] || 0) > 0)
+                        .map((inv) => ({
+                            invoice_id: inv.invoice_id,
+                            invoiceName: inv.invoiceName,
+                            createdOn: inv.createdOn,
+                            created_on: inv.created_on,
+                            dateFields: this.getInvoiceDateFields(inv),
+                        })),
+                }))
+            );
+
+            return { studentName, sessions };
+        });
+
+        console.group("[PaymentHistory][DepositDate] getPortalDetail API summary");
+        console.log(summary);
+        console.groupEnd();
+    }
+
+    // Finds invoice + parent session from getPortalDetail studentData
+    findInvoiceContextInStudentData(studentData, invoiceId) {
+        const sessionTypes = ["currentSession", "pastSession", "futureSession"];
+        for (const sessionType of sessionTypes) {
+            for (let index = 0; index < (studentData[sessionType] || []).length; index++) {
+                const session = studentData[sessionType][index];
+                const inv = (session.invoiceList || []).find(
+                    (item) => item.invoice_id === invoiceId
+                );
+                if (inv) {
+                    return { sessionType, index, session, invoice: inv };
+                }
+            }
+        }
+        return null;
+    }
+
+    // Logs deposit date when breakdown modal opens
+    logDepositDateBreakdownDebug(invoice, studentData, result) {
+        const resolvedInvoice = this.resolveInvoiceFromStudentData(studentData, invoice);
+        const ctx = this.findInvoiceContextInStudentData(
+            studentData,
+            invoice?.invoice_id
+        );
+        console.group("[PaymentHistory][DepositDate] invoice breakdown click");
+        console.log("clickedInvoice", {
+            invoice_id: invoice?.invoice_id,
+            sessionCreatedOn: ctx?.session?.createdOn,
+            invoiceCreatedOn: resolvedInvoice?.createdOn,
+            invoiceCreated_on: resolvedInvoice?.created_on,
+            resolvedDepositDate: this.getDepositDisplayDate(
+                ctx?.session,
+                resolvedInvoice
+            ),
+        });
+        console.log("chosenDepositPaidOn", result.depositPaidOnRaw);
+        console.log("formattedDepositLabelDate", result.depositDateFormatted);
+        console.groupEnd();
+    }
+
+    // Resolves deposit label date: session createdOn first, then invoice fields
+    getDepositDisplayDate(session, invoice) {
+        if (session?.createdOn) return session.createdOn;
+        if (!invoice) return null;
+        return invoice.createdOn || invoice.created_on || null;
+    }
+
+    // Finds full invoice from API studentData by invoice_id
+    resolveInvoiceFromStudentData(studentData, invoice) {
+        if (!studentData || !invoice?.invoice_id) return invoice;
+        const sessions = [
+            ...(studentData.currentSession || []),
+            ...(studentData.pastSession || []),
+            ...(studentData.futureSession || []),
+        ];
+        for (const session of sessions) {
+            if (!session?.invoiceList) continue;
+            const match = session.invoiceList.find(
+                (inv) => inv.invoice_id === invoice.invoice_id
+            );
+            if (match) return match;
+        }
+        return invoice;
+    }
+
+    // Uses session createdOn for clicked invoice; falls back to other deposit rows
     getDepositPaidOnDate(studentData, invoice) {
-        const completedDepositInvoices = [];
-        const paymentLinkedDepositInvoices = [];
+        const resolvedInvoice = this.resolveInvoiceFromStudentData(studentData, invoice);
+        const ctx = this.findInvoiceContextInStudentData(
+            studentData,
+            invoice?.invoice_id
+        );
+        const clickedDeposit = resolvedInvoice?.breakDownList?.["Deposit"];
+
+        if (clickedDeposit > 0) {
+            const clickedDate = this.getDepositDisplayDate(ctx?.session, resolvedInvoice);
+            if (clickedDate) return clickedDate;
+        }
+
+        const completedDates = [];
+        const paymentLinkedDates = [];
         const sessions = [
             ...(studentData?.currentSession || []),
             ...(studentData?.pastSession || []),
@@ -685,32 +810,33 @@ class PaymentHistory {
         sessions.forEach((session) => {
             if (!session?.invoiceList || !Array.isArray(session.invoiceList)) return;
             session.invoiceList.forEach((inv) => {
-                if (!inv?.created_on) return;
-                const deposit = inv.breakDownList?.['Deposit'];
+                const depositDate = this.getDepositDisplayDate(session, inv);
+                if (!depositDate) return;
+                const deposit = inv.breakDownList?.["Deposit"];
                 if (!deposit || deposit <= 0) return;
-                const isCompleted = inv.is_completed === true || inv.status === 'Complete';
+                const isCompleted =
+                    inv.is_completed === true || inv.status === "Complete";
                 const hasPayment = !!inv.paymentId;
-                if (isCompleted) completedDepositInvoices.push(inv);
-                else if (hasPayment) paymentLinkedDepositInvoices.push(inv);
+                if (isCompleted) completedDates.push(depositDate);
+                else if (hasPayment) paymentLinkedDates.push(depositDate);
             });
         });
 
-        const pickEarliest = (invoices) => {
-            if (!invoices.length) return null;
-            invoices.sort((a, b) => new Date(a.created_on) - new Date(b.created_on));
-            return invoices[0].created_on;
+        const pickEarliestDate = (dates) => {
+            if (!dates.length) return null;
+            dates.sort(
+                (a, b) =>
+                    new Date(String(a).replace(" ", "T")) -
+                    new Date(String(b).replace(" ", "T"))
+            );
+            return dates[0];
         };
 
-        const completedDate = pickEarliest(completedDepositInvoices);
+        const completedDate = pickEarliestDate(completedDates);
         if (completedDate) return completedDate;
 
-        const paymentLinkedDate = pickEarliest(paymentLinkedDepositInvoices);
+        const paymentLinkedDate = pickEarliestDate(paymentLinkedDates);
         if (paymentLinkedDate) return paymentLinkedDate;
-
-        const clickedDeposit = invoice?.breakDownList?.['Deposit'];
-        if (invoice?.created_on && clickedDeposit > 0 && invoice.paymentId) {
-            return invoice.created_on;
-        }
 
         return null;
     }
@@ -718,7 +844,7 @@ class PaymentHistory {
     // Formats a date string for deposit title display
     formatDepositDisplayDate(dateString) {
         if (!dateString) return '';
-        const date = new Date(dateString);
+        const date = new Date(String(dateString).replace(' ', 'T'));
         if (isNaN(date.getTime())) return '';
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
@@ -736,11 +862,15 @@ class PaymentHistory {
         if (!depositAmountEl) return null;
 
         const row =
+            depositAmountEl.closest('.invoice-breakdowm-info-flex') ||
             depositAmountEl.closest('.invoice-breakdown-row') ||
             depositAmountEl.closest('.w-layout-grid') ||
-            depositAmountEl.parentElement?.parentElement;
+            depositAmountEl.parentElement;
 
         if (!row) return null;
+
+        const labelEl = row.querySelector('p.invoice-breakdown-text:not([invoice-breakdown-data])');
+        if (labelEl) return labelEl;
 
         el = row.querySelector('[invoice-breakdown-data="DepositTitle"]');
         if (el) return el;
@@ -865,9 +995,15 @@ class PaymentHistory {
             if (breakdown['Deposit'] !== undefined && depositTitleEl) {
                 const depositPaidOn = this.getDepositPaidOnDate(studentData, invoice);
                 const depositDate = this.formatDepositDisplayDate(depositPaidOn);
-                depositTitleEl.textContent = depositDate
+                const labelText = depositDate
                     ? `Deposit - Paid on ${depositDate}`
-                    : 'Deposit';
+                    : "Deposit";
+                this.logDepositDateBreakdownDebug(invoice, studentData, {
+                    depositPaidOnRaw: depositPaidOn,
+                    depositDateFormatted: depositDate,
+                    labelText,
+                });
+                depositTitleEl.textContent = labelText;
                 if (breakdown['Deposit'] == 0) {
                     depositTitleEl.parentElement.style.display = 'none';
                 } else {
