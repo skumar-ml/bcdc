@@ -280,6 +280,10 @@ class classDetailsStripe extends parentLogin {
   $selectedBundleProgram = null;
   $allBundlePrograms = [];
   $allSuppData = [];
+  // Already-enrolled modal state (set after studentEnrolled API on Next)
+  _pendingAlreadyEnrolledModal = false;
+  _alreadyEnrolledStudentName = "";
+  _alreadyEnrolledModalBound = false;
   constructor(
     baseUrl,
     webflowMemberId,
@@ -1110,12 +1114,16 @@ class classDetailsStripe extends parentLogin {
 
         $this.storeBasicData();
         $this.AddStudentData();
+        // Check if student is already enrolled this semester
+        await $this.checkStudentEnrolled();
 
         if ($this.levelId == 'worldschools') {
           eligible = false;
         }
         if (eligible) {
           $this.showSemesterBundleModal();
+          // Show enrolled warning now if upsell modal did not open
+          $this._tryShowAlreadyEnrolledIfUpsellSkipped();
 
           // trigger change event to update class times, Removed world school condition
           if ($this.levelId != 'customizedtrack') {
@@ -1219,6 +1227,9 @@ class classDetailsStripe extends parentLogin {
       this.spinner.style.display = "block";
       // Modal No thanks events
       this.noThanksEvent();
+      // Wire and hide already-enrolled modal on page load
+      this.bindAlreadyEnrolledModalEvents();
+      this.closeAlreadyEnrolledModal();
       // Handle previous and next button
       this.addEventForPrevNaxt();
       // New Code Added
@@ -1750,6 +1761,174 @@ class classDetailsStripe extends parentLogin {
       }
       modal.classList.remove("show");
       modal.style.display = "none";
+      // After upsell closes, show already-enrolled modal if flagged
+      const semesterBundleModal = document.getElementById("semester-bundle-modal");
+      if (semesterBundleModal && modal === semesterBundleModal) {
+        this._tryShowPendingAlreadyEnrolledModal();
+      }
+    }
+  }
+
+  // True when student matched a pre-registered bundle program
+  _isPreRegistrationStudentSelected() {
+    return !!this.$selectedBundleProgram;
+  }
+
+  // Read email and full name from student details form
+  _getStudentEnrolledCheckParams() {
+    const studentFirstName = document.getElementById("Student-First-Name");
+    const studentLastName = document.getElementById("Student-Last-Name");
+    const studentEmail = document.getElementById("Student-Email");
+    if (!studentEmail || !studentFirstName || !studentLastName) {
+      return null;
+    }
+    const email = (studentEmail.value || "").trim();
+    const name = `${(studentFirstName.value || "").trim()} ${(studentLastName.value || "").trim()}`.trim();
+    if (!email || !name) {
+      return null;
+    }
+    return { email, name };
+  }
+
+  // Call studentEnrolled API; set pending flag when enrolled: true
+  async checkStudentEnrolled() {
+    const params = this._getStudentEnrolledCheckParams();
+    if (!params) {
+      this._pendingAlreadyEnrolledModal = false;
+      return false;
+    }
+    try {
+      const query = `studentEnrolled?studentEmail=${encodeURIComponent(params.email)}&name=${encodeURIComponent(params.name)}`;
+      const response = await fetch(
+        `https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/${query}`
+      );
+      if (!response.ok) {
+        this._pendingAlreadyEnrolledModal = false;
+        return false;
+      }
+      const data = await response.json();
+      if (data && data.enrolled === true) {
+        this._pendingAlreadyEnrolledModal = true;
+        this._alreadyEnrolledStudentName = params.name;
+        return true;
+      }
+      this._pendingAlreadyEnrolledModal = false;
+      return false;
+    } catch (error) {
+      console.error("Error checking student enrollment:", error);
+      this._pendingAlreadyEnrolledModal = false;
+      return false;
+    }
+  }
+
+  // Show #already-enrolled-modal and fill .enrolled-student-name
+  showAlreadyEnrolledModal() {
+    const modal = document.getElementById("already-enrolled-modal");
+    if (!modal) {
+      return;
+    }
+    const nameEl = modal.querySelector(".enrolled-student-name");
+    if (nameEl) {
+      nameEl.textContent = this._alreadyEnrolledStudentName || "This student";
+    }
+    const modalBg = document.getElementById("enrolled-modal-bg");
+    modal.classList.add("show");
+    modal.style.display = "flex";
+    if (modalBg) {
+      modalBg.setAttribute("aria-hidden", "false");
+    }
+  }
+
+  // Hide #already-enrolled-modal
+  closeAlreadyEnrolledModal() {
+    const modal = document.getElementById("already-enrolled-modal");
+    const modalBg = document.getElementById("enrolled-modal-bg");
+    if (modal) {
+      modal.classList.remove("show");
+      modal.style.display = "none";
+    }
+    if (modalBg) {
+      modalBg.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  // "No, Go Back" and X — return to student details step
+  _goBackToStudentDetailsFromEnrolledModal() {
+    this.closeAlreadyEnrolledModal();
+    this._pendingAlreadyEnrolledModal = false;
+    this.activeBreadCrumb("student-details");
+    this.activateDiv("checkout_student_details");
+    this.displayStudentInfo("none");
+    this.displayTopicData("none");
+  }
+
+  // "Yes" — dismiss warning and continue checkout
+  _continueFromAlreadyEnrolledModal() {
+    this.closeAlreadyEnrolledModal();
+    this._pendingAlreadyEnrolledModal = false;
+  }
+
+  // Called when upsell modal closes (X, no thanks, add to cart)
+  _tryShowPendingAlreadyEnrolledModal() {
+    if (!this._pendingAlreadyEnrolledModal) {
+      return;
+    }
+    this.showAlreadyEnrolledModal();
+  }
+
+  // Called on Next when upsell modal never opened
+  _tryShowAlreadyEnrolledIfUpsellSkipped() {
+    if (!this._pendingAlreadyEnrolledModal) {
+      return;
+    }
+    if (!this.checkSemesterBundleModalOpen()) {
+      this.showAlreadyEnrolledModal();
+    }
+  }
+
+  // Bind close, Go Back, and Yes buttons (once)
+  bindAlreadyEnrolledModalEvents() {
+    if (this._alreadyEnrolledModalBound) {
+      return;
+    }
+    const modal = document.getElementById("already-enrolled-modal");
+    if (!modal) {
+      return;
+    }
+    this._alreadyEnrolledModalBound = true;
+    const $this = this;
+
+    const closeBtn = document.getElementById("enrolled-modal-close");
+    let goBackBtn = modal.querySelector('#enrolled-modal-go-back');
+    let yesBtn = modal.querySelector('#enrolled-modal-yes');
+    const buttonContainer = modal.querySelector(".button-container");
+    if (buttonContainer) {
+      const buttons = buttonContainer.querySelectorAll("a, button, .w-button");
+      if (!goBackBtn && buttons.length > 0) {
+        goBackBtn = buttons[0];
+      }
+      if (!yesBtn && buttons.length > 1) {
+        yesBtn = buttons[1];
+      }
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        $this._goBackToStudentDetailsFromEnrolledModal();
+      });
+    }
+    if (goBackBtn) {
+      goBackBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        $this._goBackToStudentDetailsFromEnrolledModal();
+      });
+    }
+    if (yesBtn) {
+      yesBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        $this._continueFromAlreadyEnrolledModal();
+      });
     }
   }
 
