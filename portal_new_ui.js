@@ -29,6 +29,7 @@ class Portal {
             const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
             if (!response.ok) throw new Error('Network response was not ok');
             const apiData = await response.json();
+            this.logPortalDetailDepositDates(apiData);
             return apiData;
         } catch (error) {
             const portalMessage = document.querySelector('.portal-message')
@@ -1868,6 +1869,80 @@ class Portal {
         }
     }
 
+    // Pulls date-related fields from API invoice for console review
+    getInvoiceDateFields(inv) {
+        if (!inv || typeof inv !== 'object') return {};
+        const fields = {};
+        Object.keys(inv).forEach((key) => {
+            if (/date|on|paid|time/i.test(key)) fields[key] = inv[key];
+        });
+        return fields;
+    }
+
+    // Logs deposit-related dates from getPortalDetail API response
+    logPortalDetailDepositDates(apiData) {
+        if (!Array.isArray(apiData)) {
+            console.log('[Portal][DepositDate] getPortalDetail response', apiData);
+            return;
+        }
+
+        const summary = apiData.map((studentObj) => {
+            const studentName = Object.keys(studentObj)[0];
+            const studentData = Object.values(studentObj)[0];
+            const sessionTypes = ['currentSession', 'pastSession', 'futureSession'];
+
+            const sessions = sessionTypes.flatMap((sessionType) =>
+                (studentData[sessionType] || []).map((session, index) => ({
+                    sessionType,
+                    index,
+                    sessionCreatedOn: session.createdOn,
+                    invoices: (session.invoiceList || [])
+                        .filter((inv) => (inv?.breakDownList?.['Deposit'] || 0) > 0)
+                        .map((inv) => ({
+                            invoice_id: inv.invoice_id,
+                            invoiceName: inv.invoiceName,
+                            deposit: inv.breakDownList?.['Deposit'],
+                            is_completed: inv.is_completed,
+                            status: inv.status,
+                            paymentId: inv.paymentId,
+                            dateFields: this.getInvoiceDateFields(inv),
+                        })),
+                }))
+            );
+
+            return { studentName, sessions };
+        });
+
+        console.group('[Portal][DepositDate] getPortalDetail API summary');
+        console.log(summary);
+        console.groupEnd();
+    }
+
+    // Logs deposit date candidates when breakdown modal opens
+    logDepositDateBreakdownDebug(invoice, studentData, result) {
+        const sessionTypes = ['currentSession', 'pastSession', 'futureSession'];
+        const sessionDates = sessionTypes.flatMap((sessionType) =>
+            (studentData?.[sessionType] || []).map((session, index) => ({
+                sessionType,
+                index,
+                createdOn: session.createdOn,
+            }))
+        );
+
+        console.group('[Portal][DepositDate] invoice breakdown click');
+        console.log('clickedInvoice', {
+            invoice_id: invoice?.invoice_id,
+            invoiceName: invoice?.invoiceName,
+            deposit: invoice?.breakDownList?.['Deposit'],
+            dateFields: this.getInvoiceDateFields(invoice),
+        });
+        console.log('sessionCreatedOnDates', sessionDates);
+        console.log('chosenDepositPaidOn', result.depositPaidOnRaw);
+        console.log('formattedDepositLabelDate', result.depositDateFormatted);
+        console.log('labelText', result.labelText);
+        console.groupEnd();
+    }
+
     // Finds created_on from earliest invoice where deposit was paid
     getDepositPaidOnDate(studentData, invoice) {
         const completedDepositInvoices = [];
@@ -1902,16 +1977,41 @@ class Portal {
         };
 
         const completedDate = pickEarliest(completedDepositInvoices);
-        if (completedDate) return completedDate;
+        if (completedDate) {
+            console.log('[Portal][DepositDate] using completed deposit invoice created_on', {
+                completedDate,
+                candidates: completedDepositInvoices.map((inv) => ({
+                    invoice_id: inv.invoice_id,
+                    created_on: inv.created_on,
+                    dateFields: this.getInvoiceDateFields(inv),
+                })),
+            });
+            return completedDate;
+        }
 
         const paymentLinkedDate = pickEarliest(paymentLinkedDepositInvoices);
-        if (paymentLinkedDate) return paymentLinkedDate;
+        if (paymentLinkedDate) {
+            console.log('[Portal][DepositDate] using payment-linked deposit invoice created_on', {
+                paymentLinkedDate,
+                candidates: paymentLinkedDepositInvoices.map((inv) => ({
+                    invoice_id: inv.invoice_id,
+                    created_on: inv.created_on,
+                    dateFields: this.getInvoiceDateFields(inv),
+                })),
+            });
+            return paymentLinkedDate;
+        }
 
         const clickedDeposit = invoice?.breakDownList?.['Deposit'];
         if (invoice?.created_on && clickedDeposit > 0 && invoice.paymentId) {
+            console.log('[Portal][DepositDate] using clicked invoice created_on', {
+                created_on: invoice.created_on,
+                dateFields: this.getInvoiceDateFields(invoice),
+            });
             return invoice.created_on;
         }
 
+        console.log('[Portal][DepositDate] no deposit date resolved from API data');
         return null;
     }
 
@@ -1967,6 +2067,12 @@ class Portal {
         const depositDate = this.formatDepositDisplayDate(depositPaidOn);
         const labelText = depositDate ? `Deposit - Paid on ${depositDate}` : 'Deposit';
         const hide = breakdown['Deposit'] == 0;
+
+        this.logDepositDateBreakdownDebug(invoice, studentData, {
+            depositPaidOnRaw: depositPaidOn,
+            depositDateFormatted: depositDate,
+            labelText,
+        });
 
         this.getDepositTitleElements(modal).forEach((el) => {
             el.textContent = labelText;
