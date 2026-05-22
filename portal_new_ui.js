@@ -29,6 +29,8 @@ class Portal {
             const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
             if (!response.ok) throw new Error('Network response was not ok');
             const apiData = await response.json();
+            this.portalDetailApiData = apiData;
+            window.__portalGetPortalDetailResponse = apiData;
             this.logPortalDetailDepositDates(apiData);
             return apiData;
         } catch (error) {
@@ -1879,12 +1881,55 @@ class Portal {
         return fields;
     }
 
+    // Walks object tree and lists every date-like string (find Feb 23, etc.)
+    findAllDateLikeValues(obj, path, results, depth) {
+        if (!obj || depth > 6) return results;
+        if (Array.isArray(obj)) {
+            obj.forEach((item, i) =>
+                this.findAllDateLikeValues(item, `${path}[${i}]`, results, depth + 1)
+            );
+            return results;
+        }
+        if (typeof obj !== 'object') return results;
+
+        Object.keys(obj).forEach((key) => {
+            const value = obj[key];
+            const nextPath = path ? `${path}.${key}` : key;
+            if (typeof value === 'string' && value.length > 0 && value.length < 80) {
+                if (/date|on|time|\d{4}-\d{2}-\d{2}|T\d{2}:/i.test(value)) {
+                    results.push({ path: nextPath, value });
+                }
+            } else if (value && typeof value === 'object') {
+                this.findAllDateLikeValues(value, nextPath, results, depth + 1);
+            }
+        });
+        return results;
+    }
+
+    // Finds invoice + parent session from getPortalDetail studentData
+    findInvoiceContextInStudentData(studentData, invoiceId) {
+        const sessionTypes = ['currentSession', 'pastSession', 'futureSession'];
+        for (const sessionType of sessionTypes) {
+            for (let index = 0; index < (studentData[sessionType] || []).length; index++) {
+                const session = studentData[sessionType][index];
+                const inv = (session.invoiceList || []).find(
+                    (item) => item.invoice_id === invoiceId
+                );
+                if (inv) {
+                    return { sessionType, index, session, invoice: inv };
+                }
+            }
+        }
+        return null;
+    }
+
     // Logs deposit-related dates from getPortalDetail API response
     logPortalDetailDepositDates(apiData) {
-        if (!Array.isArray(apiData)) {
-            console.log('[Portal][DepositDate] getPortalDetail response', apiData);
-            return;
-        }
+        console.group('[Portal][DepositDate] getPortalDetail — FULL API response');
+        console.log('Copy from window.__portalGetPortalDetailResponse', apiData);
+        console.groupEnd();
+
+        if (!Array.isArray(apiData)) return;
 
         const summary = apiData.map((studentObj) => {
             const studentName = Object.keys(studentObj)[0];
@@ -1895,57 +1940,66 @@ class Portal {
                 (studentData[sessionType] || []).map((session, index) => ({
                     sessionType,
                     index,
+                    sessionKeys: Object.keys(session),
                     sessionCreatedOn: session.createdOn,
-                    invoices: (session.invoiceList || [])
-                        .filter((inv) => (inv?.breakDownList?.['Deposit'] || 0) > 0)
-                        .map((inv) => ({
-                            invoice_id: inv.invoice_id,
-                            invoiceName: inv.invoiceName,
-                            deposit: inv.breakDownList?.['Deposit'],
-                            is_completed: inv.is_completed,
-                            status: inv.status,
-                            paymentId: inv.paymentId,
-                            createdOn: inv.createdOn,
-                            created_on: inv.created_on,
-                            dateFields: this.getInvoiceDateFields(inv),
-                        })),
+                    sessionCreated_on: session.created_on,
+                    invoices: (session.invoiceList || []).map((inv) => ({
+                        invoice_id: inv.invoice_id,
+                        invoiceName: inv.invoiceName,
+                        allKeys: Object.keys(inv),
+                        createdOn: inv.createdOn,
+                        created_on: inv.created_on,
+                        deposit: inv.breakDownList?.['Deposit'],
+                        dateFields: this.getInvoiceDateFields(inv),
+                        dateLikeValues: this.findAllDateLikeValues(inv, 'invoice', [], 0),
+                    })),
                 }))
             );
 
             return { studentName, sessions };
         });
 
-        console.group('[Portal][DepositDate] getPortalDetail API summary');
+        console.group('[Portal][DepositDate] getPortalDetail — per invoice summary');
         console.log(summary);
         console.groupEnd();
     }
 
-    // Logs deposit date candidates when breakdown modal opens
+    // Logs full API objects when breakdown modal opens
     logDepositDateBreakdownDebug(invoice, studentData, result) {
-        const sessionTypes = ['currentSession', 'pastSession', 'futureSession'];
-        const sessionDates = sessionTypes.flatMap((sessionType) =>
-            (studentData?.[sessionType] || []).map((session, index) => ({
-                sessionType,
-                index,
-                createdOn: session.createdOn,
-            }))
+        const resolvedInvoice = this.resolveInvoiceFromStudentData(studentData, invoice);
+        const ctx = this.findInvoiceContextInStudentData(
+            studentData,
+            invoice?.invoice_id
         );
 
-        console.group('[Portal][DepositDate] invoice breakdown click');
-        const resolvedInvoice = this.resolveInvoiceFromStudentData(studentData, invoice);
-        console.log('clickedInvoice', {
-            invoice_id: invoice?.invoice_id,
-            invoiceName: invoice?.invoiceName,
-            deposit: invoice?.breakDownList?.['Deposit'],
-            createdOn: resolvedInvoice?.createdOn,
-            created_on: resolvedInvoice?.created_on,
-            resolvedCreatedOn: this.getInvoiceCreatedOnDate(resolvedInvoice),
-            dateFields: this.getInvoiceDateFields(resolvedInvoice),
-        });
-        console.log('sessionCreatedOnDates', sessionDates);
+        console.group('[Portal][DepositDate] invoice breakdown click — FULL API debug');
+        console.log('data-invoice attribute (parsed click payload)', invoice);
+        console.log('resolved invoice from studentData (API source)', resolvedInvoice);
+        if (resolvedInvoice) {
+            console.log('resolved invoice ALL keys', Object.keys(resolvedInvoice));
+            console.log('resolved invoice FULL object', { ...resolvedInvoice });
+        }
+        if (ctx) {
+            console.log('parent session type/index', ctx.sessionType, ctx.index);
+            console.log('parent session ALL keys', Object.keys(ctx.session));
+            console.log('parent session FULL object', { ...ctx.session });
+            console.log(
+                'date-like values on session',
+                this.findAllDateLikeValues(ctx.session, 'session', [], 0)
+            );
+        }
+        console.log(
+            'date-like values on invoice',
+            this.findAllDateLikeValues(resolvedInvoice, 'invoice', [], 0)
+        );
+        console.log('createdOn on invoice', resolvedInvoice?.createdOn);
+        console.log('created_on on invoice', resolvedInvoice?.created_on);
         console.log('chosenDepositPaidOn', result.depositPaidOnRaw);
         console.log('formattedDepositLabelDate', result.depositDateFormatted);
         console.log('labelText', result.labelText);
+        console.log(
+            'Full getPortalDetail still at window.__portalGetPortalDetailResponse'
+        );
         console.groupEnd();
     }
 
