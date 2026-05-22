@@ -1905,6 +1905,8 @@ class Portal {
                             is_completed: inv.is_completed,
                             status: inv.status,
                             paymentId: inv.paymentId,
+                            createdOn: inv.createdOn,
+                            created_on: inv.created_on,
                             dateFields: this.getInvoiceDateFields(inv),
                         })),
                 }))
@@ -1930,11 +1932,15 @@ class Portal {
         );
 
         console.group('[Portal][DepositDate] invoice breakdown click');
+        const resolvedInvoice = this.resolveInvoiceFromStudentData(studentData, invoice);
         console.log('clickedInvoice', {
             invoice_id: invoice?.invoice_id,
             invoiceName: invoice?.invoiceName,
             deposit: invoice?.breakDownList?.['Deposit'],
-            dateFields: this.getInvoiceDateFields(invoice),
+            createdOn: resolvedInvoice?.createdOn,
+            created_on: resolvedInvoice?.created_on,
+            resolvedCreatedOn: this.getInvoiceCreatedOnDate(resolvedInvoice),
+            dateFields: this.getInvoiceDateFields(resolvedInvoice),
         });
         console.log('sessionCreatedOnDates', sessionDates);
         console.log('chosenDepositPaidOn', result.depositPaidOnRaw);
@@ -1943,8 +1949,46 @@ class Portal {
         console.groupEnd();
     }
 
-    // Finds created_on from earliest invoice where deposit was paid
+    // Resolves invoice created date; API may send createdOn or created_on
+    getInvoiceCreatedOnDate(invoice) {
+        if (!invoice) return null;
+        return invoice.createdOn || invoice.created_on || null;
+    }
+
+    // Finds full invoice from API studentData by invoice_id
+    resolveInvoiceFromStudentData(studentData, invoice) {
+        if (!studentData || !invoice?.invoice_id) return invoice;
+        const sessions = [
+            ...(studentData.currentSession || []),
+            ...(studentData.pastSession || []),
+            ...(studentData.futureSession || []),
+        ];
+        for (const session of sessions) {
+            if (!session?.invoiceList) continue;
+            const match = session.invoiceList.find(
+                (inv) => inv.invoice_id === invoice.invoice_id
+            );
+            if (match) return match;
+        }
+        return invoice;
+    }
+
+    // Uses clicked invoice createdOn for breakdown; falls back to other deposit invoices
     getDepositPaidOnDate(studentData, invoice) {
+        const resolvedInvoice = this.resolveInvoiceFromStudentData(studentData, invoice);
+        const clickedDeposit = resolvedInvoice?.breakDownList?.['Deposit'];
+        if (clickedDeposit > 0) {
+            const clickedDate = this.getInvoiceCreatedOnDate(resolvedInvoice);
+            if (clickedDate) {
+                console.log('[Portal][DepositDate] using clicked invoice createdOn', {
+                    createdOn: resolvedInvoice.createdOn,
+                    created_on: resolvedInvoice.created_on,
+                    chosen: clickedDate,
+                });
+                return clickedDate;
+            }
+        }
+
         const completedDepositInvoices = [];
         const paymentLinkedDepositInvoices = [];
         const sessions = [
@@ -1956,7 +2000,7 @@ class Portal {
         sessions.forEach((session) => {
             if (!session?.invoiceList || !Array.isArray(session.invoiceList)) return;
             session.invoiceList.forEach((inv) => {
-                if (!inv?.created_on) return;
+                if (!this.getInvoiceCreatedOnDate(inv)) return;
                 const deposit = inv.breakDownList?.['Deposit'];
                 if (!deposit || deposit <= 0) return;
                 const isCompleted = inv.is_completed === true || inv.status === 'Complete';
@@ -1970,45 +2014,22 @@ class Portal {
             if (!invoices.length) return null;
             invoices.sort(
                 (a, b) =>
-                    new Date(a.created_on.replace(' ', 'T')) -
-                    new Date(b.created_on.replace(' ', 'T'))
+                    new Date(String(this.getInvoiceCreatedOnDate(a)).replace(' ', 'T')) -
+                    new Date(String(this.getInvoiceCreatedOnDate(b)).replace(' ', 'T'))
             );
-            return invoices[0].created_on;
+            return this.getInvoiceCreatedOnDate(invoices[0]);
         };
 
         const completedDate = pickEarliest(completedDepositInvoices);
         if (completedDate) {
-            console.log('[Portal][DepositDate] using completed deposit invoice created_on', {
-                completedDate,
-                candidates: completedDepositInvoices.map((inv) => ({
-                    invoice_id: inv.invoice_id,
-                    created_on: inv.created_on,
-                    dateFields: this.getInvoiceDateFields(inv),
-                })),
-            });
+            console.log('[Portal][DepositDate] fallback completed deposit invoice', completedDate);
             return completedDate;
         }
 
         const paymentLinkedDate = pickEarliest(paymentLinkedDepositInvoices);
         if (paymentLinkedDate) {
-            console.log('[Portal][DepositDate] using payment-linked deposit invoice created_on', {
-                paymentLinkedDate,
-                candidates: paymentLinkedDepositInvoices.map((inv) => ({
-                    invoice_id: inv.invoice_id,
-                    created_on: inv.created_on,
-                    dateFields: this.getInvoiceDateFields(inv),
-                })),
-            });
+            console.log('[Portal][DepositDate] fallback payment-linked deposit invoice', paymentLinkedDate);
             return paymentLinkedDate;
-        }
-
-        const clickedDeposit = invoice?.breakDownList?.['Deposit'];
-        if (invoice?.created_on && clickedDeposit > 0 && invoice.paymentId) {
-            console.log('[Portal][DepositDate] using clicked invoice created_on', {
-                created_on: invoice.created_on,
-                dateFields: this.getInvoiceDateFields(invoice),
-            });
-            return invoice.created_on;
         }
 
         console.log('[Portal][DepositDate] no deposit date resolved from API data');
