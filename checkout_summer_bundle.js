@@ -27,6 +27,59 @@ function creEl(name, className, idName) {
 	return el;
 }
 
+// Email Validation
+function isValidEmail(email) {
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validateEmailInput(emailInput) {
+	if (!emailInput) return;
+
+	var email = emailInput.value.trim().toLowerCase();
+	emailInput.setCustomValidity("");
+
+	if (email && !isValidEmail(email)) {
+		emailInput.setCustomValidity("Please enter a valid email address");
+	}
+}
+
+function initEmailValidation() {
+	var emailInputs = document.querySelectorAll(
+		'input[data-ms-member="email"], input[type="email"]'
+	);
+
+	if (emailInputs.length === 0) {
+		return;
+	}
+
+	var formsBound = new WeakSet();
+
+	emailInputs.forEach(function (emailInput) {
+		emailInput.addEventListener("input", function () {
+			validateEmailInput(emailInput);
+		});
+
+		var form = emailInput.closest("form");
+		if (form && !formsBound.has(form)) {
+			formsBound.add(form);
+			form.addEventListener("submit", function (e) {
+				emailInputs.forEach(validateEmailInput);
+
+				if (!form.checkValidity()) {
+					e.preventDefault();
+					form.reportValidity();
+				}
+			});
+		}
+	});
+}
+
+if (document.readyState === "loading") {
+	document.addEventListener("DOMContentLoaded", initEmailValidation);
+} else {
+	initEmailValidation();
+}
+
 class CheckOutWebflow {
 	$sessionData = [];
 	$checkoutData = "";
