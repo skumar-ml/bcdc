@@ -2943,7 +2943,11 @@ class classDetailsStripe extends parentLogin {
         this.displaySelectedSuppProgram([]);
       }
 
-      // Refresh deposit price and switch to the no-addons order summary
+      // Repaint deposit + total in old order summary before hideShowNewStudentFee
+      // (that path reads .total_price and would keep stale BFCache amounts).
+      this._refreshDefaultDepositDisplay();
+
+      // Switch to the no-addons order summary
       if (typeof this.hideShowNewStudentFee === 'function') {
         this.hideShowNewStudentFee('grid');
       }
@@ -2952,6 +2956,80 @@ class classDetailsStripe extends parentLogin {
       this._clearAddonAndBriefSelectionsFromStorage();
     } catch (e) {
       console.warn('Failed to reset upsell/brief selections:', e);
+    }
+  }
+  // Reset Deposit (Due Now) and Total Deposit Due Now in bundle-order-details-old-div
+  // after Chrome back from Stripe; BFCache can leave inflated addon/card-fee values.
+  _refreshDefaultDepositDisplay() {
+    var totalAmountInput = document.getElementById('totalAmount');
+    var coreProductPrice = document.getElementById('core_product_price');
+    if (totalAmountInput && coreProductPrice) {
+      var coreVal = parseFloat(String(coreProductPrice.value).replace(/,/g, '')) || 0;
+      if (this.$isCheckoutFlow === 'Bundle-Purchase') {
+        totalAmountInput.value = 0;
+      } else {
+        totalAmountInput.value = coreVal;
+      }
+    }
+
+    if (typeof this.updateAmount === 'function') {
+      this.updateAmount(0);
+    }
+    if (typeof this.updateDepositePriceForBundle === 'function') {
+      this.updateDepositePriceForBundle();
+    }
+
+    var $this = this;
+    document.querySelectorAll('.bundle-order-details-old-div').forEach(function (oldSummary) {
+      var depositEl = oldSummary.querySelector('[data-stripe="totalDepositPrice"]');
+      var totalPriceEl = oldSummary.querySelector('.total_price');
+      var addonDepositEl = oldSummary.querySelector('[data-stripe="addon-deposit-price"]');
+      if (!depositEl || !totalPriceEl) {
+        return;
+      }
+
+      var rawAttr = depositEl.getAttribute('data-stripe-price') || '0';
+      var baseDeposit = parseFloat(String(rawAttr).replace(/,/g, '').replace(/\$/g, '')) || 0;
+      if ($this.$isCheckoutFlow === 'Bundle-Purchase') {
+        baseDeposit = 0;
+      }
+
+      var depositText = (depositEl.textContent || '').trim();
+      var depositNum = parseFloat(depositText.replace(/[^0-9.]/g, '')) || 0;
+      if (depositText.toLowerCase().indexOf('free') !== -1) {
+        depositNum = 0;
+      }
+
+      var prevCheckbox = oldSummary.querySelector('.prev_student_checkbox');
+      var totalDue = depositNum;
+      if (prevCheckbox && prevCheckbox.checked) {
+        totalDue += 100;
+      }
+
+      var totalFormatted =
+        totalDue === 0
+          ? 'Free'
+          : '$' + $this.numberWithCommas($this.trimToTwoDecimals(totalDue));
+      totalPriceEl.innerHTML = totalFormatted;
+
+      if (addonDepositEl && $this.$isCheckoutFlow !== 'Bundle-Purchase') {
+        addonDepositEl.innerHTML =
+          baseDeposit === 0
+            ? 'Free'
+            : '$' + $this.numberWithCommas($this.trimToTwoDecimals(baseDeposit));
+      }
+    });
+
+    var grayElem = document.querySelector('.current-price-gray');
+    var depositRef = document.querySelector(
+      ".bundle-order-details-old-div [data-stripe='totalDepositPrice']"
+    );
+    if (grayElem && depositRef) {
+      grayElem.innerHTML = depositRef.innerHTML;
+    }
+
+    if (typeof Utils !== 'undefined' && Utils.calculateDiscountPrice) {
+      Utils.calculateDiscountPrice();
     }
   }
   updateSupplementaryProgramData(suppProData) {
