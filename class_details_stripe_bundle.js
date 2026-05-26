@@ -706,9 +706,10 @@ class classDetailsStripe extends parentLogin {
       //   }
       // }
       this.createBundlePrograms(this.$allSuppData);
-      this.updateBundleProgram(paymentData)
-      // Restore previously selected topics so cart total stays accurate
-      this.restoreSelectedBriefs(paymentData.selectedBriefs);
+      // Reset addons and topics on Chrome back from Stripe so user re-picks
+      // them fresh; restoring partial state was leaving the cart total out of
+      // sync with checkbox/credit-card-fee logic.
+      this._clearAddonAndBriefSelectionsFromStorage();
       this.resetSubmitClassButtons();
     } else {
       // removed local storage when checkout page rendar direct without back button
@@ -762,14 +763,10 @@ class classDetailsStripe extends parentLogin {
   updateBundleProgram(paymentData) {
     if (paymentData.selectedProgram && paymentData.suppPro.length > 0) {
       this.updateSupplementaryProgramData(paymentData.suppPro);
-      // Restore in-memory selection so total price recalculates after back nav
-      this.$selectedProgram = Array.isArray(paymentData.selectedProgram)
-        ? paymentData.selectedProgram.map((program) => ({ ...program }))
-        : [];
+      //this.$selectedProgram = paymentData.selectedProgram;
       this.displaySelectedSuppProgram(paymentData.upsellProgramIds);
-      if (this.$selectedProgram.length > 0) {
+      if (paymentData.selectedProgram.length > 0) {
         this.hideShowNewStudentFee("none");
-        // Recalculate cart total with restored upsell programs
         this.$selectedProgram.forEach((program) => {
           this.updateAmount(program.amount);
         });
@@ -788,52 +785,6 @@ class classDetailsStripe extends parentLogin {
       }, 1000);
       this.disableEnableBuyNowButton();
 
-    }
-  }
-  // Restores topics selected before Stripe redirect and refreshes cart total
-  restoreSelectedBriefs(savedBriefs) {
-    if (!Array.isArray(savedBriefs) || savedBriefs.length === 0) {
-      return;
-    }
-    // Clone saved selections to avoid mutating localStorage reference
-    this.selectedBriefs = savedBriefs.map((brief) => ({ ...brief }));
-
-    var $this = this;
-    var applyVisualState = function () {
-      $this.selectedBriefs.forEach(function (brief) {
-        var card = document.querySelector('.brief-card[data-topic-id="' + brief.topicId + '"]');
-        if (!card) return;
-        var fullDiv = card.querySelector('[data-briefs-checkout="full-version"]');
-        var lightDiv = card.querySelector('[data-briefs-checkout="light-version"]');
-        var fullRadio = card.querySelector('input[value="full"]');
-        var lightRadio = card.querySelector('input[value="light"]');
-        card.classList.add('brown-red-border');
-        // Light/full radio + border state mirrors selectVersion()
-        if (brief.version === 'full') {
-          if (fullDiv) fullDiv.className = 'brief-pricing-info-wrapper selected-border-red';
-          if (lightDiv) lightDiv.className = 'brief-pricing-info-wrapper not-selected-white';
-          if (fullRadio) fullRadio.checked = true;
-          if (lightRadio) lightRadio.checked = false;
-        } else {
-          if (fullDiv) fullDiv.className = 'brief-pricing-info-wrapper not-selected-white';
-          if (lightDiv) lightDiv.className = 'brief-pricing-info-wrapper selected-border-red';
-          if (fullRadio) fullRadio.checked = false;
-          if (lightRadio) lightRadio.checked = true;
-        }
-      });
-
-      // Refresh sidebar brief list and repaint total so it includes briefs
-      $this.updateBriefsListInOrderDetails();
-      $this.updateAmount(0);
-    };
-
-    // Briefs render is async; wait for cards before applying selection state
-    if (this.briefsReady && typeof this.briefsReady.then === 'function') {
-      this.briefsReady
-        .then(applyVisualState)
-        .catch((err) => console.error('Failed to restore briefs after back navigation:', err));
-    } else {
-      applyVisualState();
     }
   }
   // store basic student form data in local storage
@@ -2925,6 +2876,24 @@ class classDetailsStripe extends parentLogin {
       console.warn("Failed to clear stale checkout localStorage:", e);
     }
   }
+  // Wipe addon/brief slices from checkOutData so a Chrome back from Stripe
+  // returns the cart to the bare class price; student form fields and other
+  // restore data stay intact.
+  _clearAddonAndBriefSelectionsFromStorage() {
+    try {
+      var raw = localStorage.getItem("checkOutData");
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      if (!data || typeof data !== "object") return;
+      delete data.upsellProgramIds;
+      delete data.suppPro;
+      delete data.selectedProgram;
+      delete data.selectedBriefs;
+      localStorage.setItem("checkOutData", JSON.stringify(data));
+    } catch (e) {
+      console.warn("Failed to clear addon/brief selections from checkOutData:", e);
+    }
+  }
   updateSupplementaryProgramData(suppProData) {
     if (suppProData != null && suppProData.length > 0) {
       // this.$suppPro, Update unique supplementary program data based on upsellProgramId
@@ -3581,8 +3550,7 @@ class classDetailsStripe extends parentLogin {
   }
   initBriefs() {
     this.selectedBriefs = [];
-    // Track briefs render so back-from-Stripe restore can wait for cards
-    this.briefsReady = this.getBriefs();
+    this.getBriefs();
     this.addCloseModalHandler();
   }
   addCloseModalHandler() {

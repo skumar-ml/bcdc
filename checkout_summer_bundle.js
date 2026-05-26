@@ -51,8 +51,7 @@ class CheckOutWebflow {
 		// data.
 		this._clearStaleCheckoutAfterPayment();
 		this.renderPortalData();
-		// Track supplementary programs render so back-restore waits for addon checkboxes
-		this.bundleProgramsReady = this.displaySupplementaryProgram();
+		this.displaySupplementaryProgram();
 		this.updatePriceForCardPayment();
 		this._bindAddToCartDelegated();
 	}
@@ -818,61 +817,22 @@ class CheckOutWebflow {
 		})
 	}
 
-	// Restores upsell selections saved before Stripe redirect and repaints cart total
-	restoreSelectedUpsellPrograms(paymentData) {
-		if (!paymentData) return;
-		var savedPrograms = Array.isArray(paymentData.selectedProgram) ? paymentData.selectedProgram : [];
-		var savedIds = Array.isArray(paymentData.upsellProgramIds) ? paymentData.upsellProgramIds : [];
-		if (savedPrograms.length === 0 && savedIds.length === 0) {
-			return;
-		}
-
-		var $this = this;
-		var applyRestore = function () {
-			// Repopulate supplementary catalog before reading from $suppPro
-			if (Array.isArray(paymentData.suppPro) && paymentData.suppPro.length > 0) {
-				$this.updateSupplementaryProgramData(paymentData.suppPro);
-			}
-			// Restore in-memory selection (clone to avoid mutating localStorage ref)
-			$this.$selectedProgram = savedPrograms.map(function (program) {
-				return { ...program };
-			});
-			// Mark interaction so updateAmount actually paints the visible price
-			$this._upsellInteracted = true;
-			// Sync hidden id input + sidebar
-			var suppProIdE = document.getElementById('suppProIds');
-			if (suppProIdE) {
-				suppProIdE.value = JSON.stringify(savedIds);
-			}
-			$this.displaySelectedSuppProgram(savedIds);
-			// Tick the matching addon checkboxes restored from localStorage
-			var allCheckboxes = document.querySelectorAll('[programDetailId]');
-			allCheckboxes.forEach(function (checkbox) {
-				var pid = parseInt(checkbox.getAttribute('programDetailId'));
-				if (savedIds.indexOf(pid) !== -1) {
-					checkbox.checked = true;
-					var cardContainerEl = checkbox.closest(
-						'.bundle-sem-content-flex-container, .banner-price-info-card'
-					);
-					if (cardContainerEl) {
-						cardContainerEl.classList.add('border-brown-red');
-					}
-				}
-			});
-			// Recompute total now that selection is restored
-			$this.updateAmount(0);
-			$this.disableEnableBuyNowButton();
-		};
-
-		// Addon checkboxes are created by displaySupplementaryProgram (async)
-		if (this.bundleProgramsReady && typeof this.bundleProgramsReady.then === 'function') {
-			this.bundleProgramsReady
-				.then(applyRestore)
-				.catch(function (err) {
-					console.error('Failed to restore upsell programs after back navigation:', err);
-				});
-		} else {
-			applyRestore();
+	// Wipe addon slices from checkOutData so a Chrome back from Stripe
+	// returns the cart to the bare summer-session price; student form fields
+	// and other restore data stay intact.
+	_clearAddonAndBriefSelectionsFromStorage() {
+		try {
+			var raw = localStorage.getItem('checkOutData');
+			if (!raw) return;
+			var data = JSON.parse(raw);
+			if (!data || typeof data !== 'object') return;
+			delete data.upsellProgramIds;
+			delete data.suppPro;
+			delete data.selectedProgram;
+			delete data.selectedBriefs;
+			localStorage.setItem('checkOutData', JSON.stringify(data));
+		} catch (e) {
+			console.warn('Failed to clear addon/brief selections from checkOutData:', e);
 		}
 	}
 
@@ -969,8 +929,10 @@ class CheckOutWebflow {
 					$this.resetPaymentCheckoutButtons();
 				}, 1200);
 			}
-			// Restore upsell selections so cart sidebar and total match pre-Stripe state
-			this.restoreSelectedUpsellPrograms(paymentData);
+			// Reset addons on Chrome back from Stripe so user re-picks them fresh;
+			// restoring partial state was leaving the cart total out of sync with
+			// checkbox/credit-card-fee logic.
+			this._clearAddonAndBriefSelectionsFromStorage();
 			// Consume back markers so a new checkout attempt generates fresh flow/URLs.
 			if (ibackbutton) {
 				ibackbutton.value = "0";
