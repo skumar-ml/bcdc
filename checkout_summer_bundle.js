@@ -51,9 +51,26 @@ class CheckOutWebflow {
 		// data.
 		this._clearStaleCheckoutAfterPayment();
 		this.renderPortalData();
-		this.displaySupplementaryProgram();
+		// Track supplementary programs render so back-restore waits for addon checkboxes
+		this.bundleProgramsReady = this.displaySupplementaryProgram();
 		this.updatePriceForCardPayment();
 		this._bindAddToCartDelegated();
+	}
+
+	// Merges partial checkout state into localStorage without wiping existing keys
+	updateCheckOutData(checkoutData) {
+		try {
+			var localCheckoutData = localStorage.getItem('checkOutData');
+			if (checkoutData != null && localCheckoutData != null) {
+				checkoutData = {
+					...JSON.parse(localCheckoutData),
+					...checkoutData
+				};
+			}
+			localStorage.setItem('checkOutData', JSON.stringify(checkoutData));
+		} catch (e) {
+			console.warn('Failed to merge checkOutData:', e);
+		}
 	}
 
 	// Clear stale per-checkout localStorage when the user returns to this page
@@ -801,6 +818,64 @@ class CheckOutWebflow {
 		})
 	}
 
+	// Restores upsell selections saved before Stripe redirect and repaints cart total
+	restoreSelectedUpsellPrograms(paymentData) {
+		if (!paymentData) return;
+		var savedPrograms = Array.isArray(paymentData.selectedProgram) ? paymentData.selectedProgram : [];
+		var savedIds = Array.isArray(paymentData.upsellProgramIds) ? paymentData.upsellProgramIds : [];
+		if (savedPrograms.length === 0 && savedIds.length === 0) {
+			return;
+		}
+
+		var $this = this;
+		var applyRestore = function () {
+			// Repopulate supplementary catalog before reading from $suppPro
+			if (Array.isArray(paymentData.suppPro) && paymentData.suppPro.length > 0) {
+				$this.updateSupplementaryProgramData(paymentData.suppPro);
+			}
+			// Restore in-memory selection (clone to avoid mutating localStorage ref)
+			$this.$selectedProgram = savedPrograms.map(function (program) {
+				return { ...program };
+			});
+			// Mark interaction so updateAmount actually paints the visible price
+			$this._upsellInteracted = true;
+			// Sync hidden id input + sidebar
+			var suppProIdE = document.getElementById('suppProIds');
+			if (suppProIdE) {
+				suppProIdE.value = JSON.stringify(savedIds);
+			}
+			$this.displaySelectedSuppProgram(savedIds);
+			// Tick the matching addon checkboxes restored from localStorage
+			var allCheckboxes = document.querySelectorAll('[programDetailId]');
+			allCheckboxes.forEach(function (checkbox) {
+				var pid = parseInt(checkbox.getAttribute('programDetailId'));
+				if (savedIds.indexOf(pid) !== -1) {
+					checkbox.checked = true;
+					var cardContainerEl = checkbox.closest(
+						'.bundle-sem-content-flex-container, .banner-price-info-card'
+					);
+					if (cardContainerEl) {
+						cardContainerEl.classList.add('border-brown-red');
+					}
+				}
+			});
+			// Recompute total now that selection is restored
+			$this.updateAmount(0);
+			$this.disableEnableBuyNowButton();
+		};
+
+		// Addon checkboxes are created by displaySupplementaryProgram (async)
+		if (this.bundleProgramsReady && typeof this.bundleProgramsReady.then === 'function') {
+			this.bundleProgramsReady
+				.then(applyRestore)
+				.catch(function (err) {
+					console.error('Failed to restore upsell programs after back navigation:', err);
+				});
+		} else {
+			applyRestore();
+		}
+	}
+
 	// Handles browser and Stripe back button functionality to restore checkout state
 	setUpBackButtonTab() {
 		var query = window.location.search;
@@ -894,6 +969,8 @@ class CheckOutWebflow {
 					$this.resetPaymentCheckoutButtons();
 				}, 1200);
 			}
+			// Restore upsell selections so cart sidebar and total match pre-Stripe state
+			this.restoreSelectedUpsellPrograms(paymentData);
 			// Consume back markers so a new checkout attempt generates fresh flow/URLs.
 			if (ibackbutton) {
 				ibackbutton.value = "0";
@@ -1221,6 +1298,13 @@ class CheckOutWebflow {
 
       // Update selected supplementary program ids
       this.displaySelectedSuppProgram(allSupIds);
+
+      // Persist current upsell snapshot so Chrome back from Stripe can restore it
+      this.updateCheckOutData({
+        upsellProgramIds: allSupIds,
+        suppPro: this.$suppPro,
+        selectedProgram: this.$selectedProgram
+      });
 
       // Re-render the total for the currently active payment tab so the card tab
       // reflects the new per-program fee total without waiting for a tab click.

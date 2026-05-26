@@ -40,9 +40,22 @@ class PaymentConfirmation {
         if(!this.programId || !this.sessionId){
             return false;
         }
+        // Stripe success URL has programId + transactionID; wipe checkout state
+        // here so future visits don't prefill stale student fields or cart data.
+        this._clearCheckoutLocalStorage();
         this.eventHandlerForUpSellModal();
         this.displaySupplementaryProgram();
         
+    }
+
+    // Clears per-checkout localStorage after a confirmed Stripe payment
+    _clearCheckoutLocalStorage() {
+        try {
+            localStorage.removeItem('checkOutData');
+            localStorage.removeItem('checkOutBasicData');
+        } catch (e) {
+            console.warn('Failed to clear checkout localStorage on confirmation:', e);
+        }
     }
 
     // Sets up event handlers for the upsell modal
