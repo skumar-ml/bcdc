@@ -593,7 +593,18 @@ class classDetailsStripe extends parentLogin {
     if (paymentData.memberId !== this.webflowMemberId) {
       return;
     }
+
+    // Always reset addon/brief selections on back-from-Stripe regardless of
+    // checkout flow; BFCache can leave $selectedProgram/selectedBriefs in
+    // memory and the bundle-purchase early return below would otherwise skip
+    // cleanup, causing a stale brief/addon to reappear on the next click.
+    var isBackFromStripe = this.checkBackButtonEvent();
+    if (isBackFromStripe) {
+      this._resetUpsellAndBriefSelections();
+    }
+
     if (this.$isCheckoutFlow == "Bundle-Purchase" || this.levelId == 'worldschools') {
+      setTimeout(() => { this.spinner.style.display = "none"; }, 500);
       return;
     }
 
@@ -602,7 +613,7 @@ class classDetailsStripe extends parentLogin {
       setTimeout(() => { this.spinner.style.display = "none"; }, 500);
       return;
     }
-    if (this.checkBackButtonEvent() && checkoutJson != undefined) {
+    if (isBackFromStripe && checkoutJson != undefined) {
       var paymentData = JSON.parse(checkoutJson);
 
       var studentFirstName = document.getElementById("Student-First-Name");
@@ -706,10 +717,6 @@ class classDetailsStripe extends parentLogin {
       //   }
       // }
       this.createBundlePrograms(this.$allSuppData);
-      // Reset addons and topics on Chrome back from Stripe so user re-picks
-      // them fresh; restoring partial state was leaving the cart total out of
-      // sync with checkbox/credit-card-fee logic.
-      this._clearAddonAndBriefSelectionsFromStorage();
       this.resetSubmitClassButtons();
     } else {
       // removed local storage when checkout page rendar direct without back button
@@ -2892,6 +2899,59 @@ class classDetailsStripe extends parentLogin {
       localStorage.setItem("checkOutData", JSON.stringify(data));
     } catch (e) {
       console.warn("Failed to clear addon/brief selections from checkOutData:", e);
+    }
+  }
+  // Full reset of addon + brief selections on back-from-Stripe. Handles the
+  // BFCache case where $selectedProgram/selectedBriefs stay in memory and the
+  // sidebar/addon checkboxes/brief radios stay visually selected. Mirrors a
+  // fresh page load: bare class price, no addons ticked, no briefs ticked.
+  _resetUpsellAndBriefSelections() {
+    try {
+      // In-memory state
+      this.selectedBriefs = [];
+      this.$selectedProgram = [];
+
+      // Uncheck every addon checkbox so the program cards look unselected
+      document.querySelectorAll('[programDetailId]').forEach(function (checkbox) {
+        checkbox.checked = false;
+      });
+
+      // Reset brief cards: drop selection ring + reset version radios/styling
+      document.querySelectorAll('.brief-card').forEach(function (card) {
+        card.classList.remove('brown-red-border');
+        var fullDiv = card.querySelector('[data-briefs-checkout="full-version"]');
+        var lightDiv = card.querySelector('[data-briefs-checkout="light-version"]');
+        var fullRadio = card.querySelector('input[value="full"]');
+        var lightRadio = card.querySelector('input[value="light"]');
+        if (fullDiv) fullDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+        if (lightDiv) lightDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+        if (fullRadio) fullRadio.checked = false;
+        if (lightRadio) lightRadio.checked = false;
+      });
+
+      // Clear hidden upsell ids input so getSelectedBundleProgram returns []
+      var suppProIdE = document.getElementById('suppProIds');
+      if (suppProIdE) {
+        suppProIdE.value = '[]';
+      }
+
+      // Empty sidebar brief + addon lists
+      if (typeof this.updateBriefsListInOrderDetails === 'function') {
+        this.updateBriefsListInOrderDetails();
+      }
+      if (typeof this.displaySelectedSuppProgram === 'function') {
+        this.displaySelectedSuppProgram([]);
+      }
+
+      // Refresh deposit price and switch to the no-addons order summary
+      if (typeof this.hideShowNewStudentFee === 'function') {
+        this.hideShowNewStudentFee('grid');
+      }
+
+      // Strip stale selections from localStorage
+      this._clearAddonAndBriefSelectionsFromStorage();
+    } catch (e) {
+      console.warn('Failed to reset upsell/brief selections:', e);
     }
   }
   updateSupplementaryProgramData(suppProData) {

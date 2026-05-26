@@ -836,6 +836,41 @@ class CheckOutWebflow {
 		}
 	}
 
+	// Full reset of addon selections on back-from-Stripe. Handles the BFCache
+	// case where $selectedProgram and addon checkboxes stay populated in
+	// memory + DOM, causing stale items to reappear in the cart sidebar on the
+	// next interaction. Mirrors a fresh page load: bare session price, no
+	// addons ticked.
+	_resetUpsellAndBriefSelections() {
+		try {
+			this.$selectedProgram = [];
+			this._upsellInteracted = false;
+
+			document.querySelectorAll('[programDetailId]').forEach(function (checkbox) {
+				checkbox.checked = false;
+				var cardEl = checkbox.closest(
+					'.bundle-sem-content-flex-container, .banner-price-info-card'
+				);
+				if (cardEl) {
+					cardEl.classList.remove('border-brown-red');
+				}
+			});
+
+			var suppProIdE = document.getElementById('suppProIds');
+			if (suppProIdE) {
+				suppProIdE.value = '[]';
+			}
+
+			if (typeof this.displaySelectedSuppProgram === 'function') {
+				this.displaySelectedSuppProgram([]);
+			}
+
+			this._clearAddonAndBriefSelectionsFromStorage();
+		} catch (e) {
+			console.warn('Failed to reset upsell selections:', e);
+		}
+	}
+
 	// Handles browser and Stripe back button functionality to restore checkout state
 	setUpBackButtonTab() {
 		var query = window.location.search;
@@ -929,10 +964,10 @@ class CheckOutWebflow {
 					$this.resetPaymentCheckoutButtons();
 				}, 1200);
 			}
-			// Reset addons on Chrome back from Stripe so user re-picks them fresh;
-			// restoring partial state was leaving the cart total out of sync with
-			// checkbox/credit-card-fee logic.
-			this._clearAddonAndBriefSelectionsFromStorage();
+			// Reset addons on Chrome back from Stripe so user re-picks them fresh.
+			// Covers BFCache where memory + DOM checkbox state survive; localStorage
+			// alone wasn't enough since updateAmount reads $selectedProgram in memory.
+			this._resetUpsellAndBriefSelections();
 			// Consume back markers so a new checkout attempt generates fresh flow/URLs.
 			if (ibackbutton) {
 				ibackbutton.value = "0";
