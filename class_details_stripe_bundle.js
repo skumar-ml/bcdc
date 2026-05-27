@@ -575,6 +575,39 @@ class classDetailsStripe extends parentLogin {
       throw error;
     }
   }
+
+  // Checkout student dropdown API lives on the b4z5gqv2xj gateway (not typeFBaseUrl).
+  getCheckoutStudentProfilesBaseUrl() {
+    return "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/";
+  }
+
+  // Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
+  normalizeCheckoutStudentProfiles(response) {
+    var list = response;
+    if (response && Array.isArray(response.data)) {
+      list = response.data;
+    } else if (response && Array.isArray(response.students)) {
+      list = response.students;
+    }
+    if (!Array.isArray(list)) {
+      return [];
+    }
+    var parentEmail = this.accountEmail || "";
+    return list.map(function (item) {
+      if (!item || !item.studentName) {
+        return item;
+      }
+      return {
+        ...item,
+        studentEmail: item.studentEmail || "",
+        studentGrade: item.studentGrade || item.grade || "",
+        school: item.school || "",
+        gender: item.gender || "",
+        prevStudent: item.prevStudent || "",
+        parentEmail: item.parentEmail || parentEmail,
+      };
+    });
+  }
   // Setup back button for stripe back button and browser back button
   setUpBackButtonTab() {
     this.spinner.style.display = "block";
@@ -2478,13 +2511,14 @@ class classDetailsStripe extends parentLogin {
       if ($this.$allBundlePrograms.length > 0 && $this.$isCheckoutFlow == "Bundle-Purchase") {
         data = $this.$allBundlePrograms;
       } else {
-        data = await this.fetchData(
+        var profilesResponse = await this.fetchData(
           "getCheckoutStudentProfiles/" + this.webflowMemberId,
-          this.typeFBaseUrl
+          this.getCheckoutStudentProfilesBaseUrl()
         );
+        data = this.normalizeCheckoutStudentProfiles(profilesResponse);
       }
       //finding unique value and sorting by firstName
-      if (data == "No data Found" || data.length == 0) {
+      if (data == "No data Found" || !Array.isArray(data) || data.length == 0) {
         selectBox.disabled = true;
         selectBox.innerHTML = '<option value="">No previous students found</option>';
         return;
@@ -2511,7 +2545,11 @@ class classDetailsStripe extends parentLogin {
 
       // Add new options from the API data
       filterData.forEach((item, index) => {
-        let checkBundle = this.checkStudentBundleProgram({ firstName: item.studentName.split(" ")[0], lastName: item.studentName.split(" ")[1] });
+        var nameParts = (item.studentName || "").trim().split(/\s+/);
+        let checkBundle = this.checkStudentBundleProgram({
+          firstName: nameParts[0] || "",
+          lastName: nameParts.slice(1).join(" ") || "",
+        });
         let checkBundleLabel = (checkBundle) ? " - Pre-registration available" : "";
         let checkBundleIconClass = (checkBundle) ? "pre-reg-available" : "normal-reg-available";
         const option = document.createElement("option");
@@ -2527,21 +2565,23 @@ class classDetailsStripe extends parentLogin {
       // Create custom styled dropdown with styled options
       this.createCustomSelectDisplay(selectBox, filterData);
       selectBox.addEventListener("change", function (event) {
-        var checkoutJson = localStorage.getItem("checkOutBasicData");
-        let studentName = filterData[event.target.value].studentName.split(
-          " ",
-          2
-        );
+        if (event.target.value === "") {
+          return;
+        }
+        var selected = filterData[event.target.value];
+        if (!selected) {
+          return;
+        }
+        var nameParts = (selected.studentName || "").trim().split(/\s+/);
         var data = {
-          studentEmail: filterData[event.target.value].studentEmail,
-          firstName: studentName[0],
-          lastName: studentName[1],
-          grade: filterData[event.target.value].studentGrade,
-          school: filterData[event.target.value].school,
-          gender: filterData[event.target.value].gender,
-          prevStudent: filterData[event.target.value].prevStudent
-            ? filterData[event.target.value].prevStudent
-            : "",
+          studentEmail: selected.studentEmail || "",
+          parentEmail: selected.parentEmail || $this.accountEmail || "",
+          firstName: nameParts[0] || "",
+          lastName: nameParts.slice(1).join(" ") || "",
+          grade: selected.studentGrade || selected.grade || "",
+          school: selected.school || "",
+          gender: selected.gender || "",
+          prevStudent: selected.prevStudent ? selected.prevStudent : "",
         };
         // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram 
         const matchedProgram = $this.$allBundlePrograms.find(
