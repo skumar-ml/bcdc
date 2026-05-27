@@ -843,7 +843,6 @@ class CheckOutWebflow {
 	// addons ticked.
 	_resetUpsellAndBriefSelections() {
 		try {
-			this.$selectedProgram = [];
 			this._upsellInteracted = false;
 
 			document.querySelectorAll('[programDetailId]').forEach(function (checkbox) {
@@ -865,9 +864,80 @@ class CheckOutWebflow {
 				this.displaySelectedSuppProgram([]);
 			}
 
+			// Repaint deposit / total from core baseline (BFCache can leave card-fee totals).
+			this._refreshDefaultDepositDisplay();
+
 			this._clearAddonAndBriefSelectionsFromStorage();
 		} catch (e) {
 			console.warn('Failed to reset upsell selections:', e);
+		}
+	}
+
+	// Base summer core deposit before any upsell or card-fee adjustments.
+	_getBaseCoreDepositAmount() {
+		var base = 0;
+		if (this.$coreData) {
+			if (this.$coreData._baseAmount != null) {
+				base = parseFloat(this.$coreData._baseAmount);
+			} else {
+				base = parseFloat(String(this.$coreData.amount || 0).replace(/,/g, ''));
+			}
+		}
+		if (isNaN(base) || base <= 0) {
+			var coreProductPrice = document.getElementById('core_product_price');
+			if (coreProductPrice && coreProductPrice.value) {
+				base = parseFloat(String(coreProductPrice.value).replace(/,/g, '')) || 0;
+			}
+		}
+		if ((isNaN(base) || base <= 0) && this.memberData && this.memberData.achAmount) {
+			base = parseFloat(String(this.memberData.achAmount).replace(/,/g, '')) || 0;
+		}
+		return isNaN(base) ? 0 : base;
+	}
+
+	// Reset Deposit (Due Now) and payment totals after Chrome back from Stripe.
+	_refreshDefaultDepositDisplay() {
+		var baseDeposit = this._getBaseCoreDepositAmount();
+
+		// Core only in memory; revert bundle discount if addons are cleared.
+		if (this.$coreData) {
+			if (this.$coreData._baseAmount != null) {
+				this.$coreData.amount = this.$coreData._baseAmount;
+			}
+			this.$selectedProgram = [this.$coreData];
+		} else {
+			this.$selectedProgram = [];
+		}
+
+		if (typeof this.applyInitialBundleTotals === 'function') {
+			this.applyInitialBundleTotals(baseDeposit);
+		}
+
+		var formatted = this.numberWithCommas(baseDeposit.toFixed(2));
+		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+			el.innerHTML = '$' + formatted;
+			el.setAttribute('data-stripe-price', formatted);
+		});
+
+		document.querySelectorAll("[data-stripe='addon-deposit-price']").forEach(function (el) {
+			el.innerHTML = '$' + formatted;
+		});
+
+		var grayElem = document.querySelector('.current-price-gray');
+		if (grayElem) {
+			grayElem.innerHTML = '$' + formatted;
+		}
+
+		if (typeof this.applyTotalsForTab === 'function') {
+			this.applyTotalsForTab(this.getCurrentPaymentTab(), true);
+		}
+
+		if (typeof this.renderAddonRowPrices === 'function') {
+			this.renderAddonRowPrices(this.getCurrentPaymentTab());
+		}
+
+		if (typeof Utils !== 'undefined' && Utils.calculateDiscountPrice) {
+			Utils.calculateDiscountPrice();
 		}
 	}
 
