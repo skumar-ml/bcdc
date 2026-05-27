@@ -2479,7 +2479,7 @@ class classDetailsStripe extends parentLogin {
         data = $this.$allBundlePrograms;
       } else {
         data = await this.fetchData(
-          "getAllPreviousStudents/" + this.webflowMemberId + "/all",
+          "getCheckoutStudentProfiles/" + this.webflowMemberId,
           this.typeFBaseUrl
         );
       }
