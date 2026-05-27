@@ -867,9 +867,35 @@ class CheckOutWebflow {
 			// Repaint deposit / total from core baseline (BFCache can leave card-fee totals).
 			this._refreshDefaultDepositDisplay();
 
+			// Restore Add to Cart / Remove labels and clickability on banner CTAs.
+			this._resetUpsellButtonUI();
+
 			this._clearAddonAndBriefSelectionsFromStorage();
 		} catch (e) {
 			console.warn('Failed to reset upsell selections:', e);
+		}
+	}
+
+	// Count supplementary programs selected (excludes summer core row).
+	_getSelectedUpsellCount() {
+		var coreId = this.$coreData && this.$coreData.upsellProgramId;
+		return (Array.isArray(this.$selectedProgram) ? this.$selectedProgram : []).filter(function (program) {
+			return program && program.upsellProgramId != null && program.upsellProgramId !== coreId;
+		}).length;
+	}
+
+	// Reset Add to Cart / Remove button state after Chrome back from Stripe.
+	_resetUpsellButtonUI() {
+		var buyNowButtons = document.querySelectorAll(
+			'.add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red'
+		);
+		buyNowButtons.forEach(function (button) {
+			button.style.pointerEvents = 'auto';
+			button.disabled = false;
+			button.classList.remove('gray');
+		});
+		if (typeof this.disableEnableBuyNowButton === 'function') {
+			this.disableEnableBuyNowButton();
 		}
 	}
 
@@ -1968,6 +1994,7 @@ class CheckOutWebflow {
       const buyNowButton = document.querySelectorAll(
         ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red"
       );
+      const upsellCount = this._getSelectedUpsellCount();
       buyNowButton.forEach((button) => {
         const isWine =
           button.classList.contains("Button-wine-red") ||
@@ -1975,8 +2002,10 @@ class CheckOutWebflow {
         if (isWine) {
           return;
         }
-        if (this.$selectedProgram.length === 0) {
+        if (upsellCount === 0) {
           button.innerHTML = "Add to Cart";
+          button.style.pointerEvents = "auto";
+          button.disabled = false;
         } else {
           button.innerHTML = "Update Cart";
         }
