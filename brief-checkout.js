@@ -532,8 +532,7 @@ class BriefsCheckout {
                         alert("Something went wrong. Please try again later.");
                     }
                 } else {
-                    const apiErrorMessage = responseText.message || responseText.error || responseText.errorMessage || "Payment processing failed. Please try again.";
-                    alert(apiErrorMessage);
+                    alert("Payment processing failed. Please try again.");
                     // Reset button state
                     if (payNowButton) {
                         payNowButton.innerHTML = "Pay Now";
