@@ -7,6 +7,60 @@ Brief Logic: Checks URL parameters for referral code and ID, displays modal when
 Are there any dependent JS files: No
 
 */
+
+// Email Validation
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validateEmailInput(emailInput) {
+  if (!emailInput) return;
+
+  var email = emailInput.value.trim().toLowerCase();
+  emailInput.setCustomValidity("");
+
+  if (email && !isValidEmail(email)) {
+    emailInput.setCustomValidity("Please enter a valid email address");
+  }
+}
+
+function initEmailValidation() {
+  var emailInputs = document.querySelectorAll(
+    'input[data-ms-member="email"], input[type="email"], [data-name="referral-email"]'
+  );
+
+  if (emailInputs.length === 0) {
+    return;
+  }
+
+  var formsBound = new WeakSet();
+
+  emailInputs.forEach(function (emailInput) {
+    emailInput.addEventListener("input", function () {
+      validateEmailInput(emailInput);
+    });
+
+    var form = emailInput.closest("form");
+    if (form && !formsBound.has(form)) {
+      formsBound.add(form);
+      form.addEventListener("submit", function (e) {
+        emailInputs.forEach(validateEmailInput);
+
+        if (!form.checkValidity()) {
+          e.preventDefault();
+          form.reportValidity();
+        }
+      });
+    }
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initEmailValidation);
+} else {
+  initEmailValidation();
+}
+
  class ReferralModal {
             // Initializes the ReferralModal instance
             constructor(data) {
@@ -251,6 +305,7 @@ Are there any dependent JS files: No
                 if (this.data.name && this.data.email) {
                     this.nameEl.value = this.data.name;
                     this.emailEl.value = this.data.email;
+                    this.emailEl.dispatchEvent(new Event("input", { bubbles: true }));
                 }
             }
 
@@ -277,6 +332,14 @@ Are there any dependent JS files: No
                     //this.spinner.style.display = "none";
                     setTimeout(() => (formFail.style.display = "none"), 3000);
                     return;
+                }
+
+                if (this.emailEl) {
+                    validateEmailInput(this.emailEl);
+                    if (!this.emailEl.checkValidity()) {
+                        this.emailEl.reportValidity();
+                        return;
+                    }
                 }
 
                 // Disable submit button
