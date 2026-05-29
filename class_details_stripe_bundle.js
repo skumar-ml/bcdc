@@ -117,7 +117,7 @@ function validateEmailInput(emailInput) {
 
 function initEmailValidation() {
   var emailInputs = document.querySelectorAll(
-    'input[data-ms-member="email"], input[type="email"]'
+    '#Student-Email, input[data-ms-member="email"], input[type="email"]'
   );
 
   if (emailInputs.length === 0) {
@@ -1163,6 +1163,15 @@ class classDetailsStripe extends parentLogin {
           existingStudents.removeAttribute("required");
         }
       }
+
+      if (studentEmail) {
+        validateEmailInput(studentEmail);
+        if (!studentEmail.checkValidity()) {
+          studentEmail.reportValidity();
+          return;
+        }
+      }
+
       if (form.valid()) {
         var eligible = true;
 

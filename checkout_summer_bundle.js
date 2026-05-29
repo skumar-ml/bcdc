@@ -45,7 +45,7 @@ function validateEmailInput(emailInput) {
 
 function initEmailValidation() {
 	var emailInputs = document.querySelectorAll(
-		'input[data-ms-member="email"], input[type="email"]'
+		'#Student-Email, input[data-ms-member="email"], input[type="email"]'
 	);
 
 	if (emailInputs.length === 0) {
@@ -684,6 +684,15 @@ class CheckOutWebflow {
 		var $this = this;
 		var form = $("#checkout-form");
 		next_page_1.addEventListener('click', async function () {
+			var studentEmail = document.getElementById('Student-Email');
+			if (studentEmail) {
+				validateEmailInput(studentEmail);
+				if (!studentEmail.checkValidity()) {
+					studentEmail.reportValidity();
+					return;
+				}
+			}
+
 			if (form.valid()) {
 				$this.storeBasicData();
 				var eligible = true;
