@@ -25,34 +25,27 @@ function validateEmailInput(emailInput) {
 }
 
 function initEmailValidation() {
-  var emailInputs = document.querySelectorAll(
-    'input[data-ms-member="email"], input[type="email"], [data-name="referral-email"]'
-  );
-
-  if (emailInputs.length === 0) {
+  var emailInput = document.getElementById("referral-email");
+  if (!emailInput) {
     return;
   }
 
-  var formsBound = new WeakSet();
+  var form = emailInput.closest("form");
 
-  emailInputs.forEach(function (emailInput) {
-    emailInput.addEventListener("input", function () {
-      validateEmailInput(emailInput);
-    });
-
-    var form = emailInput.closest("form");
-    if (form && !formsBound.has(form)) {
-      formsBound.add(form);
-      form.addEventListener("submit", function (e) {
-        emailInputs.forEach(validateEmailInput);
-
-        if (!form.checkValidity()) {
-          e.preventDefault();
-          form.reportValidity();
-        }
-      });
-    }
+  emailInput.addEventListener("input", function () {
+    validateEmailInput(emailInput);
   });
+
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      validateEmailInput(emailInput);
+
+      if (!form.checkValidity()) {
+        e.preventDefault();
+        form.reportValidity();
+      }
+    });
+  }
 }
 
 if (document.readyState === "loading") {
@@ -87,7 +80,7 @@ if (document.readyState === "loading") {
                 this.submitBtn = document.querySelector('[data-referral="claim-discount"]');
                 //this.spinner = document.getElementById("half-circle-spinner");
                 this.nameEl = this.referralForm.querySelector("[data-name='referral-name']");
-                this.emailEl = this.referralForm.querySelector("[data-name='referral-email']");
+                this.emailEl = document.getElementById("referral-email");
             }
 
             // Sets up event listeners for modal interactions
