@@ -444,6 +444,11 @@ class CheckOutWebflow {
 			return;
 		}
 		var $this = this;
+		// Build the styled dropdown up front (before the API call) so the control
+		// holds its final height while data loads — stops the form from shifting
+		// down once the API response swaps the native select for the custom UI.
+		this.createCustomSelectDisplay(selectBox, []);
+		var displayText = selectBox.parentElement.querySelector('.custom-select-display-text');
 		try {
 			// Pull this member's saved students from the checkout profiles gateway
 			var profilesResponse = await this.fetchData(
@@ -455,6 +460,9 @@ class CheckOutWebflow {
 			if (data == "No data Found" || !Array.isArray(data) || data.length == 0) {
 				selectBox.disabled = true;
 				selectBox.innerHTML = '<option value="">No previous students found</option>';
+				if (displayText) {
+					displayText.textContent = "No previous students found";
+				}
 				return;
 			}
 			// Drop nameless entries, dedupe by studentName, then sort alphabetically
@@ -483,8 +491,6 @@ class CheckOutWebflow {
 				option.setAttribute("data-student-name", item.studentName);
 				selectBox.appendChild(option);
 			});
-			// Render the styled custom dropdown over the hidden native select
-			this.createCustomSelectDisplay(selectBox, filterData);
 			// On selection, shape the profile and prefill the student form
 			selectBox.addEventListener("change", function (event) {
 				if (event.target.value === "") {
@@ -511,6 +517,9 @@ class CheckOutWebflow {
 		} catch (error) {
 			console.error("Error fetching API data:", error);
 			selectBox.innerHTML = '<option value="">Student Details not available</option>';
+			if (displayText) {
+				displayText.textContent = "Student Details not available";
+			}
 		}
 	}
 	// Build a styled select UI over the native #existing-students select
