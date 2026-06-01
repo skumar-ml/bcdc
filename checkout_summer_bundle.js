@@ -1063,8 +1063,17 @@ class CheckOutWebflow {
 
 			studentLastName.value = paymentData.lastName;
 
+			// Match the grade against select options case/space-insensitively so
+			// API values like "9th Grade" still select the "9th grade" option
 			if (paymentData.grade) {
-				studentGrade.value = paymentData.grade;
+				var wantGrade = String(paymentData.grade).trim().toLowerCase();
+				var matchedGrade = Array.prototype.find.call(
+					studentGrade.options,
+					function (opt) { return opt.value.trim().toLowerCase() === wantGrade; }
+				);
+				if (matchedGrade) {
+					studentGrade.value = matchedGrade.value;
+				}
 			}
 
 			if (paymentData.school) {
@@ -1297,8 +1306,17 @@ class CheckOutWebflow {
 
 			studentLastName.value = paymentData.lastName;
 
+			// Match the grade against select options case/space-insensitively so
+			// API values like "9th Grade" still select the "9th grade" option
 			if (paymentData.grade) {
-				studentGrade.value = paymentData.grade;
+				var wantGrade = String(paymentData.grade).trim().toLowerCase();
+				var matchedGrade = Array.prototype.find.call(
+					studentGrade.options,
+					function (opt) { return opt.value.trim().toLowerCase() === wantGrade; }
+				);
+				if (matchedGrade) {
+					studentGrade.value = matchedGrade.value;
+				}
 			}
 
 			if (paymentData.school) {
