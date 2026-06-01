@@ -522,8 +522,26 @@ class CheckOutWebflow {
 			}
 		}
 	}
+	// Inject the custom-select CSS once so layout stays stable even if the
+	// Webflow page lacks these rules: native select is removed from flow and
+	// the open options panel floats as an overlay so nothing below it shifts.
+	_ensureCustomSelectStyles() {
+		if (document.getElementById('custom-select-shift-fix')) {
+			return;
+		}
+		var style = document.createElement('style');
+		style.id = 'custom-select-shift-fix';
+		style.textContent =
+			'.custom-select-display-wrapper{position:relative;}' +
+			'.custom-select-hidden{display:none !important;}' +
+			'.custom-select-dropdown{position:absolute;top:100%;left:0;right:0;z-index:50;}' +
+			'.custom-select-dropdown:not(.show){display:none;}';
+		document.head.appendChild(style);
+	}
 	// Build a styled select UI over the native #existing-students select
 	createCustomSelectDisplay(selectBox, filterData) {
+		// Guarantee shift-proof styles regardless of Webflow page CSS
+		this._ensureCustomSelectStyles();
 		// Drop any previously built wrapper so re-render stays clean
 		const existingWrapper = selectBox.parentElement.querySelector('.custom-select-display-wrapper');
 		if (existingWrapper) {
