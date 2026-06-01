@@ -29,7 +29,7 @@ function creEl(name, className, idName) {
 
 // Email Validation
 function isValidEmail(email) {
-	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+	return /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
 }
 
 function validateEmailInput(emailInput) {

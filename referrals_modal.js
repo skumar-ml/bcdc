@@ -10,7 +10,7 @@ Are there any dependent JS files: No
 
 // Email Validation
 function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
 }
 
 function validateEmailInput(emailInput) {
