@@ -575,6 +575,39 @@ class classDetailsStripe extends parentLogin {
       throw error;
     }
   }
+
+  // Checkout student dropdown API lives on the b4z5gqv2xj gateway (not typeFBaseUrl).
+  getCheckoutStudentProfilesBaseUrl() {
+    return "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/";
+  }
+
+  // Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
+  normalizeCheckoutStudentProfiles(response) {
+    var list = response;
+    if (response && Array.isArray(response.data)) {
+      list = response.data;
+    } else if (response && Array.isArray(response.students)) {
+      list = response.students;
+    }
+    if (!Array.isArray(list)) {
+      return [];
+    }
+    var parentEmail = this.accountEmail || "";
+    return list.map(function (item) {
+      if (!item || !item.studentName) {
+        return item;
+      }
+      return {
+        ...item,
+        studentEmail: item.studentEmail || "",
+        studentGrade: item.studentGrade || item.grade || "",
+        school: item.school || "",
+        gender: item.gender || "",
+        prevStudent: item.prevStudent || "",
+        parentEmail: item.parentEmail || parentEmail,
+      };
+    });
+  }
   // Setup back button for stripe back button and browser back button
   setUpBackButtonTab() {
     this.spinner.style.display = "block";
@@ -593,7 +626,18 @@ class classDetailsStripe extends parentLogin {
     if (paymentData.memberId !== this.webflowMemberId) {
       return;
     }
+
+    // Always reset addon/brief selections on back-from-Stripe regardless of
+    // checkout flow; BFCache can leave $selectedProgram/selectedBriefs in
+    // memory and the bundle-purchase early return below would otherwise skip
+    // cleanup, causing a stale brief/addon to reappear on the next click.
+    var isBackFromStripe = this.checkBackButtonEvent();
+    if (isBackFromStripe) {
+      this._resetUpsellAndBriefSelections();
+    }
+
     if (this.$isCheckoutFlow == "Bundle-Purchase" || this.levelId == 'worldschools') {
+      setTimeout(() => { this.spinner.style.display = "none"; }, 500);
       return;
     }
 
@@ -602,7 +646,7 @@ class classDetailsStripe extends parentLogin {
       setTimeout(() => { this.spinner.style.display = "none"; }, 500);
       return;
     }
-    if (this.checkBackButtonEvent() && checkoutJson != undefined) {
+    if (isBackFromStripe && checkoutJson != undefined) {
       var paymentData = JSON.parse(checkoutJson);
 
       var studentFirstName = document.getElementById("Student-First-Name");
@@ -706,7 +750,6 @@ class classDetailsStripe extends parentLogin {
       //   }
       // }
       this.createBundlePrograms(this.$allSuppData);
-      this.updateBundleProgram(paymentData)
       this.resetSubmitClassButtons();
     } else {
       // removed local storage when checkout page rendar direct without back button
@@ -2468,13 +2511,14 @@ class classDetailsStripe extends parentLogin {
       if ($this.$allBundlePrograms.length > 0 && $this.$isCheckoutFlow == "Bundle-Purchase") {
         data = $this.$allBundlePrograms;
       } else {
-        data = await this.fetchData(
-          "getAllPreviousStudents/" + this.webflowMemberId + "/all",
-          this.typeFBaseUrl
+        var profilesResponse = await this.fetchData(
+          "getCheckoutStudentProfiles/" + this.webflowMemberId,
+          this.getCheckoutStudentProfilesBaseUrl()
         );
+        data = this.normalizeCheckoutStudentProfiles(profilesResponse);
       }
       //finding unique value and sorting by firstName
-      if (data == "No data Found" || data.length == 0) {
+      if (data == "No data Found" || !Array.isArray(data) || data.length == 0) {
         selectBox.disabled = true;
         selectBox.innerHTML = '<option value="">No previous students found</option>';
         return;
@@ -2501,7 +2545,11 @@ class classDetailsStripe extends parentLogin {
 
       // Add new options from the API data
       filterData.forEach((item, index) => {
-        let checkBundle = this.checkStudentBundleProgram({ firstName: item.studentName.split(" ")[0], lastName: item.studentName.split(" ")[1] });
+        var nameParts = (item.studentName || "").trim().split(/\s+/);
+        let checkBundle = this.checkStudentBundleProgram({
+          firstName: nameParts[0] || "",
+          lastName: nameParts.slice(1).join(" ") || "",
+        });
         let checkBundleLabel = (checkBundle) ? " - Pre-registration available" : "";
         let checkBundleIconClass = (checkBundle) ? "pre-reg-available" : "normal-reg-available";
         const option = document.createElement("option");
@@ -2517,21 +2565,23 @@ class classDetailsStripe extends parentLogin {
       // Create custom styled dropdown with styled options
       this.createCustomSelectDisplay(selectBox, filterData);
       selectBox.addEventListener("change", function (event) {
-        var checkoutJson = localStorage.getItem("checkOutBasicData");
-        let studentName = filterData[event.target.value].studentName.split(
-          " ",
-          2
-        );
+        if (event.target.value === "") {
+          return;
+        }
+        var selected = filterData[event.target.value];
+        if (!selected) {
+          return;
+        }
+        var nameParts = (selected.studentName || "").trim().split(/\s+/);
         var data = {
-          studentEmail: filterData[event.target.value].studentEmail,
-          firstName: studentName[0],
-          lastName: studentName[1],
-          grade: filterData[event.target.value].studentGrade,
-          school: filterData[event.target.value].school,
-          gender: filterData[event.target.value].gender,
-          prevStudent: filterData[event.target.value].prevStudent
-            ? filterData[event.target.value].prevStudent
-            : "",
+          studentEmail: selected.studentEmail || "",
+          parentEmail: selected.parentEmail || $this.accountEmail || "",
+          firstName: nameParts[0] || "",
+          lastName: nameParts.slice(1).join(" ") || "",
+          grade: selected.studentGrade || selected.grade || "",
+          school: selected.school || "",
+          gender: selected.gender || "",
+          prevStudent: selected.prevStudent ? selected.prevStudent : "",
         };
         // match studentEmail with allBundlePrograms studentEmail and assign match bundle program as a selectedBundleProgram 
         const matchedProgram = $this.$allBundlePrograms.find(
@@ -2871,6 +2921,155 @@ class classDetailsStripe extends parentLogin {
       }
     } catch (e) {
       console.warn("Failed to clear stale checkout localStorage:", e);
+    }
+  }
+  // Wipe addon/brief slices from checkOutData so a Chrome back from Stripe
+  // returns the cart to the bare class price; student form fields and other
+  // restore data stay intact.
+  _clearAddonAndBriefSelectionsFromStorage() {
+    try {
+      var raw = localStorage.getItem("checkOutData");
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      if (!data || typeof data !== "object") return;
+      delete data.upsellProgramIds;
+      delete data.suppPro;
+      delete data.selectedProgram;
+      delete data.selectedBriefs;
+      localStorage.setItem("checkOutData", JSON.stringify(data));
+    } catch (e) {
+      console.warn("Failed to clear addon/brief selections from checkOutData:", e);
+    }
+  }
+  // Full reset of addon + brief selections on back-from-Stripe. Handles the
+  // BFCache case where $selectedProgram/selectedBriefs stay in memory and the
+  // sidebar/addon checkboxes/brief radios stay visually selected. Mirrors a
+  // fresh page load: bare class price, no addons ticked, no briefs ticked.
+  _resetUpsellAndBriefSelections() {
+    try {
+      // In-memory state
+      this.selectedBriefs = [];
+      this.$selectedProgram = [];
+
+      // Uncheck every addon checkbox so the program cards look unselected
+      document.querySelectorAll('[programDetailId]').forEach(function (checkbox) {
+        checkbox.checked = false;
+      });
+
+      // Reset brief cards: drop selection ring + reset version radios/styling
+      document.querySelectorAll('.brief-card').forEach(function (card) {
+        card.classList.remove('brown-red-border');
+        var fullDiv = card.querySelector('[data-briefs-checkout="full-version"]');
+        var lightDiv = card.querySelector('[data-briefs-checkout="light-version"]');
+        var fullRadio = card.querySelector('input[value="full"]');
+        var lightRadio = card.querySelector('input[value="light"]');
+        if (fullDiv) fullDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+        if (lightDiv) lightDiv.className = 'brief-pricing-info-wrapper not-selected-white';
+        if (fullRadio) fullRadio.checked = false;
+        if (lightRadio) lightRadio.checked = false;
+      });
+
+      // Clear hidden upsell ids input so getSelectedBundleProgram returns []
+      var suppProIdE = document.getElementById('suppProIds');
+      if (suppProIdE) {
+        suppProIdE.value = '[]';
+      }
+
+      // Empty sidebar brief + addon lists
+      if (typeof this.updateBriefsListInOrderDetails === 'function') {
+        this.updateBriefsListInOrderDetails();
+      }
+      if (typeof this.displaySelectedSuppProgram === 'function') {
+        this.displaySelectedSuppProgram([]);
+      }
+
+      // Repaint deposit + total in old order summary before hideShowNewStudentFee
+      // (that path reads .total_price and would keep stale BFCache amounts).
+      this._refreshDefaultDepositDisplay();
+
+      // Switch to the no-addons order summary
+      if (typeof this.hideShowNewStudentFee === 'function') {
+        this.hideShowNewStudentFee('grid');
+      }
+
+      // Strip stale selections from localStorage
+      this._clearAddonAndBriefSelectionsFromStorage();
+    } catch (e) {
+      console.warn('Failed to reset upsell/brief selections:', e);
+    }
+  }
+  // Reset Deposit (Due Now) and Total Deposit Due Now in bundle-order-details-old-div
+  // after Chrome back from Stripe; BFCache can leave inflated addon/card-fee values.
+  _refreshDefaultDepositDisplay() {
+    var totalAmountInput = document.getElementById('totalAmount');
+    var coreProductPrice = document.getElementById('core_product_price');
+    if (totalAmountInput && coreProductPrice) {
+      var coreVal = parseFloat(String(coreProductPrice.value).replace(/,/g, '')) || 0;
+      if (this.$isCheckoutFlow === 'Bundle-Purchase') {
+        totalAmountInput.value = 0;
+      } else {
+        totalAmountInput.value = coreVal;
+      }
+    }
+
+    if (typeof this.updateAmount === 'function') {
+      this.updateAmount(0);
+    }
+    if (typeof this.updateDepositePriceForBundle === 'function') {
+      this.updateDepositePriceForBundle();
+    }
+
+    var $this = this;
+    document.querySelectorAll('.bundle-order-details-old-div').forEach(function (oldSummary) {
+      var depositEl = oldSummary.querySelector('[data-stripe="totalDepositPrice"]');
+      var totalPriceEl = oldSummary.querySelector('.total_price');
+      var addonDepositEl = oldSummary.querySelector('[data-stripe="addon-deposit-price"]');
+      if (!depositEl || !totalPriceEl) {
+        return;
+      }
+
+      var rawAttr = depositEl.getAttribute('data-stripe-price') || '0';
+      var baseDeposit = parseFloat(String(rawAttr).replace(/,/g, '').replace(/\$/g, '')) || 0;
+      if ($this.$isCheckoutFlow === 'Bundle-Purchase') {
+        baseDeposit = 0;
+      }
+
+      var depositText = (depositEl.textContent || '').trim();
+      var depositNum = parseFloat(depositText.replace(/[^0-9.]/g, '')) || 0;
+      if (depositText.toLowerCase().indexOf('free') !== -1) {
+        depositNum = 0;
+      }
+
+      var prevCheckbox = oldSummary.querySelector('.prev_student_checkbox');
+      var totalDue = depositNum;
+      if (prevCheckbox && prevCheckbox.checked) {
+        totalDue += 100;
+      }
+
+      var totalFormatted =
+        totalDue === 0
+          ? 'Free'
+          : '$' + $this.numberWithCommas($this.trimToTwoDecimals(totalDue));
+      totalPriceEl.innerHTML = totalFormatted;
+
+      if (addonDepositEl && $this.$isCheckoutFlow !== 'Bundle-Purchase') {
+        addonDepositEl.innerHTML =
+          baseDeposit === 0
+            ? 'Free'
+            : '$' + $this.numberWithCommas($this.trimToTwoDecimals(baseDeposit));
+      }
+    });
+
+    var grayElem = document.querySelector('.current-price-gray');
+    var depositRef = document.querySelector(
+      ".bundle-order-details-old-div [data-stripe='totalDepositPrice']"
+    );
+    if (grayElem && depositRef) {
+      grayElem.innerHTML = depositRef.innerHTML;
+    }
+
+    if (typeof Utils !== 'undefined' && Utils.calculateDiscountPrice) {
+      Utils.calculateDiscountPrice();
     }
   }
   updateSupplementaryProgramData(suppProData) {

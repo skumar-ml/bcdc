@@ -56,6 +56,22 @@ class CheckOutWebflow {
 		this._bindAddToCartDelegated();
 	}
 
+	// Merges partial checkout state into localStorage without wiping existing keys
+	updateCheckOutData(checkoutData) {
+		try {
+			var localCheckoutData = localStorage.getItem('checkOutData');
+			if (checkoutData != null && localCheckoutData != null) {
+				checkoutData = {
+					...JSON.parse(localCheckoutData),
+					...checkoutData
+				};
+			}
+			localStorage.setItem('checkOutData', JSON.stringify(checkoutData));
+		} catch (e) {
+			console.warn('Failed to merge checkOutData:', e);
+		}
+	}
+
 	// Clear stale per-checkout localStorage when the user returns to this page
 	// from a successful Stripe payment. The Stripe success URL points to
 	// /payment-confirmation, while the cancel URL points back here with
@@ -801,6 +817,156 @@ class CheckOutWebflow {
 		})
 	}
 
+	// Wipe addon slices from checkOutData so a Chrome back from Stripe
+	// returns the cart to the bare summer-session price; student form fields
+	// and other restore data stay intact.
+	_clearAddonAndBriefSelectionsFromStorage() {
+		try {
+			var raw = localStorage.getItem('checkOutData');
+			if (!raw) return;
+			var data = JSON.parse(raw);
+			if (!data || typeof data !== 'object') return;
+			delete data.upsellProgramIds;
+			delete data.suppPro;
+			delete data.selectedProgram;
+			delete data.selectedBriefs;
+			localStorage.setItem('checkOutData', JSON.stringify(data));
+		} catch (e) {
+			console.warn('Failed to clear addon/brief selections from checkOutData:', e);
+		}
+	}
+
+	// Full reset of addon selections on back-from-Stripe. Handles the BFCache
+	// case where $selectedProgram and addon checkboxes stay populated in
+	// memory + DOM, causing stale items to reappear in the cart sidebar on the
+	// next interaction. Mirrors a fresh page load: bare session price, no
+	// addons ticked.
+	_resetUpsellAndBriefSelections() {
+		try {
+			this._upsellInteracted = false;
+
+			document.querySelectorAll('[programDetailId]').forEach(function (checkbox) {
+				checkbox.checked = false;
+				var cardEl = checkbox.closest(
+					'.bundle-sem-content-flex-container, .banner-price-info-card'
+				);
+				if (cardEl) {
+					cardEl.classList.remove('border-brown-red');
+				}
+			});
+
+			var suppProIdE = document.getElementById('suppProIds');
+			if (suppProIdE) {
+				suppProIdE.value = '[]';
+			}
+
+			if (typeof this.displaySelectedSuppProgram === 'function') {
+				this.displaySelectedSuppProgram([]);
+			}
+
+			// Repaint deposit / total from core baseline (BFCache can leave card-fee totals).
+			this._refreshDefaultDepositDisplay();
+
+			// Restore Add to Cart / Remove labels and clickability on banner CTAs.
+			this._resetUpsellButtonUI();
+
+			this._clearAddonAndBriefSelectionsFromStorage();
+		} catch (e) {
+			console.warn('Failed to reset upsell selections:', e);
+		}
+	}
+
+	// Count supplementary programs selected (excludes summer core row).
+	_getSelectedUpsellCount() {
+		var coreId = this.$coreData && this.$coreData.upsellProgramId;
+		return (Array.isArray(this.$selectedProgram) ? this.$selectedProgram : []).filter(function (program) {
+			return program && program.upsellProgramId != null && program.upsellProgramId !== coreId;
+		}).length;
+	}
+
+	// Reset Add to Cart / Remove button state after Chrome back from Stripe.
+	_resetUpsellButtonUI() {
+		var buyNowButtons = document.querySelectorAll(
+			'.add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red'
+		);
+		buyNowButtons.forEach(function (button) {
+			button.style.pointerEvents = 'auto';
+			button.disabled = false;
+			button.classList.remove('gray');
+		});
+		if (typeof this.disableEnableBuyNowButton === 'function') {
+			this.disableEnableBuyNowButton();
+		}
+	}
+
+	// Base summer core deposit before any upsell or card-fee adjustments.
+	_getBaseCoreDepositAmount() {
+		var base = 0;
+		if (this.$coreData) {
+			if (this.$coreData._baseAmount != null) {
+				base = parseFloat(this.$coreData._baseAmount);
+			} else {
+				base = parseFloat(String(this.$coreData.amount || 0).replace(/,/g, ''));
+			}
+		}
+		if (isNaN(base) || base <= 0) {
+			var coreProductPrice = document.getElementById('core_product_price');
+			if (coreProductPrice && coreProductPrice.value) {
+				base = parseFloat(String(coreProductPrice.value).replace(/,/g, '')) || 0;
+			}
+		}
+		if ((isNaN(base) || base <= 0) && this.memberData && this.memberData.achAmount) {
+			base = parseFloat(String(this.memberData.achAmount).replace(/,/g, '')) || 0;
+		}
+		return isNaN(base) ? 0 : base;
+	}
+
+	// Reset Deposit (Due Now) and payment totals after Chrome back from Stripe.
+	_refreshDefaultDepositDisplay() {
+		var baseDeposit = this._getBaseCoreDepositAmount();
+
+		// Core only in memory; revert bundle discount if addons are cleared.
+		if (this.$coreData) {
+			if (this.$coreData._baseAmount != null) {
+				this.$coreData.amount = this.$coreData._baseAmount;
+			}
+			this.$selectedProgram = [this.$coreData];
+		} else {
+			this.$selectedProgram = [];
+		}
+
+		if (typeof this.applyInitialBundleTotals === 'function') {
+			this.applyInitialBundleTotals(baseDeposit);
+		}
+
+		var formatted = this.numberWithCommas(baseDeposit.toFixed(2));
+		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+			el.innerHTML = '$' + formatted;
+			el.setAttribute('data-stripe-price', formatted);
+		});
+
+		document.querySelectorAll("[data-stripe='addon-deposit-price']").forEach(function (el) {
+			el.innerHTML = '$' + formatted;
+		});
+
+		var grayElem = document.querySelector('.current-price-gray');
+		if (grayElem) {
+			grayElem.innerHTML = '$' + formatted;
+		}
+
+		if (typeof this.applyTotalsForTab === 'function') {
+			this.applyTotalsForTab(this.getCurrentPaymentTab(), true);
+		}
+
+		if (typeof this.renderAddonRowPrices === 'function') {
+			this.renderAddonRowPrices(this.getCurrentPaymentTab());
+		}
+
+		if (typeof Utils !== 'undefined' && Utils.calculateDiscountPrice) {
+			Utils.calculateDiscountPrice();
+		}
+	}
+
 	// Handles browser and Stripe back button functionality to restore checkout state
 	setUpBackButtonTab() {
 		var query = window.location.search;
@@ -894,6 +1060,10 @@ class CheckOutWebflow {
 					$this.resetPaymentCheckoutButtons();
 				}, 1200);
 			}
+			// Reset addons on Chrome back from Stripe so user re-picks them fresh.
+			// Covers BFCache where memory + DOM checkbox state survive; localStorage
+			// alone wasn't enough since updateAmount reads $selectedProgram in memory.
+			this._resetUpsellAndBriefSelections();
 			// Consume back markers so a new checkout attempt generates fresh flow/URLs.
 			if (ibackbutton) {
 				ibackbutton.value = "0";
@@ -1221,6 +1391,13 @@ class CheckOutWebflow {
 
       // Update selected supplementary program ids
       this.displaySelectedSuppProgram(allSupIds);
+
+      // Persist current upsell snapshot so Chrome back from Stripe can restore it
+      this.updateCheckOutData({
+        upsellProgramIds: allSupIds,
+        suppPro: this.$suppPro,
+        selectedProgram: this.$selectedProgram
+      });
 
       // Re-render the total for the currently active payment tab so the card tab
       // reflects the new per-program fee total without waiting for a tab click.
@@ -1817,6 +1994,7 @@ class CheckOutWebflow {
       const buyNowButton = document.querySelectorAll(
         ".add-to-cart, .bundle-add-to-cart, .Button-wine-red, .button-wine-red"
       );
+      const upsellCount = this._getSelectedUpsellCount();
       buyNowButton.forEach((button) => {
         const isWine =
           button.classList.contains("Button-wine-red") ||
@@ -1824,8 +2002,10 @@ class CheckOutWebflow {
         if (isWine) {
           return;
         }
-        if (this.$selectedProgram.length === 0) {
+        if (upsellCount === 0) {
           button.innerHTML = "Add to Cart";
+          button.style.pointerEvents = "auto";
+          button.disabled = false;
         } else {
           button.innerHTML = "Update Cart";
         }
