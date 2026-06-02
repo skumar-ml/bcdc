@@ -404,6 +404,267 @@ class CheckOutWebflow {
 			throw error;
 		}
 	}
+	// Checkout student dropdown API lives on the b4z5gqv2xj gateway (not the summer baseUrl).
+	getCheckoutStudentProfilesBaseUrl() {
+		return "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/";
+	}
+	// Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
+	normalizeCheckoutStudentProfiles(response) {
+		var list = response;
+		// Payload may arrive raw, under data, or under students
+		if (response && Array.isArray(response.data)) {
+			list = response.data;
+		} else if (response && Array.isArray(response.students)) {
+			list = response.students;
+		}
+		if (!Array.isArray(list)) {
+			return [];
+		}
+		var parentEmail = (this.memberData && this.memberData.email) || "";
+		// Backfill missing fields so the form prefill always has safe values
+		return list.map(function (item) {
+			if (!item || !item.studentName) {
+				return item;
+			}
+			return {
+				...item,
+				studentEmail: item.studentEmail || "",
+				studentGrade: item.studentGrade || item.grade || "",
+				school: item.school || "",
+				gender: item.gender || "",
+				prevStudent: item.prevStudent || "",
+				parentEmail: item.parentEmail || parentEmail,
+			};
+		});
+	}
+	// Fetch saved student profiles and build the styled dropdown; prefill form on select
+	async updateOldStudentList() {
+		const selectBox = document.getElementById("existing-students");
+		if (!selectBox) {
+			return;
+		}
+		var $this = this;
+		// Build the styled dropdown up front (before the API call) so the control
+		// holds its final height while data loads — stops the form from shifting
+		// down once the API response swaps the native select for the custom UI.
+		this.createCustomSelectDisplay(selectBox, []);
+		var displayText = selectBox.parentElement.querySelector('.custom-select-display-text');
+		try {
+			// Pull this member's saved students from the checkout profiles gateway
+			var profilesResponse = await this.fetchData(
+				"getCheckoutStudentProfiles/" + this.memberData.memberId,
+				this.getCheckoutStudentProfilesBaseUrl()
+			);
+			var data = this.normalizeCheckoutStudentProfiles(profilesResponse);
+			// No saved students: disable the dropdown with a hint
+			if (data == "No data Found" || !Array.isArray(data) || data.length == 0) {
+				selectBox.disabled = true;
+				selectBox.innerHTML = '<option value="">No previous students found</option>';
+				if (displayText) {
+					displayText.textContent = "No previous students found";
+				}
+				return;
+			}
+			// Drop nameless entries, dedupe by studentName, then sort alphabetically
+			data = data.filter(i => i.studentName != null && i.studentName != undefined && i.studentName != "");
+			const filterData = data
+				.filter(
+					(item, index, self) =>
+						index === self.findIndex((obj) => obj.studentName === item.studentName)
+				)
+				.sort(function (a, b) {
+					return a.studentName.trim().localeCompare(b.studentName.trim());
+				});
+			// Reset native select and seed the placeholder option
+			selectBox.innerHTML = "";
+			const defaultOption = document.createElement("option");
+			defaultOption.value = "";
+			defaultOption.textContent = "Select Student Name";
+			selectBox.appendChild(defaultOption);
+			// Keep the source list on the element for the custom dropdown
+			selectBox._filterData = filterData;
+			// Build native options, value = index into filterData
+			filterData.forEach((item, index) => {
+				const option = document.createElement("option");
+				option.value = index;
+				option.textContent = item.studentName;
+				option.setAttribute("data-student-name", item.studentName);
+				selectBox.appendChild(option);
+			});
+			// On selection, shape the profile and prefill the student form
+			selectBox.addEventListener("change", function (event) {
+				if (event.target.value === "") {
+					return;
+				}
+				var selected = filterData[event.target.value];
+				if (!selected) {
+					return;
+				}
+				var nameParts = (selected.studentName || "").trim().split(/\s+/);
+				var data = {
+					studentEmail: selected.studentEmail || "",
+					parentEmail: selected.parentEmail || ($this.memberData && $this.memberData.email) || "",
+					firstName: nameParts[0] || "",
+					lastName: nameParts.slice(1).join(" ") || "",
+					grade: selected.studentGrade || selected.grade || "",
+					school: selected.school || "",
+					gender: selected.gender || "",
+					prevStudent: selected.prevStudent ? selected.prevStudent : "",
+				};
+				localStorage.setItem("checkOutBasicData", JSON.stringify(data));
+				$this.updateBasicData('old_student');
+			});
+		} catch (error) {
+			console.error("Error fetching API data:", error);
+			selectBox.innerHTML = '<option value="">Student Details not available</option>';
+			if (displayText) {
+				displayText.textContent = "Student Details not available";
+			}
+		}
+	}
+	// Inject the custom-select CSS once so layout stays stable even if the
+	// Webflow page lacks these rules: native select is removed from flow and
+	// the open options panel floats as an overlay so nothing below it shifts.
+	_ensureCustomSelectStyles() {
+		if (document.getElementById('custom-select-shift-fix')) {
+			return;
+		}
+		var style = document.createElement('style');
+		style.id = 'custom-select-shift-fix';
+		style.textContent =
+			'.custom-select-display-wrapper{position:relative;}' +
+			'.custom-select-hidden{display:none !important;}' +
+			'.custom-select-dropdown{position:absolute;top:100%;left:0;right:0;z-index:50;}' +
+			'.custom-select-dropdown:not(.show){display:none;}';
+		document.head.appendChild(style);
+	}
+	// Build a styled select UI over the native #existing-students select
+	createCustomSelectDisplay(selectBox, filterData) {
+		// Guarantee shift-proof styles regardless of Webflow page CSS
+		this._ensureCustomSelectStyles();
+		// Drop any previously built wrapper so re-render stays clean
+		const existingWrapper = selectBox.parentElement.querySelector('.custom-select-display-wrapper');
+		if (existingWrapper) {
+			existingWrapper.remove();
+		}
+
+		// Wrapper around the native select and the styled UI
+		const wrapper = document.createElement('div');
+		wrapper.className = 'custom-select-display-wrapper';
+
+		// Box that shows the current selection
+		const displayDiv = document.createElement('div');
+		displayDiv.className = 'custom-select-display';
+
+		// Selected value text
+		const textContainer = document.createElement('span');
+		textContainer.className = 'custom-select-display-text';
+
+		// Open/close arrow
+		const arrowIcon = document.createElement('span');
+		arrowIcon.className = 'custom-select-arrow';
+		arrowIcon.innerHTML = '▼';
+
+		// Styled options container
+		const dropdownOptions = document.createElement('div');
+		dropdownOptions.className = 'custom-select-dropdown';
+
+		// Hide native select but keep it for form submission
+		selectBox.className = (selectBox.className ? selectBox.className + ' ' : '') + 'custom-select-hidden';
+
+		// Move native select inside the wrapper and add styled UI
+		const parent = selectBox.parentElement;
+		parent.insertBefore(wrapper, selectBox);
+		wrapper.appendChild(selectBox);
+		wrapper.appendChild(displayDiv);
+		displayDiv.appendChild(textContainer);
+		displayDiv.appendChild(arrowIcon);
+		wrapper.appendChild(dropdownOptions);
+
+		// Build label HTML for an option
+		const createOptionHTML = (option) => {
+			const studentName = option.getAttribute('data-student-name') || option.textContent;
+			return studentName;
+		};
+
+		// Render the styled option rows from the native options
+		const buildDropdownOptions = () => {
+			dropdownOptions.innerHTML = '';
+
+			// Default placeholder row
+			const defaultOptionDiv = document.createElement('div');
+			defaultOptionDiv.className = 'custom-select-option custom-select-option-default';
+			defaultOptionDiv.textContent = 'Select Student Name';
+			defaultOptionDiv.addEventListener('click', function () {
+				selectBox.selectedIndex = 0;
+				selectBox.dispatchEvent(new Event('change'));
+				toggleDropdown();
+			});
+			dropdownOptions.appendChild(defaultOptionDiv);
+
+			// One row per student option
+			for (let i = 1; i < selectBox.options.length; i++) {
+				const option = selectBox.options[i];
+				const optionDiv = document.createElement('div');
+				optionDiv.className = 'custom-select-option';
+				optionDiv.innerHTML = createOptionHTML(option);
+				optionDiv.setAttribute('data-value', option.value);
+
+				optionDiv.addEventListener('click', function () {
+					selectBox.selectedIndex = parseInt(this.getAttribute('data-value')) + 1;
+					selectBox.dispatchEvent(new Event('change'));
+					toggleDropdown();
+				});
+
+				dropdownOptions.appendChild(optionDiv);
+			}
+		};
+
+		// Open/close the styled dropdown
+		const toggleDropdown = () => {
+			const isOpen = dropdownOptions.classList.contains('show');
+			if (isOpen) {
+				dropdownOptions.classList.remove('show');
+				arrowIcon.classList.remove('rotated');
+			} else {
+				buildDropdownOptions();
+				dropdownOptions.classList.add('show');
+				arrowIcon.classList.add('rotated');
+			}
+		};
+
+		// Sync the display box with the native select value
+		const updateDisplay = () => {
+			const selectedOption = selectBox.options[selectBox.selectedIndex];
+			if (selectedOption && selectedOption.value !== '') {
+				textContainer.innerHTML = createOptionHTML(selectedOption);
+				displayDiv.classList.remove('custom-select-display-placeholder');
+			} else {
+				textContainer.textContent = 'Select Student Name';
+				displayDiv.classList.add('custom-select-display-placeholder');
+			}
+		};
+
+		// Toggle on display click
+		displayDiv.addEventListener('click', function (e) {
+			e.stopPropagation();
+			toggleDropdown();
+		});
+
+		// Close when clicking outside the wrapper
+		document.addEventListener('click', function (e) {
+			if (!wrapper.contains(e.target)) {
+				dropdownOptions.classList.remove('show');
+				arrowIcon.classList.remove('rotated');
+			}
+		});
+
+		// Keep display in sync on native change
+		selectBox.addEventListener('change', updateDisplay);
+
+		// Initial paint
+		updateDisplay();
+	}
 	// Initiates the Stripe payment process by calling an API to get checkout URLs
 	initializeStripePayment() {
 		var studentFirstName = document.getElementById('Student-First-Name');
@@ -811,7 +1072,7 @@ class CheckOutWebflow {
 		localStorage.setItem("checkOutBasicData", JSON.stringify(data));
 	}
 	// Retrieves and updates basic student form data from local storage
-	updateBasicData() {
+	updateBasicData(old_student = false) {
 		var checkoutJson = localStorage.getItem("checkOutBasicData");
 		if (checkoutJson != undefined) {
 			var paymentData = JSON.parse(checkoutJson);
@@ -829,8 +1090,17 @@ class CheckOutWebflow {
 
 			studentLastName.value = paymentData.lastName;
 
+			// Match the grade against select options case/space-insensitively so
+			// API values like "9th Grade" still select the "9th grade" option
 			if (paymentData.grade) {
-				studentGrade.value = paymentData.grade;
+				var wantGrade = String(paymentData.grade).trim().toLowerCase();
+				var matchedGrade = Array.prototype.find.call(
+					studentGrade.options,
+					function (opt) { return opt.value.trim().toLowerCase() === wantGrade; }
+				);
+				if (matchedGrade) {
+					studentGrade.value = matchedGrade.value;
+				}
 			}
 
 			if (paymentData.school) {
@@ -840,7 +1110,10 @@ class CheckOutWebflow {
 			if (paymentData.gender) {
 				studentGender.value = paymentData.gender;
 			}
-			if (paymentData.prevStudent) {
+			// Saved-profile selection always counts as a returning student
+			if (old_student) {
+				prevStudent.value = "Yes";
+			} else if (paymentData.prevStudent) {
 				prevStudent.value = paymentData.prevStudent;
 			}
 		}
@@ -1060,8 +1333,17 @@ class CheckOutWebflow {
 
 			studentLastName.value = paymentData.lastName;
 
+			// Match the grade against select options case/space-insensitively so
+			// API values like "9th Grade" still select the "9th grade" option
 			if (paymentData.grade) {
-				studentGrade.value = paymentData.grade;
+				var wantGrade = String(paymentData.grade).trim().toLowerCase();
+				var matchedGrade = Array.prototype.find.call(
+					studentGrade.options,
+					function (opt) { return opt.value.trim().toLowerCase() === wantGrade; }
+				);
+				if (matchedGrade) {
+					studentGrade.value = matchedGrade.value;
+				}
 			}
 
 			if (paymentData.school) {
@@ -1241,6 +1523,8 @@ class CheckOutWebflow {
 			this.attachChromeBackRefreshHandler();
 			// Update basic data
 			this.updateBasicData();
+			// Populate saved student profiles dropdown
+			this.updateOldStudentList();
 			// Hide spinner 
 			spinner.style.display = 'none';
 		} catch (error) {
