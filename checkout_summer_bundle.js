@@ -2216,7 +2216,9 @@ class CheckOutWebflow {
             ? "$" + this.numberWithCommas(p.amount)
             : "";
           const desc = creEl("div", "bundle-sem-dec-small");
-          desc.textContent = (p.desc || "").trim();
+          var programDesc = (p.desc || "").trim();
+          desc.setAttribute("data-api-desc", programDesc);
+          desc.textContent = programDesc;
           if (i === 0) {
             const grayWrap = creEl("div", "banner-price");
             grayWrap.appendChild(gray);
@@ -2811,9 +2813,43 @@ class CheckOutWebflow {
 		return null;
 	}
 
+	// Drop the full-day enrollment suffix when core uses deposit pricing.
+	_trimFullEnrollmentDesc(text) {
+		if (!text) return text;
+		var parts = String(text).split(/\s*\|\s*/);
+		if (parts.length < 2) return text;
+		var suffix = parts[parts.length - 1];
+		if (/full[\s-]*day|full[\s-]*enrollment|\bfull\b/i.test(suffix)) {
+			return parts.slice(0, -1).join(" | ").trim();
+		}
+		return text;
+	}
+
+	// Toggle core card desc between API text and deposit (no full-day) text.
+	_updateCoreBannerDesc(card, stripFullDay) {
+		var desc = card.querySelector(".bundle-sem-dec-small");
+		if (!desc) return;
+		var apiDesc = desc.getAttribute("data-api-desc");
+		if (!apiDesc) {
+			apiDesc = (desc.textContent || "").trim();
+			desc.setAttribute("data-api-desc", apiDesc);
+		}
+		desc.textContent = stripFullDay
+			? this._trimFullEnrollmentDesc(apiDesc)
+			: apiDesc;
+	}
+
 	// Reset every banner price node back to the API values from renderBannerPriceLayout.
 	_restoreBannerApiPrices() {
 		var $this = this;
+		document.querySelectorAll(
+			".banner-price-flex-wapper .bundle-sem-dec-small, .banner-price-flex-wrapper .bundle-sem-dec-small"
+		).forEach(function (el) {
+			var apiDesc = el.getAttribute("data-api-desc");
+			if (apiDesc) {
+				el.textContent = apiDesc;
+			}
+		});
 		document.querySelectorAll(
 			".banner-price-flex-wapper [data-addon='price'], .banner-price-flex-wrapper [data-addon='price']"
 		).forEach(function (el) {
@@ -2930,6 +2966,7 @@ class CheckOutWebflow {
 			if (cardSynced) {
 				anyPriceSynced = true;
 				$this._toggleBannerGrayStrike(grayEl, redEl);
+				$this._updateCoreBannerDesc(card, true);
 			}
 		});
 		if (!anyPriceSynced) {
@@ -2963,11 +3000,13 @@ class CheckOutWebflow {
 			var grayEl = card.querySelector('[data-addon="price"]');
 			var isCoreSlot = card.getAttribute("data-banner-core-slot") === "true";
 			var sidebarText = $this._resolveBannerSidebarPrice(card, lookup, coreDisplayPrice);
+			var cardSynced = false;
 
 			if (redEl) {
 				var apiRed = parseFloat(redEl.getAttribute("data-api-discount-price") || "");
 				if ($this._syncBannerPriceElement(redEl, sidebarText, apiRed)) {
 					anyPriceSynced = true;
+					cardSynced = true;
 				}
 			}
 
@@ -2975,8 +3014,13 @@ class CheckOutWebflow {
 				var apiGray = parseFloat(grayEl.getAttribute("data-api-price") || "");
 				if ($this._syncBannerPriceElement(grayEl, coreBasePrice, apiGray)) {
 					anyPriceSynced = true;
+					cardSynced = true;
 				}
 				$this._toggleBannerGrayStrike(grayEl, redEl);
+			}
+
+			if (isCoreSlot && cardSynced) {
+				$this._updateCoreBannerDesc(card, true);
 			}
 		});
 
