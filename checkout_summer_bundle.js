@@ -1294,11 +1294,10 @@ class CheckOutWebflow {
 		}
 
 		if (typeof this.renderAddonRowPrices === 'function') {
-			var refreshTab = this.getCurrentPaymentTab();
-			this.renderAddonRowPrices(refreshTab);
-			if (typeof this.syncBannerPrices === 'function') {
-				this.syncBannerPrices(refreshTab);
-			}
+			this.renderAddonRowPrices(this.getCurrentPaymentTab());
+		}
+		if (typeof this.syncBannerPrices === 'function') {
+			this.syncBannerPrices();
 		}
 
 		if (typeof Utils !== 'undefined' && Utils.calculateDiscountPrice) {
@@ -1756,6 +1755,7 @@ class CheckOutWebflow {
       // reflects the new per-program fee total without waiting for a tab click.
       // Uses DOM (#totalAmount + #suppProIds) so it is correct across instances.
       this.applyTotalsForTab(this.getCurrentPaymentTab());
+      this.syncBannerPrices();
     }
 
 	_hasAnyUpsellSelected() {
@@ -2632,7 +2632,6 @@ class CheckOutWebflow {
 		// sidebar, so that part is a no-op on initial load).
 		if (!this._upsellInteracted && force !== true) {
 			this.renderAddonRowPrices(tabName);
-			this.syncBannerPrices(tabName);
 			return;
 		}
 		var amountToShow = (tabName === "Tab 2") ? totals.cardTotal : totals.achTotal;
@@ -2651,7 +2650,6 @@ class CheckOutWebflow {
 		// the "Remove / Fall / $amount" row stays stuck on ACH pricing when the card tab
 		// is active.
 		this.renderAddonRowPrices(tabName);
-		this.syncBannerPrices(tabName);
 	}
 
 	// Parse a displayed price string into a numeric amount.
@@ -2709,19 +2707,10 @@ class CheckOutWebflow {
 
 	// Base deposit for the core Summer row (e.g. half-payment $1,145).
 	_getCoreBasePriceForBanner() {
-		if (!this._hasAnyUpsellSelected()) {
-			var totalDepositEl = document.querySelector("[data-stripe='totalDepositPrice']");
-			if (totalDepositEl) {
-				var totalText = (totalDepositEl.textContent || totalDepositEl.innerText || "").trim();
-				if (totalText) {
-					return totalText;
-				}
-				var stripePrice = totalDepositEl.getAttribute("data-stripe-price");
-				if (stripePrice) {
-					return this._formatBannerDisplayPrice(
-						parseFloat(String(stripePrice).replace(/,/g, ""))
-					);
-				}
+		if (this.$coreData && this.$coreData._baseAmount != null) {
+			var coreBase = parseFloat(String(this.$coreData._baseAmount).replace(/,/g, ""));
+			if (!isNaN(coreBase) && coreBase > 0) {
+				return this._formatBannerDisplayPrice(coreBase);
 			}
 		}
 		var baseDeposit = this._getBaseCoreDepositAmount();
@@ -2733,6 +2722,7 @@ class CheckOutWebflow {
 
 	// Read sidebar order-detail prices keyed by program id and label.
 	_buildSidebarPriceLookup() {
+		var $this = this;
 		var byId = {};
 		var byLabel = {};
 		document.querySelectorAll(
@@ -2740,7 +2730,18 @@ class CheckOutWebflow {
 		).forEach(function (row) {
 			var priceEl = row.querySelector('[data-stripe="addon_price"]');
 			if (!priceEl) return;
-			var displayed = (priceEl.textContent || priceEl.innerHTML || "").trim();
+			// Banner always uses ACH base from addon-price, not card-tab display text.
+			var addonBase = priceEl.getAttribute("addon-price");
+			var displayed = "";
+			if (addonBase) {
+				var baseAmt = parseFloat(String(addonBase).replace(/,/g, ""));
+				if (!isNaN(baseAmt)) {
+					displayed = $this._formatBannerDisplayPrice(baseAmt);
+				}
+			}
+			if (!displayed) {
+				displayed = (priceEl.textContent || priceEl.innerHTML || "").trim();
+			}
 			if (!displayed) return;
 			var programId = priceEl.getAttribute("data-program-detail-id");
 			if (programId) {
