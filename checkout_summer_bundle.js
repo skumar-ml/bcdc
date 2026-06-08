@@ -1294,7 +1294,11 @@ class CheckOutWebflow {
 		}
 
 		if (typeof this.renderAddonRowPrices === 'function') {
-			this.renderAddonRowPrices(this.getCurrentPaymentTab());
+			var refreshTab = this.getCurrentPaymentTab();
+			this.renderAddonRowPrices(refreshTab);
+			if (typeof this.syncBannerPrices === 'function') {
+				this.syncBannerPrices(refreshTab);
+			}
 		}
 
 		if (typeof Utils !== 'undefined' && Utils.calculateDiscountPrice) {
@@ -1844,6 +1848,7 @@ class CheckOutWebflow {
       bundlePrice.innerHTML = "$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2));
       bundlePrice.setAttribute("data-stripe", "addon_price");
       bundlePrice.setAttribute("addon-price",$this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
+      bundlePrice.setAttribute("data-program-detail-id", String(sup.upsellProgramId));
       //cartGridWrapper3.prepend(bundleLabel);
       mainGridWrapper.appendChild(bundlePrice);
       
@@ -2148,9 +2153,11 @@ class CheckOutWebflow {
         const totalCard = creEl("div", "banner-price-total-info-card");
         const totalGray = creEl("div", "bundle-sem-popup-price-gray-del");
         totalGray.setAttribute("data-addon", "price");
+        totalGray.setAttribute("data-api-price", String(discTotal));
         totalGray.textContent = "$" + this.numberWithCommas(discTotal);
         const totalRed = creEl("div", "bundle-sem-pop-up-total-price-text");
         totalRed.setAttribute("data-addon", "discount-price");
+        totalRed.setAttribute("data-api-discount-price", String(amountTotal));
         totalRed.textContent = "$" + this.numberWithCommas(amountTotal);
         totalCard.appendChild(totalGray);
         totalCard.appendChild(totalRed);
@@ -2171,11 +2178,13 @@ class CheckOutWebflow {
 
           const gray = creEl("div", "bundle-sem-popup-price-gray-del");
           gray.setAttribute("data-addon", "price");
+          gray.setAttribute("data-api-price", String(p.disc_amount != null ? p.disc_amount : 0));
           gray.textContent = p.disc_amount != null
             ? "$" + this.numberWithCommas(p.disc_amount)
             : "";
           const red = creEl("div", "bundle-sem-pop-up-price-text-red");
           red.setAttribute("data-addon", "discount-price");
+          red.setAttribute("data-api-discount-price", String(p.amount != null ? p.amount : 0));
           red.textContent = p.amount != null
             ? "$" + this.numberWithCommas(p.amount)
             : "";
@@ -2595,6 +2604,7 @@ class CheckOutWebflow {
 		// sidebar, so that part is a no-op on initial load).
 		if (!this._upsellInteracted && force !== true) {
 			this.renderAddonRowPrices(tabName);
+			this.syncBannerPrices(tabName);
 			return;
 		}
 		var amountToShow = (tabName === "Tab 2") ? totals.cardTotal : totals.achTotal;
@@ -2613,6 +2623,121 @@ class CheckOutWebflow {
 		// the "Remove / Fall / $amount" row stays stuck on ACH pricing when the card tab
 		// is active.
 		this.renderAddonRowPrices(tabName);
+		this.syncBannerPrices(tabName);
+	}
+
+	// Parse a displayed price string into a numeric amount.
+	_parsePriceAmount(text) {
+		var amount = parseFloat(String(text || "").replace(/[^0-9.]/g, ""));
+		return isNaN(amount) ? null : amount;
+	}
+
+	// Format a stored API numeric amount for banner display.
+	_formatApiBannerPrice(apiAmount) {
+		var parsed = parseFloat(String(apiAmount || 0).replace(/,/g, ""));
+		if (isNaN(parsed)) return "";
+		return "$" + this.numberWithCommas(parsed.toFixed(2));
+	}
+
+	// Keep banner prices on API data unless sidebar shows a different amount.
+	syncBannerPrices() {
+		var $this = this;
+		var priceByProgramId = {};
+		var hasSidebarPrices = false;
+
+		// Read sidebar order-detail prices keyed by program id.
+		document.querySelectorAll(
+			'#add-on-program-desktop [data-stripe="addon_price"][data-program-detail-id], #add-on-program-mobile [data-stripe="addon_price"][data-program-detail-id]'
+		).forEach(function (el) {
+			var programId = el.getAttribute("data-program-detail-id");
+			if (!programId) return;
+			var displayed = (el.textContent || el.innerHTML || "").trim();
+			if (displayed) {
+				priceByProgramId[programId] = displayed;
+				hasSidebarPrices = true;
+			}
+		});
+
+		// Leave initial API-rendered banner prices until bundle rows exist.
+		if (!hasSidebarPrices && !this._hasAnyUpsellSelected()) {
+			return;
+		}
+
+		var anyPriceSynced = false;
+		document.querySelectorAll(".banner-price-info-card").forEach(function (card) {
+			var input = card.querySelector("[programDetailId]");
+			var redEl = card.querySelector('[data-addon="discount-price"]');
+			if (!input || !redEl) return;
+
+			var programId = input.getAttribute("programDetailId");
+			var apiBase = parseFloat(redEl.getAttribute("data-api-discount-price") || "");
+			if (isNaN(apiBase)) return;
+
+			var apiFormatted = $this._formatApiBannerPrice(apiBase);
+			var sidebarText = priceByProgramId[programId];
+			if (!sidebarText) {
+				redEl.textContent = apiFormatted;
+				return;
+			}
+
+			var sidebarAmount = $this._parsePriceAmount(sidebarText);
+			if (sidebarAmount == null || Math.abs(sidebarAmount - apiBase) < 0.005) {
+				redEl.textContent = apiFormatted;
+				return;
+			}
+
+			redEl.textContent = sidebarText;
+			anyPriceSynced = true;
+		});
+
+		document.querySelectorAll(
+			".banner-price-flex-wapper, .banner-price-flex-wrapper"
+		).forEach(function (wrap) {
+			var totalCard = wrap.querySelector(".banner-price-total-info-card");
+			if (!totalCard) return;
+
+			var totalGray = totalCard.querySelector('[data-addon="price"]');
+			var totalRed = totalCard.querySelector('[data-addon="discount-price"]');
+			var apiDiscTotal = totalGray
+				? parseFloat(totalGray.getAttribute("data-api-price") || "")
+				: NaN;
+			var apiAmountTotal = totalRed
+				? parseFloat(totalRed.getAttribute("data-api-discount-price") || "")
+				: NaN;
+
+			// No per-program overrides — restore API totals.
+			if (!anyPriceSynced) {
+				if (totalGray && !isNaN(apiDiscTotal)) {
+					totalGray.textContent = $this._formatApiBannerPrice(apiDiscTotal);
+				}
+				if (totalRed && !isNaN(apiAmountTotal)) {
+					totalRed.textContent = $this._formatApiBannerPrice(apiAmountTotal);
+				}
+				return;
+			}
+
+			// Re-sum from cards that may mix API and synced prices.
+			var discTotal = 0;
+			var amountTotal = 0;
+			wrap.querySelectorAll(".banner-price-info-card").forEach(function (card) {
+				var grayEl = card.querySelector('[data-addon="price"]');
+				var redEl = card.querySelector('[data-addon="discount-price"]');
+				if (grayEl) {
+					var grayVal = $this._parsePriceAmount(grayEl.textContent);
+					if (grayVal != null) discTotal += grayVal;
+				}
+				if (redEl) {
+					var redVal = $this._parsePriceAmount(redEl.textContent);
+					if (redVal != null) amountTotal += redVal;
+				}
+			});
+			if (totalGray) {
+				totalGray.textContent = "$" + $this.numberWithCommas(discTotal.toFixed(2));
+			}
+			if (totalRed) {
+				totalRed.textContent = "$" + $this.numberWithCommas(amountTotal.toFixed(2));
+			}
+		});
 	}
 
 	renderAddonRowPrices(tabName) {
