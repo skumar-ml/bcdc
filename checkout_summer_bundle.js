@@ -2661,6 +2661,10 @@ class CheckOutWebflow {
 	// Match Webflow banner style — whole dollars omit decimals.
 	_formatBannerDisplayPrice(amount, preferText) {
 		if (preferText) {
+			var fromText = this._parsePriceAmount(preferText);
+			if (fromText != null) {
+				return this._formatBannerDisplayPrice(fromText);
+			}
 			return String(preferText).trim();
 		}
 		var parsed = parseFloat(String(amount || 0).replace(/,/g, ""));
@@ -2791,35 +2795,79 @@ class CheckOutWebflow {
 		return null;
 	}
 
+	// Reset every banner price node back to the API values from renderBannerPriceLayout.
+	_restoreBannerApiPrices() {
+		var $this = this;
+		document.querySelectorAll(
+			".banner-price-flex-wapper [data-addon='price'], .banner-price-flex-wrapper [data-addon='price']"
+		).forEach(function (el) {
+			var apiVal = parseFloat(el.getAttribute("data-api-price") || "");
+			if (!isNaN(apiVal)) {
+				el.textContent = $this._formatApiBannerPrice(apiVal);
+				el.style.display = "";
+			}
+		});
+		document.querySelectorAll(
+			".banner-price-flex-wapper [data-addon='discount-price'], .banner-price-flex-wrapper [data-addon='discount-price']"
+		).forEach(function (el) {
+			var apiVal = parseFloat(el.getAttribute("data-api-discount-price") || "");
+			if (!isNaN(apiVal)) {
+				el.textContent = $this._formatApiBannerPrice(apiVal);
+			}
+		});
+	}
+
+	// Bare checkout: only the core gray-del reflects the live deposit base.
+	_syncCoreGrayBaseOnly(coreBasePrice) {
+		if (!coreBasePrice) return;
+		var $this = this;
+		document.querySelectorAll(
+			'.banner-price-info-card[data-banner-core-slot="true"]'
+		).forEach(function (card) {
+			var grayEl = card.querySelector('[data-addon="price"]');
+			var redEl = card.querySelector('[data-addon="discount-price"]');
+			if (!grayEl) return;
+			var apiGray = parseFloat(grayEl.getAttribute("data-api-price") || "");
+			$this._syncBannerPriceElement(grayEl, coreBasePrice, apiGray);
+			$this._toggleBannerGrayStrike(grayEl, redEl);
+		});
+	}
+
 	// Keep banner prices on API data unless sidebar shows a different amount.
 	syncBannerPrices() {
 		var $this = this;
+		var coreBasePrice = this._getCoreBasePriceForBanner();
+
+		// No bundle in cart — keep full API promo layout; only fix core gray-del base.
+		if (!this._hasAnyUpsellSelected()) {
+			this._restoreBannerApiPrices();
+			this._syncCoreGrayBaseOnly(coreBasePrice);
+			return;
+		}
+
 		var lookup = this._buildSidebarPriceLookup();
 		var coreDisplayPrice = this._getCoreDisplayPrice(lookup);
-		var coreBasePrice = this._getCoreBasePriceForBanner();
 		var anyPriceSynced = false;
 
-		var bareCheckout = !this._hasAnyUpsellSelected();
 		document.querySelectorAll(".banner-price-info-card").forEach(function (card) {
 			var redEl = card.querySelector('[data-addon="discount-price"]');
 			var grayEl = card.querySelector('[data-addon="price"]');
 			var isCoreSlot = card.getAttribute("data-banner-core-slot") === "true";
 			var sidebarText = $this._resolveBannerSidebarPrice(card, lookup, coreDisplayPrice);
 
-			// Bare checkout keeps the promo red price; only gray + total sync to deposit.
-			if (redEl && !(bareCheckout && isCoreSlot)) {
+			if (redEl) {
 				var apiRed = parseFloat(redEl.getAttribute("data-api-discount-price") || "");
 				if ($this._syncBannerPriceElement(redEl, sidebarText, apiRed)) {
 					anyPriceSynced = true;
 				}
 			}
 
-			// Core row gray-del shows the live base deposit (e.g. $1,145 not API $1,800).
 			if (grayEl && isCoreSlot && coreBasePrice) {
 				var apiGray = parseFloat(grayEl.getAttribute("data-api-price") || "");
 				if ($this._syncBannerPriceElement(grayEl, coreBasePrice, apiGray)) {
 					anyPriceSynced = true;
 				}
+				$this._toggleBannerGrayStrike(grayEl, redEl);
 			}
 		});
 
@@ -2838,7 +2886,6 @@ class CheckOutWebflow {
 				? parseFloat(totalRed.getAttribute("data-api-discount-price") || "")
 				: NaN;
 
-			// No per-program overrides — restore API totals.
 			if (!anyPriceSynced) {
 				if (totalGray && !isNaN(apiDiscTotal)) {
 					totalGray.textContent = $this._formatApiBannerPrice(apiDiscTotal);
@@ -2850,45 +2897,12 @@ class CheckOutWebflow {
 				return;
 			}
 
-			// Bare checkout — total follows deposit price, not the full bundle API sum.
-			if (!$this._hasAnyUpsellSelected() && coreDisplayPrice) {
-				var depositTotal = $this._parsePriceAmount(coreDisplayPrice);
-				if (
-					depositTotal != null &&
-					(isNaN(apiAmountTotal) || Math.abs(depositTotal - apiAmountTotal) >= 0.005)
-				) {
-					if (totalRed) {
-						totalRed.textContent = $this._formatBannerDisplayPrice(
-							depositTotal,
-							coreDisplayPrice
-						);
-					}
-					if (totalGray && coreBasePrice) {
-						var baseTotal = $this._parsePriceAmount(coreBasePrice);
-						if (
-							baseTotal != null &&
-							(isNaN(apiDiscTotal) || Math.abs(baseTotal - apiDiscTotal) >= 0.005)
-						) {
-							totalGray.textContent = $this._formatBannerDisplayPrice(
-								baseTotal,
-								coreBasePrice
-							);
-						} else if (!isNaN(apiDiscTotal)) {
-							totalGray.textContent = $this._formatApiBannerPrice(apiDiscTotal);
-						}
-					}
-					$this._toggleBannerGrayStrike(totalGray, totalRed);
-					return;
-				}
-			}
-
-			// Re-sum from cards that may mix API and synced prices.
 			var discTotal = 0;
 			var amountTotal = 0;
 			wrap.querySelectorAll(".banner-price-info-card").forEach(function (card) {
 				var grayEl = card.querySelector('[data-addon="price"]');
 				var redEl = card.querySelector('[data-addon="discount-price"]');
-				if (grayEl) {
+				if (grayEl && grayEl.style.display !== "none") {
 					var grayVal = $this._parsePriceAmount(grayEl.textContent);
 					if (grayVal != null) discTotal += grayVal;
 				}
