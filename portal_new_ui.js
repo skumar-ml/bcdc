@@ -267,7 +267,7 @@ class Portal {
             this.renderStudentTab(tabPane, studentData, millionsData, announcements);
             if (currentSession) {
                 // Show all main sections
-                tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .class-tools-quick-links-div, .millions-balance-flex-wrapper').forEach(el => {
+                tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .millions-balance-flex-wrapper').forEach(el => {
                     if (el) el.style.display = '';
                 });
                 // Show/hide registration-form-accordian based on formList in currentSession
@@ -1089,11 +1089,12 @@ class Portal {
             if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${sessionName} ${currentYear})</span>`;
             if (classInfoEl) classInfoEl.textContent = (classLevel == 'Level customizedtrack') ? "Customized Track" : `${classLevel} | ${day} ${startTime} | ${location}`;
         } else if (hasSummerProgram) {
-            const { programName = 'Summer Program', location = '', year, summerSessionId } = student.summerProgramDetail;
+            const { programName = 'Summer Program', location = '', year, summerSessionId, startDate, endDate } = student.summerProgramDetail;
             let inferredYear = year || 'Summer ' + (student.summerProgramDetail?.currentYear) || (new Date().getFullYear() + ' Summer');
             const paren = [inferredYear].filter(Boolean).join(', ');
+            const dateRange = this.formatSummerDateRange(startDate, endDate);
             if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
-            if (classInfoEl) classInfoEl.textContent = programName + ' | ' + summerSessionId + ' | ' + location;
+            if (classInfoEl) classInfoEl.textContent = [programName, summerSessionId, location, dateRange].filter(Boolean).join(' | ');
         } else {
             if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(No class or summer program data available)</span>`;
             if (classInfoEl) classInfoEl.textContent = '';
@@ -1191,7 +1192,11 @@ class Portal {
         const googleCalendar = student.uploadedContent?.find(u => u.label === 'Google Calendar');
         const calendarLink = googleCalendar?.upload_content?.[0]?.link;
 
+        const calendarWrapper = tabPane.querySelector('.calendar-info-grid-wrapper');
+
         if (calendarLink) {
+            calendarDiv.style.display = '';
+            if (calendarWrapper) calendarWrapper.style.display = '';
             calendarDiv.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.src = calendarLink;
@@ -1202,7 +1207,9 @@ class Portal {
             iframe.setAttribute('scrolling', 'no');
             calendarDiv.appendChild(iframe);
         } else {
-            calendarDiv.innerHTML = '<p class="portal-node-title">Calendar Graph</p><div>Coming Soon...</div>';
+            calendarDiv.innerHTML = '';
+            calendarDiv.style.display = 'none';
+            if (calendarWrapper) calendarWrapper.style.display = 'none';
         }
     }
 
@@ -1220,6 +1227,7 @@ class Portal {
 
         const makeupLink = student.uploadedContent?.find(u => u.label === 'Make-up Acuity Link');
         if (makeupLink?.upload_content?.length > 0) {
+            makeupDiv.style.display = '';
             makeupLink.upload_content.forEach(item => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'class-tools-quick-links-flex-wrapper';
@@ -1274,7 +1282,8 @@ class Portal {
                 makeupSection.appendChild(textDiv);
             });
         } else {
-            makeupSection.innerHTML = '<div>Coming Soon...</div>';
+            makeupSection.innerHTML = '';
+            makeupDiv.style.display = 'none';
         }
     }
 
@@ -2093,6 +2102,22 @@ class Portal {
             month: '2-digit',
             day: '2-digit',
         });
+    }
+
+    /** Formats a summer program date as day - month name (e.g. 13 - July). */
+    formatSummerDayMonth(dateString) {
+        if (!dateString) return '';
+        const date = new Date(String(dateString).replace(' ', 'T'));
+        if (isNaN(date.getTime())) return '';
+        return `${date.getDate()} - ${date.toLocaleString('en-US', { month: 'long' })}`;
+    }
+
+    /** Builds summer start-end range from portal summerProgramDetail dates. */
+    formatSummerDateRange(startDate, endDate) {
+        const start = this.formatSummerDayMonth(startDate);
+        const end = this.formatSummerDayMonth(endDate);
+        if (start && end) return `${start} - ${end}`;
+        return start || end || '';
     }
 
     // Collects deposit label nodes (not the amount column)
