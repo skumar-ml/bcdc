@@ -1092,8 +1092,8 @@ class Portal {
             const { programName = 'Summer Program', location = '', year, summerSessionId, startDate, endDate } = student.summerProgramDetail;
             let inferredYear = year || 'Summer ' + (student.summerProgramDetail?.currentYear) || (new Date().getFullYear() + ' Summer');
             const dateRange = this.formatSummerDateRange(startDate, endDate);
-            const paren = [inferredYear, dateRange].filter(Boolean).join(', ');
-            if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(${paren})</span>`;
+            const titleSuffix = dateRange ? `(${inferredYear}) | ${dateRange}` : `(${inferredYear})`;
+            if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">${titleSuffix}</span>`;
             if (classInfoEl) classInfoEl.textContent = [programName, summerSessionId, location].filter(Boolean).join(' | ');
         } else {
             if (titleEl) titleEl.innerHTML = `Current Program <span class="dm-sans regular">(No class or summer program data available)</span>`;
@@ -2104,12 +2104,12 @@ class Portal {
         });
     }
 
-    /** Formats a summer program date as day month name (e.g. 13 July). */
+    /** Formats a summer program date as month day (e.g. July 13). */
     formatSummerDayMonth(dateString) {
         if (!dateString) return '';
         const date = new Date(String(dateString).replace(' ', 'T'));
         if (isNaN(date.getTime())) return '';
-        return `${date.getDate()} ${date.toLocaleString('en-US', { month: 'long' })}`;
+        return `${date.toLocaleString('en-US', { month: 'long' })} ${date.getDate()}`;
     }
 
     /** Builds summer start-end range from portal summerProgramDetail dates. */
