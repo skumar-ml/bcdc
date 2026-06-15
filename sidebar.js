@@ -39,13 +39,21 @@ class Sidebar {
       this.checkOtherAccess();
     }
   }
+  // Returns true when a student has an active current session
+  studentHasReferralAccess(studentData) {
+    return Array.isArray(studentData?.currentSession) && studentData.currentSession.length > 0;
+  }
+  // Shows or hides referral links in the sidebar
+  setReferralsLinksVisibility(visible) {
+    document.querySelectorAll('[sidebar-menu="referrals"]').forEach((referralsLink) => {
+      referralsLink.style.display = visible ? "flex" : "none";
+    });
+  }
   // Checks and controls access to referral links
   checkReferralsAccess() {
-    // get hasReferralSession localstorage data and check for date should be > 1 hours and hasCurrentSession should false
     const hasReferralSession = JSON.parse(
       localStorage.getItem("hasReferralSession")
     );
-    const currentDateTime = new Date().toISOString();
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     if (
       hasReferralSession &&
@@ -53,62 +61,36 @@ class Sidebar {
       hasReferralSession.memberId === this.data.memberId &&
       new Date(hasReferralSession.currentDateTime) > new Date(oneHourAgo)
     ) {
-      // if hasReferralSession is true and currentDateTime is less than 1 hour then show referrals links
-      const referralsLinks = document.querySelectorAll(
-        '[sidebar-menu="referrals"]'
-      );
-      referralsLinks.forEach((referralsLink) => {
-        referralsLink.style.display = "flex";
-      });
-    } else {
-      const referralsLinks = document.querySelectorAll(
-        '[sidebar-menu="referrals"]'
-      );
-      this.fetchData("getPortalDetail").then((data) => {
-        if (data) {
-          const currentDateTime = new Date().toISOString();
-          if (Array.isArray(data) && data.length > 0) {
-            let hasCurrentSession = false;
-            data.forEach((studentObj) => {
-              const studentName = Object.keys(studentObj)[0];
-              const studentData = studentObj[studentName];
-              if (
-                studentData.currentSession &&
-                Array.isArray(studentData.currentSession) &&
-                studentData.currentSession.length > 0
-              ) {
-                hasCurrentSession = true;
-                // add in local storage hasCurrentSession and current date time json
-                
-                localStorage.setItem(
-                  "hasReferralSession",
-                  JSON.stringify({ hasCurrentSession, currentDateTime, memberId: this.data.memberId })
-                );
-              }
-            });
-            referralsLinks.forEach((referralsLink) => {
-              referralsLink.style.display = hasCurrentSession ? "flex" : "none";
-            });
-            if (!hasCurrentSession) {
-                localStorage.setItem(
-                  "hasReferralSession",
-                  JSON.stringify({ hasCurrentSession, currentDateTime })
-                );
-            }
-          } else {
-            referralsLinks.forEach((referralsLink) => {
-              referralsLink.style.display = "none";
-            });
-          }
-        } else {
-          if (referralsLinks.length > 0) {
-            referralsLinks.forEach((referralsLink) => {
-              referralsLink.style.display = "none";
-            });
-          }
+      this.setReferralsLinksVisibility(true);
+      return;
+    }
+
+    this.fetchData("getPortalDetail").then((data) => {
+      const currentDateTime = new Date().toISOString();
+      if (!data || data === "No data Found" || !Array.isArray(data) || data.length === 0) {
+        this.setReferralsLinksVisibility(false);
+        localStorage.setItem(
+          "hasReferralSession",
+          JSON.stringify({ hasCurrentSession: false, currentDateTime, memberId: this.data.memberId })
+        );
+        return;
+      }
+
+      let hasReferralAccess = false;
+      data.forEach((studentObj) => {
+        const studentName = Object.keys(studentObj)[0];
+        const studentData = studentObj[studentName];
+        if (this.studentHasReferralAccess(studentData)) {
+          hasReferralAccess = true;
         }
       });
-    }
+
+      this.setReferralsLinksVisibility(hasReferralAccess);
+      localStorage.setItem(
+        "hasReferralSession",
+        JSON.stringify({ hasCurrentSession: hasReferralAccess, currentDateTime, memberId: this.data.memberId })
+      );
+    });
   }
   // Updates all portal links with test parameters if present
   updateAllPortalLinks() {

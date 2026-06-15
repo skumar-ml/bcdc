@@ -55,52 +55,54 @@ class Portal {
         return millionsData;
     }
     /**
-     * Checks if user has access to referrals based on current session data
-     * Controls visibility of referral links in sidebar
-     * @param {Array} data - Student data array to check for current sessions
+     * Returns true when a student has an active current session.
+     * Future session only is excluded until client confirms referral access rules.
+     * @param {Object} studentData - Portal student payload for one student
+     */
+    studentHasReferralAccess(studentData) {
+        return Array.isArray(studentData?.currentSession) && studentData.currentSession.length > 0;
+    }
+
+    /**
+     * Shows or hides referral links in the sidebar.
+     * @param {boolean} visible - Whether referral links should be shown
+     */
+    setReferralsLinksVisibility(visible) {
+        document.querySelectorAll('[sidebar-menu="referrals"]').forEach((referralsLink) => {
+            referralsLink.style.display = visible ? "flex" : "none";
+        });
+    }
+
+    /**
+     * Checks if user has access to referrals based on current session data.
+     * Controls visibility of referral links in sidebar.
+     * @param {Array|string|null} data - Student data array from getPortalDetail
      */
     checkReferralsAccess(data) {
         const currentDateTime = new Date().toISOString();
-        const referralsLinks = document.querySelectorAll('[sidebar-menu="referrals"]');
-        if (data) {
-            if (Array.isArray(data) && data.length > 0) {
-                let hasCurrentSession = false;
-                data.forEach((studentObj) => {
-                    const studentName = Object.keys(studentObj)[0];
-                    const studentData = studentObj[studentName];
-                    if (
-                        studentData.currentSession &&
-                        Array.isArray(studentData.currentSession) &&
-                        studentData.currentSession.length > 0
-                    ) {
-                        hasCurrentSession = true;
-                        localStorage.setItem(
-                            "hasReferralSession",
-                            JSON.stringify({ hasCurrentSession, currentDateTime, memberId: this.data.memberId })
-                        );
-                    }
-                });
-                referralsLinks.forEach((referralsLink) => {
-                    referralsLink.style.display = hasCurrentSession ? "flex" : "none";
-                });
-                if (!hasCurrentSession) {
-                    localStorage.setItem(
-                        "hasReferralSession",
-                        JSON.stringify({ hasCurrentSession, currentDateTime })
-                    );
-                }
-            } else {
-                referralsLinks.forEach((referralsLink) => {
-                    referralsLink.style.display = "none";
-                });
-            }
-        } else {
-            if (referralsLinks.length > 0) {
-                referralsLinks.forEach((referralsLink) => {
-                    referralsLink.style.display = "none";
-                });
-            }
+        if (!data || data === "No data Found" || !Array.isArray(data) || data.length === 0) {
+            this.setReferralsLinksVisibility(false);
+            localStorage.setItem(
+                "hasReferralSession",
+                JSON.stringify({ hasCurrentSession: false, currentDateTime, memberId: this.data.memberId })
+            );
+            return;
         }
+
+        let hasReferralAccess = false;
+        data.forEach((studentObj) => {
+            const studentName = Object.keys(studentObj)[0];
+            const studentData = studentObj[studentName];
+            if (this.studentHasReferralAccess(studentData)) {
+                hasReferralAccess = true;
+            }
+        });
+
+        this.setReferralsLinksVisibility(hasReferralAccess);
+        localStorage.setItem(
+            "hasReferralSession",
+            JSON.stringify({ hasCurrentSession: hasReferralAccess, currentDateTime, memberId: this.data.memberId })
+        );
     }
     /**
      * Fetches announcements for the member
@@ -147,6 +149,7 @@ class Portal {
         ]);
         if (data == "No data Found") {
             this.hideShowFreeAndPaidResources(false);
+            this.checkReferralsAccess(data);
             return false
         }
         const millions_transactions = millionsData.millions_transactions;
