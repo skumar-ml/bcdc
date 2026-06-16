@@ -32,16 +32,13 @@ class Sidebar {
   }
   // Initializes sidebar access checks
   init() {
-    // add condition url doesn't contain "members"
-    if (!window.location.href.includes("dashboard")) {
-      this.checkReferralsAccess();
-    } else if (!window.location.href.includes("dashboard")) {
-      this.checkOtherAccess();
-    }
+    this.checkReferralsAccess();
   }
-  // Returns true when a student has an active current session
+  // Returns true when a student has current or future enrollment
   studentHasReferralAccess(studentData) {
-    return Array.isArray(studentData?.currentSession) && studentData.currentSession.length > 0;
+    const hasCurrentSession = Array.isArray(studentData?.currentSession) && studentData.currentSession.length > 0;
+    const hasFutureSession = Array.isArray(studentData?.futureSession) && studentData.futureSession.length > 0;
+    return hasCurrentSession || hasFutureSession;
   }
   // Shows or hides referral links in the sidebar
   setReferralsLinksVisibility(visible) {
@@ -51,19 +48,20 @@ class Sidebar {
   }
   // Checks and controls access to referral links
   checkReferralsAccess() {
-    const hasReferralSession = JSON.parse(
-      localStorage.getItem("hasReferralSession")
-    );
+    const cachedSession = this.getReferralSessionCache();
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     if (
-      hasReferralSession &&
-      hasReferralSession.hasCurrentSession &&
-      hasReferralSession.memberId === this.data.memberId &&
-      new Date(hasReferralSession.currentDateTime) > new Date(oneHourAgo)
+      cachedSession &&
+      cachedSession.hasCurrentSession &&
+      cachedSession.memberId === this.data.memberId &&
+      new Date(cachedSession.currentDateTime) > new Date(oneHourAgo)
     ) {
       this.setReferralsLinksVisibility(true);
       return;
     }
+
+    // Stay hidden until API confirms current or future enrollment
+    this.setReferralsLinksVisibility(false);
 
     this.fetchData("getPortalDetail").then((data) => {
       const currentDateTime = new Date().toISOString();
@@ -91,6 +89,15 @@ class Sidebar {
         JSON.stringify({ hasCurrentSession: hasReferralAccess, currentDateTime, memberId: this.data.memberId })
       );
     });
+  }
+  // Reads referral access cache from localStorage
+  getReferralSessionCache() {
+    try {
+      const cached = localStorage.getItem("hasReferralSession");
+      return cached ? JSON.parse(cached) : null;
+    } catch (error) {
+      return null;
+    }
   }
   // Updates all portal links with test parameters if present
   updateAllPortalLinks() {

@@ -17,6 +17,8 @@ class Portal {
         this.data = data; // Store configuration data
         this.spinner = document.getElementById("half-circle-spinner"); // Loading spinner element
         this.onReady = onReady; // Callback function for when portal is ready
+        // Hide referrals until portal data confirms access
+        this.setReferralsLinksVisibility(false);
         this.render(); // Start rendering the portal
     }
 
@@ -55,12 +57,13 @@ class Portal {
         return millionsData;
     }
     /**
-     * Returns true when a student has an active current session.
-     * Future session only is excluded until client confirms referral access rules.
+     * Returns true when a student has current or future enrollment.
      * @param {Object} studentData - Portal student payload for one student
      */
     studentHasReferralAccess(studentData) {
-        return Array.isArray(studentData?.currentSession) && studentData.currentSession.length > 0;
+        const hasCurrentSession = Array.isArray(studentData?.currentSession) && studentData.currentSession.length > 0;
+        const hasFutureSession = Array.isArray(studentData?.futureSession) && studentData.futureSession.length > 0;
+        return hasCurrentSession || hasFutureSession;
     }
 
     /**
@@ -74,7 +77,7 @@ class Portal {
     }
 
     /**
-     * Checks if user has access to referrals based on current session data.
+     * Checks if user has access to referrals based on current or future session data.
      * Controls visibility of referral links in sidebar.
      * @param {Array|string|null} data - Student data array from getPortalDetail
      */
