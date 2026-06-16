@@ -57,12 +57,25 @@ class Portal {
         return millionsData;
     }
     /**
-     * Returns true when a student has current or future enrollment.
+     * Returns true when a paid session qualifies for referrals (not refunded).
+     * @param {Object} session - Portal session from getPortalDetail
+     */
+    sessionQualifiesForReferral(session) {
+        if (!session || session.isRefunded) return false;
+        const hasClassDetail = session?.classDetail && Object.keys(session.classDetail).length > 0;
+        const hasSummerProgram = session?.summerProgramDetail && Object.keys(session.summerProgramDetail).length > 0;
+        return hasClassDetail || hasSummerProgram;
+    }
+
+    /**
+     * Returns true when a student has a non-refunded current or future paid session.
      * @param {Object} studentData - Portal student payload for one student
      */
     studentHasReferralAccess(studentData) {
-        const hasCurrentSession = Array.isArray(studentData?.currentSession) && studentData.currentSession.length > 0;
-        const hasFutureSession = Array.isArray(studentData?.futureSession) && studentData.futureSession.length > 0;
+        const hasCurrentSession = Array.isArray(studentData?.currentSession) &&
+            studentData.currentSession.some((session) => this.sessionQualifiesForReferral(session));
+        const hasFutureSession = Array.isArray(studentData?.futureSession) &&
+            studentData.futureSession.some((session) => this.sessionQualifiesForReferral(session));
         return hasCurrentSession || hasFutureSession;
     }
 
@@ -77,8 +90,8 @@ class Portal {
     }
 
     /**
-     * Checks if user has access to referrals based on current or future session data.
-     * Controls visibility of referral links in sidebar.
+     * Checks referral sidebar access from getPortalDetail.
+     * Show when any student has a non-refunded paid current or future session.
      * @param {Array|string|null} data - Student data array from getPortalDetail
      */
     checkReferralsAccess(data) {

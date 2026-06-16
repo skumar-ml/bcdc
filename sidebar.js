@@ -34,10 +34,19 @@ class Sidebar {
   init() {
     this.checkReferralsAccess();
   }
-  // Returns true when a student has current or future enrollment
+  // Skips refunded sessions from referral access
+  sessionQualifiesForReferral(session) {
+    if (!session || session.isRefunded) return false;
+    const hasClassDetail = session?.classDetail && Object.keys(session.classDetail).length > 0;
+    const hasSummerProgram = session?.summerProgramDetail && Object.keys(session.summerProgramDetail).length > 0;
+    return hasClassDetail || hasSummerProgram;
+  }
+  // Returns true when a student has a non-refunded current or future paid session
   studentHasReferralAccess(studentData) {
-    const hasCurrentSession = Array.isArray(studentData?.currentSession) && studentData.currentSession.length > 0;
-    const hasFutureSession = Array.isArray(studentData?.futureSession) && studentData.futureSession.length > 0;
+    const hasCurrentSession = Array.isArray(studentData?.currentSession) &&
+      studentData.currentSession.some((session) => this.sessionQualifiesForReferral(session));
+    const hasFutureSession = Array.isArray(studentData?.futureSession) &&
+      studentData.futureSession.some((session) => this.sessionQualifiesForReferral(session));
     return hasCurrentSession || hasFutureSession;
   }
   // Shows or hides referral links in the sidebar
