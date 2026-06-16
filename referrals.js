@@ -16,6 +16,7 @@ class ReferralProgram {
     this.icons = data.icons;
     this.memberId = data.memberId;
     this.baseUrl = data.baseUrl;
+    this.apiBaseURL = data.apiBaseURL;
     this.referralCodeInput = document.getElementById("referralCode");
     this.referralCodeInput.setAttribute("readonly", "true");
     this.referralCodeInput.setAttribute("aria-readonly", "true");
@@ -98,11 +99,48 @@ class ReferralProgram {
     });
   }
 
-  // Fetches portal detail used to validate referral page access
+  // Resolves portal API base URL used for getPortalDetail
+  getPortalApiBaseUrl() {
+    return this.apiBaseURL || window.__portalApiBaseURL || null;
+  }
+
+  // Reads referral access cache set by portal or sidebar
+  hasCachedReferralAccess() {
+    try {
+      const cached = JSON.parse(localStorage.getItem("hasReferralSession"));
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      return !!(
+        cached &&
+        cached.hasCurrentSession &&
+        cached.memberId === this.memberId &&
+        new Date(cached.currentDateTime) > new Date(oneHourAgo)
+      );
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // Confirms referral access from portal data or recent sidebar cache
+  canAccessReferrals(portalData) {
+    if (this.hasPortalReferralAccess(portalData)) return true;
+    return this.hasCachedReferralAccess();
+  }
+
+  // Fetches portal detail from the portal API (same gateway as portal_new_ui.js)
   async fetchPortalDetail() {
-    const res = await fetch(`${this.baseUrl}getPortalDetail/${this.memberId}`);
-    if (!res.ok) return null;
-    return res.json();
+    if (window.__portalGetPortalDetailResponse) {
+      return window.__portalGetPortalDetailResponse;
+    }
+    const portalBaseUrl = this.getPortalApiBaseUrl();
+    if (!portalBaseUrl) return null;
+    try {
+      const res = await fetch(`${portalBaseUrl}getPortalDetail/${this.memberId}`);
+      if (!res.ok) return null;
+      return res.json();
+    } catch (error) {
+      console.error("Fetch portal detail error:", error);
+      return null;
+    }
   }
 
   // Redirects users with no qualifying paid current or future session
@@ -124,7 +162,7 @@ class ReferralProgram {
       if (!res.ok) {
         const portalData = await this.fetchPortalDetail();
         this.spinner.style.display = "none";
-        if (!this.hasPortalReferralAccess(portalData)) {
+        if (!this.canAccessReferrals(portalData)) {
           document.querySelector(".no-record-div").style.display = "block";
           this.denyReferralAccess();
           return;
@@ -135,7 +173,7 @@ class ReferralProgram {
       const data = await res.json();
       if (!data.coupon_code) {
         const portalData = await this.fetchPortalDetail();
-        if (!this.hasPortalReferralAccess(portalData)) {
+        if (!this.canAccessReferrals(portalData)) {
           this.spinner.style.display = "none";
           this.denyReferralAccess();
           return;

@@ -16,18 +16,22 @@ class Sidebar {
     // update count in sidebar
     this.fetchAnnouncements();
   }
-  // Fetches data from the specified API endpoint
-  async fetchData(endPoint) {
+  // Fetches portal detail from the portal API gateway
+  async fetchPortalDetail() {
+    if (window.__portalGetPortalDetailResponse) {
+      return window.__portalGetPortalDetailResponse;
+    }
+    const portalBaseUrl = this.data.apiBaseURL || window.__portalApiBaseURL;
+    if (!portalBaseUrl) return null;
     try {
       const response = await fetch(
-        `${this.data.baseUrl}${endPoint}/${this.data.memberId}`
+        `${portalBaseUrl}getPortalDetail/${this.data.memberId}`
       );
       if (!response.ok) throw new Error("Network response was not ok");
-
-      const apiData = await response.json();
-      return apiData;
+      return response.json();
     } catch (error) {
-      console.error("Fetch error:", error);
+      console.error("Fetch portal detail error:", error);
+      return null;
     }
   }
   // Initializes sidebar access checks
@@ -72,7 +76,7 @@ class Sidebar {
     // Stay hidden until API confirms current or future enrollment
     this.setReferralsLinksVisibility(false);
 
-    this.fetchData("getPortalDetail").then((data) => {
+    this.fetchPortalDetail().then((data) => {
       const currentDateTime = new Date().toISOString();
       if (!data || data === "No data Found" || !Array.isArray(data) || data.length === 0) {
         this.setReferralsLinksVisibility(false);

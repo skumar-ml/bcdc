@@ -17,6 +17,7 @@ class Portal {
         this.data = data; // Store configuration data
         this.spinner = document.getElementById("half-circle-spinner"); // Loading spinner element
         this.onReady = onReady; // Callback function for when portal is ready
+        window.__portalApiBaseURL = this.data.apiBaseURL;
         // Hide referrals until portal data confirms access
         this.setReferralsLinksVisibility(false);
         this.render(); // Start rendering the portal
