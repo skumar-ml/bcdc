@@ -16,98 +16,100 @@ class Sidebar {
     // update count in sidebar
     this.fetchAnnouncements();
   }
-  // Fetches data from the specified API endpoint
-  async fetchData(endPoint) {
+  // Fetches portal detail from the portal API gateway
+  async fetchPortalDetail() {
+    if (window.__portalGetPortalDetailResponse) {
+      return window.__portalGetPortalDetailResponse;
+    }
+    const portalBaseUrl = this.data.apiBaseURL || window.__portalApiBaseURL;
+    if (!portalBaseUrl) return null;
     try {
       const response = await fetch(
-        `${this.data.baseUrl}${endPoint}/${this.data.memberId}`
+        `${portalBaseUrl}getPortalDetail/${this.data.memberId}`
       );
       if (!response.ok) throw new Error("Network response was not ok");
-
-      const apiData = await response.json();
-      return apiData;
+      return response.json();
     } catch (error) {
-      console.error("Fetch error:", error);
+      console.error("Fetch portal detail error:", error);
+      return null;
     }
   }
   // Initializes sidebar access checks
   init() {
-    // add condition url doesn't contain "members"
-    if (!window.location.href.includes("dashboard")) {
-      this.checkReferralsAccess();
-    } else if (!window.location.href.includes("dashboard")) {
-      this.checkOtherAccess();
-    }
+    this.checkReferralsAccess();
+  }
+  // Skips refunded sessions from referral access
+  sessionQualifiesForReferral(session) {
+    if (!session || session.isRefunded) return false;
+    const hasClassDetail = session?.classDetail && Object.keys(session.classDetail).length > 0;
+    const hasSummerProgram = session?.summerProgramDetail && Object.keys(session.summerProgramDetail).length > 0;
+    return hasClassDetail || hasSummerProgram;
+  }
+  // Returns true when a student has a non-refunded current or future paid session
+  studentHasReferralAccess(studentData) {
+    const hasCurrentSession = Array.isArray(studentData?.currentSession) &&
+      studentData.currentSession.some((session) => this.sessionQualifiesForReferral(session));
+    const hasFutureSession = Array.isArray(studentData?.futureSession) &&
+      studentData.futureSession.some((session) => this.sessionQualifiesForReferral(session));
+    return hasCurrentSession || hasFutureSession;
+  }
+  // Shows or hides referral links in the sidebar
+  setReferralsLinksVisibility(visible) {
+    document.querySelectorAll('[sidebar-menu="referrals"]').forEach((referralsLink) => {
+      referralsLink.style.display = visible ? "flex" : "none";
+    });
   }
   // Checks and controls access to referral links
   checkReferralsAccess() {
-    // get hasReferralSession localstorage data and check for date should be > 1 hours and hasCurrentSession should false
-    const hasReferralSession = JSON.parse(
-      localStorage.getItem("hasReferralSession")
-    );
-    const currentDateTime = new Date().toISOString();
+    const cachedSession = this.getReferralSessionCache();
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     if (
-      hasReferralSession &&
-      hasReferralSession.hasCurrentSession &&
-      hasReferralSession.memberId === this.data.memberId &&
-      new Date(hasReferralSession.currentDateTime) > new Date(oneHourAgo)
+      cachedSession &&
+      cachedSession.hasCurrentSession &&
+      cachedSession.memberId === this.data.memberId &&
+      new Date(cachedSession.currentDateTime) > new Date(oneHourAgo)
     ) {
-      // if hasReferralSession is true and currentDateTime is less than 1 hour then show referrals links
-      const referralsLinks = document.querySelectorAll(
-        '[sidebar-menu="referrals"]'
-      );
-      referralsLinks.forEach((referralsLink) => {
-        referralsLink.style.display = "flex";
-      });
-    } else {
-      const referralsLinks = document.querySelectorAll(
-        '[sidebar-menu="referrals"]'
-      );
-      this.fetchData("getPortalDetail").then((data) => {
-        if (data) {
-          const currentDateTime = new Date().toISOString();
-          if (Array.isArray(data) && data.length > 0) {
-            let hasCurrentSession = false;
-            data.forEach((studentObj) => {
-              const studentName = Object.keys(studentObj)[0];
-              const studentData = studentObj[studentName];
-              if (
-                studentData.currentSession &&
-                Array.isArray(studentData.currentSession) &&
-                studentData.currentSession.length > 0
-              ) {
-                hasCurrentSession = true;
-                // add in local storage hasCurrentSession and current date time json
-                
-                localStorage.setItem(
-                  "hasReferralSession",
-                  JSON.stringify({ hasCurrentSession, currentDateTime, memberId: this.data.memberId })
-                );
-              }
-            });
-            referralsLinks.forEach((referralsLink) => {
-              referralsLink.style.display = hasCurrentSession ? "flex" : "none";
-            });
-            if (!hasCurrentSession) {
-                localStorage.setItem(
-                  "hasReferralSession",
-                  JSON.stringify({ hasCurrentSession, currentDateTime })
-                );
-            }
-          } else {
-            referralsLinks.forEach((referralsLink) => {
-              referralsLink.style.display = "none";
-            });
-          }
-        } else {
-          if (referralsLinks.length > 0) {
-            referralsLinks.forEach((referralsLink) => {
-              referralsLink.style.display = "none";
-            });
-          }
+      this.setReferralsLinksVisibility(true);
+      return;
+    }
+
+    // Stay hidden until API confirms current or future enrollment
+    this.setReferralsLinksVisibility(false);
+
+    this.fetchPortalDetail().then((data) => {
+      const currentDateTime = new Date().toISOString();
+      if (!data || data === "No data Found" || !Array.isArray(data) || data.length === 0) {
+        this.setReferralsLinksVisibility(false);
+        localStorage.setItem(
+          "hasReferralSession",
+          JSON.stringify({ hasCurrentSession: false, currentDateTime, memberId: this.data.memberId })
+        );
+        return;
+      }
+
+      let hasReferralAccess = false;
+      data.forEach((studentObj) => {
+        const studentName = Object.keys(studentObj)[0];
+        const studentData = studentObj[studentName];
+        if (this.studentHasReferralAccess(studentData)) {
+          hasReferralAccess = true;
         }
       });
+
+      this.setReferralsLinksVisibility(hasReferralAccess);
+      localStorage.setItem(
+        "hasReferralSession",
+        JSON.stringify({ hasCurrentSession: hasReferralAccess, currentDateTime, memberId: this.data.memberId })
+      );
+    });
+  }
+  // Reads referral access cache from localStorage
+  getReferralSessionCache() {
+    try {
+      const cached = localStorage.getItem("hasReferralSession");
+      return cached ? JSON.parse(cached) : null;
+    } catch (error) {
+      return null;
     }
   }
   // Updates all portal links with test parameters if present

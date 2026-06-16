@@ -16,6 +16,7 @@ class ReferralProgram {
     this.icons = data.icons;
     this.memberId = data.memberId;
     this.baseUrl = data.baseUrl;
+    this.apiBaseURL = data.apiBaseURL;
     this.referralCodeInput = document.getElementById("referralCode");
     this.referralCodeInput.setAttribute("readonly", "true");
     this.referralCodeInput.setAttribute("aria-readonly", "true");
@@ -70,6 +71,86 @@ class ReferralProgram {
     setTimeout(() => (this.copyMsg.style.display = "none"), 1500);
   }
 
+  // Returns true when a paid session qualifies for referrals (not refunded)
+  sessionQualifiesForReferral(session) {
+    if (!session || session.isRefunded) return false;
+    const hasClassDetail = session?.classDetail && Object.keys(session.classDetail).length > 0;
+    const hasSummerProgram = session?.summerProgramDetail && Object.keys(session.summerProgramDetail).length > 0;
+    return hasClassDetail || hasSummerProgram;
+  }
+
+  // Returns true when a student has a non-refunded current or future paid session
+  studentHasReferralAccess(studentData) {
+    const hasCurrentSession = Array.isArray(studentData?.currentSession) &&
+      studentData.currentSession.some((session) => this.sessionQualifiesForReferral(session));
+    const hasFutureSession = Array.isArray(studentData?.futureSession) &&
+      studentData.futureSession.some((session) => this.sessionQualifiesForReferral(session));
+    return hasCurrentSession || hasFutureSession;
+  }
+
+  // Checks portal detail payload for referral access across all students
+  hasPortalReferralAccess(portalData) {
+    if (!portalData || portalData === "No data Found" || !Array.isArray(portalData) || portalData.length === 0) {
+      return false;
+    }
+    return portalData.some((studentObj) => {
+      const studentData = studentObj[Object.keys(studentObj)[0]];
+      return this.studentHasReferralAccess(studentData);
+    });
+  }
+
+  // Resolves portal API base URL used for getPortalDetail
+  getPortalApiBaseUrl() {
+    return this.apiBaseURL || window.__portalApiBaseURL || null;
+  }
+
+  // Reads referral access cache set by portal or sidebar
+  hasCachedReferralAccess() {
+    try {
+      const cached = JSON.parse(localStorage.getItem("hasReferralSession"));
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      return !!(
+        cached &&
+        cached.hasCurrentSession &&
+        cached.memberId === this.memberId &&
+        new Date(cached.currentDateTime) > new Date(oneHourAgo)
+      );
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // Confirms referral access from portal data or recent sidebar cache
+  canAccessReferrals(portalData) {
+    if (this.hasPortalReferralAccess(portalData)) return true;
+    return this.hasCachedReferralAccess();
+  }
+
+  // Fetches portal detail from the portal API (same gateway as portal_new_ui.js)
+  async fetchPortalDetail() {
+    if (window.__portalGetPortalDetailResponse) {
+      return window.__portalGetPortalDetailResponse;
+    }
+    const portalBaseUrl = this.getPortalApiBaseUrl();
+    if (!portalBaseUrl) return null;
+    try {
+      const res = await fetch(`${portalBaseUrl}getPortalDetail/${this.memberId}`);
+      if (!res.ok) return null;
+      return res.json();
+    } catch (error) {
+      console.error("Fetch portal detail error:", error);
+      return null;
+    }
+  }
+
+  // Redirects users with no qualifying paid current or future session
+  denyReferralAccess() {
+    alert(
+      "You are not enrolled in the referral program. Please contact Bergen Academy for more information."
+    );
+    window.location.href = "https://www.bergendebate.com";
+  }
+
   // Loads referral data from the API and updates the UI
   async loadReferralData() {
     this.spinner.style.display = "block";
@@ -77,27 +158,38 @@ class ReferralProgram {
       const res = await fetch(
         `${this.baseUrl}getReferralData/${this.memberId}`
       );
-      this.spinner.style.display = "none";
       // Check if the response is ok
       if (!res.ok) {
-        // class no-record-div display block
+        const portalData = await this.fetchPortalDetail();
+        this.spinner.style.display = "none";
+        if (!this.canAccessReferrals(portalData)) {
+          document.querySelector(".no-record-div").style.display = "block";
+          this.denyReferralAccess();
+          return;
+        }
         document.querySelector(".no-record-div").style.display = "block";
-        throw new Error("Failed to fetch");
+        return;
       }
       const data = await res.json();
       if (!data.coupon_code) {
-        // display prompt and redirect to homepage
-        alert(
-          "You are not enrolled in the referral program. Please contact Bergen Academy for more information."
-        );
-        window.location.href = "https://www.bergendebate.com";
-      } 
+        const portalData = await this.fetchPortalDetail();
+        if (!this.canAccessReferrals(portalData)) {
+          this.spinner.style.display = "none";
+          this.denyReferralAccess();
+          return;
+        }
+      }
+      this.spinner.style.display = "none";
       // Set coupon code
       this.referralCodeInput.value = data.coupon_code || "";
       // Encrypted code append
-      var encryptedCode = btoa(data.coupon_code);
-      var encryptedMemberId = btoa(this.memberId);
-      this.referralLinkInput.value = data.coupon_code ? `https://www.bergendebate.com?code=${encryptedCode}&id=${encryptedMemberId}` : "";
+      if (data.coupon_code) {
+        var encryptedCode = btoa(data.coupon_code);
+        var encryptedMemberId = btoa(this.memberId);
+        this.referralLinkInput.value = `https://www.bergendebate.com?code=${encryptedCode}&id=${encryptedMemberId}`;
+      } else if (this.referralLinkInput) {
+        this.referralLinkInput.value = "";
+      }
       data.referrals = data.referrals || [];
       if(data.referrals.length == 0) {
         document.querySelector(".no-record-div").style.display = "block";
