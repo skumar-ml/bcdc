@@ -69,6 +69,101 @@ class Portal {
     }
 
     /**
+     * Returns true when session has class or summer program detail.
+     * @param {Object} session - Portal session from getPortalDetail
+     */
+    sessionHasProgramData(session) {
+        if (!session) return false;
+        const hasClassDetail = session.classDetail && Object.keys(session.classDetail).length > 0;
+        const hasSummerProgram = session.summerProgramDetail && Object.keys(session.summerProgramDetail).length > 0;
+        return hasClassDetail || hasSummerProgram;
+    }
+
+    /**
+     * Returns true when session has at least one registration form.
+     * @param {Object} session - Portal session from getPortalDetail
+     */
+    sessionHasRegistrationForms(session) {
+        if (!session?.formList || !Array.isArray(session.formList)) return false;
+        return session.formList.some((group) => Array.isArray(group.forms) && group.forms.length > 0);
+    }
+
+    /**
+     * Sorts sessions by createdOn descending (most recent first).
+     * @param {Array} sessions - Portal session list
+     */
+    sortSessionsByCreatedOnDesc(sessions) {
+        return [...sessions].sort(
+            (a, b) => new Date(b.createdOn || 0) - new Date(a.createdOn || 0)
+        );
+    }
+
+    /**
+     * Returns the latest createdOn across all current sessions.
+     * @param {Object} studentData - Portal student payload for one student
+     */
+    getLatestCurrentSessionDate(studentData) {
+        const sessions = studentData?.currentSession;
+        if (!Array.isArray(sessions) || !sessions.length) return new Date(0);
+        return sessions.reduce((latest, session) => {
+            const sessionDate = new Date(session.createdOn || 0);
+            return sessionDate > latest ? sessionDate : latest;
+        }, new Date(0));
+    }
+
+    /**
+     * Merges currentSession entries into one student object for portal rendering.
+     * Program data, forms, and invoices may live on different session indices.
+     * @param {Object} studentData - Portal student payload for one student
+     */
+    getMergedCurrentSessionStudent(studentData) {
+        const sessions = studentData?.currentSession;
+        if (!Array.isArray(sessions) || !sessions.length) return null;
+
+        const sortedSessions = this.sortSessionsByCreatedOnDesc(sessions);
+        const programSession = sortedSessions.find((session) => this.sessionHasProgramData(session)) || sortedSessions[0];
+        const formSession = sortedSessions.find((session) => this.sessionHasRegistrationForms(session));
+
+        const mergedFormList = [];
+        const mergedFormCompletedList = [];
+        const seenFormIds = new Set();
+
+        sessions.forEach((session) => {
+            if (Array.isArray(session.formList)) {
+                session.formList.forEach((group) => {
+                    const forms = (group.forms || []).filter((form) => {
+                        if (seenFormIds.has(form.formId)) return false;
+                        seenFormIds.add(form.formId);
+                        return true;
+                    });
+                    if (forms.length) {
+                        mergedFormList.push({ ...group, forms });
+                    }
+                });
+            }
+            if (Array.isArray(session.formCompletedList)) {
+                session.formCompletedList.forEach((completedForm) => {
+                    if (!mergedFormCompletedList.some((item) => item.formId === completedForm.formId)) {
+                        mergedFormCompletedList.push(completedForm);
+                    }
+                });
+            }
+        });
+
+        const mergedInvoices = sessions.flatMap((session) =>
+            Array.isArray(session.invoiceList) ? session.invoiceList : []
+        );
+
+        return {
+            ...programSession,
+            studentDetail: formSession?.studentDetail || programSession.studentDetail,
+            formList: mergedFormList.length ? mergedFormList : (programSession.formList || []),
+            formCompletedList: mergedFormCompletedList.length ? mergedFormCompletedList : (programSession.formCompletedList || []),
+            invoiceList: mergedInvoices.length ? mergedInvoices : programSession.invoiceList,
+        };
+    }
+
+    /**
      * Returns true when a student has a non-refunded current or future paid session.
      * @param {Object} studentData - Portal student payload for one student
      */
@@ -233,15 +328,12 @@ class Portal {
         firstTabLink.classList.remove('w--current');
         firstTabLink.setAttribute('aria-selected', 'false');
         firstTabPane.classList.remove('w--tab-active');
-        // Sort students by currentSession[0].createdOn (most recent first)
+        // Sort students by latest currentSession createdOn (most recent first)
         students.sort((a, b) => {
             const aData = Object.values(a)[0];
             const bData = Object.values(b)[0];
-            const aSession = aData.currentSession && aData.currentSession[0] ? aData.currentSession[0] : null;
-            const bSession = bData.currentSession && bData.currentSession[0] ? bData.currentSession[0] : null;
-            const aDate = aSession && aSession.createdOn ? new Date(aSession.createdOn) : new Date(0);
-            const bDate = bSession && bSession.createdOn ? new Date(bSession.createdOn) : new Date(0);
-            // Most recent first
+            const aDate = this.getLatestCurrentSessionDate(aData);
+            const bDate = this.getLatestCurrentSessionDate(bData);
             return bDate - aDate;
         });
         // 6. For each student, create tab link and pane
@@ -249,8 +341,8 @@ class Portal {
             // get Object key from the student object
             const studentName = Object.keys(student)[0];
             const studentData = Object.values(student)[0];
-            const currentSession = studentData.currentSession && studentData.currentSession.length > 0 ? studentData.currentSession[0] : null;
-            // comment for future change: studentData.currentSession.length - 1
+            const hasCurrentSessions = Array.isArray(studentData.currentSession) && studentData.currentSession.length > 0;
+            const currentSession = hasCurrentSessions ? this.getMergedCurrentSessionStudent(studentData) : null;
             let tabLink, tabPane;
             if (idx === 0) {
                 tabLink = firstTabLink;
@@ -292,7 +384,7 @@ class Portal {
                 });
                 // Show/hide registration-form-accordian based on formList in currentSession
                 const regFormAccordian = tabPane.querySelector('.registration-form-accordian');
-                if (currentSession.formList && Array.isArray(currentSession.formList) && currentSession.formList.length > 0) {
+                if (this.sessionHasRegistrationForms(currentSession)) {
                     if (regFormAccordian) regFormAccordian.style.display = 'block';
                 } else {
                     if (regFormAccordian) regFormAccordian.style.display = 'none';
@@ -345,7 +437,7 @@ class Portal {
      * @param {Array} announcements - Announcements data
      */
     renderStudentTab(tabPane, studentData, millionsData, announcements) {
-        const student = studentData.currentSession[0];
+        const student = this.getMergedCurrentSessionStudent(studentData);
         if (student) {
             this.renderCurrentClassSection(tabPane, student);
             this.renderMillions(tabPane, student, millionsData);
@@ -363,7 +455,7 @@ class Portal {
         // render pending items text after a delay to ensure data is ready
         setTimeout(() => {
 
-            this.renderPendingItems(tabPane, studentData.currentSession.length > 0 ? student : [], studentData);
+            this.renderPendingItems(tabPane, student || [], studentData);
         }, 500);
 
         this.renderRecentAnnouncements(tabPane, announcements);
