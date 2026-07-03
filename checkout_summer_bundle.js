@@ -665,14 +665,32 @@ class CheckOutWebflow {
 		// Initial paint
 		updateDisplay();
 	}
-	// Shows/hides the shared checkout warning banner (e.g. STUDENT_EMAIL_IS_PARENT)
+	// Deepest element that actually holds the message text, so we only touch
+	// the text node and leave icons/other markup inside the banner untouched.
+	_findWarningTextTarget(el) {
+		for (var i = 0; i < el.children.length; i++) {
+			var child = el.children[i];
+			if (child.textContent && child.textContent.trim()) {
+				return this._findWarningTextTarget(child);
+			}
+		}
+		return el;
+	}
+	// Shows the shared checkout warning banner (e.g. STUDENT_EMAIL_IS_PARENT).
+	// Clones the original Webflow-styled node so its markup/classes stay
+	// untouched, only swapping in the API message text on the clone.
 	showWarningMessage(message) {
-		var warningEl = document.querySelector('.warning-message-wapper');
-		if (!warningEl) {
+		var currentEl = document.querySelector('.warning-message-wapper');
+		if (!currentEl) {
 			return;
 		}
-		warningEl.innerHTML = message;
-		warningEl.style.display = 'flex';
+		if (!this._warningTemplate) {
+			this._warningTemplate = currentEl.cloneNode(true);
+		}
+		var clone = this._warningTemplate.cloneNode(true);
+		this._findWarningTextTarget(clone).textContent = message;
+		currentEl.parentNode.replaceChild(clone, currentEl);
+		clone.style.display = 'flex';
 	}
 	hideWarningMessage() {
 		var warningEl = document.querySelector('.warning-message-wapper');
@@ -1031,7 +1049,7 @@ class CheckOutWebflow {
 				// Block advancing to the next section until checkoutUrlForSummer
 				// actually resolves; on failure (e.g. STUDENT_EMAIL_IS_PARENT) the
 				// warning banner is shown and the user stays on this step.
-				next_page_1.innerHTML = 'Processing'
+				next_page_1.innerHTML = 'Processing...'
 				next_page_1.style.pointerEvents = 'none';
 				const stripeInitSuccess = await $this.initializeStripePayment();
 				next_page_1.innerHTML = 'Next'
