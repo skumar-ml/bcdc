@@ -1219,7 +1219,13 @@ class classDetailsStripe extends parentLogin {
         var eligible = true;
 
         $this.storeBasicData();
-        $this.AddStudentData();
+        // Block advancing to the next section until createCheckoutId actually
+        // resolves; on failure (e.g. STUDENT_EMAIL_IS_PARENT) the warning
+        // banner is shown and the user stays on this step.
+        var studentDataSaved = await $this.AddStudentData();
+        if (!studentDataSaved) {
+          return;
+        }
         // Check if student is already enrolled this semester
         await $this.checkStudentEnrolled();
 
@@ -1708,8 +1714,45 @@ class classDetailsStripe extends parentLogin {
     });
   }
 
-  // Add student data before checkout url created in database
+  // Deepest element that actually holds the message text, so we only touch
+  // the text node and leave icons/other markup inside the banner untouched.
+  _findWarningTextTarget(el) {
+    for (var i = 0; i < el.children.length; i++) {
+      var child = el.children[i];
+      if (child.textContent && child.textContent.trim()) {
+        return this._findWarningTextTarget(child);
+      }
+    }
+    return el;
+  }
+  // Shows the shared checkout warning banner (e.g. STUDENT_EMAIL_IS_PARENT).
+  // Clones the original Webflow-styled node so its markup/classes stay
+  // untouched, only swapping in the API message text on the clone.
+  showWarningMessage(message) {
+    var currentEl = document.querySelector(".warning-message-wapper");
+    if (!currentEl) {
+      return;
+    }
+    if (!this._warningTemplate) {
+      this._warningTemplate = currentEl.cloneNode(true);
+    }
+    var clone = this._warningTemplate.cloneNode(true);
+    this._findWarningTextTarget(clone).textContent = message;
+    currentEl.parentNode.replaceChild(clone, currentEl);
+    clone.style.display = "flex";
+  }
+  hideWarningMessage() {
+    var warningEl = document.querySelector(".warning-message-wapper");
+    if (!warningEl) {
+      return;
+    }
+    warningEl.style.display = "none";
+  }
+  // Add student data before checkout url created in database.
+  // Returns a Promise<boolean> resolving true only when createCheckoutId
+  // succeeds, so callers can block navigation to the next step until it settles.
   AddStudentData() {
+    this.hideWarningMessage();
     var studentFirstName = document.getElementById("Student-First-Name");
     var studentLastName = document.getElementById("Student-Last-Name");
     var studentEmail = document.getElementById("Student-Email");
@@ -1757,36 +1800,63 @@ class classDetailsStripe extends parentLogin {
 
     //console.log('Data !!!!!', data)
     //return;
-    var xhr = new XMLHttpRequest();
     var $this = this;
-    xhr.open(
-      "POST",
-      "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId",
-      true
-    );
-    xhr.withCredentials = false;
-    xhr.send(JSON.stringify(data));
-    xhr.onload = function () {
-      let responseText = JSON.parse(xhr.responseText);
-      //console.log('responseText', responseText)
-      if (responseText.success) {
-        $this.$checkoutData = responseText;
-        //Storing data in local storage
-        data.checkoutData = responseText;
-        $this.updateCheckOutData(data);
-        //localStorage.setItem("checkOutData", JSON.stringify(data));
-        register_btn_card.forEach((e) => {
+    var resetRegisterButtons = function () {
+      register_btn_card.forEach((e) => {
+        if (e.classList.contains("option_b_card")) {
+          e.innerHTML = "Register via Credit Card (Has Fee)";
+        } else if (e.classList.contains("option_b_bt")) {
+          e.innerHTML = "Register via Bank Transfer";
+        } else {
           e.innerHTML = "Register";
-          if (e.classList.contains("option_b_card")) {
-            e.innerHTML = "Register via Credit Card (Has Fee)";
-          } else if (e.classList.contains("option_b_bt")) {
-            e.innerHTML = "Register via Bank Transfer";
-          } else {
-            e.innerHTML = "Register";
-          }
-        });
-      }
+        }
+      });
     };
+    return new Promise(function (resolve) {
+      var xhr = new XMLHttpRequest();
+      xhr.open(
+        "POST",
+        "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId",
+        true
+      );
+      xhr.withCredentials = false;
+      xhr.send(JSON.stringify(data));
+      xhr.onload = function () {
+        var responseText;
+        try {
+          responseText = JSON.parse(xhr.responseText);
+        } catch (e) {
+          responseText = {};
+        }
+        //console.log('responseText', responseText)
+
+        // API error (e.g. 400 STUDENT_EMAIL_IS_PARENT) — surface message, keep user on this step.
+        if (xhr.status >= 400 || responseText.success === false) {
+          $this.showWarningMessage(responseText.message || "Something went wrong. Please try again.");
+          resetRegisterButtons();
+          resolve(false);
+          return;
+        }
+
+        if (responseText.success) {
+          $this.$checkoutData = responseText;
+          //Storing data in local storage
+          data.checkoutData = responseText;
+          $this.updateCheckOutData(data);
+          //localStorage.setItem("checkOutData", JSON.stringify(data));
+          resetRegisterButtons();
+          resolve(true);
+          return;
+        }
+
+        resolve(false);
+      };
+      xhr.onerror = function () {
+        $this.showWarningMessage("Something went wrong. Please try again.");
+        resetRegisterButtons();
+        resolve(false);
+      };
+    });
   }
 
   showSemesterBundleModal(forceOpen) {
