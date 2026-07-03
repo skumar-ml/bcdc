@@ -437,6 +437,18 @@ class CheckOutWebflow {
 			};
 		});
 	}
+	// Toggles between the "pick a saved student" dropdown and the "create a new
+	// student" form based on whether getCheckoutStudentProfiles returned any data.
+	_toggleStudentProfileUI(hasStudents) {
+		var dropdownWrapper = document.querySelector('.student-dropdown-wapper');
+		var createAccountWrapper = document.querySelector('.create-account-wapper');
+		if (dropdownWrapper) {
+			dropdownWrapper.style.display = hasStudents ? 'block' : 'none';
+		}
+		if (createAccountWrapper) {
+			createAccountWrapper.style.display = hasStudents ? 'none' : 'flex';
+		}
+	}
 	// Fetch saved student profiles and build the styled dropdown; prefill form on select
 	async updateOldStudentList() {
 		const selectBox = document.getElementById("existing-students");
@@ -456,15 +468,18 @@ class CheckOutWebflow {
 				this.getCheckoutStudentProfilesBaseUrl()
 			);
 			var data = this.normalizeCheckoutStudentProfiles(profilesResponse);
-			// No saved students: disable the dropdown with a hint
+			// No saved students: disable the dropdown with a hint, show "create new student" instead
 			if (data == "No data Found" || !Array.isArray(data) || data.length == 0) {
 				selectBox.disabled = true;
 				selectBox.innerHTML = '<option value="">No previous students found</option>';
 				if (displayText) {
 					displayText.textContent = "No previous students found";
 				}
+				$this._toggleStudentProfileUI(false);
 				return;
 			}
+			// Saved students found: show the dropdown, hide the "create new student" form
+			$this._toggleStudentProfileUI(true);
 			// Drop nameless entries, dedupe by studentName, then sort alphabetically
 			data = data.filter(i => i.studentName != null && i.studentName != undefined && i.studentName != "");
 			const filterData = data
@@ -520,6 +535,7 @@ class CheckOutWebflow {
 			if (displayText) {
 				displayText.textContent = "Student Details not available";
 			}
+			$this._toggleStudentProfileUI(false);
 		}
 	}
 	// Inject the custom-select CSS once so layout stays stable even if the
