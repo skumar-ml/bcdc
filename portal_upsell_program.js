@@ -14,21 +14,42 @@ class DisplaySuppProgram {
   $selectedProgram = [];
   $suppPro = [];
   $bundleData = [];
+  $previousStudents = [];
+  $allStudentHistory = [];
+  /** False when selling API has no students so upsell shell stays hidden. */
+  $portalStudentDataAvailable = null;
   // Initializes the class with member data
   constructor(memberData) {
     this.spinner = document.getElementById("half-circle-spinner");
     this.upSellEls = document.querySelectorAll(".bundle-sem-rounded-red-div");
-    // initial hide the up sell program
+    // Keep shell hidden until student eligibility + programs are both evaluated (avoids load flash)
     this.upSellEls.forEach((el) => {
-      el.style.display = "none";
+      el.style.setProperty("display", "none", "important");
     });
     this.memberData = memberData;
+    console.log("Constructor initialized", {
+      memberId: memberData && memberData.memberId,
+      baseUrl: memberData && memberData.baseUrl,
+    });
     this.displaySupplementaryProgram();
     this.updateOldStudentList();
     this.handlePaymentEvents();
     this.attachBackRestoreHandler();
     this.discount_amount = parseInt(memberData.amount);
     
+  }
+  /** Hide upsell wrapper when student API has no usable data. */
+  hidePortalUpsellSection() {
+    this.upSellEls.forEach((el) => {
+      el.style.setProperty("display", "none", "important");
+    });
+  }
+  logDebug(message, payload) {
+    if (payload !== undefined) {
+      console.log("[PortalUpsell]", message, payload);
+      return;
+    }
+    console.log("[PortalUpsell]", message);
   }
   /**
    *
@@ -47,14 +68,32 @@ class DisplaySuppProgram {
     }
     return el;
   }
+  // Toggle checkbox when container row is clicked.
+  attachCheckboxRowToggle(rowEl, inputEl) {
+    if (!rowEl || !inputEl) {
+      return;
+    }
+    rowEl.addEventListener("click", (event) => {
+      if (event.target === inputEl) {
+        return;
+      }
+      inputEl.checked = !inputEl.checked;
+      inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
   // Fetches data from the specified API endpoint
   async fetchData(endpoint, baseUrl) {
+    console.log("Fetching data", { endpoint: endpoint, baseUrl: baseUrl });
     try {
       const response = await fetch(`${baseUrl}${endpoint}`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
       const data = await response.json();
+      console.log("Fetch success", {
+        endpoint: endpoint,
+        count: Array.isArray(data) ? data.length : undefined,
+      });
       return data;
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -63,24 +102,30 @@ class DisplaySuppProgram {
   }
   // Fetches and displays supplementary programs
   async displaySupplementaryProgram() {
+    console.log("displaySupplementaryProgram started");
     try {
       //this.spinner.style.display = "block";
       this.$suppPro = await this.fetchData("getUpsellProgram?type=portal", this.memberData.baseUrl);
+      console.log("Upsell programs loaded", { totalGroups: this.$suppPro.length });
       this.handleClickEvents();
       this.closeIconEvent();
       if (this.$suppPro.length === 0) {
+        console.log("No supplementary programs returned");
        // this.spinner.style.display = "none";
       } else {
+        console.log("Creating bundle program UI");
         this.createBundleProgram();
         //this.spinner.style.display = "none";
       }
     } catch (error) {
       console.error("Error in displaySupplementaryProgram:", error);
+      console.log("displaySupplementaryProgram failed", { error: error.message });
       //this.spinner.style.display = "none";
     }
   }
   // Creates bundle program cards
   createBundleProgram() {
+    console.log("createBundleProgram started");
     const cardContainer = document.querySelector(
       "[data-upSell='card-container']"
     );
@@ -88,9 +133,11 @@ class DisplaySuppProgram {
       "[data-upSell='modal-card-container']"
     );
     if (!cardContainer) {
+      console.log("Card container missing; abort createBundleProgram");
       return;
     }
     if (!modalCardContainer) {
+      console.log("Modal card container missing; abort createBundleProgram");
       return;
     }
     modalCardContainer.innerHTML = ""; // Clear existing content
@@ -99,6 +146,7 @@ class DisplaySuppProgram {
     var academicData = this.$suppPro.filter((item) => {
       return item.sessionId !== 2;
     });
+    console.log("Academic data prepared", { groups: academicData.length });
 
     academicData.forEach((item) => {
       var currentSessionId = item.sessionId;
@@ -106,16 +154,17 @@ class DisplaySuppProgram {
       var bundleData = item.upsellPrograms.filter(
         (bundle) => bundle.sessionId !== currentSessionId
       );
+      console.log("Bundle data calculated", {
+        currentSessionId: currentSessionId,
+        bundleCount: bundleData.length,
+      });
       // if bundle data empty hide upSellEls
       if(bundleData.length == 0){
         this.upSellEls.forEach((el) => {
-          el.style.display = "none";
-        });
-      }else {
-        this.upSellEls.forEach((el) => {
-          el.style.display = "block";
+          el.style.setProperty("display", "none", "important");
         });
       }
+      // Do not show shell here — wait for syncUpsellRoundedShellVisibility after student API + eligibility
       bundleData.forEach((singleBundleData) => {
         var card = this.createBundleCard(singleBundleData);
         cardContainer.appendChild(card);
@@ -127,6 +176,8 @@ class DisplaySuppProgram {
       this.renderPayNowModalCards();
     });
     this.disableEnableBuyNowButton();
+    // Per-program visibility when student list loaded before or after this build
+    this.syncPerProgramCardVisibility();
   }
   // Displays the total discount amount
   displayTotalDiscount(bundleData){
@@ -139,6 +190,7 @@ class DisplaySuppProgram {
     discountEl.forEach(el=>{
       el.innerHTML = "$"+this.numberWithCommas(totalDiscount);
     })
+    console.log("Total discount updated", { totalDiscount: totalDiscount });
   }
   // Creates a single bundle program card for the main display
   createBundleCard(singleBundleData) {
@@ -148,6 +200,7 @@ class DisplaySuppProgram {
     );
     // Create the label with required classes
     const label = this.creEl("label", "bundle-sem-content-block");
+    label.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
     // Checkbox container
     const checkboxDiv = this.creEl("div");
     const input = this.creEl("input", "bundle-sem-checkbox");
@@ -158,6 +211,10 @@ class DisplaySuppProgram {
     checkboxDiv.appendChild(input);
 
     input.addEventListener("change", (event) => {
+      console.log("Main card checkbox changed", {
+        programId: singleBundleData.upsellProgramId,
+        checked: event.target.checked,
+      });
       if (event.target.checked) {
         if (!this.$selectedProgram.includes(singleBundleData)) {
           this.$selectedProgram.push(singleBundleData);
@@ -198,6 +255,9 @@ class DisplaySuppProgram {
         }
       });
       $this.disableEnableBuyNowButton();
+      console.log("Main card selection updated", {
+        selectedCount: this.$selectedProgram.length,
+      });
     });
 
     // Content container
@@ -261,6 +321,7 @@ class DisplaySuppProgram {
     );
     // Outer grid div
     const grid = this.creEl("div", "bundle-sem-content-flex-container");
+    grid.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
     // Checkbox
     const textWithCheckbox = this.creEl("div", "bundle-sem-text-with-checkbox")
     const checkboxDiv = this.creEl("div", "w-embed");
@@ -270,6 +331,10 @@ class DisplaySuppProgram {
     input.value = singleBundleData.label || "";
     input.setAttribute("data-upsell-program-id", singleBundleData.upsellProgramId);
     input.addEventListener("change", (event) => {
+      console.log("Modal card checkbox changed", {
+        programId: singleBundleData.upsellProgramId,
+        checked: event.target.checked,
+      });
       if (event.target.checked) {
         if (!this.$selectedProgram.includes(singleBundleData)) {
           this.$selectedProgram.push(singleBundleData);
@@ -310,6 +375,9 @@ class DisplaySuppProgram {
         }
       });
       $this.disableEnableBuyNowButton();
+      console.log("Modal card selection updated", {
+        selectedCount: this.$selectedProgram.length,
+      });
     });
     checkboxDiv.appendChild(input);
     const headingWrapper = this.creEl("div")
@@ -340,6 +408,7 @@ class DisplaySuppProgram {
     // Assemble
     textWithCheckbox.appendChild(checkboxDiv);
     textWithCheckbox.appendChild(headingWrapper);
+    this.attachCheckboxRowToggle(textWithCheckbox, input);
     grid.appendChild(textWithCheckbox);
     grid.appendChild(priceWrapper);
 
@@ -371,6 +440,7 @@ class DisplaySuppProgram {
     closeLinks.forEach(function (closeLink) {
       closeLink.addEventListener("click", function (event) {
         event.preventDefault();
+        console.log("Semester modal close clicked");
         $this.hideModal(semesterBundleModal);
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
@@ -381,6 +451,7 @@ class DisplaySuppProgram {
       closeModal.forEach((close_modal_link) => {
         close_modal_link.addEventListener("click", function (event) {
           event.preventDefault();
+          console.log("Modal close element clicked");
           $this.hideModal(semesterBundleModal);
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
@@ -391,6 +462,7 @@ class DisplaySuppProgram {
     // Add click event listener to the learn more button
     allLearnMore.addEventListener("click", function (event) {
       event.preventDefault();
+      console.log("Learn more clicked; opening semester modal");
       semesterBundleModal.classList.add("show");
       semesterBundleModal.style.display = "flex";
     });
@@ -408,6 +480,9 @@ class DisplaySuppProgram {
     addToCartButtons.forEach((button) => {
       button.addEventListener("click", function (event) {
         event.preventDefault();
+        console.log("Add to cart clicked", {
+          selectedCount: $this.$selectedProgram.length,
+        });
         // $this.$selectedProgram = item;
         //$this.updatePayNowModelAmount();
         const buyNowModal = document.getElementById("buyNowModal");
@@ -437,6 +512,7 @@ class DisplaySuppProgram {
       closeLink.addEventListener("click", function (event) {
         event.preventDefault();
         event.stopPropagation(); // Prevent event bubbling
+        console.log("[PortalUpsell]", "Close icon clicked");
 
         // First, try getting the modal from `data-target`
         const targetModalId = closeLink.getAttribute("data-target");
@@ -458,67 +534,297 @@ class DisplaySuppProgram {
     });
   }
   //updateOldStudentList
+  /** Returns all native selects for portal student (page + modal may duplicate id). */
+  getPortalStudentSelectElements() {
+    return Array.from(document.querySelectorAll("#portal-students")).filter(
+      (el) => el && el.tagName === "SELECT"
+    );
+  }
   async updateOldStudentList() {
-    const selectBox = document.getElementById("portal-students");
-    var $this = this;
+    console.log("updateOldStudentList started", {
+      memberId: this.memberData.memberId,
+    });
     try {
-      const data = await this.fetchData(
+      // Use selling endpoint and apply only selected-program conditions in UI
+      const allStudentsResponse = await this.fetchData(
         "getAllPreviousStudents/" + this.memberData.memberId + "/selling",
         this.memberData.fTypeBaseUrl
       );
-      if (data == "No data Found") {
-        this.upSellEls.forEach((el) => {
-          el.style.display = "none";
-        });
+      const isNoDataMessage =
+        allStudentsResponse === "No data Found" ||
+        (typeof allStudentsResponse === "string" &&
+          allStudentsResponse.toLowerCase().indexOf("no data") >= 0);
+      if (isNoDataMessage) {
+        console.log("Student API returned no data; hiding portal upsell UI");
+        this.$portalStudentDataAvailable = false;
+        this.hidePortalUpsellSection();
         return;
       }
-      //finding unique value and sorting by firstName
-      const filterData = data
-        .filter((item, index, self) => {
-          const dedupeKey = item.studentEmail && item.studentEmail.trim()
-            ? `email:${item.studentEmail.trim().toLowerCase()}`
-            : `payment:${item.paymentId}`;
-          return (
-            index ===
-            self.findIndex((obj) => {
-              const objKey = obj.studentEmail && obj.studentEmail.trim()
-                ? `email:${obj.studentEmail.trim().toLowerCase()}`
-                : `payment:${obj.paymentId}`;
-              return objKey === dedupeKey;
-            })
-          );
-        })
-        .sort(function (a, b) {
-          return a.studentName.trim().localeCompare(b.studentName.trim());
-        });
-      // Clear existing options
+      const allStudents = Array.isArray(allStudentsResponse) ? allStudentsResponse : [];
+      // Keep full API history rows for purchased-program checks
+      this.$allStudentHistory = allStudents;
+      if (allStudents.length === 0) {
+        console.log("No previous students found");
+        this.$portalStudentDataAvailable = false;
+        this.hidePortalUpsellSection();
+        return;
+      }
+      // Find unique students and sort by studentName
+      const filterData = this.getDedupedStudents(allStudents);
+      this.$previousStudents = filterData;
+      this.$portalStudentDataAvailable = true;
+      console.log("Student list prepared", {
+        totalStudents: allStudents.length,
+        uniqueStudents: filterData.length,
+      });
+      this.refreshStudentListBySelectedProgram();
+    } catch (error) {
+      console.error("Error fetching API data:", error);
+      console.log("updateOldStudentList failed", { error: error.message });
+      this.$portalStudentDataAvailable = false;
+      this.hidePortalUpsellSection();
+
+      // Handle errors (optional)
+      this.getPortalStudentSelectElements().forEach((selectBox) => {
+        selectBox.innerHTML =
+          '<option value="">Student Details not available</option>';
+      });
+    }
+  }
+  getDedupedStudents(data) {
+    return data
+      .filter((item, index, self) => {
+        const dedupeKey = item.studentEmail && item.studentEmail.trim()
+          ? `email:${item.studentEmail.trim().toLowerCase()}`
+          : `payment:${item.paymentId}`;
+        return (
+          index ===
+          self.findIndex((obj) => {
+            const objKey = obj.studentEmail && obj.studentEmail.trim()
+              ? `email:${obj.studentEmail.trim().toLowerCase()}`
+              : `payment:${obj.paymentId}`;
+            return objKey === dedupeKey;
+          })
+        );
+      })
+      .sort(function (a, b) {
+        return a.studentName.trim().localeCompare(b.studentName.trim());
+      });
+  }
+  getStudentIdentityKey(student) {
+    if (student && student.studentEmail && student.studentEmail.trim()) {
+      return `email:${student.studentEmail.trim().toLowerCase()}`;
+    }
+    if (student && student.studentName && student.studentName.trim()) {
+      return `name:${student.studentName.trim().toLowerCase()}`;
+    }
+    return `payment:${student && student.paymentId ? student.paymentId : ""}`;
+  }
+  /** Filter students using the same rules as current selection, for arbitrary upsell id list. */
+  getEligibleStudentsBySelectedUpsellIds(students, selectedUpsellIds, quietLog) {
+    const ids = (selectedUpsellIds || [])
+      .map((id) => Number(id))
+      .filter((id) => !Number.isNaN(id));
+    if (ids.length === 0) {
+      return students;
+    }
+    return students.filter((student) => {
+      const hasSelectedProgramAlready = this.hasStudentPurchasedSelectedUpsell(
+        student,
+        ids
+      );
+      if (hasSelectedProgramAlready) {
+        if (!quietLog) {
+          console.log("Excluding student: already purchased selected program", {
+            studentName: student.studentName,
+            paymentId: student.paymentId,
+            selectedUpsellIds: ids,
+          });
+        }
+        return false;
+      }
+      if (ids.includes(106) && student.isSummerProgram) {
+        if (!quietLog) {
+          console.log("Excluding student: 106 selected with summer student", {
+            studentName: student.studentName,
+            paymentId: student.paymentId,
+          });
+        }
+        return false;
+      }
+      return true;
+    });
+  }
+  hasStudentPurchasedSelectedUpsell(student, selectedUpsellIds) {
+    if (!Array.isArray(selectedUpsellIds) || selectedUpsellIds.length === 0) {
+      return false;
+    }
+    const identityKey = this.getStudentIdentityKey(student);
+    const studentHistorySource =
+      Array.isArray(this.$allStudentHistory) && this.$allStudentHistory.length > 0
+        ? this.$allStudentHistory
+        : this.$previousStudents || [];
+    const studentHistory = studentHistorySource.filter(
+      (item) => this.getStudentIdentityKey(item) === identityKey
+    );
+    return studentHistory.some((historyItem) => {
+      const purchasedIds = Array.isArray(historyItem.upsellProgramIds)
+        ? historyItem.upsellProgramIds.map((id) => Number(id))
+        : [];
+      return selectedUpsellIds.some((id) => purchasedIds.includes(id));
+    });
+  }
+  getEligibleStudentsBySelectedProgram(students) {
+    const selectedUpsellIds = this.$selectedProgram.map((program) =>
+      Number(program.upsellProgramId)
+    );
+    console.log("Selected upsell ids for student filter", selectedUpsellIds);
+    return this.getEligibleStudentsBySelectedUpsellIds(
+      students,
+      selectedUpsellIds,
+      false
+    );
+  }
+  /** Show or hide each program card based on eligibility if only that program applied (on load / student refresh). */
+  syncPerProgramCardVisibility() {
+    if (!Array.isArray(this.$bundleData) || this.$bundleData.length === 0) {
+      return;
+    }
+    if (!Array.isArray(this.$previousStudents) || this.$previousStudents.length === 0) {
+      return;
+    }
+    this.$bundleData.forEach((program) => {
+      const id = program.upsellProgramId;
+      const eligible = this.getEligibleStudentsBySelectedUpsellIds(
+        this.$previousStudents,
+        [id],
+        true
+      );
+      const show = eligible.length > 0;
+      document.querySelectorAll(`[data-upsell-program-card="${id}"]`).forEach((el) => {
+        if (show) {
+          el.style.removeProperty("display");
+        } else {
+          el.style.setProperty("display", "none", "important");
+        }
+      });
+    });
+    this.syncUpsellRoundedShellVisibility();
+  }
+  /** Hide outer upsell wrapper when no program has any eligible student. */
+  syncUpsellRoundedShellVisibility() {
+    if (!Array.isArray(this.$bundleData) || this.$bundleData.length === 0) {
+      return;
+    }
+    if (!Array.isArray(this.$previousStudents) || this.$previousStudents.length === 0) {
+      return;
+    }
+    const anyProgramHasEligibleStudent = this.$bundleData.some((program) => {
+      const eligible = this.getEligibleStudentsBySelectedUpsellIds(
+        this.$previousStudents,
+        [program.upsellProgramId],
+        true
+      );
+      return eligible.length > 0;
+    });
+    if (!anyProgramHasEligibleStudent) {
+      this.upSellEls.forEach((el) => {
+        el.style.setProperty("display", "none", "important");
+      });
+      console.log("[PortalUpsell] Hiding bundle-sem-rounded-red-div; no eligible students for any program");
+      return;
+    }
+    if (this.$portalStudentDataAvailable !== false) {
+      this.upSellEls.forEach((el) => {
+        el.style.removeProperty("display");
+      });
+    }
+  }
+  /** Copy upsell id onto buy-now modal flex rows so show/hide matches Webflow layout. */
+  hydrateBuyNowModalProgramRows() {
+    const modal = document.getElementById("buyNowModal");
+    if (!modal) {
+      return;
+    }
+    modal.querySelectorAll(".bundle-sem-content-flex-wrapper").forEach((row) => {
+      if (row.closest(".bundle-sem-content-inner-div[data-upsell-program-card]")) {
+        return;
+      }
+      const input = row.querySelector("[data-upsell-program-id]");
+      if (!input) {
+        return;
+      }
+      const id = input.getAttribute("data-upsell-program-id");
+      if (id !== null && id !== "") {
+        row.setAttribute("data-upsell-program-card", id);
+      }
+    });
+  }
+  renderStudentOptions(students) {
+    const selectBoxes = this.getPortalStudentSelectElements();
+    if (!selectBoxes.length) {
+      console.log("portal-students select box not found");
+      return;
+    }
+    const previousValue = selectBoxes[0].value;
+    // Rebuild student options on every matching select (page + modal duplicates).
+    selectBoxes.forEach((selectBox) => {
       selectBox.innerHTML = "";
-      // Add a "Please select" option
       const defaultOption = document.createElement("option");
       defaultOption.value = "";
       defaultOption.textContent = "Select a student";
       selectBox.appendChild(defaultOption);
-      // Add new options from the API data
-      filterData.forEach((item, index) => {
+      students.forEach((item) => {
         const option = document.createElement("option");
         option.value = item.paymentId;
-        // Add selected if filterData length is 1
-        if (filterData.length === 1) {
+        option.textContent = `${item.studentName}`;
+        if (students.length === 1) {
           option.selected = true;
         }
-        option.textContent = `${item.studentName}`;
         selectBox.appendChild(option);
       });
-    } catch (error) {
-      console.error("Error fetching API data:", error);
-
-      // Handle errors (optional)
-      selectBox.innerHTML =
-        '<option value="">Student Details not available</option>';
+    });
+    const stillValid =
+      previousValue &&
+      students.some((s) => String(s.paymentId) === String(previousValue));
+    const valueToSet = stillValid ? previousValue : "";
+    selectBoxes.forEach((selectBox) => {
+      selectBox.value = valueToSet;
+      selectBox.dispatchEvent(new Event("change", { bubbles: true }));
+      selectBox.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    console.log("Rendered portal-students options", {
+      selectCount: selectBoxes.length,
+      students: students.map((s) => ({
+        studentName: s.studentName,
+        paymentId: s.paymentId,
+        isBundled: s.isBundled,
+        upsellProgramIds: s.upsellProgramIds,
+      })),
+    });
+  }
+  refreshStudentListBySelectedProgram() {
+    if (!Array.isArray(this.$previousStudents) || this.$previousStudents.length === 0) {
+      console.log("No cached students available for filtering");
+      return;
     }
+    const eligibleStudents = this.getEligibleStudentsBySelectedProgram(this.$previousStudents);
+    console.log("Filtered student list by selected program", {
+      selectedProgramIds: this.$selectedProgram.map((p) => p.upsellProgramId),
+      totalStudents: this.$previousStudents.length,
+      eligibleStudents: eligibleStudents.length,
+    });
+    this.renderStudentOptions(eligibleStudents);
+    this.hydrateBuyNowModalProgramRows();
+    this.syncPerProgramCardVisibility();
   }
 
   async initSupplementaryPayment(paymentId, upsellProgramId, programName, amount) {
+    console.log("initSupplementaryPayment started", {
+      paymentId: paymentId,
+      upsellProgramId: upsellProgramId,
+      amount: amount,
+    });
 
     // Open Bergen credits modal and wait for user's decision
     // This will show the modal, fetch credit data, and wait for user to choose apply/no
@@ -526,6 +832,7 @@ class DisplaySuppProgram {
     
     // applyCredit is now set: true if "apply" was clicked, false if "no" was clicked
     console.log("Apply credit:", applyCredit);
+    console.log("Credit application choice received", { applyCredit: applyCredit });
     // Must match Stripe session cancel_url. Chrome back follows history (often dashboard);
     // Stripe back uses cancel_url — same string we POST here. Restore full URL on pageshow via sessionStorage.
     var pathForCancel =
@@ -557,6 +864,7 @@ class DisplaySuppProgram {
       memberId: this.memberData.memberId,
       applyCredit: applyCredit,
     };
+    console.log("Checkout payload prepared", data);
     // Create the POST request
     fetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
       method: "POST", // Specify the method
@@ -574,15 +882,18 @@ class DisplaySuppProgram {
       })
       .then((data) => {
         console.log("Success:", data); // Handle the JSON data
+        console.log("Checkout API success response", data);
         if (data.success) {
           console.log(data.cardUrl);
           window.location.href = data.cardUrl;
         } else {
+          console.log("Checkout API response marked unsuccessful");
           this.resetPaySuppProgramButton();
         }
       })
       .catch((error) => {
         console.error("There was a problem with the fetch operation:", error); // Handle errors
+        console.log("Checkout API request failed", { error: error.message });
         this.resetPaySuppProgramButton();
       });
   }
@@ -592,16 +903,19 @@ class DisplaySuppProgram {
     payBtn.innerHTML = "Pay Now";
     payBtn.style.pointerEvents = "auto";
     payBtn.disabled = false;
+    console.log("Pay button reset to default state");
   }
   attachBackRestoreHandler() {
     var $this = this;
     window.addEventListener("pageshow", function (event) {
+      console.log("pageshow triggered", { persisted: event.persisted });
       const navEntries = performance.getEntriesByType("navigation");
       const isHistoryNav =
         navEntries &&
         navEntries.length > 0 &&
         navEntries[0].type === "back_forward";
       if (!(event.persisted || isHistoryNav)) {
+        console.log("pageshow ignored; not a history navigation");
         return;
       }
       var stored = null;
@@ -609,12 +923,14 @@ class DisplaySuppProgram {
         stored = sessionStorage.getItem(PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY);
       } catch (e) {}
       if (stored) {
+        console.log("Found stored cancel URL", { stored: stored });
         try {
           var storedU = new URL(stored);
           var currentU = new URL(window.location.href);
           var storedKey = storedU.origin + storedU.pathname + storedU.search;
           var currentKey = currentU.origin + currentU.pathname + currentU.search;
           if (storedKey !== currentKey && storedU.origin === currentU.origin) {
+            console.log("Restoring page via stored cancel URL");
             window.location.replace(stored);
             return;
           }
@@ -631,9 +947,16 @@ class DisplaySuppProgram {
     const payBtn = document.getElementById("pay-supp-program");
     payBtn.addEventListener("click", function (event) {
       event.preventDefault();
+      console.log("Pay button clicked", {
+        selectedCount: $this.$selectedProgram.length,
+      });
 
-      const studentEl = document.getElementById("portal-students");
-      if (studentEl.value) {
+      const portalSelects = $this.getPortalStudentSelectElements();
+      const studentEl =
+        portalSelects.find((el) => el.offsetParent !== null && el.value) ||
+        portalSelects.find((el) => el.value) ||
+        portalSelects[0];
+      if (studentEl && studentEl.value) {
         payBtn.innerHTML = "Processing...";
         payBtn.style.pointerEvents = "none";
         payBtn.disabled = true;
@@ -648,6 +971,11 @@ class DisplaySuppProgram {
         ).toFixed(2);
         // Check if the program name, upsellProgramId, amount, and paymentId are defined
         let paymentId = studentEl.value;
+        console.log("Payment input prepared", {
+          paymentId: paymentId,
+          programName: programName,
+          amount: amount,
+        });
         if (programName && upsellProgramId && amount && paymentId) {
           $this.initSupplementaryPayment(
             paymentId,
@@ -656,9 +984,11 @@ class DisplaySuppProgram {
             amount
           );
         } else {
+          console.log("Payment blocked; missing required fields");
           $this.resetPaySuppProgramButton();
         }
       } else {
+        console.log("Payment blocked; student not selected");
         alert("Please select student");
         $this.resetPaySuppProgramButton();
       }
@@ -692,12 +1022,17 @@ class DisplaySuppProgram {
         button.disabled = true; // Disable each button
         button.classList.add("disabled");
       });
+      console.log("Buy now buttons disabled");
     } else {
       buyNowButton.forEach((button) => {
         button.disabled = false; // Enable each button
         button.classList.remove("disabled");
       });
-    } 
+      console.log("Buy now buttons enabled", {
+        selectedCount: this.$selectedProgram.length,
+      });
+    }
+    this.refreshStudentListBySelectedProgram();
   }
   // Generate a card for payNow-modal-card-container
   createPayNowModalCard(singleBundleData) {
@@ -706,8 +1041,9 @@ class DisplaySuppProgram {
       "[data-cart-total='cart-total-price']"
     );
 
-    // Outer grid wrapper (initially without border-brown-red)
+    // Outer card wrapper — one data-upsell-program-card per pay-now program (matches hide scope)
     const wrapper = this.creEl("div", "bundle-sem-content-inner-div");
+    wrapper.setAttribute("data-upsell-program-card", singleBundleData.upsellProgramId);
     const isSelected = this.$selectedProgram.find(
       (program) => program.upsellProgramId === singleBundleData.upsellProgramId
     );
@@ -760,6 +1096,7 @@ class DisplaySuppProgram {
       const nameText = this.creEl("p", "bundle-sem-name-text");
       nameText.textContent = `${singleBundleData.label || "Winter/Spring"} (${singleBundleData.yearId || "2026"})`;
       textWithCheckbox.appendChild(nameText);
+      this.attachCheckboxRowToggle(textWithCheckbox, input);
 
       flexWrapper.appendChild(textWithCheckbox);
 
@@ -782,6 +1119,10 @@ class DisplaySuppProgram {
 
       // Add checkbox event logic
       input.addEventListener("change", (event) => {
+        console.log("Pay now modal checkbox changed", {
+          programId: singleBundleData.upsellProgramId,
+          checked: event.target.checked,
+        });
         if (event.target.checked) {
           if (!this.$selectedProgram.includes(singleBundleData)) {
             this.$selectedProgram.push(singleBundleData);
@@ -820,6 +1161,9 @@ class DisplaySuppProgram {
           }
         });
         this.disableEnableBuyNowButton();
+        console.log("Pay now modal selection updated", {
+          selectedCount: this.$selectedProgram.length,
+        });
       });
 
       return wrapper;
@@ -831,11 +1175,33 @@ class DisplaySuppProgram {
     var programs = this.$bundleData;
     const payNowContainer = document.querySelector("[data-upSell='payNow-modal-card-container']");
     if (!payNowContainer) return;
-    if(this.$selectedProgram.length == programs.length){
-      payNowContainer.innerHTML = '';
+    console.log("Rendering pay now modal cards", {
+      bundleCount: programs.length,
+      selectedCount: this.$selectedProgram.length,
+    });
+    if (this.$selectedProgram.length == programs.length) {
+      payNowContainer.innerHTML = "";
+      const allPrograms = Array.isArray(this.$bundleData) ? this.$bundleData : programs;
+      let isFirstCard = true;
+      allPrograms.forEach((program) => {
+        const card = this.createPayNowModalCard(program);
+        if (!isFirstCard) {
+          const titleEl = card.querySelector(".bundle-sem-title-text");
+          if (titleEl) {
+            titleEl.remove();
+          }
+        }
+        isFirstCard = false;
+        payNowContainer.appendChild(card);
+      });
+      console.log("Pay now modal: all programs selected; rendered rows for hide sync", {
+        renderedCount: allPrograms.length,
+      });
+      this.hydrateBuyNowModalProgramRows();
+      this.syncPerProgramCardVisibility();
       return;
     }
-    payNowContainer.innerHTML = '';
+    payNowContainer.innerHTML = "";
     // Sort programs: selected programs first, then the rest
     programs = [
       ...programs.filter(p => this.$selectedProgram.some(sel => sel.upsellProgramId === p.upsellProgramId)),
@@ -846,6 +1212,9 @@ class DisplaySuppProgram {
       const card = this.createPayNowModalCard(program);
       payNowContainer.appendChild(card);
     });
+    console.log("Pay now modal cards rendered", { renderedCount: programs.length });
+    this.hydrateBuyNowModalProgramRows();
+    this.syncPerProgramCardVisibility();
   }
 
   updateCreditModalAmount(amount) {
@@ -855,6 +1224,7 @@ class DisplaySuppProgram {
     if (grayElem) grayElem.innerHTML = `$${amount.toFixed(2)}`;
       // After deposit price is updated, now recalc the discount
     Utils.calculateDiscountPrice();
+    console.log("Credit modal amount updated", { amount: amount });
   }
 }
 
