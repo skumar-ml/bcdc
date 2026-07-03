@@ -1296,6 +1296,9 @@ class CheckOutWebflow {
 		if (typeof this.renderAddonRowPrices === 'function') {
 			this.renderAddonRowPrices(this.getCurrentPaymentTab());
 		}
+		if (typeof this.syncBannerPrices === 'function') {
+			this.syncBannerPrices();
+		}
 
 		if (typeof Utils !== 'undefined' && Utils.calculateDiscountPrice) {
 			Utils.calculateDiscountPrice();
@@ -1752,6 +1755,7 @@ class CheckOutWebflow {
       // reflects the new per-program fee total without waiting for a tab click.
       // Uses DOM (#totalAmount + #suppProIds) so it is correct across instances.
       this.applyTotalsForTab(this.getCurrentPaymentTab());
+      this.syncBannerPrices();
     }
 
 	_hasAnyUpsellSelected() {
@@ -1844,6 +1848,11 @@ class CheckOutWebflow {
       bundlePrice.innerHTML = "$" + $this.numberWithCommas(parseFloat(sup.amount).toFixed(2));
       bundlePrice.setAttribute("data-stripe", "addon_price");
       bundlePrice.setAttribute("addon-price",$this.numberWithCommas(parseFloat(sup.amount).toFixed(2)));
+      bundlePrice.setAttribute("data-program-detail-id", String(sup.upsellProgramId));
+      bundlePrice.setAttribute(
+        "data-program-label",
+        String(sup.label || "").trim().toLowerCase()
+      );
       //cartGridWrapper3.prepend(bundleLabel);
       mainGridWrapper.appendChild(bundlePrice);
       
@@ -2005,15 +2014,33 @@ class CheckOutWebflow {
 		var disc_amount = "";
 		var discounted_amount = "";
 		var achAmount = 0;
+		var depositBase = 0;
+		var bundleDiscount = parseFloat(item.disc_amount || 0);
+		if (isNaN(bundleDiscount)) bundleDiscount = 0;
+		var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
+		if (totalDepositPriceEl) {
+			depositBase = parseFloat(
+				String(totalDepositPriceEl.getAttribute("data-stripe-price") || "0").replace(/,/g, "")
+			);
+			if (isNaN(depositBase) || depositBase <= 0) {
+				depositBase = parseFloat(
+					String(totalDepositPriceEl.textContent || "").replace(/[^0-9.]/g, "")
+				) || 0;
+			}
+		}
 		if (this.memberData.achAmount && typeof this.memberData.achAmount === "string") {
 			achAmount = parseFloat(this.memberData.achAmount.replace(/,/g, ""));
 		}
-		if (!Number.isNaN(achAmount) && achAmount > 0) {
+		// Prefer the live Webflow deposit as the core base (e.g. half-payment $1,145).
+		if (depositBase > 0) {
+			disc_amount = depositBase.toFixed(2);
+			discounted_amount = (depositBase - bundleDiscount).toFixed(2);
+		} else if (!Number.isNaN(achAmount) && achAmount > 0) {
 			disc_amount = achAmount.toFixed(2);
 			discounted_amount = achAmount.toFixed(2);
-		}
-		if (item.disc_amount !== undefined && item.disc_amount !== null && item.disc_amount !== "" && !Number.isNaN(achAmount) && achAmount > 0) {
-			discounted_amount = (achAmount - parseFloat(item.disc_amount)).toFixed(2);
+			if (bundleDiscount > 0) {
+				discounted_amount = (achAmount - bundleDiscount).toFixed(2);
+			}
 		}
 		var coreData = {
 			// Start at the full base amount (e.g. 1800). The bundle discount
@@ -2033,19 +2060,10 @@ class CheckOutWebflow {
 			// Bundle-discount metadata (not sent to API; used internally).
 			"_baseAmount": disc_amount,
 			"_bundleDiscountedAmount": discounted_amount,
-			"_bundleDiscount": item.disc_amount || 0
+			"_bundleDiscount": bundleDiscount
 		}
 		// Paint initial totals immediately so users see price without waiting for full card render loop.
 		this.applyInitialBundleTotals(coreData.amount);
-        // Select  [data-stripe='totalDepositPrice'] and get data-stripe-price attribute value
-        var totalDepositPriceEl = document.querySelector("[data-stripe='totalDepositPrice']");
-        var coreDepositPrice = 0;
-        if (totalDepositPriceEl) {
-          var dataStripePrice = parseFloat(totalDepositPriceEl.getAttribute("data-stripe-price") || "0");
-          var coreAmount = parseFloat(coreData.amount || "0");
-          // removed deposit amount
-          //coreData.amount = coreAmount - dataStripePrice;
-        }
         this.$coreData = coreData;
         this.$selectedProgram = [coreData, ...this.$selectedProgram.filter(program => program.upsellProgramId !== coreData.upsellProgramId)];
         var bundlePopUpText = creEl("p", "bundle-pop-up-text");
@@ -2065,6 +2083,7 @@ class CheckOutWebflow {
         }
 
         this.renderBannerPriceLayout(Array.isArray(bundleData) ? bundleData : []);
+        this.syncBannerPrices();
         this.updateAmount(0);
         this.displayTotalDiscount(item.upsellPrograms, item.disc_amount, coreData);
       });
@@ -2142,15 +2161,23 @@ class CheckOutWebflow {
       }
       const discTotal = programs.reduce((acc, p) => acc + (Number(p.disc_amount) || 0), 0);
       const amountTotal = programs.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+      const coreLabel = String((this.$coreData && this.$coreData.label) || "")
+        .trim()
+        .toLowerCase();
+      const coreInBanner = programs.some((p) => {
+        return String((p && p.label) || "").trim().toLowerCase() === coreLabel;
+      });
 
       wrappers.forEach((wrap) => {
 
         const totalCard = creEl("div", "banner-price-total-info-card");
         const totalGray = creEl("div", "bundle-sem-popup-price-gray-del");
         totalGray.setAttribute("data-addon", "price");
+        totalGray.setAttribute("data-api-price", String(discTotal));
         totalGray.textContent = "$" + this.numberWithCommas(discTotal);
         const totalRed = creEl("div", "bundle-sem-pop-up-total-price-text");
         totalRed.setAttribute("data-addon", "discount-price");
+        totalRed.setAttribute("data-api-discount-price", String(amountTotal));
         totalRed.textContent = "$" + this.numberWithCommas(amountTotal);
         totalCard.appendChild(totalGray);
         totalCard.appendChild(totalRed);
@@ -2161,6 +2188,13 @@ class CheckOutWebflow {
 
         programs.forEach((p, i) => {
           const programCard = creEl("div", "banner-price-info-card");
+          const programLabel = String((p && p.label) || "").trim().toLowerCase();
+          programCard.setAttribute("data-program-label", programLabel);
+          if (coreLabel && programLabel === coreLabel) {
+            programCard.setAttribute("data-banner-core-slot", "true");
+          } else if (i === 0 && !coreInBanner) {
+            programCard.setAttribute("data-banner-core-slot", "true");
+          }
           const input = creEl("input", "bundle-sem-checkbox bundleProgram");
           input.type = "checkbox";
           input.name = "bundle-sem";
@@ -2171,16 +2205,20 @@ class CheckOutWebflow {
 
           const gray = creEl("div", "bundle-sem-popup-price-gray-del");
           gray.setAttribute("data-addon", "price");
+          gray.setAttribute("data-api-price", String(p.disc_amount != null ? p.disc_amount : 0));
           gray.textContent = p.disc_amount != null
             ? "$" + this.numberWithCommas(p.disc_amount)
             : "";
           const red = creEl("div", "bundle-sem-pop-up-price-text-red");
           red.setAttribute("data-addon", "discount-price");
+          red.setAttribute("data-api-discount-price", String(p.amount != null ? p.amount : 0));
           red.textContent = p.amount != null
             ? "$" + this.numberWithCommas(p.amount)
             : "";
           const desc = creEl("div", "bundle-sem-dec-small");
-          desc.textContent = (p.desc || "").trim();
+          var programDesc = (p.desc || "").trim();
+          desc.setAttribute("data-api-desc", programDesc);
+          desc.textContent = programDesc;
           if (i === 0) {
             const grayWrap = creEl("div", "banner-price");
             grayWrap.appendChild(gray);
@@ -2420,6 +2458,7 @@ class CheckOutWebflow {
       }
       semesterBundleModal.classList.add("show");
       semesterBundleModal.style.display = "flex";
+      this.syncBannerPrices();
     }
     // Sets up event listeners for "No Thanks" and close buttons on the modal
     noThanksEvent() {
@@ -2613,6 +2652,400 @@ class CheckOutWebflow {
 		// the "Remove / Fall / $amount" row stays stuck on ACH pricing when the card tab
 		// is active.
 		this.renderAddonRowPrices(tabName);
+	}
+
+	// Parse a displayed price string into a numeric amount.
+	_parsePriceAmount(text) {
+		var amount = parseFloat(String(text || "").replace(/[^0-9.]/g, ""));
+		return isNaN(amount) ? null : amount;
+	}
+
+	// Format a stored API numeric amount for banner display.
+	_formatApiBannerPrice(apiAmount) {
+		var parsed = parseFloat(String(apiAmount || 0).replace(/,/g, ""));
+		if (isNaN(parsed)) return "";
+		return this._formatBannerDisplayPrice(parsed);
+	}
+
+	// Match Webflow banner style — whole dollars omit decimals.
+	_formatBannerDisplayPrice(amount, preferText) {
+		if (preferText) {
+			var fromText = this._parsePriceAmount(preferText);
+			if (fromText != null) {
+				return this._formatBannerDisplayPrice(fromText);
+			}
+			return String(preferText).trim();
+		}
+		var parsed = parseFloat(String(amount || 0).replace(/,/g, ""));
+		if (isNaN(parsed)) return "";
+		if (Math.abs(parsed - Math.round(parsed)) < 0.005) {
+			return "$" + this.numberWithCommas(String(Math.round(parsed)));
+		}
+		return "$" + this.numberWithCommas(parsed.toFixed(2));
+	}
+
+	// True when a computed amount differs from the stored API baseline.
+	_priceDiffersFromApi(computedAmount, apiNumeric) {
+		if (computedAmount == null || isNaN(apiNumeric)) return false;
+		return Math.abs(computedAmount - apiNumeric) >= 0.005;
+	}
+
+	// Apply sidebar/API price to one banner price node; returns true when overridden.
+	_syncBannerPriceElement(el, displayText, apiNumeric) {
+		if (!el || isNaN(apiNumeric)) return false;
+		var apiFormatted = this._formatApiBannerPrice(apiNumeric);
+		if (!displayText) {
+			el.textContent = apiFormatted;
+			return false;
+		}
+		var displayAmount = this._parsePriceAmount(displayText);
+		if (displayAmount == null || !this._priceDiffersFromApi(displayAmount, apiNumeric)) {
+			el.textContent = apiFormatted;
+			return false;
+		}
+		el.textContent = this._formatBannerDisplayPrice(displayAmount, displayText);
+		return true;
+	}
+
+	// Base deposit for the core Summer row (e.g. half-payment $1,145).
+	_getCoreBasePriceForBanner() {
+		if (this.$coreData && this.$coreData._baseAmount != null) {
+			var coreBase = parseFloat(String(this.$coreData._baseAmount).replace(/,/g, ""));
+			if (!isNaN(coreBase) && coreBase > 0) {
+				return this._formatBannerDisplayPrice(coreBase);
+			}
+		}
+		var baseDeposit = this._getBaseCoreDepositAmount();
+		if (baseDeposit > 0) {
+			return this._formatBannerDisplayPrice(baseDeposit);
+		}
+		return null;
+	}
+
+	// Read sidebar order-detail prices keyed by program id and label.
+	_buildSidebarPriceLookup() {
+		var $this = this;
+		var byId = {};
+		var byLabel = {};
+		document.querySelectorAll(
+			"#add-on-program-desktop .cart-grid-wrapper, #add-on-program-mobile .cart-grid-wrapper"
+		).forEach(function (row) {
+			var priceEl = row.querySelector('[data-stripe="addon_price"]');
+			if (!priceEl) return;
+			// Banner always uses ACH base from addon-price, not card-tab display text.
+			var addonBase = priceEl.getAttribute("addon-price");
+			var displayed = "";
+			if (addonBase) {
+				var baseAmt = parseFloat(String(addonBase).replace(/,/g, ""));
+				if (!isNaN(baseAmt)) {
+					displayed = $this._formatBannerDisplayPrice(baseAmt);
+				}
+			}
+			if (!displayed) {
+				displayed = (priceEl.textContent || priceEl.innerHTML || "").trim();
+			}
+			if (!displayed) return;
+			var programId = priceEl.getAttribute("data-program-detail-id");
+			if (programId) {
+				byId[programId] = displayed;
+			}
+			var label = priceEl.getAttribute("data-program-label");
+			if (!label) {
+				var labelEl = row.querySelector(".bundle-semester");
+				label = labelEl
+					? String(labelEl.textContent || "").trim().toLowerCase()
+					: "";
+			}
+			if (label) {
+				byLabel[label] = displayed;
+			}
+		});
+		return { byId: byId, byLabel: byLabel };
+	}
+
+	// Resolve the live Summer/core price shown in order details.
+	_getCoreDisplayPrice(lookup) {
+		var coreId = this.$coreData && this.$coreData.upsellProgramId;
+		if (coreId != null && lookup.byId[String(coreId)]) {
+			return lookup.byId[String(coreId)];
+		}
+		var coreLabel = String((this.$coreData && this.$coreData.label) || "summer")
+			.trim()
+			.toLowerCase();
+		if (lookup.byLabel[coreLabel]) {
+			return lookup.byLabel[coreLabel];
+		}
+		// Bare checkout: use the Webflow deposit total (e.g. half-payment amount).
+		if (!this._hasAnyUpsellSelected()) {
+			var totalDepositEl = document.querySelector("[data-stripe='totalDepositPrice']");
+			if (totalDepositEl) {
+				var totalText = (totalDepositEl.textContent || totalDepositEl.innerText || "").trim();
+				if (totalText) {
+					return totalText;
+				}
+				var stripePrice = totalDepositEl.getAttribute("data-stripe-price");
+				if (stripePrice) {
+					return "$" + this.numberWithCommas(String(stripePrice).replace(/,/g, ""));
+				}
+			}
+		}
+		if (this.$coreData && this.$coreData.amount != null && this.$coreData.amount !== "") {
+			return this._formatApiBannerPrice(this.$coreData.amount);
+		}
+		return null;
+	}
+
+	// Match a banner card to the sidebar price for the same program or core slot.
+	_resolveBannerSidebarPrice(card, lookup, coreDisplayPrice) {
+		var input = card.querySelector("[programDetailId]");
+		if (!input) return null;
+		var programId = input.getAttribute("programDetailId");
+		if (programId && lookup.byId[programId]) {
+			return lookup.byId[programId];
+		}
+		var label = card.getAttribute("data-program-label");
+		if (label && lookup.byLabel[label]) {
+			return lookup.byLabel[label];
+		}
+		if (card.getAttribute("data-banner-core-slot") === "true" && coreDisplayPrice) {
+			return coreDisplayPrice;
+		}
+		return null;
+	}
+
+	// Drop the full-day enrollment suffix when core uses deposit pricing.
+	_trimFullEnrollmentDesc(text) {
+		if (!text) return text;
+		var parts = String(text).split(/\s*\|\s*/);
+		if (parts.length < 2) return text;
+		var suffix = parts[parts.length - 1];
+		if (/full[\s-]*day|full[\s-]*enrollment|\bfull\b/i.test(suffix)) {
+			return parts.slice(0, -1).join(" | ").trim();
+		}
+		return text;
+	}
+
+	// Toggle core card desc between API text and deposit (no full-day) text.
+	_updateCoreBannerDesc(card, stripFullDay) {
+		var desc = card.querySelector(".bundle-sem-dec-small");
+		if (!desc) return;
+		var apiDesc = desc.getAttribute("data-api-desc");
+		if (!apiDesc) {
+			apiDesc = (desc.textContent || "").trim();
+			desc.setAttribute("data-api-desc", apiDesc);
+		}
+		desc.textContent = stripFullDay
+			? this._trimFullEnrollmentDesc(apiDesc)
+			: apiDesc;
+	}
+
+	// Reset every banner price node back to the API values from renderBannerPriceLayout.
+	_restoreBannerApiPrices() {
+		var $this = this;
+		document.querySelectorAll(
+			".banner-price-flex-wapper .bundle-sem-dec-small, .banner-price-flex-wrapper .bundle-sem-dec-small"
+		).forEach(function (el) {
+			var apiDesc = el.getAttribute("data-api-desc");
+			if (apiDesc) {
+				el.textContent = apiDesc;
+			}
+		});
+		document.querySelectorAll(
+			".banner-price-flex-wapper [data-addon='price'], .banner-price-flex-wrapper [data-addon='price']"
+		).forEach(function (el) {
+			var apiVal = parseFloat(el.getAttribute("data-api-price") || "");
+			if (!isNaN(apiVal)) {
+				el.textContent = $this._formatApiBannerPrice(apiVal);
+				el.style.display = "";
+			}
+		});
+		document.querySelectorAll(
+			".banner-price-flex-wapper [data-addon='discount-price'], .banner-price-flex-wrapper [data-addon='discount-price']"
+		).forEach(function (el) {
+			var apiVal = parseFloat(el.getAttribute("data-api-discount-price") || "");
+			if (!isNaN(apiVal)) {
+				el.textContent = $this._formatApiBannerPrice(apiVal);
+			}
+		});
+	}
+
+	// Core row preview: base deposit gray + $50 bundle discount on red.
+	_getCoreBundlePreviewPrices() {
+		var base = this._parsePriceAmount(this._getCoreBasePriceForBanner());
+		if (base == null || base <= 0) {
+			base = this._getBaseCoreDepositAmount();
+		}
+		if (!base || base <= 0) return null;
+		var discount = parseFloat(
+			String((this.$coreData && this.$coreData._bundleDiscount) || 0).replace(/,/g, "")
+		);
+		if (isNaN(discount)) discount = 0;
+		var discounted = base - discount;
+		return {
+			gray: this._formatBannerDisplayPrice(base),
+			red: this._formatBannerDisplayPrice(discounted)
+		};
+	}
+
+	// Sum banner card prices into the total-info-card only when totals differ from API.
+	_sumBannerWrapperTotals(wrap) {
+		var $this = this;
+		var totalCard = wrap.querySelector(".banner-price-total-info-card");
+		if (!totalCard) return false;
+		var totalGray = totalCard.querySelector('[data-addon="price"]');
+		var totalRed = totalCard.querySelector('[data-addon="discount-price"]');
+		var apiDiscTotal = totalGray
+			? parseFloat(totalGray.getAttribute("data-api-price") || "")
+			: NaN;
+		var apiAmountTotal = totalRed
+			? parseFloat(totalRed.getAttribute("data-api-discount-price") || "")
+			: NaN;
+		var discTotal = 0;
+		var amountTotal = 0;
+		wrap.querySelectorAll(".banner-price-info-card").forEach(function (card) {
+			var grayEl = card.querySelector('[data-addon="price"]');
+			var redEl = card.querySelector('[data-addon="discount-price"]');
+			if (grayEl && grayEl.style.display !== "none") {
+				var grayVal = $this._parsePriceAmount(grayEl.textContent);
+				if (grayVal != null) discTotal += grayVal;
+			}
+			if (redEl) {
+				var redVal = $this._parsePriceAmount(redEl.textContent);
+				if (redVal != null) amountTotal += redVal;
+			}
+		});
+		var totalsSynced = false;
+		if (totalGray && !isNaN(apiDiscTotal)) {
+			if ($this._priceDiffersFromApi(discTotal, apiDiscTotal)) {
+				totalGray.textContent = $this._formatBannerDisplayPrice(discTotal);
+				totalsSynced = true;
+			} else {
+				totalGray.textContent = $this._formatApiBannerPrice(apiDiscTotal);
+			}
+			totalGray.style.display = "";
+		}
+		if (totalRed && !isNaN(apiAmountTotal)) {
+			if ($this._priceDiffersFromApi(amountTotal, apiAmountTotal)) {
+				totalRed.textContent = $this._formatBannerDisplayPrice(amountTotal);
+				totalsSynced = true;
+			} else {
+				totalRed.textContent = $this._formatApiBannerPrice(apiAmountTotal);
+			}
+		}
+		if (totalsSynced) {
+			this._toggleBannerGrayStrike(totalGray, totalRed);
+		}
+		return totalsSynced;
+	}
+
+	// Preview bundle savings before Add to Cart: $1,145→$1,095 + Fall $1,590 = $2,685.
+	_applyBundlePreviewPrices() {
+		var $this = this;
+		var corePreview = this._getCoreBundlePreviewPrices();
+		var anyPriceSynced = false;
+		this._restoreBannerApiPrices();
+		document.querySelectorAll(".banner-price-info-card").forEach(function (card) {
+			if (card.getAttribute("data-banner-core-slot") !== "true" || !corePreview) {
+				return;
+			}
+			var grayEl = card.querySelector('[data-addon="price"]');
+			var redEl = card.querySelector('[data-addon="discount-price"]');
+			var cardSynced = false;
+			if (grayEl) {
+				var apiGray = parseFloat(grayEl.getAttribute("data-api-price") || "");
+				if ($this._syncBannerPriceElement(grayEl, corePreview.gray, apiGray)) {
+					cardSynced = true;
+				}
+			}
+			if (redEl) {
+				var apiRed = parseFloat(redEl.getAttribute("data-api-discount-price") || "");
+				if ($this._syncBannerPriceElement(redEl, corePreview.red, apiRed)) {
+					cardSynced = true;
+				}
+			}
+			if (cardSynced) {
+				anyPriceSynced = true;
+				$this._toggleBannerGrayStrike(grayEl, redEl);
+				$this._updateCoreBannerDesc(card, true);
+			}
+		});
+		if (!anyPriceSynced) {
+			return;
+		}
+		document.querySelectorAll(
+			".banner-price-flex-wapper, .banner-price-flex-wrapper"
+		).forEach(function (wrap) {
+			$this._sumBannerWrapperTotals(wrap);
+		});
+	}
+
+	// Keep banner prices on API data unless sidebar shows a different amount.
+	syncBannerPrices() {
+		var $this = this;
+
+		// No bundle in cart — show preview of savings if a second program is added.
+		if (!this._hasAnyUpsellSelected()) {
+			this._applyBundlePreviewPrices();
+			return;
+		}
+
+		var lookup = this._buildSidebarPriceLookup();
+		var coreDisplayPrice = this._getCoreDisplayPrice(lookup);
+		var corePreview = this._getCoreBundlePreviewPrices();
+		var coreBasePrice = corePreview ? corePreview.gray : this._getCoreBasePriceForBanner();
+		var anyPriceSynced = false;
+
+		document.querySelectorAll(".banner-price-info-card").forEach(function (card) {
+			var redEl = card.querySelector('[data-addon="discount-price"]');
+			var grayEl = card.querySelector('[data-addon="price"]');
+			var isCoreSlot = card.getAttribute("data-banner-core-slot") === "true";
+			var sidebarText = $this._resolveBannerSidebarPrice(card, lookup, coreDisplayPrice);
+			var cardSynced = false;
+
+			if (redEl) {
+				var apiRed = parseFloat(redEl.getAttribute("data-api-discount-price") || "");
+				if ($this._syncBannerPriceElement(redEl, sidebarText, apiRed)) {
+					anyPriceSynced = true;
+					cardSynced = true;
+				}
+			}
+
+			if (grayEl && isCoreSlot && coreBasePrice) {
+				var apiGray = parseFloat(grayEl.getAttribute("data-api-price") || "");
+				if ($this._syncBannerPriceElement(grayEl, coreBasePrice, apiGray)) {
+					anyPriceSynced = true;
+					cardSynced = true;
+				}
+				$this._toggleBannerGrayStrike(grayEl, redEl);
+			}
+
+			if (isCoreSlot && cardSynced) {
+				$this._updateCoreBannerDesc(card, true);
+			}
+		});
+
+		if (!anyPriceSynced) {
+			this._restoreBannerApiPrices();
+			return;
+		}
+
+		document.querySelectorAll(
+			".banner-price-flex-wapper, .banner-price-flex-wrapper"
+		).forEach(function (wrap) {
+			$this._sumBannerWrapperTotals(wrap);
+		});
+	}
+
+	// Hide gray strike when it matches the red price to avoid stacked duplicate totals.
+	_toggleBannerGrayStrike(grayEl, redEl) {
+		if (!grayEl || !redEl) return;
+		var grayAmt = this._parsePriceAmount(grayEl.textContent);
+		var redAmt = this._parsePriceAmount(redEl.textContent);
+		if (grayAmt != null && redAmt != null && Math.abs(grayAmt - redAmt) < 0.005) {
+			grayEl.style.display = "none";
+			return;
+		}
+		grayEl.style.display = "";
 	}
 
 	renderAddonRowPrices(tabName) {
