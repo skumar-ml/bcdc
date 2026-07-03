@@ -2635,6 +2635,24 @@ class classDetailsStripe extends parentLogin {
   }
 
 
+  // Toggles between the "pick a saved student" dropdown and the "create a new
+  // student" form based on whether getCheckoutStudentProfiles returned any data.
+  _toggleStudentProfileUI(hasStudents) {
+    var dropdownWrapper = document.querySelector('.student-dropdown-wapper');
+    var createAccountWrapper = document.querySelector('.create-account-wapper');
+    if (dropdownWrapper) {
+      dropdownWrapper.style.display = hasStudents ? 'block' : 'none';
+    }
+    if (createAccountWrapper) {
+      createAccountWrapper.style.display = hasStudents ? 'none' : 'flex';
+    }
+    if (!hasStudents) {
+      var formHeading = document.getElementById('form-heading');
+      if (formHeading) {
+        formHeading.textContent = 'Create New Student Profile';
+      }
+    }
+  }
   //updateOldStudentList
   async updateOldStudentList(data) {
     const selectBox = document.getElementById("existing-students");
@@ -2654,8 +2672,11 @@ class classDetailsStripe extends parentLogin {
       if (data == "No data Found" || !Array.isArray(data) || data.length == 0) {
         selectBox.disabled = true;
         selectBox.innerHTML = '<option value="">No previous students found</option>';
+        $this._toggleStudentProfileUI(false);
         return;
       }
+      // Saved students found: show the dropdown, hide the "create new student" form
+      $this._toggleStudentProfileUI(true);
       data = data.filter(i => i.studentName != null && i.studentName != undefined && i.studentName != "");
       const filterData = data
         .filter(
@@ -2740,6 +2761,7 @@ class classDetailsStripe extends parentLogin {
       // Handle errors (optional)
       selectBox.innerHTML =
         '<option value="">Student Details not available</option>';
+      $this._toggleStudentProfileUI(false);
     }
   }
   createCustomSelectDisplay(selectBox, filterData) {

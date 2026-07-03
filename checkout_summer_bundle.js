@@ -448,6 +448,12 @@ class CheckOutWebflow {
 		if (createAccountWrapper) {
 			createAccountWrapper.style.display = hasStudents ? 'none' : 'flex';
 		}
+		if (!hasStudents) {
+			var formHeading = document.getElementById('form-heading');
+			if (formHeading) {
+				formHeading.textContent = 'Create New Student Profile';
+			}
+		}
 	}
 	// Fetch saved student profiles and build the styled dropdown; prefill form on select
 	async updateOldStudentList() {
