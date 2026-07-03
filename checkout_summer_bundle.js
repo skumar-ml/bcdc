@@ -665,8 +665,27 @@ class CheckOutWebflow {
 		// Initial paint
 		updateDisplay();
 	}
-	// Initiates the Stripe payment process by calling an API to get checkout URLs
+	// Shows/hides the shared checkout warning banner (e.g. STUDENT_EMAIL_IS_PARENT)
+	showWarningMessage(message) {
+		var warningEl = document.querySelector('.warning-message-wapper');
+		if (!warningEl) {
+			return;
+		}
+		warningEl.innerHTML = message;
+		warningEl.style.display = 'flex';
+	}
+	hideWarningMessage() {
+		var warningEl = document.querySelector('.warning-message-wapper');
+		if (!warningEl) {
+			return;
+		}
+		warningEl.style.display = 'none';
+	}
+	// Initiates the Stripe payment process by calling an API to get checkout URLs.
+	// Returns a Promise<boolean> resolving true only when the API call succeeds,
+	// so callers can block navigation to the next step until it settles.
 	initializeStripePayment() {
+		this.hideWarningMessage();
 		var studentFirstName = document.getElementById('Student-First-Name');
 		var studentLastName = document.getElementById('Student-Last-Name');
 		var studentEmail = document.getElementById('Student-Email');
@@ -711,26 +730,52 @@ class CheckOutWebflow {
 		}
 
 
-		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForSummer", true)
-		xhr.withCredentials = false
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function () {
-			let responseText = JSON.parse(xhr.responseText);
-			if (responseText.success) {
+		return new Promise(function (resolve) {
+			var xhr = new XMLHttpRequest()
+			xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForSummer", true)
+			xhr.withCredentials = false
+			xhr.send(JSON.stringify(data))
+			xhr.onload = function () {
+				var responseText;
+				try {
+					responseText = JSON.parse(xhr.responseText);
+				} catch (e) {
+					responseText = {};
+				}
 
-				$this.$checkoutData = responseText;
+				// API error (e.g. 400 STUDENT_EMAIL_IS_PARENT) — surface message, keep user on this step.
+				if (xhr.status >= 400 || responseText.success === false) {
+					$this.showWarningMessage(responseText.message || "Something went wrong. Please try again.");
+					next_page_2.innerHTML = "Next"
+					next_page_2.style.pointerEvents = "auto";
+					resolve(false);
+					return;
+				}
 
-				//Storing data in local storage
-				data.checkoutData = responseText
-				localStorage.setItem("checkOutData", JSON.stringify(data));
+				if (responseText.success) {
 
-				next_page_2.innerHTML ="Next"
-				next_page_2.style.pointerEvents = "auto";
+					$this.$checkoutData = responseText;
+
+					//Storing data in local storage
+					data.checkoutData = responseText
+					localStorage.setItem("checkOutData", JSON.stringify(data));
+
+					next_page_2.innerHTML ="Next"
+					next_page_2.style.pointerEvents = "auto";
+					resolve(true);
+					return;
+				}
+
+				resolve(false);
 			}
-
-		}
+			xhr.onerror = function () {
+				$this.showWarningMessage("Something went wrong. Please try again.");
+				next_page_2.innerHTML = "Next"
+				next_page_2.style.pointerEvents = "auto";
+				resolve(false);
+			}
+		});
 	}
 
 	// Updates student data in the database after location and session selection
@@ -979,12 +1024,21 @@ class CheckOutWebflow {
 					next_page_1.innerHTML = 'Next'
 					eligible = validate.eligible;
 				}
-				$this.initializeStripePayment();
-				if (eligible) {
+				if (!eligible) {
+					$this.activateDiv('pf_labs_error_message');
+					return;
+				}
+				// Block advancing to the next section until checkoutUrlForSummer
+				// actually resolves; on failure (e.g. STUDENT_EMAIL_IS_PARENT) the
+				// warning banner is shown and the user stays on this step.
+				next_page_1.innerHTML = 'Processing'
+				next_page_1.style.pointerEvents = 'none';
+				const stripeInitSuccess = await $this.initializeStripePayment();
+				next_page_1.innerHTML = 'Next'
+				next_page_1.style.pointerEvents = 'auto';
+				if (stripeInitSuccess) {
 					$this.activateDiv('checkout_student_details');
 					$this.activeBreadCrumb('select-class')
-				} else {
-					$this.activateDiv('pf_labs_error_message');
 				}
 			}
 		})
