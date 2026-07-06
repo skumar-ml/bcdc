@@ -455,6 +455,27 @@ class CheckOutWebflow {
 			}
 		}
 	}
+	// Clears the student form and switches the UI into "create new student"
+	// mode when the user picks "+ Create New Student" from the saved-profiles
+	// dropdown instead of an existing student.
+	_resetStudentFormForNewStudent() {
+		localStorage.removeItem('checkOutBasicData');
+		this._toggleStudentProfileUI(false);
+		var studentFirstName = document.getElementById('Student-First-Name');
+		var studentLastName = document.getElementById('Student-Last-Name');
+		var studentEmail = document.getElementById('Student-Email');
+		var studentGrade = document.getElementById('Student-Grade');
+		var studentSchool = document.getElementById('Student-School');
+		var studentGender = document.getElementById('Student-Gender');
+		var prevStudent = document.getElementById('prevStudent-2');
+		if (studentFirstName) studentFirstName.value = '';
+		if (studentLastName) studentLastName.value = '';
+		if (studentEmail) studentEmail.value = '';
+		if (studentGrade) studentGrade.value = '';
+		if (studentSchool) studentSchool.value = '';
+		if (studentGender) studentGender.value = '';
+		if (prevStudent) prevStudent.value = '';
+	}
 	// Fetch saved student profiles and build the styled dropdown; prefill form on select
 	async updateOldStudentList() {
 		const selectBox = document.getElementById("existing-students");
@@ -640,6 +661,20 @@ class CheckOutWebflow {
 
 				dropdownOptions.appendChild(optionDiv);
 			}
+
+			// Trailing "Create New Student" row: resets the select back to the
+			// placeholder and switches the form into create mode instead of
+			// prefilling from a saved profile.
+			const createNewDiv = document.createElement('div');
+			createNewDiv.className = 'custom-select-option custom-select-option-create';
+			createNewDiv.textContent = '+ Create New Student';
+			createNewDiv.addEventListener('click', function () {
+				selectBox.selectedIndex = 0;
+				selectBox.dispatchEvent(new Event('change'));
+				toggleDropdown();
+				this._resetStudentFormForNewStudent();
+			}.bind(this));
+			dropdownOptions.appendChild(createNewDiv);
 		};
 
 		// Open/close the styled dropdown
