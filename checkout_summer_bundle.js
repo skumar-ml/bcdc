@@ -555,6 +555,8 @@ class CheckOutWebflow {
 				};
 				localStorage.setItem("checkOutBasicData", JSON.stringify(data));
 				$this.updateBasicData('old_student');
+				var selectedGrade = selected.studentGrade || selected.grade || "";
+				$this._setSelectedStudentText((selected.studentName || "") + (selectedGrade ? " (" + selectedGrade + ")" : ""));
 			});
 		} catch (error) {
 			console.error("Error fetching API data:", error);
@@ -571,6 +573,13 @@ class CheckOutWebflow {
 	// while this is in flight (see renderPortalData).
 	async renderCheckoutStudentProfileCards() {
 		var $this = this;
+		// Default copy for the "Selected Student" summary block, shown until
+		// the user actually picks a profile (radio card or legacy dropdown).
+		document.querySelectorAll('.selected-student-heading').forEach(function (el) {
+			el.textContent = 'Already have a student registered?';
+		});
+		this._setSelectedStudentText('Search and select from your existing students instead.');
+
 		var chooseStudentCard = document.getElementById('choose-student-card');
 		var scopeRoot = chooseStudentCard || document;
 		var templateOption = scopeRoot.querySelector('.student-radio-option') || document.querySelector('.student-radio-option');
@@ -594,6 +603,8 @@ class CheckOutWebflow {
 
 			if (profiles.length === 0) {
 				if (chooseStudentCard) chooseStudentCard.style.display = 'none';
+				// Nothing to choose from — send the user straight into the create-new form.
+				$this._showCheckoutFormWrapper('Create New Student Profile');
 				return;
 			}
 
@@ -650,55 +661,73 @@ class CheckOutWebflow {
 	// Prefills the student form from a saved profile and switches the form
 	// into "edit" mode.
 	_selectExistingStudentProfile(profile) {
-		var studentFirstName = document.getElementById('Student-First-Name');
-		var studentLastName = document.getElementById('Student-Last-Name');
-		var studentEmail = document.getElementById('Student-Email');
-		var studentGrade = document.getElementById('Student-Grade');
-		var studentSchool = document.getElementById('Student-School');
-		var studentGender = document.getElementById('Student-Gender');
-		var prevStudent = document.getElementById('prevStudent-2');
-
-		var nameParts = (profile.studentName || '').trim().split(/\s+/);
-		var firstName = nameParts[0] || '';
-		var lastName = nameParts.slice(1).join(' ');
 		var grade = profile.studentGrade || profile.grade || '';
-
-		if (studentFirstName) studentFirstName.value = firstName;
-		if (studentLastName) studentLastName.value = lastName;
-		if (studentEmail) studentEmail.value = profile.studentEmail || '';
-		if (studentSchool) studentSchool.value = profile.school || '';
-		if (studentGender) studentGender.value = profile.gender || '';
-		if (prevStudent) prevStudent.value = 'Yes';
-
-		if (studentGrade && grade) {
-			var wantGrade = String(grade).trim().toLowerCase();
-			var matchedGrade = Array.prototype.find.call(studentGrade.options, function (opt) {
-				return opt.value.trim().toLowerCase() === wantGrade;
-			});
-			if (matchedGrade) studentGrade.value = matchedGrade.value;
-		}
-
-		localStorage.setItem('checkOutBasicData', JSON.stringify({
-			studentEmail: profile.studentEmail || '',
-			firstName: firstName,
-			lastName: lastName,
-			grade: grade,
-			school: profile.school || '',
-			gender: profile.gender || '',
-			prevStudent: 'Yes',
-		}));
+		var displayLabel = (profile.studentName || '') + (grade ? ' (' + grade + ')' : '');
 
 		this._showCheckoutFormWrapper('Edit Student Profile');
+		this._setSelectedStudentText(displayLabel);
+
+		try {
+			var studentFirstName = document.getElementById('Student-First-Name');
+			var studentLastName = document.getElementById('Student-Last-Name');
+			var studentEmail = document.getElementById('Student-Email');
+			var studentGrade = document.getElementById('Student-Grade');
+			var studentSchool = document.getElementById('Student-School');
+			var studentGender = document.getElementById('Student-Gender');
+			var prevStudent = document.getElementById('prevStudent-2');
+
+			var nameParts = (profile.studentName || '').trim().split(/\s+/);
+			var firstName = nameParts[0] || '';
+			var lastName = nameParts.slice(1).join(' ');
+
+			if (studentFirstName) studentFirstName.value = firstName;
+			if (studentLastName) studentLastName.value = lastName;
+			if (studentEmail) studentEmail.value = profile.studentEmail || '';
+			if (studentSchool) studentSchool.value = profile.school || '';
+			if (studentGender) studentGender.value = profile.gender || '';
+			if (prevStudent) prevStudent.value = 'Yes';
+
+			if (studentGrade && grade) {
+				var wantGrade = String(grade).trim().toLowerCase();
+				var matchedGrade = Array.prototype.find.call(studentGrade.options, function (opt) {
+					return opt.value.trim().toLowerCase() === wantGrade;
+				});
+				if (matchedGrade) studentGrade.value = matchedGrade.value;
+			}
+
+			localStorage.setItem('checkOutBasicData', JSON.stringify({
+				studentEmail: profile.studentEmail || '',
+				firstName: firstName,
+				lastName: lastName,
+				grade: grade,
+				school: profile.school || '',
+				gender: profile.gender || '',
+				prevStudent: 'Yes',
+			}));
+		} catch (error) {
+			console.error('Error prefilling student form from selected profile:', error);
+		}
+	}
+	// Updates the "Selected Student" summary text, used by both the new
+	// radio-card list and the legacy dropdown picker.
+	_setSelectedStudentText(text) {
+		document.querySelectorAll('.selected-student-text').forEach(function (el) {
+			el.textContent = text;
+		});
 	}
 	// Reveals the student-details form wrapper and hides the choose-student
 	// card, updating the section heading to match the current mode.
+	// Uses querySelectorAll for the wrapper/heading since Webflow forms can
+	// duplicate elements (e.g. success/error states) sharing the same class.
 	_showCheckoutFormWrapper(headingText) {
 		var chooseStudentCard = document.getElementById('choose-student-card');
-		var formWrapper = document.querySelector('.checkout-form-wapper');
-		var heading = document.querySelector('.form-section-heading');
 		if (chooseStudentCard) chooseStudentCard.style.display = 'none';
-		if (formWrapper) formWrapper.style.display = 'block';
-		if (heading) heading.textContent = headingText;
+		document.querySelectorAll('.checkout-form-wapper').forEach(function (el) {
+			el.style.display = 'block';
+		});
+		document.querySelectorAll('.form-section-heading').forEach(function (el) {
+			el.textContent = headingText;
+		});
 	}
 	// Clears the student form for a brand-new profile.
 	_resetForCreateNewStudent() {
