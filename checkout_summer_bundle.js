@@ -474,6 +474,15 @@ class CheckOutWebflow {
 		if (studentSchool) studentSchool.value = '';
 		if (studentGender) studentGender.value = '';
 		if (prevStudent) prevStudent.value = '';
+
+		document.querySelectorAll('.selected-student-heading').forEach(function (el) {
+			el.textContent = 'Already have a student registered?';
+		});
+		this._setSelectedStudentText('Search and select from your existing students instead.');
+		var formHeading = document.getElementById('form-heading');
+		if (formHeading) {
+			formHeading.textContent = 'Create New Student Profile';
+		}
 	}
 	// Fetch saved student profiles and build the styled dropdown; prefill form on select
 	async updateOldStudentList() {
