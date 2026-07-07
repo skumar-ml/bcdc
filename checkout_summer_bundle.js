@@ -460,7 +460,6 @@ class CheckOutWebflow {
 	// dropdown instead of an existing student.
 	_resetStudentFormForNewStudent() {
 		localStorage.removeItem('checkOutBasicData');
-		this._toggleStudentProfileUI(false);
 		var studentFirstName = document.getElementById('Student-First-Name');
 		var studentLastName = document.getElementById('Student-Last-Name');
 		var studentEmail = document.getElementById('Student-Email');
@@ -556,7 +555,7 @@ class CheckOutWebflow {
 				localStorage.setItem("checkOutBasicData", JSON.stringify(data));
 				$this.updateBasicData('old_student');
 				var selectedGrade = selected.studentGrade || selected.grade || "";
-				$this._setSelectedStudentText((selected.studentName || "") + (selectedGrade ? " (" + selectedGrade + ")" : ""));
+				$this._markStudentSelected((selected.studentName || "") + (selectedGrade ? " (" + selectedGrade + ")" : ""));
 			});
 		} catch (error) {
 			console.error("Error fetching API data:", error);
@@ -603,6 +602,9 @@ class CheckOutWebflow {
 
 			if (profiles.length === 0) {
 				if (chooseStudentCard) chooseStudentCard.style.display = 'none';
+				document.querySelectorAll('.selected-student-card').forEach(function (el) {
+					el.style.display = 'none';
+				});
 				// Nothing to choose from — send the user straight into the create-new form.
 				$this._showCheckoutFormWrapper('Create New Student Profile');
 				return;
@@ -665,7 +667,8 @@ class CheckOutWebflow {
 		var displayLabel = (profile.studentName || '') + (grade ? ' (' + grade + ')' : '');
 
 		this._showCheckoutFormWrapper('Edit Student Profile');
-		this._setSelectedStudentText(displayLabel);
+		this._markStudentSelected(displayLabel);
+		this._syncOldDropdownSelection(profile);
 
 		try {
 			var studentFirstName = document.getElementById('Student-First-Name');
@@ -714,6 +717,31 @@ class CheckOutWebflow {
 		document.querySelectorAll('.selected-student-text').forEach(function (el) {
 			el.textContent = text;
 		});
+	}
+	// Marks a student as picked: flips the summary heading to "Selected
+	// Student" and fills in the picked name/grade line.
+	_markStudentSelected(text) {
+		document.querySelectorAll('.selected-student-heading').forEach(function (el) {
+			el.textContent = 'Selected Student';
+		});
+		this._setSelectedStudentText(text);
+	}
+	// Keeps the legacy #existing-students dropdown (and its custom display)
+	// in sync when a profile is picked from the new radio-card list.
+	_syncOldDropdownSelection(profile) {
+		var selectBox = document.getElementById('existing-students');
+		if (!selectBox || !Array.isArray(selectBox._filterData)) {
+			return;
+		}
+		var wantName = (profile.studentName || '').trim().toLowerCase();
+		var matchIndex = selectBox._filterData.findIndex(function (item) {
+			return (item.studentName || '').trim().toLowerCase() === wantName;
+		});
+		if (matchIndex === -1) {
+			return;
+		}
+		selectBox.selectedIndex = matchIndex + 1; // +1 for the "Select Student Name" placeholder option
+		selectBox.dispatchEvent(new Event('change'));
 	}
 	// Reveals the student-details form wrapper and hides the choose-student
 	// card, updating the section heading to match the current mode.
