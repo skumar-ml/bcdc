@@ -717,17 +717,14 @@ class CheckOutWebflow {
 	}
 	// Reveals the student-details form wrapper and hides the choose-student
 	// card, updating the section heading to match the current mode.
-	// Uses querySelectorAll for the wrapper/heading since Webflow forms can
-	// duplicate elements (e.g. success/error states) sharing the same class.
 	_showCheckoutFormWrapper(headingText) {
 		var chooseStudentCard = document.getElementById('choose-student-card');
 		if (chooseStudentCard) chooseStudentCard.style.display = 'none';
 		document.querySelectorAll('.checkout-form-wapper').forEach(function (el) {
 			el.style.display = 'block';
 		});
-		document.querySelectorAll('.form-section-heading').forEach(function (el) {
-			el.textContent = headingText;
-		});
+		var heading = document.getElementById('form-heading');
+		if (heading) heading.textContent = headingText;
 	}
 	// Clears the student form for a brand-new profile.
 	_resetForCreateNewStudent() {
