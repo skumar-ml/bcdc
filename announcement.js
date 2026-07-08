@@ -166,7 +166,7 @@ Are there any dependent JS files: No
              */
             async fetchData() {
                 try {
-                    const response = await fetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
+                    const response = await bdcFetch(`${this.data.apiBaseURL}getAnnouncement/${this.data.memberId}`);
                     if (!response.ok) throw new Error('Network response was not ok');
 
                     const apiData = await response.json();
@@ -511,7 +511,7 @@ Are there any dependent JS files: No
              */
             async markAsRead(oid, isRead) {
                 try {
-                    await fetch(`${this.data.apiBaseURL}isReadAnnouncement`, {
+                    await bdcFetch(`${this.data.apiBaseURL}isReadAnnouncement`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -540,7 +540,7 @@ Are there any dependent JS files: No
 
                 // Update server state
                 try {
-                    await fetch(`${this.data.apiBaseURL}isReadAnnouncement`, {
+                    await bdcFetch(`${this.data.apiBaseURL}isReadAnnouncement`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'

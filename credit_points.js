@@ -27,7 +27,7 @@ class CreditBalance {
             // Fetches credit balance data from the API
             async fetchCreditData() {
                 try {
-                    const response = await fetch(
+                    const response = await bdcFetch(
                         `${this.data.apiBaseURL}getCreditBalance/${this.data.memberId}`
                     );
                     if (!response.ok) throw new Error("Network response was not ok");

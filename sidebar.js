@@ -24,7 +24,7 @@ class Sidebar {
     const portalBaseUrl = this.data.apiBaseURL || window.__portalApiBaseURL;
     if (!portalBaseUrl) return null;
     try {
-      const response = await fetch(
+      const response = await bdcFetch(
         `${portalBaseUrl}getPortalDetail/${this.data.memberId}`
       );
       if (!response.ok) throw new Error("Network response was not ok");
@@ -157,7 +157,7 @@ class Sidebar {
 
   // Fetches announcements and updates the count
   async fetchAnnouncements() {
-      const response = await fetch(
+      const response = await bdcFetch(
           `${this.data.bTypeApiBaseURL}getAnnouncement/${this.data.memberId}`
       );
       if (!response.ok) {

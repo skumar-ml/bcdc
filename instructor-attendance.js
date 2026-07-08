@@ -547,6 +547,8 @@ function creEl(name,className,idName){
 		  var $this = this;
 		  xhr.open("POST", "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/updateAttendance", true)
 		  xhr.withCredentials = false
+		  var __bdcToken = getMemberstackToken();
+		  if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
 		  xhr.send(JSON.stringify(data))
 		  xhr.onload = function() {
 			  try {
@@ -716,6 +718,8 @@ function creEl(name,className,idName){
 		  var $this = this;
 		  xhr.open("GET", "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
 		  xhr.withCredentials = false
+		  var __bdcToken = getMemberstackToken();
+		  if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
 		  xhr.send()
 		  xhr.onload = function() {
 			  let responseText =  JSON.parse(xhr.responseText);
@@ -757,6 +761,8 @@ function creEl(name,className,idName){
 		  }
 		  xhr.open("GET", "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
 		  xhr.withCredentials = false
+		  var __bdcToken = getMemberstackToken();
+		  if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
 		  xhr.send()
 		  xhr.onload = function() {
 			  $this.portalInfoWrapper.style.display = "block";

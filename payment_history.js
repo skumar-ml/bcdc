@@ -7,6 +7,7 @@ Brief Logic: Fetches portal detail and millions transaction data from API, creat
 Are there any dependent JS files: No
 
 */
+
 class PaymentHistory {
     // Initializes the PaymentHistory instance
     constructor(data) {
@@ -18,7 +19,7 @@ class PaymentHistory {
 
     // Fetches portal detail data from the API
     async fetchData() {
-        const response = await fetch(
+        const response = await bdcFetch(
             `${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`
         );
         if (!response.ok) throw new Error("Network response was not ok");
@@ -29,7 +30,7 @@ class PaymentHistory {
 
     // Fetches millions transaction data from the API
     async fetchMillionsData() {
-        const response = await fetch(
+        const response = await bdcFetch(
             `${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`
         );
         if (!response.ok) {
@@ -481,6 +482,8 @@ class PaymentHistory {
             true
         );
         xhr.withCredentials = false;
+        var __bdcToken = getMemberstackToken();
+        if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
         xhr.send(JSON.stringify(apiData));
 
         // Handle API response
@@ -1126,7 +1129,7 @@ class PaymentHistory {
             }
 
             // Send PDF generation request to API
-            const response = await fetch(
+            const response = await bdcFetch(
                 "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/generateItemizedInvoice",
                 {
                     method: "POST",

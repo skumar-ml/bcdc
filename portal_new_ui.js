@@ -29,7 +29,7 @@ class Portal {
      */
     async fetchData() {
         try {
-            const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
+            const response = await bdcFetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
             if (!response.ok) throw new Error('Network response was not ok');
             const apiData = await response.json();
             this.portalDetailApiData = apiData;
@@ -50,7 +50,7 @@ class Portal {
      * @returns {Promise<Array>} Array of millions transaction data or empty array if failed
      */
     async fetchMillionsData() {
-        const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
+        const response = await bdcFetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
         if (!response.ok) {
             return [];
         };
@@ -221,7 +221,7 @@ class Portal {
      * @returns {Promise<Array>} Array of announcements or empty array if failed
      */
     async fetchAnnouncements() {
-        const response = await fetch(`${this.data.typeBApiBaseURL}getAnnouncement/${this.data.memberId}`);
+        const response = await bdcFetch(`${this.data.typeBApiBaseURL}getAnnouncement/${this.data.memberId}`);
         if (!response.ok) {
             return [];
         }
@@ -2602,6 +2602,8 @@ class Portal {
         var xhr = new XMLHttpRequest()
         var $this = this;
         xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice", true)
+        var __bdcToken = getMemberstackToken();
+        if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
         xhr.withCredentials = false
         xhr.send(JSON.stringify(data))
         xhr.onload = function () {

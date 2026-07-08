@@ -27,6 +27,7 @@ function creEl(name, className, idName) {
 	return el;
 }
 
+
 // Email Validation
 function isValidEmail(email) {
 	return /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
@@ -374,7 +375,7 @@ class CheckOutWebflow {
 			"lastName": studentLastName.value,
 			"memberId": this.memberData.memberId,
 		}
-		const rawResponse = await fetch('https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/validateUserForProgram', {
+		const rawResponse = await bdcFetch('https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/validateUserForProgram', {
 			method: 'POST',
 			headers: {
 				'Accept': 'application/json',
@@ -393,7 +394,7 @@ class CheckOutWebflow {
 	async fetchData(endpoint, baseUrl) {
 		try {
 			baseUrl = baseUrl || this.baseUrl;
-			const response = await fetch(`${baseUrl}${endpoint}`);
+			const response = await bdcFetch(`${baseUrl}${endpoint}`);
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
 			}
@@ -714,6 +715,8 @@ class CheckOutWebflow {
 		var xhr = new XMLHttpRequest()
 		var $this = this;
 		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForSummer", true)
+		var __bdcToken = getMemberstackToken();
+		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
@@ -768,6 +771,8 @@ class CheckOutWebflow {
 		var xhr = new XMLHttpRequest()
 		var $this = this;
 		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", true)
+		var __bdcToken = getMemberstackToken();
+		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
@@ -872,6 +877,8 @@ class CheckOutWebflow {
 		var xhr = new XMLHttpRequest()
 		var $this = this;
 		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", true)
+		var __bdcToken = getMemberstackToken();
+		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {

@@ -16,7 +16,7 @@ class checkMember {
 	// Fetches data from the specified API endpoint
 	async fetchData(url) {
 		try {
-			const response = await fetch(`${url}`);
+			const response = await bdcFetch(`${url}`);
 			if (!response.ok) {
 			throw new Error('Network response was not ok');
 			}

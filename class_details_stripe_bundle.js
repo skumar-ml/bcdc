@@ -27,6 +27,7 @@ function creEl(name, className, idName) {
   return el;
 }
 
+
 function handleSelectedParentData(){
   try {
     // Check if selectedParentData exists in localStorage
@@ -617,7 +618,7 @@ class classDetailsStripe extends parentLogin {
       apiBaseUrl = baseUrl
     }
     try {
-      const response = await fetch(`${apiBaseUrl}${endpoint}`);
+      const response = await bdcFetch(`${apiBaseUrl}${endpoint}`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
@@ -937,6 +938,8 @@ class classDetailsStripe extends parentLogin {
         "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/checkPreviousStudent",
         true
       );
+      var __bdcToken = getMemberstackToken();
+      if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
       xhr.withCredentials = false;
       xhr.send(JSON.stringify(data));
       xhr.onload = function () {
@@ -1518,6 +1521,8 @@ class classDetailsStripe extends parentLogin {
         "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard",
         true
       );
+      var __bdcToken = getMemberstackToken();
+      if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
       xhr.withCredentials = false;
       xhr.send(JSON.stringify(data));
       xhr.onload = function () {
@@ -1549,7 +1554,7 @@ class classDetailsStripe extends parentLogin {
 
   initSupplementaryPayment(data, type) {
     // Create the POST request
-    fetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
+    bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
       method: "POST", // Specify the method
       headers: {
         "Content-Type": "application/json", // Specify the content type
@@ -1764,6 +1769,8 @@ class classDetailsStripe extends parentLogin {
       "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId",
       true
     );
+    var __bdcToken = getMemberstackToken();
+    if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
     xhr.withCredentials = false;
     xhr.send(JSON.stringify(data));
     xhr.onload = function () {
@@ -1905,7 +1912,7 @@ class classDetailsStripe extends parentLogin {
     }
     try {
       const query = `studentEnrolled?studentEmail=${encodeURIComponent(params.email)}&name=${encodeURIComponent(params.name)}`;
-      const response = await fetch(
+      const response = await bdcFetch(
         `https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/${query}`
       );
       if (!response.ok) {

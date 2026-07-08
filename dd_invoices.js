@@ -30,7 +30,7 @@ class DDInvoices {
     // Fetches data from the specified API endpoint
     async fetchData(endpoint) {
         try {
-            const response = await fetch(`${this.baseUrl}${endpoint}`);
+            const response = await bdcFetch(`${this.baseUrl}${endpoint}`);
             if (!response.ok) {
                 throw new Error("Network response was not ok");
             }

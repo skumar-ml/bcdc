@@ -34,6 +34,8 @@ class NotificationCount {
 		var $this = this;
 		xhr.open("GET", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getNotifications/"+$this.webflowMemberId, true)
 		xhr.withCredentials = false
+		var __bdcToken = getMemberstackToken();
+		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
 		xhr.send()
 		xhr.onload = function() {
 			let responseText =  JSON.parse(xhr.responseText);

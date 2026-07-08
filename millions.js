@@ -20,7 +20,7 @@ class MillionsRenderer {
      // Fetches millions transaction data from the API
      async fetchData() {
          try {
-             const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
+             const response = await bdcFetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
              if (!response.ok) {
              this.portalInfoWrapper.style.display = 'none'; // Hide portal info wrapper initially
              this.spinner.style.display = 'none';

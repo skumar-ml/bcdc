@@ -26,6 +26,7 @@ function creEl(name, className, idName) {
 	return el;
 }
 
+
 class PaymentConfirmation {
     // Initializes the class with member ID, API URL, and site URL
     constructor(webFlowMemberId, apiBaseUrl, site_url) {
@@ -137,7 +138,7 @@ class PaymentConfirmation {
     // Fetches data from the specified API endpoint
     async fetchData(endpoint) {
         try {
-            const response = await fetch(`${this.apiBaseUrl}${endpoint}`);
+            const response = await bdcFetch(`${this.apiBaseUrl}${endpoint}`);
             if (!response.ok) {
                 throw new Error("Network response was not ok");
             }
@@ -295,7 +296,7 @@ class PaymentConfirmation {
             "amount": parseFloat(amount*100)
         };
         // Create the POST request
-        fetch(this.apiBaseUrl+"createCheckoutUrlForSupplementary", {
+        bdcFetch(this.apiBaseUrl+"createCheckoutUrlForSupplementary", {
                 method: 'POST', // Specify the method
                 headers: {
                     'Content-Type': 'application/json' // Specify the content type

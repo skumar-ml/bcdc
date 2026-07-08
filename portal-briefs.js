@@ -37,7 +37,7 @@ Are there any dependent JS files: No
             async fetchData(endpoint) {
                 try {
                     let url = `${this.data.baseUrl}${endpoint}`;
-                    const response = await fetch(url);
+                    const response = await bdcFetch(url);
                     if (!response.ok) throw new Error('Network response was not ok');
 
                     const apiData = await response.json();

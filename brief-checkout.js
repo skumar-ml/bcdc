@@ -9,6 +9,7 @@ Are there any dependent JS files: Yes, Utils.js
 Utils.js provides common functionality for modal management, credit data fetching, and API calls.
 
 */
+
 class BriefsCheckout {
     // Initializes the briefs checkout with modal and data
     constructor(data) {
@@ -38,7 +39,7 @@ class BriefsCheckout {
                 url = `${this.data.apiBaseURL}${endpoint}/${memberId}`;
             }
 
-            const response = await fetch(url);
+            const response = await bdcFetch(url);
             if (!response.ok) throw new Error('Network response was not ok');
 
             const apiData = await response.json();
@@ -516,6 +517,8 @@ class BriefsCheckout {
         xhr.open("POST", `https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram`, true);
         xhr.withCredentials = false;
         xhr.setRequestHeader('Content-Type', 'application/json');
+        var __bdcToken = getMemberstackToken();
+        if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
 
         xhr.onload = function () {
             try {

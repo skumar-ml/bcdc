@@ -94,7 +94,7 @@ Are there any dependent JS files: No
                         limit: limit
                     }
 
-                    const response = await fetch(url, {
+                    const response = await bdcFetch(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -133,7 +133,7 @@ Are there any dependent JS files: No
                         prevAmount: this.$currentStudent.amount
                     }
 
-                    const response = await fetch(url, {
+                    const response = await bdcFetch(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
