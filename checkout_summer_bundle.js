@@ -536,9 +536,11 @@ class CheckOutWebflow {
 			// Build native options, value = index into filterData
 			filterData.forEach((item, index) => {
 				const option = document.createElement("option");
+				var itemGrade = item.studentGrade || item.grade || "";
 				option.value = index;
 				option.textContent = item.studentName;
 				option.setAttribute("data-student-name", item.studentName);
+				option.setAttribute("data-student-grade", itemGrade);
 				selectBox.appendChild(option);
 			});
 			// On selection, shape the profile and prefill the student form
@@ -807,7 +809,10 @@ class CheckOutWebflow {
 			'.custom-select-display-wrapper{position:relative;}' +
 			'.custom-select-hidden{display:none !important;}' +
 			'.custom-select-dropdown{position:absolute;top:100%;left:0;right:0;z-index:50;}' +
-			'.custom-select-dropdown:not(.show){display:none;}';
+			'.custom-select-dropdown:not(.show){display:none;}' +
+			'.custom-select-option-default{pointer-events:none;cursor:default;opacity:0.6;}' +
+			'.custom-select-option.custom-select-option-create{cursor:pointer;transition:background-color 0.15s ease;}' +
+			'.custom-select-option.custom-select-option-create:hover{background-color:#efe3e4;}';
 		document.head.appendChild(style);
 	}
 	// Build a styled select UI over the native #existing-students select
@@ -853,25 +858,22 @@ class CheckOutWebflow {
 		displayDiv.appendChild(arrowIcon);
 		wrapper.appendChild(dropdownOptions);
 
-		// Build label HTML for an option
+		// Build label HTML for an option, appending the grade when available
 		const createOptionHTML = (option) => {
 			const studentName = option.getAttribute('data-student-name') || option.textContent;
-			return studentName;
+			const studentGrade = option.getAttribute('data-student-grade');
+			return studentGrade ? `${studentName} (${studentGrade})` : studentName;
 		};
 
 		// Render the styled option rows from the native options
 		const buildDropdownOptions = () => {
 			dropdownOptions.innerHTML = '';
 
-			// Default placeholder row
+			// Default placeholder row — display only, not selectable from the dropdown
 			const defaultOptionDiv = document.createElement('div');
 			defaultOptionDiv.className = 'custom-select-option custom-select-option-default';
 			defaultOptionDiv.textContent = 'Select Student Name';
-			defaultOptionDiv.addEventListener('click', function () {
-				selectBox.selectedIndex = 0;
-				selectBox.dispatchEvent(new Event('change'));
-				toggleDropdown();
-			});
+			defaultOptionDiv.setAttribute('aria-disabled', 'true');
 			dropdownOptions.appendChild(defaultOptionDiv);
 
 			// One row per student option
