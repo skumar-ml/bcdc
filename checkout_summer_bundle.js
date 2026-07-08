@@ -811,8 +811,8 @@ class CheckOutWebflow {
 			'.custom-select-dropdown{position:absolute;top:100%;left:0;right:0;z-index:50;}' +
 			'.custom-select-dropdown:not(.show){display:none;}' +
 			'.custom-select-option-default{pointer-events:none;cursor:default;opacity:0.6;}' +
-			'.custom-select-option.custom-select-option-create{cursor:pointer;transition:background-color 0.15s ease;margin-top:10px;border-top:1px solid #E5E7EB;padding-top:10px;}' +
-			'.custom-select-option.custom-select-option-create:hover{background-color:#efe3e4;}';
+			'.custom-select-option.custom-select-option-create{cursor:pointer;transition:background-color 0.15s ease;}' +
+			'.custom-select-option.custom-select-option-create:hover{background-color:#efe3e4;box-shadow:0 1px 3px rgba(0,0,0,0.12);}';
 		document.head.appendChild(style);
 	}
 	// Build a styled select UI over the native #existing-students select
