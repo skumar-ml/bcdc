@@ -881,6 +881,7 @@ class CheckOutWebflow {
 			hr.className = 'border-bottom pro-margin-bottom';
 			hr.style.border = '0';
 			hr.style.borderTop = '1px solid #E5E7EB';
+      hr.style.marginTop = '2px';
 			return hr;
 		};
 
