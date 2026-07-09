@@ -477,17 +477,11 @@ class Notification {
 		var data = {
 			 "objectId" : messageId
 		}
-		var xhr = new XMLHttpRequest()
-		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/isReadNotification", true)
-		xhr.withCredentials = false
-		var __bdcToken = getMemberstackToken();
-		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function() {
-			let responseText = xhr.responseText;
-			//console.log('responseText', responseText)
-		}
+		bdcFetch("https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/isReadNotification", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data)
+		});
 	}
 	// Marks a message as read and updates the UI
 	makeRead(item){
@@ -630,17 +624,12 @@ class NotificationApi {
 	}
 	// Fetches notification data from the API and initializes Notification
 	getNotificationData(){
-		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("GET", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getNotifications/"+$this.webflowMemberId, true)
-		xhr.withCredentials = false
-		var __bdcToken = getMemberstackToken();
-		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-		xhr.send()
-		xhr.onload = function() {
-			let responseText =  JSON.parse(xhr.responseText);
-			new Notification($this.webflowMemberId, responseText); 			
-		}
+		bdcFetch("https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getNotifications/"+$this.webflowMemberId)
+			.then(function(response) { return response.json(); })
+			.then(function(responseText) {
+				new Notification($this.webflowMemberId, responseText);
+			});
 	}
 }
 

@@ -18,17 +18,15 @@ class SigninActivity {
 		var data = {
 			 "memberId" : this.webflowMemberId
 		}
-		var xhr = new XMLHttpRequest()
-		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/signInActivity", true)
-		xhr.withCredentials = false
-		var __bdcToken = getMemberstackToken();
-		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function() {
-			let responseText = xhr.responseText;
-			console.log('responseText', responseText)
-		}
+		bdcFetch("https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/signInActivity", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data)
+		})
+			.then(function(response) { return response.text(); })
+			.then(function(responseText) {
+				console.log('responseText', responseText)
+			});
 	}
 }
 

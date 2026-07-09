@@ -543,138 +543,133 @@ function creEl(name,className,idName){
 		  if(attendanceId){
 			  data.attendanceId = attendanceId;
 		  }
-		  var xhr = new XMLHttpRequest()
 		  var $this = this;
-		  xhr.open("POST", "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/updateAttendance", true)
-		  xhr.withCredentials = false
-		  var __bdcToken = getMemberstackToken();
-		  if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-		  xhr.send(JSON.stringify(data))
-		  xhr.onload = function() {
-			  try {
-				  // Check if request was successful
-				  if (xhr.status >= 200 && xhr.status < 300) {
-					  let responseText = JSON.parse(xhr.responseText);
-					  
-					  // Check if response indicates success
-					  var isSuccess = responseText.msg && responseText.msg.includes("successfully");
-					  // The id field in response is paymentId
-					  var responsePaymentId = responseText.id;
-					  
-					  // Update attendance status locally
-					  // Find the student in current class
-					  var studentIndex = currentClass.studentDetails.findIndex(function(student) {
-						  return student.paymentId === paymentId;
-					  });
-					  
-					  if (studentIndex !== -1 && isSuccess) {
-						  // If attendanceId was provided, we're unchecking in (remove attendanceId)
-						  // If attendanceId was empty, we're checking in (add new attendanceId from response)
-						  if (attendanceId) {
-							  // Uncheck-in: remove attendanceId
-							  currentClass.studentDetails[studentIndex].attendanceId = '';
-						  } else {
-							  // Check-in: set attendanceId from response (if available)
-							  // Try to get attendanceId from response, otherwise use paymentId or mark as checked
-							  if (responseText.attendanceId) {
-								  currentClass.studentDetails[studentIndex].attendanceId = responseText.attendanceId;
-							  } else if (responseText.data && responseText.data.attendanceId) {
-								  currentClass.studentDetails[studentIndex].attendanceId = responseText.data.attendanceId;
-							  } else if (responsePaymentId) {
-								  // Use paymentId as attendanceId if no attendanceId is provided
-								  currentClass.studentDetails[studentIndex].attendanceId = responsePaymentId;
-							  } else {
-								  // If response doesn't have attendanceId, use a placeholder or keep it empty
-								  // The API might return success without the ID, so we'll mark as checked in
-								  currentClass.studentDetails[studentIndex].attendanceId = 'checked';
-							  }
-						  }
-						  
-						  // Update the classData array as well
-						  var classDataIndex = $this.classData.findIndex(function(classItem) {
-							  return classItem.classId === currentClass.classId;
+		  bdcFetch("https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/updateAttendance", {
+			  method: "POST",
+			  headers: { "Content-Type": "application/json" },
+			  body: JSON.stringify(data)
+		  }).then(function(response) {
+			  if (response.status >= 200 && response.status < 300) {
+				  return response.json().then(function(responseText) {
+					  try {
+						  // Check if response indicates success
+						  var isSuccess = responseText.msg && responseText.msg.includes("successfully");
+						  // The id field in response is paymentId
+						  var responsePaymentId = responseText.id;
+
+						  // Update attendance status locally
+						  // Find the student in current class
+						  var studentIndex = currentClass.studentDetails.findIndex(function(student) {
+							  return student.paymentId === paymentId;
 						  });
-						  
-						  if (classDataIndex !== -1) {
-							  var studentDataIndex = $this.classData[classDataIndex].studentDetails.findIndex(function(student) {
-								  return student.paymentId === paymentId;
-							  });
-							  
-							  if (studentDataIndex !== -1) {
-								  if (attendanceId) {
-									  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = '';
+
+						  if (studentIndex !== -1 && isSuccess) {
+							  // If attendanceId was provided, we're unchecking in (remove attendanceId)
+							  // If attendanceId was empty, we're checking in (add new attendanceId from response)
+							  if (attendanceId) {
+								  // Uncheck-in: remove attendanceId
+								  currentClass.studentDetails[studentIndex].attendanceId = '';
+							  } else {
+								  // Check-in: set attendanceId from response (if available)
+								  // Try to get attendanceId from response, otherwise use paymentId or mark as checked
+								  if (responseText.attendanceId) {
+									  currentClass.studentDetails[studentIndex].attendanceId = responseText.attendanceId;
+								  } else if (responseText.data && responseText.data.attendanceId) {
+									  currentClass.studentDetails[studentIndex].attendanceId = responseText.data.attendanceId;
+								  } else if (responsePaymentId) {
+									  // Use paymentId as attendanceId if no attendanceId is provided
+									  currentClass.studentDetails[studentIndex].attendanceId = responsePaymentId;
 								  } else {
-									  if (responseText.attendanceId) {
-										  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = responseText.attendanceId;
-									  } else if (responseText.data && responseText.data.attendanceId) {
-										  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = responseText.data.attendanceId;
-									  } else if (responsePaymentId) {
-										  // Use paymentId as attendanceId if no attendanceId is provided
-										  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = responsePaymentId;
+									  // If response doesn't have attendanceId, use a placeholder or keep it empty
+									  // The API might return success without the ID, so we'll mark as checked in
+									  currentClass.studentDetails[studentIndex].attendanceId = 'checked';
+								  }
+							  }
+
+							  // Update the classData array as well
+							  var classDataIndex = $this.classData.findIndex(function(classItem) {
+								  return classItem.classId === currentClass.classId;
+							  });
+
+							  if (classDataIndex !== -1) {
+								  var studentDataIndex = $this.classData[classDataIndex].studentDetails.findIndex(function(student) {
+									  return student.paymentId === paymentId;
+								  });
+
+								  if (studentDataIndex !== -1) {
+									  if (attendanceId) {
+										  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = '';
 									  } else {
-										  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = 'checked';
+										  if (responseText.attendanceId) {
+											  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = responseText.attendanceId;
+										  } else if (responseText.data && responseText.data.attendanceId) {
+											  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = responseText.data.attendanceId;
+										  } else if (responsePaymentId) {
+											  // Use paymentId as attendanceId if no attendanceId is provided
+											  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = responsePaymentId;
+										  } else {
+											  $this.classData[classDataIndex].studentDetails[studentDataIndex].attendanceId = 'checked';
+										  }
 									  }
 								  }
 							  }
+
+							  // Update current class reference
+							  $this.$currentClass = currentClass;
+
+							  // Re-paginate with updated data
+							  $this.$currentClassStudent = $this.paginatorList(currentClass.studentDetails, $this.$currentClassStudent.page);
+
+							  // Update the icon based on new status
+							  if (iconElement) {
+								  var newStatus = currentClass.studentDetails[studentIndex].attendanceId ? true : false;
+								  iconElement.src = newStatus
+									  ? "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a83485b6551a71e5b7e12_dd-check.png"
+									  : "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a834899a0eb5204d6dafd_dd-cross.png";
+							  }
+
+							  // Refresh the display
+							 // $this.refreshData();
 						  }
-						  
-						  // Update current class reference
-						  $this.$currentClass = currentClass;
-						  
-						  // Re-paginate with updated data
-						  $this.$currentClassStudent = $this.paginatorList(currentClass.studentDetails, $this.$currentClassStudent.page);
-						  
-						  // Update the icon based on new status
+					  } catch (error) {
+						  console.error('Error updating attendance locally:', error);
+						  // Reset icon to previous state on error
 						  if (iconElement) {
-							  var newStatus = currentClass.studentDetails[studentIndex].attendanceId ? true : false;
-							  iconElement.src = newStatus 
+							  var previousStatus = attendanceId ? true : false;
+							  iconElement.src = previousStatus
 								  ? "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a83485b6551a71e5b7e12_dd-check.png"
 								  : "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a834899a0eb5204d6dafd_dd-cross.png";
 						  }
-						  
-						  // Refresh the display
-						 // $this.refreshData();
+						  // Fallback to API call if local update fails
+						  $this.getUpdatedClasssData(currentClass.classId);
 					  }
-				  } else {
-					  // API returned an error status
-					  console.error('API error:', xhr.status, xhr.statusText);
-					  // Reset icon to previous state on error
-					  if (iconElement) {
-						  var previousStatus = attendanceId ? true : false;
-						  iconElement.src = previousStatus 
-							  ? "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a83485b6551a71e5b7e12_dd-check.png"
-							  : "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a834899a0eb5204d6dafd_dd-cross.png";
-					  }
-					  // Fallback to API call to get current state
-					  $this.getUpdatedClasssData(currentClass.classId);
-				  }
-			  } catch (error) {
-				  console.error('Error updating attendance locally:', error);
+				  });
+			  } else {
+				  // API returned an error status
+				  console.error('API error:', response.status, response.statusText);
 				  // Reset icon to previous state on error
 				  if (iconElement) {
 					  var previousStatus = attendanceId ? true : false;
-					  iconElement.src = previousStatus 
+					  iconElement.src = previousStatus
 						  ? "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a83485b6551a71e5b7e12_dd-check.png"
 						  : "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a834899a0eb5204d6dafd_dd-cross.png";
 				  }
-				  // Fallback to API call if local update fails
+				  // Fallback to API call to get current state
 				  $this.getUpdatedClasssData(currentClass.classId);
 			  }
-		  }
-		  
-		  xhr.onerror = function() {
+		  }).catch(function(error) {
 			  console.error('Network error updating attendance');
 			  // Reset icon to previous state on network error
 			  if (iconElement) {
 				  var previousStatus = attendanceId ? true : false;
-				  iconElement.src = previousStatus 
+				  iconElement.src = previousStatus
 					  ? "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a83485b6551a71e5b7e12_dd-check.png"
 					  : "https://uploads-ssl.webflow.com/6271a4bf060d543533060f47/642a834899a0eb5204d6dafd_dd-cross.png";
 			  }
 			  // Fallback to API call on network error
 			  $this.getUpdatedClasssData(currentClass.classId);
-		  }
-		  
+		  });
+
 	  }
 	  // Creates the DOM element for pagination
 	  createPagination(){
@@ -714,22 +709,17 @@ function creEl(name,className,idName){
 	  }
 	  // Fetches updated class data from the API
 	  getUpdatedClasssData(classId){
-		  var xhr = new XMLHttpRequest()
 		  var $this = this;
-		  xhr.open("GET", "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
-		  xhr.withCredentials = false
-		  var __bdcToken = getMemberstackToken();
-		  if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-		  xhr.send()
-		  xhr.onload = function() {
-			  let responseText =  JSON.parse(xhr.responseText);
-			  $this.classData	= responseText;
-			  var currentClass = responseText.find(item => item.classId == classId);
-			  
-			  $this.$currentClass = currentClass
-			  $this.$currentClassStudent = $this.paginatorList(currentClass.studentDetails, $this.$currentClassStudent.page);
-			  $this.refreshData();
-		  }
+		  bdcFetch("https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId)
+			  .then(function(response) { return response.json(); })
+			  .then(function(responseText) {
+				  $this.classData	= responseText;
+				  var currentClass = responseText.find(item => item.classId == classId);
+
+				  $this.$currentClass = currentClass
+				  $this.$currentClassStudent = $this.paginatorList(currentClass.studentDetails, $this.$currentClassStudent.page);
+				  $this.refreshData();
+			  });
 	  }
   }
   /**
@@ -751,7 +741,6 @@ function creEl(name,className,idName){
 	  }
 	  // Fetches class data from the API and initializes checkInForm
 	  getClasssData(){
-		  var xhr = new XMLHttpRequest()
 		  var $this = this;
 		  if ($this.portalInfoWrapper) {
 			  $this.portalInfoWrapper.style.display = "none";
@@ -759,22 +748,18 @@ function creEl(name,className,idName){
 		  if ($this.spinner) {
 			  $this.spinner.style.display = "block";
 		  }
-		  xhr.open("GET", "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId, true)
-		  xhr.withCredentials = false
-		  var __bdcToken = getMemberstackToken();
-		  if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-		  xhr.send()
-		  xhr.onload = function() {
-			  $this.portalInfoWrapper.style.display = "block";
-			  $this.spinner.style.display = "none";
-			  let responseText =  JSON.parse(xhr.responseText);
-			  new checkInForm($this.webflowMemberId, responseText); 			
-		  }
-		  // error handling if api not working
-		  xhr.onerror = function() {
-			  $this.spinner.style.display = "none";
-			  $this.portalInfoWrapper.style.display = "none";
-			  $this.noRecordAPIDiv.style.display = "block";
-		  }
+		  bdcFetch("https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId)
+			  .then(function(response) { return response.json(); })
+			  .then(function(responseText) {
+				  $this.portalInfoWrapper.style.display = "block";
+				  $this.spinner.style.display = "none";
+				  new checkInForm($this.webflowMemberId, responseText);
+			  })
+			  // error handling if api not working
+			  .catch(function() {
+				  $this.spinner.style.display = "none";
+				  $this.portalInfoWrapper.style.display = "none";
+				  $this.noRecordAPIDiv.style.display = "block";
+			  });
 	  }
   }

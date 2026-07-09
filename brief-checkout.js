@@ -512,17 +512,13 @@ class BriefsCheckout {
         console.log('Checkout data:', checkoutData);
         //return;
         // Make API call
-        const xhr = new XMLHttpRequest();
         const self = this;
-        xhr.open("POST", `https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram`, true);
-        xhr.withCredentials = false;
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        var __bdcToken = getMemberstackToken();
-        if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-
-        xhr.onload = function () {
-            try {
-                const responseText = JSON.parse(xhr.responseText);
+        bdcFetch(`https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(checkoutData)
+        }).then(function (response) {
+            return response.json().then(function (responseText) {
                 console.log('Payment response:', responseText);
 
                 if (responseText.success) {
@@ -543,7 +539,7 @@ class BriefsCheckout {
                         payNowButton.style.pointerEvents = "auto";
                     }
                 }
-            } catch (error) {
+            }).catch(function (error) {
                 console.error('Error parsing response:', error);
                 alert("An error occurred. Please try again.");
                 // Reset button state
@@ -551,10 +547,8 @@ class BriefsCheckout {
                     payNowButton.innerHTML = "Pay Now";
                     payNowButton.style.pointerEvents = "auto";
                 }
-            }
-        };
-
-        xhr.onerror = function () {
+            });
+        }).catch(function (error) {
             console.error('Network error occurred');
             alert("Network error. Please check your connection and try again.");
             // Reset button state
@@ -562,9 +556,7 @@ class BriefsCheckout {
                 payNowButton.innerHTML = "Pay Now";
                 payNowButton.style.pointerEvents = "auto";
             }
-        };
-
-        xhr.send(JSON.stringify(checkoutData));
+        });
     }
 
     // Updates breadcrumb navigation to show active step

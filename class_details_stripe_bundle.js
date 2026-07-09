@@ -931,28 +931,23 @@ class classDetailsStripe extends parentLogin {
         lastName: sLastName,
       };
       //return;
-      var xhr = new XMLHttpRequest();
       var $this = this;
-      xhr.open(
-        "POST",
-        "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/checkPreviousStudent",
-        true
-      );
-      var __bdcToken = getMemberstackToken();
-      if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-      xhr.withCredentials = false;
-      xhr.send(JSON.stringify(data));
-      xhr.onload = function () {
-        if (xhr.status == 200) {
-          let responseText = JSON.parse(xhr.responseText);
-          let isPreviousStudent = responseText.isPreviousStudent;
-          $this.$isPrevStudent = responseText.isPreviousStudent
-          $this.checkUncheckOldStudentCheckBox(isPreviousStudent, $this);
-          resolve(isPreviousStudent);
+      bdcFetch("https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/checkPreviousStudent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).then(function (response) {
+        if (response.status == 200) {
+          return response.json().then(function (responseText) {
+            let isPreviousStudent = responseText.isPreviousStudent;
+            $this.$isPrevStudent = responseText.isPreviousStudent
+            $this.checkUncheckOldStudentCheckBox(isPreviousStudent, $this);
+            resolve(isPreviousStudent);
+          });
         } else {
-          reject(xhr.status);
+          reject(response.status);
         }
-      };
+      });
     });
   }
   // formatting price in comma based value
@@ -1514,19 +1509,12 @@ class classDetailsStripe extends parentLogin {
 
       //console.log('Data !!!!!', data)
       //return;
-      var xhr = new XMLHttpRequest();
       var $this = this;
-      xhr.open(
-        "POST",
-        "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard",
-        true
-      );
-      var __bdcToken = getMemberstackToken();
-      if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-      xhr.withCredentials = false;
-      xhr.send(JSON.stringify(data));
-      xhr.onload = function () {
-        let responseText = JSON.parse(xhr.responseText);
+      bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).then(function (response) { return response.json(); }).then(function (responseText) {
         //console.log('responseText', responseText)
         if (responseText.success) {
           $this.$checkoutData = responseText;
@@ -1548,8 +1536,8 @@ class classDetailsStripe extends parentLogin {
         } else {
           window.location.href = 'https://www.bergendebate.com/portal/dashboard';
         }
-      }
-    };
+      });
+    }
   }
 
   initSupplementaryPayment(data, type) {
@@ -1762,19 +1750,12 @@ class classDetailsStripe extends parentLogin {
 
     //console.log('Data !!!!!', data)
     //return;
-    var xhr = new XMLHttpRequest();
     var $this = this;
-    xhr.open(
-      "POST",
-      "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId",
-      true
-    );
-    var __bdcToken = getMemberstackToken();
-    if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-    xhr.withCredentials = false;
-    xhr.send(JSON.stringify(data));
-    xhr.onload = function () {
-      let responseText = JSON.parse(xhr.responseText);
+    bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    }).then(function (response) { return response.json(); }).then(function (responseText) {
       //console.log('responseText', responseText)
       if (responseText.success) {
         $this.$checkoutData = responseText;
@@ -1793,7 +1774,7 @@ class classDetailsStripe extends parentLogin {
           }
         });
       }
-    };
+    });
   }
 
   showSemesterBundleModal(forceOpen) {

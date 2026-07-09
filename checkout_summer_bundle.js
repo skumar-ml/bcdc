@@ -712,28 +712,27 @@ class CheckOutWebflow {
 		}
 
 
-		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForSummer", true)
-		var __bdcToken = getMemberstackToken();
-		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-		xhr.withCredentials = false
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function () {
-			let responseText = JSON.parse(xhr.responseText);
-			if (responseText.success) {
+		bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForSummer", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data)
+		})
+			.then(function (response) { return response.json(); })
+			.then(function (responseText) {
+				if (responseText.success) {
 
-				$this.$checkoutData = responseText;
+					$this.$checkoutData = responseText;
 
-				//Storing data in local storage
-				data.checkoutData = responseText
-				localStorage.setItem("checkOutData", JSON.stringify(data));
+					//Storing data in local storage
+					data.checkoutData = responseText
+					localStorage.setItem("checkOutData", JSON.stringify(data));
 
-				next_page_2.innerHTML ="Next"
-				next_page_2.style.pointerEvents = "auto";
-			}
+					next_page_2.innerHTML ="Next"
+					next_page_2.style.pointerEvents = "auto";
+				}
 
-		}
+			});
 	}
 
 	// Updates student data in the database after location and session selection
@@ -768,26 +767,25 @@ class CheckOutWebflow {
 		checkOutData.updateData = data
 		localStorage.setItem("checkOutData", JSON.stringify(checkOutData));
 		
-		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", true)
-		var __bdcToken = getMemberstackToken();
-		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-		xhr.withCredentials = false
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function () {
-			let responseText = JSON.parse(xhr.responseText);
-			ach_payment.innerHTML = "Checkout"
-			ach_payment.disabled = false;
-			ach_payment.pointerEvents = "auto";
-			card_payment.innerHTML = "Checkout"
-			card_payment.disabled = false;
-			card_payment.pointerEvents = "auto";
-			paylater_payment.innerHTML = "Checkout"
-			paylater_payment.disabled = false;
-			paylater_payment.pointerEvents = "auto";
+		bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data)
+		})
+			.then(function (response) { return response.json(); })
+			.then(function (responseText) {
+				ach_payment.innerHTML = "Checkout"
+				ach_payment.disabled = false;
+				ach_payment.pointerEvents = "auto";
+				card_payment.innerHTML = "Checkout"
+				card_payment.disabled = false;
+				card_payment.pointerEvents = "auto";
+				paylater_payment.innerHTML = "Checkout"
+				paylater_payment.disabled = false;
+				paylater_payment.pointerEvents = "auto";
 
-		}
+			});
 	}
 
 	// Updates click events in the database and redirects to the checkout URL
@@ -874,15 +872,14 @@ class CheckOutWebflow {
 			data.cardUpsellAmount = parseFloat(checkoutAmounts.cardUpsellAmount.toFixed(2));
 		}
 		
-		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", true)
-		var __bdcToken = getMemberstackToken();
-		if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-		xhr.withCredentials = false
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function () {
-			let responseText = JSON.parse(xhr.responseText);
+		bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data)
+		})
+			.then(function (response) { return response.json(); })
+			.then(function (responseText) {
       const isStringSuccessResponse = typeof responseText === "string" &&
         responseText.toLowerCase().includes("updated successfully");
       if (isStringSuccessResponse) {
@@ -929,7 +926,7 @@ class CheckOutWebflow {
         });
         return;
       }
-    }
+    });
 	}
   
 	

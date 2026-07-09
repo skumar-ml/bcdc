@@ -2207,21 +2207,19 @@ class Portal {
             "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
             "cancelUrl": "https://www.bergendebate.com/portal/dashboard",
         }
-        var xhr = new XMLHttpRequest()
-        var $this = this;
-        xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice", true)
-        var __bdcToken = getMemberstackToken();
-        if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-        xhr.withCredentials = false
-        xhr.send(JSON.stringify(data))
-        xhr.onload = function () {
-            let responseText = JSON.parse(xhr.responseText);
-            if (responseText.success) {
-                span.innerHTML = link_title;
-                window.location.href = responseText.stripe_url;
-            }
+        bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        })
+            .then(function (response) { return response.json(); })
+            .then(function (responseText) {
+                if (responseText.success) {
+                    span.innerHTML = link_title;
+                    window.location.href = responseText.stripe_url;
+                }
 
-        }
+            });
     }
     /**
      * Initializes iframe lightbox functionality for form links

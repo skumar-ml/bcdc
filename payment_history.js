@@ -475,25 +475,22 @@ class PaymentHistory {
             cancelUrl: "https://www.bergendebate.com/portal/payment-history",
         };
         // Send payment request to API
-        var xhr = new XMLHttpRequest();
-        xhr.open(
-            "POST",
+        bdcFetch(
             "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice",
-            true
-        );
-        xhr.withCredentials = false;
-        var __bdcToken = getMemberstackToken();
-        if (__bdcToken) xhr.setRequestHeader("Authorization", "Bearer " + __bdcToken);
-        xhr.send(JSON.stringify(apiData));
-
-        // Handle API response
-        xhr.onload = function () {
-            let responseText = JSON.parse(xhr.responseText);
-            if (responseText.success) {
-                span.innerHTML = link_title;
-                window.location.href = responseText.stripe_url;
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(apiData)
             }
-        };
+        )
+            .then(function (response) { return response.json(); })
+            .then(function (responseText) {
+                // Handle API response
+                if (responseText.success) {
+                    span.innerHTML = link_title;
+                    window.location.href = responseText.stripe_url;
+                }
+            });
     }
 
     // Renders payment history for a student
