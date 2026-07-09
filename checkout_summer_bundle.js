@@ -636,7 +636,15 @@ class CheckOutWebflow {
 				var label = row.querySelector('.student-option');
 				var grade = profile.studentGrade || '';
 				if (label) {
-					label.textContent = profile.studentName + (grade ? ' (' + grade + ')' : '');
+					var studentNameText = document.createTextNode((profile.studentName || '') + ' ');
+					label.textContent = '';
+					label.appendChild(studentNameText);
+					if (grade) {
+						var gradeSpan = document.createElement('span');
+						gradeSpan.className = 'label-grade';
+						gradeSpan.textContent = '(' + grade + ')';
+						label.appendChild(gradeSpan);
+					}
 				}
 				if (radio) {
 					var oldId = radio.id;
@@ -858,11 +866,22 @@ class CheckOutWebflow {
 		displayDiv.appendChild(arrowIcon);
 		wrapper.appendChild(dropdownOptions);
 
-		// Build label HTML for an option, appending the grade when available
+		// Build label HTML for an option, wrapping the grade in a .label-grade
 		const createOptionHTML = (option) => {
 			const studentName = option.getAttribute('data-student-name') || option.textContent;
 			const studentGrade = option.getAttribute('data-student-grade');
-			return studentGrade ? `${studentName} (${studentGrade})` : studentName;
+			return studentGrade
+				? `${studentName} <span class="label-grade">(${studentGrade})</span>`
+				: studentName;
+		};
+
+		// Divider line 
+		const createOptionDivider = () => {
+			const hr = document.createElement('hr');
+			hr.className = 'border-bottom pro-margin-bottom';
+			hr.style.border = '0';
+			hr.style.borderTop = '1px solid #E5E7EB';
+			return hr;
 		};
 
 		// Render the styled option rows from the native options
@@ -875,6 +894,7 @@ class CheckOutWebflow {
 			defaultOptionDiv.textContent = 'Select Student Name';
 			defaultOptionDiv.setAttribute('aria-disabled', 'true');
 			dropdownOptions.appendChild(defaultOptionDiv);
+			dropdownOptions.appendChild(createOptionDivider());
 
 			// One row per student option
 			for (let i = 1; i < selectBox.options.length; i++) {
@@ -896,6 +916,7 @@ class CheckOutWebflow {
 			// Trailing "Create New Student" row: resets the select back to the
 			// placeholder and switches the form into create mode instead of
 			// prefilling from a saved profile.
+			dropdownOptions.appendChild(createOptionDivider());
 			const createNewDiv = document.createElement('div');
 			createNewDiv.className = 'custom-select-option custom-select-option-create';
 			createNewDiv.textContent = '+ Create New Student';
