@@ -878,7 +878,6 @@ class CheckOutWebflow {
 		// Divider line 
 		const createOptionDivider = () => {
 			const hr = document.createElement('hr');
-			hr.className = 'border-bottom pro-margin-bottom';
 			hr.style.border = '0';
 			hr.style.borderTop = '1px solid #E5E7EB';
       hr.style.marginTop = '2px';
