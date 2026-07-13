@@ -1201,7 +1201,7 @@ class classDetailsStripe extends parentLogin {
       }
 
       let existingStudentLabel = document.querySelector("label[for='existing-students']");
-      if (existingStudentLabel.innerText == "Select Student Info") {
+      if (existingStudentLabel && existingStudentLabel.innerText == "Select Student Info") {
         if (existingStudents) {
           existingStudents.setAttribute("required", "true");
         }
