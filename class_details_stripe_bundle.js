@@ -1175,10 +1175,7 @@ class classDetailsStripe extends parentLogin {
     var form = $("#checkout-form");
     next_page_1.addEventListener("click", async function (event) {
       event.preventDefault();
-      next_page_1.style.pointerEvents = "none";
-      setTimeout(() => {
-        next_page_1.style.pointerEvents = "auto";
-      }, 3000);
+      var next_page_1_original_text = next_page_1.innerHTML;
       // check bundle purchase flow
       $this.checkBundlePurchaseFlow();
       $this.updateDepositePriceForBundle();
@@ -1226,7 +1223,11 @@ class classDetailsStripe extends parentLogin {
         // Block advancing to the next section until createCheckoutId actually
         // resolves; on failure (e.g. STUDENT_EMAIL_IS_PARENT) the warning
         // banner is shown and the user stays on this step.
+        next_page_1.innerHTML = "Processing...";
+        next_page_1.style.pointerEvents = "none";
         var studentDataSaved = await $this.AddStudentData();
+        next_page_1.innerHTML = next_page_1_original_text;
+        next_page_1.style.pointerEvents = "auto";
         if (!studentDataSaved) {
           return;
         }
