@@ -27,7 +27,6 @@ function creEl(name, className, idName) {
   return el;
 }
 
-
 function handleSelectedParentData(){
   try {
     // Check if selectedParentData exists in localStorage
@@ -444,6 +443,10 @@ class classDetailsStripe extends parentLogin {
       }
     }
     this.updateOldStudentList();
+    // Fetch saved student profiles for the choose-student-card UI and wire
+    // up the "create new student" card.
+    this.renderCheckoutStudentProfileCards();
+    this._bindCreateStudentContainerClick();
     return isBundle;
   }
   // Creating main dom for location
@@ -1169,10 +1172,7 @@ class classDetailsStripe extends parentLogin {
     var form = $("#checkout-form");
     next_page_1.addEventListener("click", async function (event) {
       event.preventDefault();
-      next_page_1.style.pointerEvents = "none";
-      setTimeout(() => {
-        next_page_1.style.pointerEvents = "auto";
-      }, 3000);
+      var next_page_1_original_text = next_page_1.innerHTML;
       // check bundle purchase flow
       $this.checkBundlePurchaseFlow();
       $this.updateDepositePriceForBundle();
@@ -1195,7 +1195,7 @@ class classDetailsStripe extends parentLogin {
       }
 
       let existingStudentLabel = document.querySelector("label[for='existing-students']");
-      if (existingStudentLabel.innerText == "Select Student Info") {
+      if (existingStudentLabel && existingStudentLabel.innerText == "Select Student Info") {
         if (existingStudents) {
           existingStudents.setAttribute("required", "true");
         }
@@ -1217,7 +1217,17 @@ class classDetailsStripe extends parentLogin {
         var eligible = true;
 
         $this.storeBasicData();
-        $this.AddStudentData();
+        // Block advancing to the next section until createCheckoutId actually
+        // resolves; on failure (e.g. STUDENT_EMAIL_IS_PARENT) the warning
+        // banner is shown and the user stays on this step.
+        next_page_1.innerHTML = "Processing...";
+        next_page_1.style.pointerEvents = "none";
+        var studentDataSaved = await $this.AddStudentData();
+        next_page_1.innerHTML = next_page_1_original_text;
+        next_page_1.style.pointerEvents = "auto";
+        if (!studentDataSaved) {
+          return;
+        }
         // Check if student is already enrolled this semester
         await $this.checkStudentEnrolled();
 
@@ -1701,8 +1711,45 @@ class classDetailsStripe extends parentLogin {
     });
   }
 
-  // Add student data before checkout url created in database
+  // Deepest element that actually holds the message text, so we only touch
+  // the text node and leave icons/other markup inside the banner untouched.
+  _findWarningTextTarget(el) {
+    for (var i = 0; i < el.children.length; i++) {
+      var child = el.children[i];
+      if (child.textContent && child.textContent.trim()) {
+        return this._findWarningTextTarget(child);
+      }
+    }
+    return el;
+  }
+  // Shows the shared checkout warning banner (e.g. STUDENT_EMAIL_IS_PARENT).
+  // Clones the original Webflow-styled node so its markup/classes stay
+  // untouched, only swapping in the API message text on the clone.
+  showWarningMessage(message) {
+    var currentEl = document.querySelector(".warning-message-wapper");
+    if (!currentEl) {
+      return;
+    }
+    if (!this._warningTemplate) {
+      this._warningTemplate = currentEl.cloneNode(true);
+    }
+    var clone = this._warningTemplate.cloneNode(true);
+    this._findWarningTextTarget(clone).textContent = message;
+    currentEl.parentNode.replaceChild(clone, currentEl);
+    clone.style.display = "flex";
+  }
+  hideWarningMessage() {
+    var warningEl = document.querySelector(".warning-message-wapper");
+    if (!warningEl) {
+      return;
+    }
+    warningEl.style.display = "none";
+  }
+  // Add student data before checkout url created in database.
+  // Returns a Promise<boolean> resolving true only when createCheckoutId
+  // succeeds, so callers can block navigation to the next step until it settles.
   AddStudentData() {
+    this.hideWarningMessage();
     var studentFirstName = document.getElementById("Student-First-Name");
     var studentLastName = document.getElementById("Student-Last-Name");
     var studentEmail = document.getElementById("Student-Email");
@@ -1751,29 +1798,58 @@ class classDetailsStripe extends parentLogin {
     //console.log('Data !!!!!', data)
     //return;
     var $this = this;
-    bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    }).then(function (response) { return response.json(); }).then(function (responseText) {
-      //console.log('responseText', responseText)
-      if (responseText.success) {
-        $this.$checkoutData = responseText;
-        //Storing data in local storage
-        data.checkoutData = responseText;
-        $this.updateCheckOutData(data);
-        //localStorage.setItem("checkOutData", JSON.stringify(data));
-        register_btn_card.forEach((e) => {
+    var resetRegisterButtons = function () {
+      register_btn_card.forEach((e) => {
+        if (e.classList.contains("option_b_card")) {
+          e.innerHTML = "Register via Credit Card (Has Fee)";
+        } else if (e.classList.contains("option_b_bt")) {
+          e.innerHTML = "Register via Bank Transfer";
+        } else {
           e.innerHTML = "Register";
-          if (e.classList.contains("option_b_card")) {
-            e.innerHTML = "Register via Credit Card (Has Fee)";
-          } else if (e.classList.contains("option_b_bt")) {
-            e.innerHTML = "Register via Bank Transfer";
-          } else {
-            e.innerHTML = "Register";
+        }
+      });
+    };
+    return new Promise(function (resolve) {
+      bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).then(function (response) {
+        return response.text().then(function (rawText) {
+          var responseText;
+          try {
+            responseText = JSON.parse(rawText);
+          } catch (e) {
+            responseText = {};
           }
+          //console.log('responseText', responseText)
+
+          // API error (e.g. 400 STUDENT_EMAIL_IS_PARENT) — surface message, keep user on this step.
+          if (response.status >= 400 || responseText.success === false) {
+            $this.showWarningMessage(responseText.message || "Something went wrong. Please try again.");
+            resetRegisterButtons();
+            resolve(false);
+            return;
+          }
+
+          if (responseText.success) {
+            $this.$checkoutData = responseText;
+            //Storing data in local storage
+            data.checkoutData = responseText;
+            $this.updateCheckOutData(data);
+            //localStorage.setItem("checkOutData", JSON.stringify(data));
+            resetRegisterButtons();
+            resolve(true);
+            return;
+          }
+
+          resolve(false);
         });
-      }
+      }).catch(function () {
+        $this.showWarningMessage("Something went wrong. Please try again.");
+        resetRegisterButtons();
+        resolve(false);
+      });
     });
   }
 
@@ -2553,6 +2629,53 @@ class classDetailsStripe extends parentLogin {
   }
 
 
+  // Toggles between the "pick a saved student" dropdown and the "create a new
+  // student" form based on whether getCheckoutStudentProfiles returned any data.
+  _toggleStudentProfileUI(hasStudents) {
+    var dropdownWrapper = document.querySelector('.student-dropdown-wapper');
+    var createAccountWrapper = document.querySelector('.create-account-wapper');
+    if (dropdownWrapper) {
+      dropdownWrapper.style.display = hasStudents ? 'block' : 'none';
+    }
+    if (createAccountWrapper) {
+      createAccountWrapper.style.display = hasStudents ? 'none' : 'flex';
+    }
+    if (!hasStudents) {
+      var formHeading = document.getElementById('form-heading');
+      if (formHeading) {
+        formHeading.textContent = 'Create New Student Profile';
+      }
+    }
+  }
+  // Clears the student form and switches the UI into "create new student"
+  // mode when the user picks "+ Create New Student" from the saved-profiles
+  // dropdown instead of an existing student.
+  _resetStudentFormForNewStudent() {
+    localStorage.removeItem('checkOutBasicData');
+    var studentFirstName = document.getElementById('Student-First-Name');
+    var studentLastName = document.getElementById('Student-Last-Name');
+    var studentEmail = document.getElementById('Student-Email');
+    var studentGrade = document.getElementById('Student-Grade');
+    var studentSchool = document.getElementById('Student-School');
+    var studentGender = document.getElementById('Student-Gender');
+    var prevStudent = document.getElementById('prevStudent');
+    if (studentFirstName) studentFirstName.value = '';
+    if (studentLastName) studentLastName.value = '';
+    if (studentEmail) studentEmail.value = '';
+    if (studentGrade) studentGrade.value = '';
+    if (studentSchool) studentSchool.value = '';
+    if (studentGender) studentGender.value = '';
+    if (prevStudent) prevStudent.value = '';
+
+    document.querySelectorAll('.selected-student-heading').forEach(function (el) {
+      el.textContent = 'Already have a student registered?';
+    });
+    this._setSelectedStudentText('Search and select from your existing students instead.');
+    var formHeading = document.getElementById('form-heading');
+    if (formHeading) {
+      formHeading.textContent = 'Create New Student Profile';
+    }
+  }
   //updateOldStudentList
   async updateOldStudentList(data) {
     const selectBox = document.getElementById("existing-students");
@@ -2572,8 +2695,11 @@ class classDetailsStripe extends parentLogin {
       if (data == "No data Found" || !Array.isArray(data) || data.length == 0) {
         selectBox.disabled = true;
         selectBox.innerHTML = '<option value="">No previous students found</option>';
+        $this._toggleStudentProfileUI(false);
         return;
       }
+      // Saved students found: show the dropdown, hide the "create new student" form
+      $this._toggleStudentProfileUI(true);
       data = data.filter(i => i.studentName != null && i.studentName != undefined && i.studentName != "");
       const filterData = data
         .filter(
@@ -2603,13 +2729,15 @@ class classDetailsStripe extends parentLogin {
         });
         let checkBundleLabel = (checkBundle) ? " - Pre-registration available" : "";
         let checkBundleIconClass = (checkBundle) ? "pre-reg-available" : "normal-reg-available";
+        var itemGrade = item.studentGrade || item.grade || "";
         const option = document.createElement("option");
         option.value = index;
         option.classList.add(checkBundleIconClass);
         //option.textContent = `${item.studentName+" ("+item.studentEmail+")"}`;
-        option.textContent = `${item.studentName}${checkBundleLabel}`;
+        option.textContent = `${item.studentName}${itemGrade ? " (" + itemGrade + ")" : ""}${checkBundleLabel}`;
         option.setAttribute("data-check-bundle", checkBundle ? "true" : "false");
         option.setAttribute("data-student-name", item.studentName);
+        option.setAttribute("data-student-grade", itemGrade);
         selectBox.appendChild(option);
       });
 
@@ -2651,6 +2779,8 @@ class classDetailsStripe extends parentLogin {
 
         localStorage.setItem("checkOutBasicData", JSON.stringify(data));
         $this.updateBasicData('old_student');
+        var selectedGrade = selected.studentGrade || selected.grade || "";
+        $this._markStudentSelected((selected.studentName || "") + (selectedGrade ? " (" + selectedGrade + ")" : ""));
       });
     } catch (error) {
       console.error("Error fetching API data:", error);
@@ -2658,9 +2788,31 @@ class classDetailsStripe extends parentLogin {
       // Handle errors (optional)
       selectBox.innerHTML =
         '<option value="">Student Details not available</option>';
+      $this._toggleStudentProfileUI(false);
     }
   }
+  // Inject the custom-select CSS once so layout stays stable even if the
+  // Webflow page lacks these rules: native select is removed from flow and
+  // the open options panel floats as an overlay so nothing below it shifts.
+  _ensureCustomSelectStyles() {
+    if (document.getElementById('custom-select-shift-fix')) {
+      return;
+    }
+    var style = document.createElement('style');
+    style.id = 'custom-select-shift-fix';
+    style.textContent =
+      '.custom-select-display-wrapper{position:relative;}' +
+      '.custom-select-hidden{display:none !important;}' +
+      '.custom-select-dropdown{position:absolute;top:100%;left:0;right:0;z-index:50;}' +
+      '.custom-select-dropdown:not(.show){display:none;}' +
+      '.custom-select-option-default{pointer-events:none;cursor:default;opacity:0.6;}' +
+      '.custom-select-option.custom-select-option-create{cursor:pointer;transition:background-color 0.15s ease;}' +
+      '.custom-select-option.custom-select-option-create:hover{background-color:#efe3e4;}';
+    document.head.appendChild(style);
+  }
   createCustomSelectDisplay(selectBox, filterData) {
+    // Guarantee shift-proof styles regardless of Webflow page CSS
+    this._ensureCustomSelectStyles();
     // Inject CSS styles into head if not already present
 
     // Remove existing custom display wrapper if it exists
@@ -2702,32 +2854,39 @@ class classDetailsStripe extends parentLogin {
     displayDiv.appendChild(arrowIcon);
     wrapper.appendChild(dropdownOptions);
 
-    // Function to create option HTML with styled checkBundleLabel
+    // Function to create option HTML with styled checkBundleLabel and grade
     const createOptionHTML = (option) => {
       const hasCheckBundle = option.getAttribute('data-check-bundle') === 'true';
       const studentName = option.getAttribute('data-student-name') || option.textContent;
+      const studentGrade = option.getAttribute('data-student-grade');
+      const gradeHTML = studentGrade ? ` <span class="label-grade">(${studentGrade})</span>` : '';
+      const bundleHTML = hasCheckBundle ? '<span class="custom-select-bundle-label"> - Pre-registration available</span>' : '';
 
-      if (hasCheckBundle) {
-        return `${studentName}<span class="custom-select-bundle-label"> - Pre-registration available</span>`;
-      } else {
-        return studentName;
-      }
+      return `${studentName}${gradeHTML}${bundleHTML}`;
+    };
+
+    // Divider line matching the design's <hr class="border-bottom pro-margin-bottom">
+    const createOptionDivider = () => {
+      const hr = document.createElement('hr');
+      hr.style.borderWidth = '1px 0px 0px';
+      hr.style.borderStyle = 'solid none none';
+      hr.style.borderColor = 'rgb(229, 231, 235) currentcolor currentcolor';
+      hr.style.borderImage = 'initial';
+      hr.style.marginTop = '2px';
+      return hr;
     };
 
     // Function to build dropdown options
     const buildDropdownOptions = () => {
       dropdownOptions.innerHTML = '';
 
-      // Add default option
+      // Add default option — display only, not selectable from the dropdown
       const defaultOptionDiv = document.createElement('div');
       defaultOptionDiv.className = 'custom-select-option custom-select-option-default';
       defaultOptionDiv.textContent = 'Select Student Name';
-      defaultOptionDiv.addEventListener('click', function () {
-        selectBox.selectedIndex = 0;
-        selectBox.dispatchEvent(new Event('change'));
-        toggleDropdown();
-      });
+      defaultOptionDiv.setAttribute('aria-disabled', 'true');
       dropdownOptions.appendChild(defaultOptionDiv);
+      dropdownOptions.appendChild(createOptionDivider());
 
       // Add student options
       for (let i = 1; i < selectBox.options.length; i++) {
@@ -2745,6 +2904,21 @@ class classDetailsStripe extends parentLogin {
 
         dropdownOptions.appendChild(optionDiv);
       }
+
+      // Trailing "Create New Student" row: resets the select back to the
+      // placeholder and switches the form into create mode instead of
+      // prefilling from a saved profile.
+      dropdownOptions.appendChild(createOptionDivider());
+      const createNewDiv = document.createElement('div');
+      createNewDiv.className = 'custom-select-option custom-select-option-create';
+      createNewDiv.textContent = '+ Create New Student';
+      createNewDiv.addEventListener('click', function () {
+        selectBox.selectedIndex = 0;
+        selectBox.dispatchEvent(new Event('change'));
+        toggleDropdown();
+        this._resetStudentFormForNewStudent();
+      }.bind(this));
+      dropdownOptions.appendChild(createNewDiv);
     };
 
     // Function to toggle dropdown
@@ -2791,6 +2965,233 @@ class classDetailsStripe extends parentLogin {
 
     // Initial display update
     updateDisplay();
+  }
+  // Renders the "Choose Student" card UI: fetches saved profiles from
+  // getCheckoutStudentProfiles, clones the design's .student-radio-option
+  // template once per profile, and reveals #choose-student-card only when
+  // there's data to show.
+  async renderCheckoutStudentProfileCards() {
+    var $this = this;
+    // Default copy for the "Selected Student" summary block, shown until
+    // the user actually picks a profile (radio card or legacy dropdown).
+    document.querySelectorAll('.selected-student-heading').forEach(function (el) {
+      el.textContent = 'Already have a student registered?';
+    });
+    this._setSelectedStudentText('Search and select from your existing students instead.');
+
+    var chooseStudentCard = document.getElementById('choose-student-card');
+    var scopeRoot = chooseStudentCard || document;
+    var templateOption = scopeRoot.querySelector('.student-radio-option') || document.querySelector('.student-radio-option');
+    if (!templateOption) {
+      return;
+    }
+    var template = templateOption.cloneNode(true);
+    var listParent = templateOption.parentElement;
+    // Remove design-time placeholder rows before rendering live data
+    listParent.querySelectorAll('.student-radio-option').forEach(function (el) {
+      el.remove();
+    });
+
+    try {
+      var profilesResponse = await this.fetchData(
+        "getCheckoutStudentProfiles/" + this.webflowMemberId,
+        this.getCheckoutStudentProfilesBaseUrl()
+      );
+      var profiles = this.normalizeCheckoutStudentProfiles(profilesResponse)
+        .filter(function (item) { return item && item.studentName; });
+
+      if (profiles.length === 0) {
+        if (chooseStudentCard) chooseStudentCard.style.display = 'none';
+        document.querySelectorAll('.selected-student-card').forEach(function (el) {
+          el.style.display = 'none';
+        });
+        // Nothing to choose from — send the user straight into the create-new form.
+        $this._showCheckoutFormWrapper('Create New Student Profile');
+        return;
+      }
+
+      this._checkoutStudentProfiles = profiles;
+
+      var countEl = scopeRoot.querySelector('.saved-student-count') || document.querySelector('.saved-student-count');
+      if (countEl) {
+        countEl.textContent = /\(\d+\)/.test(countEl.textContent)
+          ? countEl.textContent.replace(/\(\d+\)/, '(' + profiles.length + ')')
+          : countEl.textContent + ' (' + profiles.length + ')';
+      }
+
+      profiles.forEach(function (profile, index) {
+        var row = template.cloneNode(true);
+        var radio = row.querySelector('input[type="radio"]');
+        var label = row.querySelector('.student-option');
+        var grade = profile.studentGrade || '';
+        if (label) {
+          var studentNameText = document.createTextNode((profile.studentName || '') + ' ');
+          label.textContent = '';
+          label.appendChild(studentNameText);
+          if (grade) {
+            var gradeSpan = document.createElement('span');
+            gradeSpan.className = 'label-grade';
+            gradeSpan.textContent = '(' + grade + ')';
+            label.appendChild(gradeSpan);
+          }
+        }
+        if (radio) {
+          var oldId = radio.id;
+          var newId = 'existing-student-option-' + index;
+          radio.id = newId;
+          radio.name = 'existing-student-option';
+          radio.value = index;
+          radio.checked = false;
+          if (oldId) {
+            var relatedLabel = row.querySelector('label[for="' + oldId + '"]');
+            if (relatedLabel) relatedLabel.setAttribute('for', newId);
+          }
+          radio.addEventListener('change', function () {
+            $this._selectExistingStudentProfile(profile);
+          });
+        }
+        row.addEventListener('click', function (event) {
+          if (event.target && event.target.tagName === 'INPUT') {
+            return;
+          }
+          if (radio && !radio.checked) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+        listParent.appendChild(row);
+      });
+
+      if (chooseStudentCard) chooseStudentCard.style.display = 'block';
+    } catch (error) {
+      console.error('Error fetching checkout student profiles:', error);
+      if (chooseStudentCard) chooseStudentCard.style.display = 'none';
+    }
+  }
+  // Prefills the student form from a saved profile and switches the form
+  // into "edit" mode.
+  _selectExistingStudentProfile(profile) {
+    var grade = profile.studentGrade || profile.grade || '';
+    var displayLabel = (profile.studentName || '') + (grade ? ' (' + grade + ')' : '');
+
+    this._showCheckoutFormWrapper('Edit Student Profile');
+    this._markStudentSelected(displayLabel);
+    this._syncOldDropdownSelection(profile);
+
+    try {
+      var studentFirstName = document.getElementById('Student-First-Name');
+      var studentLastName = document.getElementById('Student-Last-Name');
+      var studentEmail = document.getElementById('Student-Email');
+      var studentGrade = document.getElementById('Student-Grade');
+      var studentSchool = document.getElementById('Student-School');
+      var studentGender = document.getElementById('Student-Gender');
+      var prevStudent = document.getElementById('prevStudent');
+
+      var nameParts = (profile.studentName || '').trim().split(/\s+/);
+      var firstName = nameParts[0] || '';
+      var lastName = nameParts.slice(1).join(' ');
+
+      if (studentFirstName) studentFirstName.value = firstName;
+      if (studentLastName) studentLastName.value = lastName;
+      if (studentEmail) studentEmail.value = profile.studentEmail || '';
+      if (studentSchool) studentSchool.value = profile.school || '';
+      if (studentGender) studentGender.value = profile.gender || '';
+      if (prevStudent) prevStudent.value = 'Yes';
+
+      if (studentGrade && grade) {
+        var wantGrade = String(grade).trim().toLowerCase();
+        var matchedGrade = Array.prototype.find.call(studentGrade.options, function (opt) {
+          return opt.value.trim().toLowerCase() === wantGrade;
+        });
+        if (matchedGrade) studentGrade.value = matchedGrade.value;
+      }
+
+      localStorage.setItem('checkOutBasicData', JSON.stringify({
+        studentEmail: profile.studentEmail || '',
+        firstName: firstName,
+        lastName: lastName,
+        grade: grade,
+        school: profile.school || '',
+        gender: profile.gender || '',
+        prevStudent: 'Yes',
+      }));
+    } catch (error) {
+      console.error('Error prefilling student form from selected profile:', error);
+    }
+  }
+  // Updates the "Selected Student" summary text, used by both the new
+  // radio-card list and the legacy dropdown picker.
+  _setSelectedStudentText(text) {
+    document.querySelectorAll('.selected-student-text').forEach(function (el) {
+      el.textContent = text;
+    });
+  }
+  // Marks a student as picked: flips the summary heading to "Selected
+  // Student" and fills in the picked name/grade line.
+  _markStudentSelected(text) {
+    document.querySelectorAll('.selected-student-heading').forEach(function (el) {
+      el.textContent = 'Selected Student';
+    });
+    this._setSelectedStudentText(text);
+  }
+  // Keeps the legacy #existing-students dropdown (and its custom display)
+  // in sync when a profile is picked from the new radio-card list.
+  _syncOldDropdownSelection(profile) {
+    var selectBox = document.getElementById('existing-students');
+    if (!selectBox || !Array.isArray(selectBox._filterData)) {
+      return;
+    }
+    var wantName = (profile.studentName || '').trim().toLowerCase();
+    var matchIndex = selectBox._filterData.findIndex(function (item) {
+      return (item.studentName || '').trim().toLowerCase() === wantName;
+    });
+    if (matchIndex === -1) {
+      return;
+    }
+    selectBox.selectedIndex = matchIndex + 1; // +1 for the "Select Student Name" placeholder option
+    selectBox.dispatchEvent(new Event('change'));
+  }
+  // Reveals the student-details form wrapper and hides the choose-student
+  // card, updating the section heading to match the current mode.
+  _showCheckoutFormWrapper(headingText) {
+    var chooseStudentCard = document.getElementById('choose-student-card');
+    if (chooseStudentCard) chooseStudentCard.style.display = 'none';
+    document.querySelectorAll('.checkout-form-wapper').forEach(function (el) {
+      el.style.display = 'block';
+    });
+    var heading = document.getElementById('form-heading');
+    if (heading) heading.textContent = headingText;
+  }
+  // Clears the student form for a brand-new profile.
+  _resetForCreateNewStudent() {
+    var studentFirstName = document.getElementById('Student-First-Name');
+    var studentLastName = document.getElementById('Student-Last-Name');
+    var studentEmail = document.getElementById('Student-Email');
+    var studentGrade = document.getElementById('Student-Grade');
+    var studentSchool = document.getElementById('Student-School');
+    var studentGender = document.getElementById('Student-Gender');
+    var prevStudent = document.getElementById('prevStudent');
+    if (studentFirstName) studentFirstName.value = '';
+    if (studentLastName) studentLastName.value = '';
+    if (studentEmail) studentEmail.value = '';
+    if (studentGrade) studentGrade.value = '';
+    if (studentSchool) studentSchool.value = '';
+    if (studentGender) studentGender.value = '';
+    if (prevStudent) prevStudent.value = '';
+    localStorage.removeItem('checkOutBasicData');
+    this._showCheckoutFormWrapper('Create New Student Profile');
+  }
+  // Wires the "+ Create New Student" card to open an empty student form.
+  _bindCreateStudentContainerClick() {
+    var createStudentContainer = document.querySelector('.create-student-container');
+    if (!createStudentContainer || createStudentContainer._createStudentBound) {
+      return;
+    }
+    createStudentContainer._createStudentBound = true;
+    var $this = this;
+    createStudentContainer.addEventListener('click', function () {
+      $this._resetForCreateNewStudent();
+    });
   }
   checkStudentBundleProgram(data) {
     const matchedProgram = this.$allBundlePrograms.find(
