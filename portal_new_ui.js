@@ -31,7 +31,15 @@ class Portal {
         try {
             const response = await bdcFetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
             if (!response.ok) throw new Error('Network response was not ok');
-            const apiData = await response.json();
+            const text = await response.text();
+            let apiData;
+            try {
+                apiData = JSON.parse(text);
+            } catch (parseError) {
+                // Backend returns a plain-text "No data Found" sentinel for members with no students yet
+                if (text.trim() === 'No data Found') return 'No data Found';
+                throw parseError;
+            }
             this.portalDetailApiData = apiData;
             window.__portalGetPortalDetailResponse = apiData;
             this.logPortalDetailDepositDates(apiData);
@@ -259,7 +267,7 @@ class Portal {
             this.fetchMillionsData(),
             this.fetchAnnouncements()
         ]);
-        if (data == "No data Found") {
+        if (data == "No data Found" || !data) {
             this.hideShowFreeAndPaidResources(false);
             this.checkReferralsAccess(data);
             return false
@@ -2768,5 +2776,633 @@ class Portal {
         });
     }
 
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("start debugging memberstack token");
+// 1. Dump the object your script already uses — look for any token/jwt field
+console.log(JSON.parse(localStorage.getItem("memberstack")));
+
+// 2. List every localStorage key — look for _ms-mid or anything token-like
+console.log(Object.keys(localStorage));
+
+// 3. Cookies — Memberstack 2.0 stores the JWT in _ms-mid
+console.log(document.cookie);
+
+// 4. Is the 2.0 SDK present at all?
+console.log(typeof window.$memberstackDom, typeof window.MemberStack);
+
+console.log("end debugging memberstack token");
+  setupNextRecommModalEvents();
+  checkStudentDetailsAndShowModal();
+  //console.log("Function Called");
+});
+
+function setupNextRecommModalEvents() {
+  const learnMoreButton = document.getElementById('next-recomm-learn-more');
+  const recommModal = document.getElementById('next-recomm-modal');
+  const closeModalBtn = document.getElementById('close-modal');
+  const modalBackground = document.getElementById('next-recomm-modal-bg');
+
+  function showRecommModal() {
+    recommModal?.classList.add('show');
+  }
+
+  function closeRecommModal() {
+    recommModal?.classList.remove('show');
+  }
+
+  learnMoreButton?.addEventListener('click', function (e) {
+    e.preventDefault();
+    showRecommModal();
+  });
+
+  closeModalBtn?.addEventListener('click', function (e) {
+    e.preventDefault();
+    closeRecommModal();
+  });
+
+  modalBackground?.addEventListener('click', closeRecommModal);
+}
+
+// Test account: popup must always open for this webflow member id, ignoring the 24h cooldown
+const ALWAYS_SHOW_STUDENT_MODAL_MEMBER_ID = '6a4cce88069f10e3eabac0b3';
+
+function canShowStudentModal() {
+  if (globalMemberId === ALWAYS_SHOW_STUDENT_MODAL_MEMBER_ID) return true;
+
+  const lastShown = localStorage.getItem('studDetailsModalShownAt');
+  if (!lastShown) return true;
+
+  const now = Date.now();
+  const diff = now - Number(lastShown);
+
+  const HOURS_24 = 24 * 60 * 60 * 1000;
+  return diff > HOURS_24;
+}
+
+//Function 2
+async function checkStudentDetailsAndShowModal() {
+
+  //  already shown within 24 hours
+  if (!canShowStudentModal()) return;
+const apiURL = `${window.BDC_API.member}getMissingStudentDetails/${globalMemberId}`;
+/* const apiURL = `https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/getStudentDetails/${globalMemberId}`;*/
+  const res = await bdcFetch(apiURL);
+  const data = await res.json();
+
+  // API returns both buckets in one response:
+  // { missingStudentDetails, reviewAndUpdateStudentDetails, showMissingPopup, showReviewPopup }
+  const missingStudents = Array.isArray(data?.missingStudentDetails)
+    ? data.missingStudentDetails
+    : [];
+  const reviewStudents = Array.isArray(data?.reviewAndUpdateStudentDetails)
+    ? data.reviewAndUpdateStudentDetails
+    : [];
+
+  const showMissing = !!data?.showMissingPopup && missingStudents.length > 0;
+  const showReview = !!data?.showReviewPopup && reviewStudents.length > 0;
+    // const showReview = reviewStudents.length > 0;
+
+
+  if (!showMissing && !showReview) return;
+
+  setupCompleteStudDetailsModal();
+  //console.log("Called");
+   localStorage.setItem('studDetailsModalShownAt', Date.now());
+   //  store show time
+  //localStorage.setItem('studDetailsModalShownAt', Date.now());
+
+  const missingWrapper = document.getElementById('missing-stud-details-inner-wrapper');
+  const reviewWrapper = document.getElementById('review-stud-details-inner-wrapper');
+
+  if (showMissing) {
+    if (missingWrapper) missingWrapper.style.removeProperty('display');
+    renderStudentDetailsCards(missingStudents, 'wf-form-Complete-Stud-Details');
+    // attach submit handler AFTER modal + fields are in DOM
+    attachStudDetailsFormHandler('wf-form-Complete-Stud-Details');
+  } else if (missingWrapper) {
+    missingWrapper.style.setProperty('display', 'none');
+  }
+
+  if (showReview) {
+    if (reviewWrapper) reviewWrapper.style.removeProperty('display');
+    renderStudentDetailsCards(reviewStudents, 'wf-form-Review-Stud-Details');
+    attachStudDetailsFormHandler('wf-form-Review-Stud-Details', {
+      // ids of students shown in the review section get sent back so the
+      // backend can stop resurfacing them in future review popups
+      buildExtraPayload: (form) => ({
+        reviewPopupShownStudentIds: JSON.parse(form.dataset.shownStudentIds || '[]'),
+      }),
+    });
+  } else if (reviewWrapper) {
+    reviewWrapper.style.setProperty('display', 'none');
+  }
+}
+
+// Clones the ".complete-stud-details-form" template inside the given form
+// and fills one card per student. Shared by both the "Missing Student
+// Details" and "Review & Update Student Details" sections/forms.
+function renderStudentDetailsCards(students, formId) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+
+  const template = form.querySelector(".complete-stud-details-form");
+  const buttonDiv = form.querySelector(".button-div");
+  if (!template || !buttonDiv) return;
+
+  // Webflow's static design template ships with a leftover
+  // ".student-details-gray-line" sitting between its two example cards.
+  // Grab it as a reusable separator source, then strip it out of the DOM
+  // so it doesn't leave a stray line above the very first rendered card.
+  const separatorTemplate = form.querySelector('.student-details-gray-line');
+  separatorTemplate?.remove();
+
+  // keep original template hidden, remove all extra blocks
+  form.querySelectorAll(".complete-stud-details-form").forEach((b, i) => {
+    if (i > 0) b.remove();
+  });
+  template.style.display = "none";
+
+  function mmddyyyyToISO(mmddyyyy) {
+    if (!mmddyyyy) return '';
+    const [mm, dd, yyyy] = mmddyyyy.split('-');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  students.forEach((student, index) => {
+    // always clone the template (including for the first student)
+    const clone = template.cloneNode(true);
+    clone.style.display = "grid";
+    form.insertBefore(clone, buttonDiv);
+
+    // --- add separator (.student-details-gray-line) after this card ---
+    // (not before the first one, since the static original was removed above)
+    if (separatorTemplate) {
+      const sepClone = separatorTemplate.cloneNode(true);
+      sepClone.style.display = ''; // ensure visible
+      form.insertBefore(sepClone, buttonDiv);
+    }
+
+    // Bind Studen Id*/
+    clone.dataset.studentId = student.studentId;
+
+    // Fill student data (scoped to clone)
+    const nameInp = clone.querySelector('input[data-student="student-name"]');
+    const nameLabel = clone.querySelector('label[data-student="student-name"], .form-field-label');
+
+    if (nameInp) {
+      nameInp.value = student.name || '';
+    }
+
+    // also update visible label/heading
+    if (nameLabel) {
+      nameLabel.textContent = student.name || '';
+    }
+
+    const schoolInp = clone.querySelector('[data-student="school-name"]');
+    if (schoolInp) schoolInp.value = student.school || "";
+
+    const dobWrap = clone.querySelector('[data-student="dob"]');
+    const dobNative = dobWrap?.querySelector('input.native-date');
+    const dobText = dobWrap?.querySelector('.text-date');
+
+    if (dobNative && dobText && student.dob) {
+      const isoDate = mmddyyyyToISO(student.dob);
+
+      dobNative.value = isoDate;      //  calendar ke liye
+      dobText.value = student.dob;    //  visible input ke liye
+    }
+
+    if (dobText) {
+      dobText.addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g, ''); // digits only
+
+        if (v.length > 8) v = v.slice(0, 8);
+
+        if (v.length >= 5) {
+          v = `${v.slice(0,2)}-${v.slice(2,4)}-${v.slice(4)}`;
+        } else if (v.length >= 3) {
+          v = `${v.slice(0,2)}-${v.slice(2)}`;
+        }
+
+        e.target.value = v;
+      });
+    }
+
+
+    // Grade select
+    const gradeSelect = clone.querySelector('[data-student="grade"]');
+    if (gradeSelect && student.studentGrade) {
+      const opt = Array.from(gradeSelect.options).find(o =>
+        (o.value || "").toLowerCase() === (student.studentGrade || "").toLowerCase()
+      );
+      if (opt) opt.selected = true;
+    }
+
+    // Gender radios (scoped)
+    const genderInputs = clone.querySelectorAll('input[type="radio"]');
+    genderInputs.forEach(input => {
+      input.name = `gender-${formId}-${index}`;
+      input.checked = false;
+    });
+    if (student.gender) {
+      const matched = Array.from(genderInputs).find(
+        input => (input.value || "").toLowerCase() === student.gender.toLowerCase()
+      );
+      if (matched) matched.checked = true; // set directly
+    }
+  });
+
+  // remember which student ids were rendered in this form so we can build
+  // reviewPopupShownStudentIds when the review form is submitted
+  form.dataset.shownStudentIds = JSON.stringify(
+    students.map((s) => s.studentId).filter(Boolean)
+  );
+}
+
+function attachStudDetailsFormHandler(formId, options = {}) {
+  const { buildExtraPayload } = options;
+  const form = document.getElementById(formId);
+  if (!form) return;
+
+  form.noValidate = true;
+
+  // ---------- helpers ----------
+  function isVisible(el) {
+    return !!(el && (el.offsetWidth || el.offsetHeight || el.getClientRects().length));
+  }
+
+  function showError(el, message) {
+    if (!el) return;
+
+    const fieldWrap =
+      el.classList.contains('gender-flex-wrapper')
+        ? el
+        : el.closest('.date-field') || el.parentElement;
+
+    el.classList.add('field-invalid');
+
+    let err = fieldWrap.querySelector('.field-error');
+    if (!err) {
+      err = document.createElement('div');
+      err.className = 'field-error';
+      fieldWrap.appendChild(err);
+    }
+    err.textContent = message;
+  }
+
+  function clearError(el) {
+    if (!el) return;
+
+    const fieldWrap =
+      el.classList.contains('gender-flex-wrapper')
+        ? el
+        : el.closest('.date-field') || el.parentElement;
+
+    el.classList.remove('field-invalid');
+    const err = fieldWrap.querySelector('.field-error');
+    if (err) err.remove();
+  }
+
+  function bindClear(el) {
+    if (!el) return;
+    el.addEventListener('input', () => clearError(el));
+    el.addEventListener('change', () => clearError(el));
+  }
+  // --------------------------------
+
+  form.querySelector('.w-form-done')?.style.setProperty('display', 'none');
+  form.querySelector('.w-form-fail')?.style.setProperty('display', 'none');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    const blocks = Array.from(
+      form.querySelectorAll('.complete-stud-details-form')
+    ).filter(isVisible);
+
+    const students = [];
+    let hasError = false;
+
+    blocks.forEach((blk) => {
+      const studentId = blk.dataset.studentId;
+      const nameEl = blk.querySelector('input[data-student="student-name"]');
+      const schoolEl = blk.querySelector('[data-student="school-name"]');
+      //const ageEl = blk.querySelector('[data-student="age"]');
+      //const dobEl = blk.querySelector('[data-student="dob"]');
+      const dobWrap = blk.querySelector('[data-student="dob"]');
+      //const dobNative = dobWrap?.querySelector('input[type="date"]');
+      const dobText = dobWrap?.querySelector('.text-date');
+
+      const gradeEl = blk.querySelector('[data-student="grade"]');
+      //const genderRadios = blk.querySelectorAll('input[type="radio"]');
+      const genderWrap = blk.querySelector('.gender-flex-wrapper');
+      const genderChecked = blk.querySelector('input[type="radio"]:checked');
+
+      // bind auto clear
+      bindClear(nameEl);
+      bindClear(schoolEl);
+     // bindClear(ageEl);
+      bindClear(dobWrap);
+      bindClear(gradeEl);
+    /* genderRadios.forEach(r =>
+      r.addEventListener('change', () => clearError(genderWrap))
+    );*/
+
+     if (genderWrap) {
+      genderWrap.addEventListener('change', () => {
+        clearError(genderWrap);
+      });
+    }
+
+
+      // clear previous errors
+      clearError(nameEl);
+      clearError(schoolEl);
+      //clearError(ageEl);
+      clearError(dobWrap);
+      clearError(gradeEl);
+
+      const name = nameEl?.value?.trim() || '';
+      const school = schoolEl?.value?.trim() || '';
+      const grade = gradeEl?.value?.trim() || '';
+      const gender = genderChecked?.value || '';
+      clearError(genderWrap);
+
+       function toMMDDYYYY(isoDate) {
+        if (!isoDate) return '';
+        const [yyyy, mm, dd] = isoDate.split('-');
+        return `${mm}-${dd}-${yyyy}`;
+      }
+
+
+      //const dob = dobEl?.value?.trim() || '';
+    //const dobISO = dobNative?.value || '';
+    //const dobNorm = dobISO ? toMMDDYYYY(dobISO) : '';
+
+
+      // -------- validation --------
+      if (!name) {
+        showError(nameEl, 'Name is required');
+        hasError = true;
+      }
+
+      if (!school) {
+        showError(schoolEl, 'School is required');
+        hasError = true;
+      }
+
+        const dobTextVal = dobText?.value?.trim() || '';
+        let dobNorm = '';
+
+        if (!dobTextVal) {
+          showError(dobWrap, 'DOB is required (MM-DD-YYYY)');
+          hasError = true;
+        } else {
+          const match = dobTextVal.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+
+          if (!match) {
+            showError(dobWrap, 'Invalid DOB format (MM-DD-YYYY)');
+            hasError = true;
+          } else {
+            const mm = Number(match[1]);
+            const dd = Number(match[2]);
+            const yyyy = Number(match[3]);
+
+            if (mm < 1 || mm > 12) {
+              showError(dobWrap, 'Invalid month');
+              hasError = true;
+            } else {
+              const daysInMonth = new Date(yyyy, mm, 0).getDate();
+
+              if (dd < 1 || dd > daysInMonth) {
+                showError(dobWrap, 'Invalid day for month');
+                hasError = true;
+              } else {
+                const parsed = new Date(yyyy, mm - 1, dd);
+                parsed.setHours(0,0,0,0);
+
+                const today = new Date();
+                today.setHours(0,0,0,0);
+
+                if (parsed >= today) {
+                  showError(dobWrap, "DOB cannot be today's or future date");
+                  hasError = true;
+                } else {
+                  dobNorm = dobTextVal; // ✅ valid MM-DD-YYYY
+                }
+              }
+            }
+          }
+        }
+
+      if (!grade) {
+        showError(gradeEl, 'Grade is required');
+        hasError = true;
+      }
+
+      if (!gender) {
+        showError(genderWrap, 'Please select gender');
+        hasError = true;
+      }
+
+
+      students.push({
+        studentId,
+        name,
+        school,
+        dob: dobNorm, // MM-DD-YYYY
+        studentGrade: grade,
+        gender
+      });
+    });
+
+    // THIS IS MUST
+    if (hasError) {
+    form.querySelector('.w-form-done')?.style.setProperty('display', 'none');
+      console.log('Validation failed, stopping submit');
+      return; // API CALL YAHI RUK JAYEGI
+    }
+    // ---------- submit ----------
+    const submits = Array.from(
+      form.querySelectorAll('input[type="submit"], button[type="submit"]')
+    );
+    submits.forEach(s => s.disabled = true);
+
+
+    // pick the "Save & Continue" button (fall back to first submit)
+    const primarySubmit = submits.find(s =>
+      s.classList.contains('save-continue') ||
+      (s.getAttribute('value') || '').toLowerCase().includes('save & continue') ||
+      (s.getAttribute('value') || '').toLowerCase().includes('save')
+    ) || submits[0];
+
+    // loading helpers: only change text for primary (Save & Continue), but disable all submits
+    function setLoading(flag) {
+      // disable/enable all buttons
+      submits.forEach(s => s.disabled = flag);
+
+      if (!primarySubmit) return;
+
+      const isInput = primarySubmit.tagName.toLowerCase() === 'input';
+      if (!primarySubmit.dataset.origText) {
+        primarySubmit.dataset.origText = isInput ? primarySubmit.value : primarySubmit.innerHTML;
+      }
+
+      if (flag) {
+        if (isInput) primarySubmit.value = 'Saving...';
+        else primarySubmit.innerHTML = 'Saving...';
+        primarySubmit.setAttribute('aria-busy', 'true');
+      } else {
+        if (isInput) primarySubmit.value = primarySubmit.dataset.origText || primarySubmit.value;
+        else primarySubmit.innerHTML = primarySubmit.dataset.origText || primarySubmit.innerHTML;
+        primarySubmit.removeAttribute('aria-busy');
+      }
+
+      if (flag) form.setAttribute('data-loading', 'true');
+      else form.removeAttribute('data-loading');
+    }
+   setLoading(true);
+
+    try {
+      const payload = { memberId: globalMemberId, students };
+
+      if (typeof buildExtraPayload === 'function') {
+        Object.assign(payload, buildExtraPayload(form, students) || {});
+      }
+
+      const resp = await bdcFetch(
+        `${window.BDC_API.member}createAccount`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const result = await resp.json();
+      if (!resp.ok) throw result;
+
+      // store ONLY after success
+        localStorage.setItem('studDetailsModalShownAt', Date.now());
+
+      document.getElementById('complete-stud-details-modal')
+        ?.classList.remove('show');
+      //document.querySelector('.complete-stud-details-modal-bg')?.click();
+
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save student details. Please try again.');
+    } finally {
+      setLoading(false);
+      submits.forEach(s => s.disabled = false);
+    }
+  });
+}
+
+
+// Function 3
+function setupCompleteStudDetailsModal() {
+  const modal = document.getElementById('complete-stud-details-modal');
+  const modalBg = document.querySelector('.complete-stud-details-modal-bg');
+  const closeBtn = document.querySelector('.complete-stud-details-close-link');
+  const skipBtn = document.getElementById('skip-now');
+  const reviewSkipBtn = document.getElementById('review-skip-now');
+
+  function showModal() {
+    modal?.classList.add('show');
+  }
+
+  function closeModal() {
+    modal?.classList.remove('show');
+  }
+
+  // Show popup on page load
+  showModal();
+
+  // A section counts as "still pending" if its wrapper exists and hasn't
+  // been hidden (either because it had no data, or a prior skip/save
+  // already hid it).
+  function isSectionPending(wrapper) {
+    return !!wrapper && wrapper.style.display !== 'none';
+  }
+
+  // Close actions
+  closeBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeModal();
+  });
+
+  // Skip on the "Missing Student Details" section only hides that section.
+  // The whole modal only closes if the review section isn't pending too.
+  skipBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+
+    const missingWrapper = document.getElementById('missing-stud-details-inner-wrapper');
+    const reviewWrapper = document.getElementById('review-stud-details-inner-wrapper');
+
+    if (missingWrapper) missingWrapper.style.setProperty('display', 'none');
+
+    if (isSectionPending(reviewWrapper)) return;
+    closeModal();
+  });
+
+  // Skip on the "Review & Update Student Details" section only hides that
+  // section. The whole modal only closes if the missing section isn't
+  // pending too.
+  reviewSkipBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+
+    const missingWrapper = document.getElementById('missing-stud-details-inner-wrapper');
+    const reviewWrapper = document.getElementById('review-stud-details-inner-wrapper');
+
+    if (reviewWrapper) reviewWrapper.style.setProperty('display', 'none');
+
+    if (isSectionPending(missingWrapper)) return;
+    closeModal();
+  });
+
+  /* ===============================
+     DOB CALENDAR HANDLING
+     =============================== */
+
+  modal?.addEventListener('click', function (e) {
+    const btn = e.target.closest('.open-calendar');
+    if (!btn) return;
+
+    //console.log(' Calendar button clicked');
+
+    const blk = btn.closest('[data-student-block]');
+    if (!blk) return;
+
+    const nativeDate = blk.querySelector('.native-date');
+    const textDate = blk.querySelector('.text-date');
+    if (!nativeDate || !textDate) return;
+
+    nativeDate.focus();
+
+    if (typeof nativeDate.showPicker === 'function') {
+      nativeDate.showPicker();
+    } else {
+      nativeDate.click();
+    }
+
+    nativeDate.addEventListener(
+      'change',
+      () => {
+        const d = new Date(nativeDate.value);
+        if (isNaN(d)) return;
+
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const yyyy = d.getFullYear();
+
+        textDate.value = `${mm}-${dd}-${yyyy}`;
+      },
+      { once: true }
+    );
+  });
 }
 
