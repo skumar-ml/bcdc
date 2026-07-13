@@ -9,6 +9,7 @@ This folder contains utility scripts used by BCDC, including checkout customizat
 - `brief-checkout.js` – Checkout flow for briefs that fetches topic details, handles previews, and processes payments.
 - `check-member.js` – Lightweight membership verifier that hits the checkMemberExist API and fills status fields.
 - `checkout_summer_bundle.js` – Full checkout experience for summer bundle programs with session selection, location filtering, and Stripe payment integration.
+- `class-catalog-by-location.js` – Renders the per-location class catalog (Fort Lee, Westchester, Online, Livingston, Glen Rock) by fetching class details for one location (`window.CATALOG_LOCATION_ID`) and filling in CMS catalog cards.
 - `class_details_stripe_bundle.js` – Class detail page handler for bundle purchases with Stripe payment processing.
 - `class_details_stripe_staging.js` – Staging version of class details page with Stripe integration for testing.
 - `class_list.js` – Dynamic class listing that fetches class details from API and renders times, days, and locations on the class list page.
