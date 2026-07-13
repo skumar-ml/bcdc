@@ -422,7 +422,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const loadFamilyMembers = async (webflowMemberId) => {
     const response = await bdcFetch(
-      `${FAMILY_MEMBERS_API_BASE}/getFamilyMembers/${webflowMemberId}`,
+      `${FAMILY_MEMBERS_API_BASE}getFamilyMembers/${webflowMemberId}`,
     );
 
     if (!response.ok) {
