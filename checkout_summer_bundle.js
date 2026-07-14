@@ -374,7 +374,7 @@ class CheckOutWebflow {
 			"lastName": studentLastName.value,
 			"memberId": this.memberData.memberId,
 		}
-		const rawResponse = await fetch('https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/validateUserForProgram', {
+		const rawResponse = await bdcFetch(`${window.BDC_API.class}validateUserForProgram`, {
 			method: 'POST',
 			headers: {
 				'Accept': 'application/json',
@@ -393,7 +393,7 @@ class CheckOutWebflow {
 	async fetchData(endpoint, baseUrl) {
 		try {
 			baseUrl = baseUrl || this.baseUrl;
-			const response = await fetch(`${baseUrl}${endpoint}`);
+			const response = await bdcFetch(`${baseUrl}${endpoint}`);
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
 			}
@@ -406,7 +406,7 @@ class CheckOutWebflow {
 	}
 	// Checkout student dropdown API lives on the b4z5gqv2xj gateway (not the summer baseUrl).
 	getCheckoutStudentProfilesBaseUrl() {
-		return "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/";
+		return window.BDC_API.reporting;
 	}
 	// Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
 	normalizeCheckoutStudentProfiles(response) {
@@ -804,6 +804,80 @@ class CheckOutWebflow {
 			$this._resetForCreateNewStudent();
 		});
 	}
+	// Updates the "Selected Student" summary text, used by both the new
+	// radio-card list and the legacy dropdown picker.
+	_setSelectedStudentText(text) {
+		document.querySelectorAll('.selected-student-text').forEach(function (el) {
+			el.textContent = text;
+		});
+	}
+	// Marks a student as picked: flips the summary heading to "Selected
+	// Student" and fills in the picked name/grade line.
+	_markStudentSelected(text) {
+		document.querySelectorAll('.selected-student-heading').forEach(function (el) {
+			el.textContent = 'Selected Student';
+		});
+		this._setSelectedStudentText(text);
+	}
+	// Keeps the legacy #existing-students dropdown (and its custom display)
+	// in sync when a profile is picked from the new radio-card list.
+	_syncOldDropdownSelection(profile) {
+		var selectBox = document.getElementById('existing-students');
+		if (!selectBox || !Array.isArray(selectBox._filterData)) {
+			return;
+		}
+		var wantName = (profile.studentName || '').trim().toLowerCase();
+		var matchIndex = selectBox._filterData.findIndex(function (item) {
+			return (item.studentName || '').trim().toLowerCase() === wantName;
+		});
+		if (matchIndex === -1) {
+			return;
+		}
+		selectBox.selectedIndex = matchIndex + 1; // +1 for the "Select Student Name" placeholder option
+		selectBox.dispatchEvent(new Event('change'));
+	}
+	// Reveals the student-details form wrapper and hides the choose-student
+	// card, updating the section heading to match the current mode.
+	_showCheckoutFormWrapper(headingText) {
+		var chooseStudentCard = document.getElementById('choose-student-card');
+		if (chooseStudentCard) chooseStudentCard.style.display = 'none';
+		document.querySelectorAll('.checkout-form-wapper').forEach(function (el) {
+			el.style.display = 'block';
+		});
+		var heading = document.getElementById('form-heading');
+		if (heading) heading.textContent = headingText;
+	}
+	// Clears the student form for a brand-new profile.
+	_resetForCreateNewStudent() {
+		var studentFirstName = document.getElementById('Student-First-Name');
+		var studentLastName = document.getElementById('Student-Last-Name');
+		var studentEmail = document.getElementById('Student-Email');
+		var studentGrade = document.getElementById('Student-Grade');
+		var studentSchool = document.getElementById('Student-School');
+		var studentGender = document.getElementById('Student-Gender');
+		var prevStudent = document.getElementById('prevStudent-2');
+		if (studentFirstName) studentFirstName.value = '';
+		if (studentLastName) studentLastName.value = '';
+		if (studentEmail) studentEmail.value = '';
+		if (studentGrade) studentGrade.value = '';
+		if (studentSchool) studentSchool.value = '';
+		if (studentGender) studentGender.value = '';
+		if (prevStudent) prevStudent.value = '';
+		localStorage.removeItem('checkOutBasicData');
+		this._showCheckoutFormWrapper('Create New Student Profile');
+	}
+	// Wires the "+ Create New Student" card to open an empty student form.
+	_bindCreateStudentContainerClick() {
+		var createStudentContainer = document.querySelector('.create-student-container');
+		if (!createStudentContainer || createStudentContainer._createStudentBound) {
+			return;
+		}
+		createStudentContainer._createStudentBound = true;
+		var $this = this;
+		createStudentContainer.addEventListener('click', function () {
+			$this._resetForCreateNewStudent();
+		});
+	}
 	// Inject the custom-select CSS once so layout stays stable even if the
 	// Webflow page lacks these rules: native select is removed from flow and
 	// the open options panel floats as an overlay so nothing below it shifts.
@@ -1059,49 +1133,50 @@ class CheckOutWebflow {
 
 		var $this = this;
 		return new Promise(function (resolve) {
-			var xhr = new XMLHttpRequest()
-			xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForSummer", true)
-			xhr.withCredentials = false
-			xhr.send(JSON.stringify(data))
-			xhr.onload = function () {
-				var responseText;
-				try {
-					responseText = JSON.parse(xhr.responseText);
-				} catch (e) {
-					responseText = {};
-				}
+			bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForSummer`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(data)
+			}).then(function (response) {
+				return response.text().then(function (rawText) {
+					var responseText;
+					try {
+						responseText = JSON.parse(rawText);
+					} catch (e) {
+						responseText = {};
+					}
 
-				// API error (e.g. 400 STUDENT_EMAIL_IS_PARENT) — surface message, keep user on this step.
-				if (xhr.status >= 400 || responseText.success === false) {
-					$this.showWarningMessage(responseText.message || "Something went wrong. Please try again.");
-					next_page_2.innerHTML = "Next"
-					next_page_2.style.pointerEvents = "auto";
+					// API error (e.g. 400 STUDENT_EMAIL_IS_PARENT) — surface message, keep user on this step.
+					if (response.status >= 400 || responseText.success === false) {
+						$this.showWarningMessage(responseText.message || "Something went wrong. Please try again.");
+						next_page_2.innerHTML = "Next"
+						next_page_2.style.pointerEvents = "auto";
+						resolve(false);
+						return;
+					}
+
+					if (responseText.success) {
+
+						$this.$checkoutData = responseText;
+
+						//Storing data in local storage
+						data.checkoutData = responseText
+						localStorage.setItem("checkOutData", JSON.stringify(data));
+
+						next_page_2.innerHTML ="Next"
+						next_page_2.style.pointerEvents = "auto";
+						resolve(true);
+						return;
+					}
+
 					resolve(false);
-					return;
-				}
-
-				if (responseText.success) {
-
-					$this.$checkoutData = responseText;
-
-					//Storing data in local storage
-					data.checkoutData = responseText
-					localStorage.setItem("checkOutData", JSON.stringify(data));
-
-					next_page_2.innerHTML ="Next"
-					next_page_2.style.pointerEvents = "auto";
-					resolve(true);
-					return;
-				}
-
-				resolve(false);
-			}
-			xhr.onerror = function () {
+				});
+			}).catch(function () {
 				$this.showWarningMessage("Something went wrong. Please try again.");
 				next_page_2.innerHTML = "Next"
 				next_page_2.style.pointerEvents = "auto";
 				resolve(false);
-			}
+			});
 		});
 	}
 
@@ -1137,24 +1212,25 @@ class CheckOutWebflow {
 		checkOutData.updateData = data
 		localStorage.setItem("checkOutData", JSON.stringify(checkOutData));
 		
-		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", true)
-		xhr.withCredentials = false
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function () {
-			let responseText = JSON.parse(xhr.responseText);
-			ach_payment.innerHTML = "Checkout"
-			ach_payment.disabled = false;
-			ach_payment.pointerEvents = "auto";
-			card_payment.innerHTML = "Checkout"
-			card_payment.disabled = false;
-			card_payment.pointerEvents = "auto";
-			paylater_payment.innerHTML = "Checkout"
-			paylater_payment.disabled = false;
-			paylater_payment.pointerEvents = "auto";
+		bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForStandard`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data)
+		})
+			.then(function (response) { return response.json(); })
+			.then(function (responseText) {
+				ach_payment.innerHTML = "Checkout"
+				ach_payment.disabled = false;
+				ach_payment.pointerEvents = "auto";
+				card_payment.innerHTML = "Checkout"
+				card_payment.disabled = false;
+				card_payment.pointerEvents = "auto";
+				paylater_payment.innerHTML = "Checkout"
+				paylater_payment.disabled = false;
+				paylater_payment.pointerEvents = "auto";
 
-		}
+			});
 	}
 
 	// Updates click events in the database and redirects to the checkout URL
@@ -1241,13 +1317,14 @@ class CheckOutWebflow {
 			data.cardUpsellAmount = parseFloat(checkoutAmounts.cardUpsellAmount.toFixed(2));
 		}
 		
-		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", true)
-		xhr.withCredentials = false
-		xhr.send(JSON.stringify(data))
-		xhr.onload = function () {
-			let responseText = JSON.parse(xhr.responseText);
+		bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForStandard`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data)
+		})
+			.then(function (response) { return response.json(); })
+			.then(function (responseText) {
       const isStringSuccessResponse = typeof responseText === "string" &&
         responseText.toLowerCase().includes("updated successfully");
       if (isStringSuccessResponse) {
@@ -1294,7 +1371,7 @@ class CheckOutWebflow {
         });
         return;
       }
-    }
+    });
 	}
   
 	

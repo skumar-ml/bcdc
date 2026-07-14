@@ -7,6 +7,7 @@ Brief Logic: Provides static methods for showing/closing modals, fetching credit
 Are there any dependent JS files: No
 
 */
+
 class Utils {
     
     // Initializes the Utils class
@@ -23,7 +24,7 @@ class Utils {
      */
     async fetchData(endpoint, apiBaseUrl) {
         try {
-            const response = await fetch(`${apiBaseUrl}${endpoint}`);
+            const response = await bdcFetch(`${apiBaseUrl}${endpoint}`);
             if (!response.ok) {
                 throw new Error("Network response was not ok");
             }
@@ -149,7 +150,7 @@ class Utils {
      */
     #getCreditsData(webflowMemberId) {
         const endpoint = `getCreditBalance/${webflowMemberId}`;
-        const apiBaseUrl = "https://bkqmhuwcwj.execute-api.us-east-1.amazonaws.com/prod/camp/";
+        const apiBaseUrl = window.BDC_API.referral;
         return this.fetchData(endpoint, apiBaseUrl);
     }
     

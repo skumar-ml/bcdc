@@ -134,7 +134,7 @@ class ReferralProgram {
     const portalBaseUrl = this.getPortalApiBaseUrl();
     if (!portalBaseUrl) return null;
     try {
-      const res = await fetch(`${portalBaseUrl}getPortalDetail/${this.memberId}`);
+      const res = await bdcFetch(`${portalBaseUrl}getPortalDetail/${this.memberId}`);
       if (!res.ok) return null;
       return res.json();
     } catch (error) {
@@ -155,7 +155,7 @@ class ReferralProgram {
   async loadReferralData() {
     this.spinner.style.display = "block";
     try {
-      const res = await fetch(
+      const res = await bdcFetch(
         `${this.baseUrl}getReferralData/${this.memberId}`
       );
       // Check if the response is ok
@@ -328,7 +328,7 @@ class ReferralProgram {
     }
 
     try {
-      const res = await fetch(`${this.baseUrl}addReferralData`, {
+      const res = await bdcFetch(`${this.baseUrl}addReferralData`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, memberId: this.memberId }),

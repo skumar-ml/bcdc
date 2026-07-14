@@ -156,7 +156,7 @@ class AbandonedCartModal {
   // Fetches cart data from API endpoint using member ID
   async fetchCartDataFromAPI() {
     try {
-      const response = await fetch(
+      const response = await bdcFetch(
         `${this.baseUrl}` + "getCheckoutUrlByMemberId/" + this.memberId
       );
       if (!response.ok) {

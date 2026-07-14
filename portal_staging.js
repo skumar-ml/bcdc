@@ -26,7 +26,7 @@ class Portal {
      */
     async fetchData() {
         try {
-            const response = await fetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
+            const response = await bdcFetch(`${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`);
             if (!response.ok) throw new Error('Network response was not ok');
             const apiData = await response.json();
             return apiData;
@@ -45,7 +45,7 @@ class Portal {
      * @returns {Promise<Array>} Array of millions transaction data or empty array if failed
      */
     async fetchMillionsData() {
-        const response = await fetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
+        const response = await bdcFetch(`${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`);
         if (!response.ok) {
             return [];
         };
@@ -105,7 +105,7 @@ class Portal {
      * @returns {Promise<Array>} Array of announcements or empty array if failed
      */
     async fetchAnnouncements() {
-        const response = await fetch(`${this.data.typeBApiBaseURL}getAnnouncement/${this.data.memberId}`);
+        const response = await bdcFetch(`${this.data.typeBApiBaseURL}getAnnouncement/${this.data.memberId}`);
         if (!response.ok) {
             return [];
         }
@@ -2207,19 +2207,19 @@ class Portal {
             "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
             "cancelUrl": "https://www.bergendebate.com/portal/dashboard",
         }
-        var xhr = new XMLHttpRequest()
-        var $this = this;
-        xhr.open("POST", "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice", true)
-        xhr.withCredentials = false
-        xhr.send(JSON.stringify(data))
-        xhr.onload = function () {
-            let responseText = JSON.parse(xhr.responseText);
-            if (responseText.success) {
-                span.innerHTML = link_title;
-                window.location.href = responseText.stripe_url;
-            }
+        bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForInvoice`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        })
+            .then(function (response) { return response.json(); })
+            .then(function (responseText) {
+                if (responseText.success) {
+                    span.innerHTML = link_title;
+                    window.location.href = responseText.stripe_url;
+                }
 
-        }
+            });
     }
     /**
      * Initializes iframe lightbox functionality for form links

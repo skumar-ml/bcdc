@@ -8,6 +8,7 @@ Are there any dependent JS files: No
 
 */
 
+
 // Email Validation
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
@@ -272,7 +273,7 @@ if (document.readyState === "loading") {
 
             // Fetches referrer details and updates the display
             fetchReferrerDetails(memberId) {
-                fetch(`${this.data.memberBaseUrl}getMemberDetails/${memberId}`)
+                bdcFetch(`${this.data.memberBaseUrl}getMemberDetails/${memberId}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data && data.name) {
@@ -343,7 +344,7 @@ if (document.readyState === "loading") {
 
                 try {
                     // Call API to insert referral record
-                    const response = await fetch(`${this.data.baseUrl}addReferralData`, {
+                    const response = await bdcFetch(`${this.data.baseUrl}addReferralData`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -460,7 +461,7 @@ if (document.readyState === "loading") {
                             memberId: existingReferralData.memberId
                         };
 
-                        const response = await fetch(`${this.data.baseUrl}addReferralData`, {
+                        const response = await bdcFetch(`${this.data.baseUrl}addReferralData`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(payload),

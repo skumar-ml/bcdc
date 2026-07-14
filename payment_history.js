@@ -7,6 +7,7 @@ Brief Logic: Fetches portal detail and millions transaction data from API, creat
 Are there any dependent JS files: No
 
 */
+
 class PaymentHistory {
     // Initializes the PaymentHistory instance
     constructor(data) {
@@ -18,7 +19,7 @@ class PaymentHistory {
 
     // Fetches portal detail data from the API
     async fetchData() {
-        const response = await fetch(
+        const response = await bdcFetch(
             `${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`
         );
         if (!response.ok) throw new Error("Network response was not ok");
@@ -29,7 +30,7 @@ class PaymentHistory {
 
     // Fetches millions transaction data from the API
     async fetchMillionsData() {
-        const response = await fetch(
+        const response = await bdcFetch(
             `${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`
         );
         if (!response.ok) {
@@ -474,23 +475,22 @@ class PaymentHistory {
             cancelUrl: "https://www.bergendebate.com/portal/payment-history",
         };
         // Send payment request to API
-        var xhr = new XMLHttpRequest();
-        xhr.open(
-            "POST",
-            "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice",
-            true
-        );
-        xhr.withCredentials = false;
-        xhr.send(JSON.stringify(apiData));
-
-        // Handle API response
-        xhr.onload = function () {
-            let responseText = JSON.parse(xhr.responseText);
-            if (responseText.success) {
-                span.innerHTML = link_title;
-                window.location.href = responseText.stripe_url;
+        bdcFetch(
+            `${window.BDC_API.paymentCheckout}checkoutUrlForInvoice`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(apiData)
             }
-        };
+        )
+            .then(function (response) { return response.json(); })
+            .then(function (responseText) {
+                // Handle API response
+                if (responseText.success) {
+                    span.innerHTML = link_title;
+                    window.location.href = responseText.stripe_url;
+                }
+            });
     }
 
     // Renders payment history for a student
@@ -1126,8 +1126,8 @@ class PaymentHistory {
             }
 
             // Send PDF generation request to API
-            const response = await fetch(
-                "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/generateItemizedInvoice",
+            const response = await bdcFetch(
+                `${window.BDC_API.paymentCheckout}generateItemizedInvoice`,
                 {
                     method: "POST",
                     headers: {

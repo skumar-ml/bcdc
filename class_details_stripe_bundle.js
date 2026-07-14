@@ -621,7 +621,7 @@ class classDetailsStripe extends parentLogin {
       apiBaseUrl = baseUrl
     }
     try {
-      const response = await fetch(`${apiBaseUrl}${endpoint}`);
+      const response = await bdcFetch(`${apiBaseUrl}${endpoint}`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
@@ -636,7 +636,7 @@ class classDetailsStripe extends parentLogin {
 
   // Checkout student dropdown API lives on the b4z5gqv2xj gateway (not typeFBaseUrl).
   getCheckoutStudentProfilesBaseUrl() {
-    return "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/";
+    return window.BDC_API.reporting;
   }
 
   // Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
@@ -934,26 +934,23 @@ class classDetailsStripe extends parentLogin {
         lastName: sLastName,
       };
       //return;
-      var xhr = new XMLHttpRequest();
       var $this = this;
-      xhr.open(
-        "POST",
-        "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/checkPreviousStudent",
-        true
-      );
-      xhr.withCredentials = false;
-      xhr.send(JSON.stringify(data));
-      xhr.onload = function () {
-        if (xhr.status == 200) {
-          let responseText = JSON.parse(xhr.responseText);
-          let isPreviousStudent = responseText.isPreviousStudent;
-          $this.$isPrevStudent = responseText.isPreviousStudent
-          $this.checkUncheckOldStudentCheckBox(isPreviousStudent, $this);
-          resolve(isPreviousStudent);
+      bdcFetch(`${window.BDC_API.reporting}checkPreviousStudent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).then(function (response) {
+        if (response.status == 200) {
+          return response.json().then(function (responseText) {
+            let isPreviousStudent = responseText.isPreviousStudent;
+            $this.$isPrevStudent = responseText.isPreviousStudent
+            $this.checkUncheckOldStudentCheckBox(isPreviousStudent, $this);
+            resolve(isPreviousStudent);
+          });
         } else {
-          reject(xhr.status);
+          reject(response.status);
         }
-      };
+      });
     });
   }
   // formatting price in comma based value
@@ -1522,17 +1519,12 @@ class classDetailsStripe extends parentLogin {
 
       //console.log('Data !!!!!', data)
       //return;
-      var xhr = new XMLHttpRequest();
       var $this = this;
-      xhr.open(
-        "POST",
-        "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard",
-        true
-      );
-      xhr.withCredentials = false;
-      xhr.send(JSON.stringify(data));
-      xhr.onload = function () {
-        let responseText = JSON.parse(xhr.responseText);
+      bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForStandard`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).then(function (response) { return response.json(); }).then(function (responseText) {
         //console.log('responseText', responseText)
         if (responseText.success) {
           $this.$checkoutData = responseText;
@@ -1554,13 +1546,13 @@ class classDetailsStripe extends parentLogin {
         } else {
           window.location.href = 'https://www.bergendebate.com/portal/dashboard';
         }
-      }
-    };
+      });
+    }
   }
 
   initSupplementaryPayment(data, type) {
     // Create the POST request
-    fetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
+    bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForUpsellProgram`, {
       method: "POST", // Specify the method
       headers: {
         "Content-Type": "application/json", // Specify the content type
@@ -1818,49 +1810,46 @@ class classDetailsStripe extends parentLogin {
       });
     };
     return new Promise(function (resolve) {
-      var xhr = new XMLHttpRequest();
-      xhr.open(
-        "POST",
-        "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId",
-        true
-      );
-      xhr.withCredentials = false;
-      xhr.send(JSON.stringify(data));
-      xhr.onload = function () {
-        var responseText;
-        try {
-          responseText = JSON.parse(xhr.responseText);
-        } catch (e) {
-          responseText = {};
-        }
-        //console.log('responseText', responseText)
+      bdcFetch(`${window.BDC_API.paymentCheckout}createCheckoutId`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).then(function (response) {
+        return response.text().then(function (rawText) {
+          var responseText;
+          try {
+            responseText = JSON.parse(rawText);
+          } catch (e) {
+            responseText = {};
+          }
+          //console.log('responseText', responseText)
 
-        // API error (e.g. 400 STUDENT_EMAIL_IS_PARENT) — surface message, keep user on this step.
-        if (xhr.status >= 400 || responseText.success === false) {
-          $this.showWarningMessage(responseText.message || "Something went wrong. Please try again.");
-          resetRegisterButtons();
+          // API error (e.g. 400 STUDENT_EMAIL_IS_PARENT) — surface message, keep user on this step.
+          if (response.status >= 400 || responseText.success === false) {
+            $this.showWarningMessage(responseText.message || "Something went wrong. Please try again.");
+            resetRegisterButtons();
+            resolve(false);
+            return;
+          }
+
+          if (responseText.success) {
+            $this.$checkoutData = responseText;
+            //Storing data in local storage
+            data.checkoutData = responseText;
+            $this.updateCheckOutData(data);
+            //localStorage.setItem("checkOutData", JSON.stringify(data));
+            resetRegisterButtons();
+            resolve(true);
+            return;
+          }
+
           resolve(false);
-          return;
-        }
-
-        if (responseText.success) {
-          $this.$checkoutData = responseText;
-          //Storing data in local storage
-          data.checkoutData = responseText;
-          $this.updateCheckOutData(data);
-          //localStorage.setItem("checkOutData", JSON.stringify(data));
-          resetRegisterButtons();
-          resolve(true);
-          return;
-        }
-
-        resolve(false);
-      };
-      xhr.onerror = function () {
+        });
+      }).catch(function () {
         $this.showWarningMessage("Something went wrong. Please try again.");
         resetRegisterButtons();
         resolve(false);
-      };
+      });
     });
   }
 
@@ -1980,8 +1969,8 @@ class classDetailsStripe extends parentLogin {
     }
     try {
       const query = `studentEnrolled?studentEmail=${encodeURIComponent(params.email)}&name=${encodeURIComponent(params.name)}`;
-      const response = await fetch(
-        `https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/${query}`
+      const response = await bdcFetch(
+        `${window.BDC_API.paymentCheckout}${query}`
       );
       if (!response.ok) {
         this._pendingAlreadyEnrolledModal = false;

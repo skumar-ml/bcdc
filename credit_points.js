@@ -27,7 +27,7 @@ class CreditBalance {
             // Fetches credit balance data from the API
             async fetchCreditData() {
                 try {
-                    const response = await fetch(
+                    const response = await bdcFetch(
                         `${this.data.apiBaseURL}getCreditBalance/${this.data.memberId}`
                     );
                     if (!response.ok) throw new Error("Network response was not ok");
@@ -48,18 +48,22 @@ class CreditBalance {
                 this.noRecordDiv.style.display = "none"; // Hide no record div initially
                 try {
                     const apiData = await this.fetchCreditData();
-                    if (!apiData) {
-                        
+                    if (!apiData || !apiData.creditBalance) {
+                        // Backend returns 200 with a "message" key (instead of an error status)
+                        // when there's no credit balance for this member.
+                        if (apiData && apiData.message) {
+                            console.warn("No credit balance data found:", apiData.message);
+                        } else {
+                            console.error("No credit balance data found");
+                        }
+                        this.spinner.style.display = "none"; // Hide spinner
                         this.noRecordDiv.style.display = "block"; // Show no record div
                         return;
-                        console.error("No credit balance data found");
                     }
                     this.$creditData = apiData.creditBalance;
-                    if (apiData) {
-                        this.balance = this.$creditData.creditBalance;
-                        this.transactions = this.$creditData.creditHistory;
-                        this.updateCreditBalanceDisplay();
-                    }
+                    this.balance = this.$creditData.creditBalance;
+                    this.transactions = this.$creditData.creditHistory;
+                    this.updateCreditBalanceDisplay();
                     } catch (error) {
                     console.error("Error during initialization:", error);
                     this.spinner.style.display = "none"; // Hide spinner on error

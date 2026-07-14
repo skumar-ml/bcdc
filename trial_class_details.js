@@ -84,7 +84,7 @@ class TrialClassDetails {
             const pastclasses = this.showPastClasses ? 1 : 0;
             const url = `${this.data.apiBaseURL}getTrialClassDetails/${this.data.memberId}?offset=${offset}&limit=${limit}&pastclasses=${pastclasses}`;
 
-            const response = await fetch(url, {
+            const response = await bdcFetch(url, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -138,7 +138,7 @@ class TrialClassDetails {
                 data: data
             });
 
-            const response = await fetch(url, {
+            const response = await bdcFetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

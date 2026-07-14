@@ -10,6 +10,7 @@ Utils.js provides common functionality for modal management, credit data fetchin
 */
 var PORTAL_UPSELL_STRIPE_CANCEL_URL_KEY = "portalUpsell_stripeCancelUrl_v1";
 
+
 class DisplaySuppProgram {
   $selectedProgram = [];
   $suppPro = [];
@@ -85,7 +86,7 @@ class DisplaySuppProgram {
   async fetchData(endpoint, baseUrl) {
     console.log("Fetching data", { endpoint: endpoint, baseUrl: baseUrl });
     try {
-      const response = await fetch(`${baseUrl}${endpoint}`);
+      const response = await bdcFetch(`${baseUrl}${endpoint}`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
@@ -866,7 +867,7 @@ class DisplaySuppProgram {
     };
     console.log("Checkout payload prepared", data);
     // Create the POST request
-    fetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
+    bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForUpsellProgram`, {
       method: "POST", // Specify the method
       headers: {
         "Content-Type": "application/json", // Specify the content type

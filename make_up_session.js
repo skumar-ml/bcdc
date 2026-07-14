@@ -26,6 +26,7 @@ function creEl(name,className,idName){
 	return el;
 }
 
+
 class PortalTabs {
 	
 	// Initializes the class with API URL, member ID, and email
@@ -70,7 +71,7 @@ class PortalTabs {
 	async fetchData(endpoint) {
 		var infoMessage = document.getElementById('info-message');
 		try {
-			const response = await fetch(`${this.baseUrl}${endpoint}`);
+			const response = await bdcFetch(`${this.baseUrl}${endpoint}`);
 			if (!response.ok) {
 			infoMessage.style.display = 'block'
 			throw new Error('Network response was not ok');
