@@ -908,6 +908,10 @@ class CheckOutWebflow {
 					selectBox.selectedIndex = parseInt(this.getAttribute('data-value')) + 1;
 					selectBox.dispatchEvent(new Event('change'));
 					toggleDropdown();
+					var formHeading = document.getElementById('form-heading');
+					if (formHeading) {
+						formHeading.textContent = 'Edit Student Profile';
+					}
 				});
 
 				dropdownOptions.appendChild(optionDiv);
