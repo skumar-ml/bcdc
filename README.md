@@ -34,5 +34,6 @@ This folder contains utility scripts used by BCDC, including checkout customizat
 - `reward-store.js` – Reward store interface that displays millions transactions and redeemable items with filtering and pagination.
 - `sidebar.js` – Sidebar navigation component for portal menu and navigation controls.
 - `signInActivity.js` – Simple logger that posts member sign-in activity to the backend.
+- `student_journey.js` – Renders the grade/semester "student journey" catalog circle UI, fetching class level data and wiring up prev/next navigation and grade/semester selects.
 - `trial_class_details.js` – Trial class detail page handler that displays trial class information and handles registration.
 - `utils.js` – Utility functions and helper methods used across BCDC scripts.
