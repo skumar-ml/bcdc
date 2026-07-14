@@ -18,7 +18,7 @@ class SigninActivity {
 		var data = {
 			 "memberId" : this.webflowMemberId
 		}
-		bdcFetch("https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/signInActivity", {
+		bdcFetch(`${window.BDC_API.scheduler}signInActivity`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(data)

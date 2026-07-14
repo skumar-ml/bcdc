@@ -867,7 +867,7 @@ class DisplaySuppProgram {
     };
     console.log("Checkout payload prepared", data);
     // Create the POST request
-    bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
+    bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForUpsellProgram`, {
       method: "POST", // Specify the method
       headers: {
         "Content-Type": "application/json", // Specify the content type

@@ -476,7 +476,7 @@ class PaymentHistory {
         };
         // Send payment request to API
         bdcFetch(
-            "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice",
+            `${window.BDC_API.paymentCheckout}checkoutUrlForInvoice`,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1127,7 +1127,7 @@ class PaymentHistory {
 
             // Send PDF generation request to API
             const response = await bdcFetch(
-                "https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/generateItemizedInvoice",
+                `${window.BDC_API.paymentCheckout}generateItemizedInvoice`,
                 {
                     method: "POST",
                     headers: {

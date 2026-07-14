@@ -513,7 +513,7 @@ class BriefsCheckout {
         //return;
         // Make API call
         const self = this;
-        bdcFetch(`https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram`, {
+        bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForUpsellProgram`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(checkoutData)

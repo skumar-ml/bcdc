@@ -544,7 +544,7 @@ function creEl(name,className,idName){
 			  data.attendanceId = attendanceId;
 		  }
 		  var $this = this;
-		  bdcFetch("https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/updateAttendance", {
+		  bdcFetch(`${window.BDC_API.class}updateAttendance`, {
 			  method: "POST",
 			  headers: { "Content-Type": "application/json" },
 			  body: JSON.stringify(data)
@@ -710,7 +710,7 @@ function creEl(name,className,idName){
 	  // Fetches updated class data from the API
 	  getUpdatedClasssData(classId){
 		  var $this = this;
-		  bdcFetch("https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId)
+		  bdcFetch(`${window.BDC_API.class}getAttendance/`+$this.webflowMemberId)
 			  .then(function(response) { return response.json(); })
 			  .then(function(responseText) {
 				  $this.classData	= responseText;
@@ -748,7 +748,7 @@ function creEl(name,className,idName){
 		  if ($this.spinner) {
 			  $this.spinner.style.display = "block";
 		  }
-		  bdcFetch("https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/getAttendance/"+$this.webflowMemberId)
+		  bdcFetch(`${window.BDC_API.class}getAttendance/`+$this.webflowMemberId)
 			  .then(function(response) { return response.json(); })
 			  .then(function(responseText) {
 				  $this.portalInfoWrapper.style.display = "block";

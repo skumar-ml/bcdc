@@ -374,7 +374,7 @@ class CheckOutWebflow {
 			"lastName": studentLastName.value,
 			"memberId": this.memberData.memberId,
 		}
-		const rawResponse = await bdcFetch('https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/validateUserForProgram', {
+		const rawResponse = await bdcFetch(`${window.BDC_API.class}validateUserForProgram`, {
 			method: 'POST',
 			headers: {
 				'Accept': 'application/json',
@@ -406,7 +406,7 @@ class CheckOutWebflow {
 	}
 	// Checkout student dropdown API lives on the b4z5gqv2xj gateway (not the summer baseUrl).
 	getCheckoutStudentProfilesBaseUrl() {
-		return "https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/";
+		return window.BDC_API.reporting;
 	}
 	// Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
 	normalizeCheckoutStudentProfiles(response) {
@@ -1059,7 +1059,7 @@ class CheckOutWebflow {
 
 		var $this = this;
 		return new Promise(function (resolve) {
-			bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForSummer", {
+			bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForSummer`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(data)
@@ -1139,7 +1139,7 @@ class CheckOutWebflow {
 		localStorage.setItem("checkOutData", JSON.stringify(checkOutData));
 		
 		var $this = this;
-		bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", {
+		bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForStandard`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(data)
@@ -1244,7 +1244,7 @@ class CheckOutWebflow {
 		}
 		
 		var $this = this;
-		bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", {
+		bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForStandard`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(data)

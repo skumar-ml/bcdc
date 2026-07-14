@@ -2207,7 +2207,7 @@ class Portal {
             "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
             "cancelUrl": "https://www.bergendebate.com/portal/dashboard",
         }
-        bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForInvoice", {
+        bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForInvoice`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)

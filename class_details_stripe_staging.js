@@ -784,7 +784,7 @@ class classDetailsStripe extends parentLogin {
       };
       //return;
       var $this = this;
-      bdcFetch("https://b4z5gqv2xj.execute-api.us-east-1.amazonaws.com/prod/camp/checkPreviousStudent", {
+      bdcFetch(`${window.BDC_API.reporting}checkPreviousStudent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
@@ -1321,7 +1321,7 @@ class classDetailsStripe extends parentLogin {
       //console.log('Data !!!!!', data)
       //return;
       var $this = this;
-      bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForStandard", {
+      bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForStandard`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
@@ -1353,7 +1353,7 @@ class classDetailsStripe extends parentLogin {
 
   initSupplementaryPayment(data, type) {
     // Create the POST request
-    bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForUpsellProgram", {
+    bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForUpsellProgram`, {
       method: "POST", // Specify the method
       headers: {
         "Content-Type": "application/json", // Specify the content type
@@ -1557,7 +1557,7 @@ class classDetailsStripe extends parentLogin {
     //console.log('Data !!!!!', data)
     //return;
     var $this = this;
-    bdcFetch("https://nqxxsp0jzd.execute-api.us-east-1.amazonaws.com/prod/camp/createCheckoutId", {
+    bdcFetch(`${window.BDC_API.paymentCheckout}createCheckoutId`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)

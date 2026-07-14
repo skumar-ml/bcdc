@@ -150,7 +150,7 @@ class Utils {
      */
     #getCreditsData(webflowMemberId) {
         const endpoint = `getCreditBalance/${webflowMemberId}`;
-        const apiBaseUrl = "https://bkqmhuwcwj.execute-api.us-east-1.amazonaws.com/prod/camp/";
+        const apiBaseUrl = window.BDC_API.referral;
         return this.fetchData(endpoint, apiBaseUrl);
     }
     
