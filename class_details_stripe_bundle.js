@@ -1143,7 +1143,14 @@ class classDetailsStripe extends parentLogin {
       }
 
       if (paymentData.grade) {
-        studentGrade.value = paymentData.grade.toLowerCase();
+        var wantGrade = String(paymentData.grade).trim().toLowerCase();
+        var matchedGrade = Array.prototype.find.call(
+          studentGrade.options,
+          function (opt) { return opt.value.trim().toLowerCase() === wantGrade; }
+        );
+        if (matchedGrade) {
+          studentGrade.value = matchedGrade.value;
+        }
       }
 
       if (paymentData.school) {
@@ -2900,6 +2907,10 @@ class classDetailsStripe extends parentLogin {
           selectBox.selectedIndex = parseInt(this.getAttribute('data-value')) + 1;
           selectBox.dispatchEvent(new Event('change'));
           toggleDropdown();
+          var formHeading = document.getElementById('form-heading');
+          if (formHeading) {
+            formHeading.textContent = 'Edit Student Profile';
+          }
         });
 
         dropdownOptions.appendChild(optionDiv);
