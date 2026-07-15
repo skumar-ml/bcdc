@@ -1146,7 +1146,14 @@ class classDetailsStripe extends parentLogin {
       }
 
       if (paymentData.grade) {
-        studentGrade.value = paymentData.grade.toLowerCase();
+        var wantGrade = String(paymentData.grade).trim().toLowerCase();
+        var matchedGrade = Array.prototype.find.call(
+          studentGrade.options,
+          function (opt) { return opt.value.trim().toLowerCase() === wantGrade; }
+        );
+        if (matchedGrade) {
+          studentGrade.value = matchedGrade.value;
+        }
       }
 
       if (paymentData.school) {
