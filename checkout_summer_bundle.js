@@ -804,6 +804,80 @@ class CheckOutWebflow {
 			$this._resetForCreateNewStudent();
 		});
 	}
+	// Updates the "Selected Student" summary text, used by both the new
+	// radio-card list and the legacy dropdown picker.
+	_setSelectedStudentText(text) {
+		document.querySelectorAll('.selected-student-text').forEach(function (el) {
+			el.textContent = text;
+		});
+	}
+	// Marks a student as picked: flips the summary heading to "Selected
+	// Student" and fills in the picked name/grade line.
+	_markStudentSelected(text) {
+		document.querySelectorAll('.selected-student-heading').forEach(function (el) {
+			el.textContent = 'Selected Student';
+		});
+		this._setSelectedStudentText(text);
+	}
+	// Keeps the legacy #existing-students dropdown (and its custom display)
+	// in sync when a profile is picked from the new radio-card list.
+	_syncOldDropdownSelection(profile) {
+		var selectBox = document.getElementById('existing-students');
+		if (!selectBox || !Array.isArray(selectBox._filterData)) {
+			return;
+		}
+		var wantName = (profile.studentName || '').trim().toLowerCase();
+		var matchIndex = selectBox._filterData.findIndex(function (item) {
+			return (item.studentName || '').trim().toLowerCase() === wantName;
+		});
+		if (matchIndex === -1) {
+			return;
+		}
+		selectBox.selectedIndex = matchIndex + 1; // +1 for the "Select Student Name" placeholder option
+		selectBox.dispatchEvent(new Event('change'));
+	}
+	// Reveals the student-details form wrapper and hides the choose-student
+	// card, updating the section heading to match the current mode.
+	_showCheckoutFormWrapper(headingText) {
+		var chooseStudentCard = document.getElementById('choose-student-card');
+		if (chooseStudentCard) chooseStudentCard.style.display = 'none';
+		document.querySelectorAll('.checkout-form-wapper').forEach(function (el) {
+			el.style.display = 'block';
+		});
+		var heading = document.getElementById('form-heading');
+		if (heading) heading.textContent = headingText;
+	}
+	// Clears the student form for a brand-new profile.
+	_resetForCreateNewStudent() {
+		var studentFirstName = document.getElementById('Student-First-Name');
+		var studentLastName = document.getElementById('Student-Last-Name');
+		var studentEmail = document.getElementById('Student-Email');
+		var studentGrade = document.getElementById('Student-Grade');
+		var studentSchool = document.getElementById('Student-School');
+		var studentGender = document.getElementById('Student-Gender');
+		var prevStudent = document.getElementById('prevStudent-2');
+		if (studentFirstName) studentFirstName.value = '';
+		if (studentLastName) studentLastName.value = '';
+		if (studentEmail) studentEmail.value = '';
+		if (studentGrade) studentGrade.value = '';
+		if (studentSchool) studentSchool.value = '';
+		if (studentGender) studentGender.value = '';
+		if (prevStudent) prevStudent.value = '';
+		localStorage.removeItem('checkOutBasicData');
+		this._showCheckoutFormWrapper('Create New Student Profile');
+	}
+	// Wires the "+ Create New Student" card to open an empty student form.
+	_bindCreateStudentContainerClick() {
+		var createStudentContainer = document.querySelector('.create-student-container');
+		if (!createStudentContainer || createStudentContainer._createStudentBound) {
+			return;
+		}
+		createStudentContainer._createStudentBound = true;
+		var $this = this;
+		createStudentContainer.addEventListener('click', function () {
+			$this._resetForCreateNewStudent();
+		});
+	}
 	// Inject the custom-select CSS once so layout stays stable even if the
 	// Webflow page lacks these rules: native select is removed from flow and
 	// the open options panel floats as an overlay so nothing below it shifts.

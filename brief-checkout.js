@@ -137,41 +137,43 @@ class BriefsCheckout {
                         </div>
                         <p class="dm-sans brief">${topic.headings}</p>
                         <div class="recommended-tag-text">Recommended</div>
-                        <div data-briefs-checkout="full-version" class="brief-pricing-info-wrapper ${isSelected ? 'selected-border-red' : 'not-selected-white'}">
-                            <div class="brief-pricing-info-flex">
-                                <div class="brief-inner-flex">
-                                    <label class="no-margin-bottom w-radio">
-                                        <input type="radio" data-name="Radio" name="radio-${topic.topicId}" 
-                                               class="w-form-formradioinput w-radio-input" value="full" ${isSelected ? 'checked' : ''} />
-                                        <span class="hide w-form-label">Radio</span>
-                                    </label>
-                                    <div class="brief-pricing-title-red">Full Version</div>
-                                    <div class="brief-info-wrapper">
-                                        <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68d12df293ed238fb7b07265_Info.svg"
-                                         loading="lazy" alt="" class="brief-info-icon" />
-                                         <div><p class="dm-sans brief-tooltip">${fullVersion.description}</p></div>
+                        <div class="brief-price-container">
+                            <div data-briefs-checkout="full-version" class="brief-pricing-info-wrapper ${isSelected ? 'selected-border-red' : 'not-selected-white'}">
+                                <div class="brief-pricing-info-flex">
+                                    <div class="brief-inner-flex">
+                                        <label class="no-margin-bottom w-radio">
+                                            <input type="radio" data-name="Radio" name="radio-${topic.topicId}"
+                                                   class="w-form-formradioinput w-radio-input" value="full" ${isSelected ? 'checked' : ''} />
+                                            <span class="hide w-form-label">Radio</span>
+                                        </label>
+                                        <div class="brief-pricing-title-red">Full Version</div>
+                                        <div class="brief-info-wrapper">
+                                            <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68d12df293ed238fb7b07265_Info.svg"
+                                             loading="lazy" alt="" class="brief-info-icon" />
+                                             <div><p class="dm-sans brief-tooltip">${fullVersion.description}</p></div>
+                                        </div>
                                     </div>
+                                    <div class="brief-price-medium">$${parseFloat(fullVersion.price || 0).toFixed(2)}</div>
                                 </div>
-                                <div class="brief-price-medium">$${parseFloat(fullVersion.price || 0).toFixed(2)}</div>
+                                <div class="recommended-tag-text">Recommended</div>
                             </div>
-                            <div class="recommended-tag-text">Recommended</div>
-                        </div>
-                        <div data-briefs-checkout="light-version" class="brief-pricing-info-wrapper not-selected-white">
-                            <div class="brief-pricing-info-flex">
-                                <div class="brief-inner-flex">
-                                    <label class="no-margin-bottom w-radio">
-                                        <input type="radio" data-name="Radio" name="radio-${topic.topicId}" 
-                                               class="w-form-formradioinput w-radio-input" value="light" />
-                                        <span class="hide w-form-label">Radio</span>
-                                    </label>
-                                    <div class="brief-pricing-title-red">Light Version</div>
-                                    <div class="brief-info-wrapper">
-                                    <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68d12df293ed238fb7b07265_Info.svg"
-                                         loading="lazy" alt="" class="brief-info-icon" />
-                                         <div><p class="dm-sans brief-tooltip">${lightVersion.description}</p></div>
+                            <div data-briefs-checkout="light-version" class="brief-pricing-info-wrapper not-selected-white">
+                                <div class="brief-pricing-info-flex">
+                                    <div class="brief-inner-flex">
+                                        <label class="no-margin-bottom w-radio">
+                                            <input type="radio" data-name="Radio" name="radio-${topic.topicId}"
+                                                   class="w-form-formradioinput w-radio-input" value="light" />
+                                            <span class="hide w-form-label">Radio</span>
+                                        </label>
+                                        <div class="brief-pricing-title-red">Light Version</div>
+                                        <div class="brief-info-wrapper">
+                                        <img src="https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68d12df293ed238fb7b07265_Info.svg"
+                                             loading="lazy" alt="" class="brief-info-icon" />
+                                             <div><p class="dm-sans brief-tooltip">${lightVersion.description}</p></div>
+                                        </div>
                                     </div>
+                                    <div class="brief-price-medium">$${parseFloat(lightVersion.price || 0).toFixed(2)}</div>
                                 </div>
-                                <div class="brief-price-medium">$${parseFloat(lightVersion.price || 0).toFixed(2)}</div>
                             </div>
                         </div>
                     `;
