@@ -31,7 +31,7 @@ class NotificationCount {
 	// Calls the notification API and passes data to displayUnreadMessage
 	getNotificationData(){
 		var $this = this;
-		bdcFetch(`${window.BDC_API.scheduler}getNotifications/`+$this.webflowMemberId)
+		bdcFetch(`${window.BDC_API.communication}getNotifications/`+$this.webflowMemberId)
 			.then(function(response) { return response.json(); })
 			.then(function(responseText) {
 				$this.displayUnreadMessage(responseText)

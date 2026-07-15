@@ -477,7 +477,7 @@ class Notification {
 		var data = {
 			 "objectId" : messageId
 		}
-		bdcFetch(`${window.BDC_API.scheduler}isReadNotification`, {
+		bdcFetch(`${window.BDC_API.communication}isReadNotification`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(data)
@@ -625,7 +625,7 @@ class NotificationApi {
 	// Fetches notification data from the API and initializes Notification
 	getNotificationData(){
 		var $this = this;
-		bdcFetch(`${window.BDC_API.scheduler}getNotifications/`+$this.webflowMemberId)
+		bdcFetch(`${window.BDC_API.communication}getNotifications/`+$this.webflowMemberId)
 			.then(function(response) { return response.json(); })
 			.then(function(responseText) {
 				new Notification($this.webflowMemberId, responseText);
