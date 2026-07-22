@@ -452,6 +452,32 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
   render();
 })();
 
+// Catalog card expand/collapse — shared classnames between Fall (CMS) and Summer (API) cards.
+// Detail rows default to collapsed (display: none); clicking the header toggles them open.
+(function initCatalogCardToggle() {
+  const HEADER_CLASS = "fort-lee_catalog-header-wapper";
+  const DETAIL_CLASS = "fort-lee_catalog-detail-wapper";
+
+  document.querySelectorAll(`.${DETAIL_CLASS}`).forEach((detail) => {
+    detail.style.display = "none";
+  });
+
+  document.addEventListener("click", (event) => {
+    const header = event.target.closest(`.${HEADER_CLASS}`);
+    if (!header) {
+      return;
+    }
+
+    const card = header.parentElement;
+    const detail = card ? card.querySelector(`.${DETAIL_CLASS}`) : null;
+    if (!detail) {
+      return;
+    }
+
+    detail.style.display = detail.style.display === "none" ? "" : "none";
+  });
+})();
+
 // Location detail dropdown (collapsible session/timing info block).
 (function initLocationDetailDropdown() {
   document.querySelectorAll(".location-header-dropdown-wapper").forEach((wrapper) => {
