@@ -1,8 +1,8 @@
 /*
 
-Purpose: Renders the per-location class catalog on program location pages (Fort Lee, Westchester, Online, Livingston, Glen Rock, etc). Fetches class details for one location from the API, fills in CMS-templated catalog cards with schedule/timing data, and powers the syllabus preview modal.
+Purpose: Renders the per-location class catalog on program location pages (Fort Lee, Westchester, Online, Livingston, Glen Rock, etc). Fetches class details for one location from the API, fills in CMS-templated catalog cards with schedule/timing data, powers the syllabus preview modal, renders the Summer offering cards, and drives the location detail dropdown toggle.
 
-Brief Logic: Reads the target location's ID from window.CATALOG_LOCATION_ID (set per-page before this script loads), activates the first schedule tab, fetches getClassDetails for that location, matches API rows to existing CMS catalog cards by levelId, fills in times/labels, hides non-matching or wrong-tab cards, and wires up the syllabus modal.
+Brief Logic: Reads the target location's ID from window.CATALOG_LOCATION_ID (set per-page before this script loads), activates the first schedule tab, fetches getClassDetails for that location, matches API rows to existing CMS catalog cards by levelId, fills in times/labels, hides non-matching or wrong-tab cards, and wires up the syllabus modal. Separately fetches getSummerOffering for the same location and clones the summer catalog card template once per program. Also wires up the collapsible .location-header-dropdown-wapper toggle for the location detail grid.
 
 Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_API/bdcFetch from Webflow's site-wide Head code, and window.CATALOG_LOCATION_ID to be set by a small inline script on each location page before this file loads.
 
@@ -36,7 +36,7 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
 
   // Activate the first schedule tab (same on every location page).
   function activateFirstTab() {
-    const tabs = document.querySelectorAll('.schedule_tab-button');
+    const tabs = document.querySelectorAll('.tab-button_location');
     const panes = document.querySelectorAll('.w-tab-pane');
 
     if (tabs.length > 0 && panes.length > 0) {
@@ -443,6 +443,244 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
 
   activateFirstTab();
   initSyllabusModal();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", render);
+    return;
+  }
+
+  render();
+})();
+
+// Catalog card expand/collapse — shared classnames between Fall (CMS) and Summer (API) cards.
+// Detail rows default to collapsed (display: none); clicking the header toggles them open.
+(function initCatalogCardToggle() {
+  const HEADER_CLASS = "fort-lee_catalog-header-wapper";
+  const DETAIL_CLASS = "fort-lee_catalog-detail-wapper";
+
+  document.querySelectorAll(`.${DETAIL_CLASS}`).forEach((detail) => {
+    detail.style.display = "none";
+  });
+
+  document.addEventListener("click", (event) => {
+    const header = event.target.closest(`.${HEADER_CLASS}`);
+    if (!header) {
+      return;
+    }
+
+    const card = header.parentElement;
+    const detail = card ? card.querySelector(`.${DETAIL_CLASS}`) : null;
+    if (!detail) {
+      return;
+    }
+
+    detail.style.display = detail.style.display === "none" ? "" : "none";
+  });
+})();
+
+// Location detail dropdown (collapsible session/timing info block).
+(function initLocationDetailDropdown() {
+  document.querySelectorAll(".location-header-dropdown-wapper").forEach((wrapper) => {
+    wrapper.style.cursor = "pointer";
+    const detailWapper = wrapper.parentElement;
+    const detailGrid = detailWapper ? detailWapper.querySelector(".location-detail-grid") : null;
+    // Default state is open — no classes added on init.
+
+    wrapper.addEventListener("click", () => {
+      const icon = wrapper.querySelector(".location-dropdown-icon");
+      if (detailGrid) {
+        detailGrid.classList.toggle("is-hidden");
+      }
+      if (detailWapper) {
+        detailWapper.classList.toggle("padding-bottom-0");
+      }
+      if (icon) {
+        icon.classList.toggle("is-rotated");
+      }
+    });
+  });
+})();
+
+// Function to render the Summer offering catalog for the current location.
+(function summerOfferingCatalogRenderer() {
+  const API_BASE_URL = window.BDC_API.class;
+  const LOCATION_ID = window.CATALOG_LOCATION_ID;
+  if (!LOCATION_ID) {
+    console.error("window.CATALOG_LOCATION_ID must be set before loading class-catalog-by-location.js");
+    return;
+  }
+  const SUMMER_OFFERING_ENDPOINT = `getSummerOffering?locationId=${LOCATION_ID}`;
+  const CARD_CLASS = "summer-offering-catalog-wapper";
+  const GRID_CLASS = "summer-grid-wapper";
+  const SESSION_CLASS = "location-session-wapper";
+
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+  // API dates come as "YYYY-MM-DD HH:mm:ss" — parse the calendar date only, ignore time/timezone.
+  function parseApiDate(rawDate) {
+    if (!rawDate || typeof rawDate !== "string") {
+      return null;
+    }
+
+    const datePart = rawDate.trim().split(" ")[0];
+    const parts = datePart.split("-").map(Number);
+    if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
+      return null;
+    }
+
+    const [year, month, day] = parts;
+    return new Date(year, month - 1, day);
+  }
+
+  function formatDateShort(date) {
+    return date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+  }
+
+  function formatDateRange(startRaw, endRaw) {
+    const start = parseApiDate(startRaw);
+    const end = parseApiDate(endRaw);
+    if (!start || !end) {
+      return "";
+    }
+
+    return `${formatDateShort(start)} - ${formatDateShort(end)}`;
+  }
+
+  function formatWeeks(startRaw, endRaw) {
+    const start = parseApiDate(startRaw);
+    const end = parseApiDate(endRaw);
+    if (!start || !end) {
+      return "";
+    }
+
+    const days = Math.round((end - start) / MS_PER_DAY);
+    const weeks = Math.max(1, Math.round(days / 7));
+    return `${weeks} week${weeks === 1 ? "" : "s"}`;
+  }
+
+  /** Safe DOM update — avoids errors if Webflow renames a nested class. */
+  function setTextIfFound(rootEl, selector, textValue) {
+    const target = rootEl.querySelector(selector);
+    if (target) {
+      target.textContent = textValue || "";
+    }
+  }
+
+  // Timing/grade classnames repeat inside the card — once in the header, once in the mobile-only detail row.
+  function setAllTextIfFound(rootEl, selector, textValue) {
+    rootEl.querySelectorAll(selector).forEach((target) => {
+      target.textContent = textValue || "";
+    });
+  }
+
+  const PROGRAM_SLUG_OVERRIDES = {
+    "Model UN + Young Entrepreneurship": "full-day"
+  };
+
+  function slugifyProgramName(name) {
+    return String(name || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  function getRegisterUrl(programName) {
+    const slug = PROGRAM_SLUG_OVERRIDES[programName] || slugifyProgramName(programName);
+    return `https://www.bergendebate.com/summer/${slug}`;
+  }
+
+  // Fixed display order for summer programs (by programId). Anything not listed falls to the end,
+  // keeping its original relative order.
+  const PROGRAM_ORDER = [102, 104, 103, 106, 101, 105];
+
+  function sortProgramsByOrder(programs) {
+    const orderIndex = new Map(PROGRAM_ORDER.map((id, index) => [id, index]));
+    return [...programs].sort((a, b) => {
+      const aIndex = orderIndex.has(a.programId) ? orderIndex.get(a.programId) : PROGRAM_ORDER.length;
+      const bIndex = orderIndex.has(b.programId) ? orderIndex.get(b.programId) : PROGRAM_ORDER.length;
+      return aIndex - bIndex;
+    });
+  }
+
+  function fillSessionRow(sessionEl, session) {
+    setTextIfFound(sessionEl, ".summer-offering-session-text", session.summerSessionName || "");
+    setTextIfFound(sessionEl, ".session-timing-text", formatDateRange(session.startDate, session.endDate));
+    setTextIfFound(sessionEl, ".summer-week-text", formatWeeks(session.startDate, session.endDate));
+  }
+
+  // Clone the single .location-session-wapper template once per sessionDetails entry.
+  function renderSessions(cardEl, sessionDetails) {
+    const grid = cardEl.querySelector(`.${GRID_CLASS}`);
+    const templateSession = grid ? grid.querySelector(`.${SESSION_CLASS}`) : null;
+    if (!grid || !templateSession) {
+      return;
+    }
+
+    const sessions = Array.isArray(sessionDetails) ? sessionDetails : [];
+    sessions.forEach((session) => {
+      const sessionEl = templateSession.cloneNode(true);
+      fillSessionRow(sessionEl, session);
+      grid.appendChild(sessionEl);
+    });
+
+    templateSession.remove();
+  }
+
+  function fillCard(cardEl, program) {
+    setTextIfFound(cardEl, ".class-level-text", program.programName || "");
+    setAllTextIfFound(cardEl, ".summer-timing-text", `Timing : ${program.timing || ""}`);
+    setAllTextIfFound(cardEl, ".summer-grade-text", `Suggested Grades: ${program.suggest_grade || ""}`);
+    renderSessions(cardEl, program.sessionDetails);
+
+    const registerBtn = cardEl.querySelector("#summer-register-btn");
+    if (registerBtn) {
+      registerBtn.setAttribute("href", getRegisterUrl(program.programName));
+    }
+  }
+
+  async function fetchData(endpoint) {
+    try {
+      const response = await bdcFetch(`${API_BASE_URL}${endpoint}`);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching summer offering data:", error);
+      throw error;
+    }
+  }
+
+  // Clone the single .summer-offering-catalog-wapper template once per program in the API response.
+  async function render() {
+    const templateCard = document.querySelector(`.${CARD_CLASS}`);
+    if (!templateCard) {
+      console.error(`No .${CARD_CLASS} template found.`);
+      return;
+    }
+
+    const container = templateCard.parentElement;
+    if (!container) {
+      return;
+    }
+
+    try {
+      const apiData = await fetchData(SUMMER_OFFERING_ENDPOINT);
+      const rawPrograms = Array.isArray(apiData.summerOfferingData) ? apiData.summerOfferingData : [];
+      const programs = sortProgramsByOrder(rawPrograms);
+
+      programs.forEach((program) => {
+        const cardEl = templateCard.cloneNode(true);
+        fillCard(cardEl, program);
+        container.appendChild(cardEl);
+      });
+
+      templateCard.remove();
+    } catch (error) {
+      console.error("Failed to render summer catalog cards:", error);
+    }
+  }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", render);
