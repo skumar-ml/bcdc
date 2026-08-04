@@ -1494,7 +1494,7 @@ class CheckOutWebflow {
 		var code2fErrorMsg = document.getElementById('code-2f-error-msg');
 		//Added event for validate 2F coupon code
 		if (coupon_code_button && coupon_2f_code && code2fErrorMsg) {
-			coupon_code_button.addEventListener('click',function(event){
+			coupon_code_button.addEventListener('click', async function(event){
 				event.preventDefault();
 				if(coupon_2f_code.value == ''){
 					code2fErrorMsg.style.display = 'block';
@@ -1504,8 +1504,20 @@ class CheckOutWebflow {
 					code2fErrorMsg.innerHTML = 'The code you entered is invalid. Please enter a different code.';
 				}else{
 					code2fErrorMsg.style.display = 'none';
-					$this.activateDiv('checkout_student_details');
-					$this.activeBreadCrumb('select-class')
+					// Override accepted: create the student + checkout via the same path the
+					// eligible next_page_1 flow uses. Without initializeStripePayment() the code
+					// only switched tabs, so no student/checkout was created and payment silently
+					// failed downstream ($checkoutData/checkOutData stayed empty).
+					var originalLabel = coupon_code_button.innerHTML;
+					coupon_code_button.innerHTML = 'Processing...';
+					coupon_code_button.style.pointerEvents = 'none';
+					var stripeInitSuccess = await $this.initializeStripePayment();
+					coupon_code_button.innerHTML = originalLabel;
+					coupon_code_button.style.pointerEvents = 'auto';
+					if (stripeInitSuccess) {
+						$this.activateDiv('checkout_student_details');
+						$this.activeBreadCrumb('select-class')
+					}
 				}
 			})
 		}
