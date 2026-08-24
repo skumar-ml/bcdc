@@ -17,6 +17,7 @@ class Portal {
         this.data = data; // Store configuration data
         this.spinner = document.getElementById("half-circle-spinner"); // Loading spinner element
         this.onReady = onReady; // Callback function for when portal is ready
+        this.memberCreditBalance = 0; // Wallet credits auto-applied to invoice remaining
         window.__portalApiBaseURL = this.data.apiBaseURL;
         // Hide referrals until portal data confirms access
         this.setReferralsLinksVisibility(false);
@@ -64,6 +65,26 @@ class Portal {
         };
         const millionsData = await response.json();
         return millionsData;
+    }
+
+    /**
+     * Fetches the member wallet credit that backend auto-applies to invoices.
+     * @returns {Promise<number>} Available credit amount, or 0 if missing/failed
+     */
+    async fetchCreditBalance() {
+        try {
+            const memberId = this.data.memberId;
+            const base = (window.BDC_API && window.BDC_API.referral) || this.data.apiBaseURL;
+            if (!memberId || !base) return 0;
+            const response = await bdcFetch(`${base}getCreditBalance/${memberId}`);
+            if (!response.ok) return 0;
+            const apiData = await response.json();
+            const amount = parseFloat(apiData?.creditBalance?.creditBalance);
+            return Number.isFinite(amount) ? amount : 0;
+        } catch (error) {
+            console.error('Error fetching credit balance:', error);
+            return 0;
+        }
     }
     /**
      * Returns true when a paid session qualifies for referrals (not refunded).
@@ -262,11 +283,13 @@ class Portal {
         const paidResource = document.querySelector('.portal-info-wrapper')
         paidResource.style.display = "none";
         this.spinner.style.display = "block";
-        const [data, millionsData, announcements] = await Promise.all([
+        const [data, millionsData, announcements, creditBalance] = await Promise.all([
             this.fetchData(),
             this.fetchMillionsData(),
-            this.fetchAnnouncements()
+            this.fetchAnnouncements(),
+            this.fetchCreditBalance()
         ]);
+        this.memberCreditBalance = creditBalance;
         if (data == "No data Found" || !data) {
             this.hideShowFreeAndPaidResources(false);
             this.checkReferralsAccess(data);
@@ -2296,6 +2319,79 @@ class Portal {
     }
 
     /**
+     * Finds or inserts the BDC Credits amount node just before Remaining Balance.
+     * @param {HTMLElement} modal - Invoice breakdown modal
+     * @returns {HTMLElement|null} Amount element for wallet credits
+     */
+    ensureBdcCreditsAmountElement(modal) {
+        const existing = modal.querySelector('[invoice-breakdown-data="BDCCredits"]');
+        if (existing) return existing;
+
+        const remainingBalanceEl = modal.querySelector('[data-cart-total="cart-total-price"]');
+        if (!remainingBalanceEl) return null;
+
+        const remainingRow =
+            remainingBalanceEl.closest('.invoice-breakdowm-info-flex') ||
+            remainingBalanceEl.closest('.invoice-breakdown-row') ||
+            remainingBalanceEl.parentElement;
+        if (!remainingRow || !remainingRow.parentNode) return null;
+
+        const template =
+            modal.querySelector('[invoice-breakdown-data="sibling-discount"]')?.parentElement ||
+            modal.querySelector('[invoice-breakdown-data="Deposit"]')?.parentElement;
+
+        const row = document.createElement('div');
+        row.className = template ? template.className : 'invoice-breakdowm-info-flex';
+        row.setAttribute('data-bdc-credits-row', 'true');
+
+        const labelWrap = document.createElement('div');
+        const title = document.createElement('p');
+        title.className = 'invoice-breakdown-text';
+        title.textContent = 'BDC Credits';
+        const note = document.createElement('p');
+        note.className = 'invoice-breakdown-text';
+        note.textContent = '*automatically applied to your invoice';
+        labelWrap.appendChild(title);
+        labelWrap.appendChild(note);
+
+        const amountEl = document.createElement('p');
+        amountEl.className = 'invoice-breakdown-text';
+        amountEl.setAttribute('invoice-breakdown-data', 'BDCCredits');
+
+        row.appendChild(labelWrap);
+        row.appendChild(amountEl);
+        remainingRow.parentNode.insertBefore(row, remainingRow);
+        return amountEl;
+    }
+
+    /**
+     * Fills BDC Credits before Remaining Balance; hides the row when wallet is 0.
+     * @param {HTMLElement} modal - Invoice breakdown modal
+     * @param {Function} formatCurrency - Currency formatter used by other rows
+     * @returns {number} Credit amount subtracted from remaining balance
+     */
+    updateBdcCreditsBreakdownRow(modal, formatCurrency) {
+        const creditAmount = Math.abs(parseFloat(this.memberCreditBalance) || 0);
+        const amountEl = this.ensureBdcCreditsAmountElement(modal);
+        if (!amountEl) return 0;
+
+        const row =
+            amountEl.closest('[data-bdc-credits-row]') ||
+            amountEl.closest('.invoice-breakdowm-info-flex') ||
+            amountEl.closest('.invoice-breakdown-row') ||
+            amountEl.parentElement;
+
+        if (creditAmount === 0) {
+            if (row) row.style.display = 'none';
+            return 0;
+        }
+
+        amountEl.textContent = formatCurrency(-creditAmount);
+        if (row) row.style.display = 'flex';
+        return creditAmount;
+    }
+
+    /**
      * Shows invoice breakdown modal and sets up close functionality
      * @param {HTMLElement} modal - The invoice breakdown modal element
      * @param {Object} invoice - Invoice data to display
@@ -2373,6 +2469,9 @@ class Portal {
 
             this.updateDepositTitleLabels(modal, studentData, invoice, breakdown);
 
+            // Wallet credits sit above remaining balance and reduce what is owed
+            const appliedCredits = this.updateBdcCreditsBreakdownRow(modal, formatCurrency);
+
             // Calculate and update remaining balance
             const remainingBalanceEl = modal.querySelector('[data-cart-total="cart-total-price"]');
             if (remainingBalanceEl) {
@@ -2382,6 +2481,7 @@ class Portal {
                 if (breakdown['New Student Fee'] !== undefined) total += breakdown['New Student Fee'];
                 if (breakdown['Sibling Discount'] !== undefined) total += breakdown['Sibling Discount'];
                 if (breakdown['Deposit'] !== undefined) total -= Math.abs(breakdown['Deposit']); // Subtract deposit
+                total -= appliedCredits;
 
                 remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;
             }
