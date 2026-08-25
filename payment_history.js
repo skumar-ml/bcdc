@@ -909,64 +909,17 @@ class PaymentHistory {
     }
 
     /**
-     * Finds or inserts the BDC Credits amount node just before Remaining Balance.
-     * @param {HTMLElement} modal - Invoice breakdown modal
-     * @returns {HTMLElement|null} Amount element for wallet credits
-     */
-    ensureBdcCreditsAmountElement(modal) {
-        const existing = modal.querySelector('[invoice-breakdown-data="BDCCredits"]');
-        if (existing) return existing;
-
-        const remainingBalanceEl = modal.querySelector('[data-cart-total="cart-total-price"]');
-        if (!remainingBalanceEl) return null;
-
-        const remainingRow =
-            remainingBalanceEl.closest('.invoice-breakdowm-info-flex') ||
-            remainingBalanceEl.closest('.invoice-breakdown-row') ||
-            remainingBalanceEl.parentElement;
-        if (!remainingRow || !remainingRow.parentNode) return null;
-
-        const template =
-            modal.querySelector('[invoice-breakdown-data="sibling-discount"]')?.parentElement ||
-            modal.querySelector('[invoice-breakdown-data="Deposit"]')?.parentElement;
-
-        const row = document.createElement('div');
-        row.className = template ? template.className : 'invoice-breakdowm-info-flex';
-        row.setAttribute('data-bdc-credits-row', 'true');
-
-        const labelWrap = document.createElement('div');
-        const title = document.createElement('p');
-        title.className = 'invoice-breakdown-text';
-        title.textContent = 'BDC Credits';
-        const note = document.createElement('p');
-        note.className = 'invoice-breakdown-text';
-        note.textContent = '*automatically applied to your invoice';
-        labelWrap.appendChild(title);
-        labelWrap.appendChild(note);
-
-        const amountEl = document.createElement('p');
-        amountEl.className = 'invoice-breakdown-text';
-        amountEl.setAttribute('invoice-breakdown-data', 'BDCCredits');
-
-        row.appendChild(labelWrap);
-        row.appendChild(amountEl);
-        remainingRow.parentNode.insertBefore(row, remainingRow);
-        return amountEl;
-    }
-
-    /**
-     * Fills BDC Credits before Remaining Balance; hides the row when wallet is 0.
+     * Updates the Webflow BDC Credits row and hides it when wallet is 0.
      * @param {HTMLElement} modal - Invoice breakdown modal
      * @param {Function} formatCurrency - Currency formatter used by other rows
      * @returns {number} Credit amount subtracted from remaining balance
      */
     updateBdcCreditsBreakdownRow(modal, formatCurrency) {
         const creditAmount = Math.abs(parseFloat(this.memberCreditBalance) || 0);
-        const amountEl = this.ensureBdcCreditsAmountElement(modal);
+        const amountEl = modal.querySelector('[invoice-breakdown-data="CreditBalance"]');
         if (!amountEl) return 0;
 
         const row =
-            amountEl.closest('[data-bdc-credits-row]') ||
             amountEl.closest('.invoice-breakdowm-info-flex') ||
             amountEl.closest('.invoice-breakdown-row') ||
             amountEl.parentElement;
