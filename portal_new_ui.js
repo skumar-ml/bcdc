@@ -280,6 +280,8 @@ class Portal {
      * Fetches data, sets up tabs, initializes components, and handles UI updates
      */
     async render() {
+        // Hide breakdown if Webflow left the modal Visible after editing
+        this.setupInvoiceBreakdownModal();
         const paidResource = document.querySelector('.portal-info-wrapper')
         paidResource.style.display = "none";
         this.spinner.style.display = "block";
@@ -2329,10 +2331,9 @@ class Portal {
         const amountEl = modal.querySelector('[invoice-breakdown-data="CreditBalance"]');
         if (!amountEl) return 0;
 
-        const row =
-            amountEl.closest('.invoice-breakdowm-info-flex') ||
-            amountEl.closest('.invoice-breakdown-row') ||
-            amountEl.parentElement;
+        // Only toggle the amount's parent row, never the modal wrapper
+        const row = amountEl.parentElement;
+        if (row && row.id === 'invoice-breakdown-modal') return creditAmount;
 
         if (creditAmount === 0) {
             if (row) row.style.display = 'none';
@@ -2342,6 +2343,47 @@ class Portal {
         amountEl.textContent = formatCurrency(-creditAmount);
         if (row) row.style.display = 'flex';
         return creditAmount;
+    }
+
+    /**
+     * Hides the invoice breakdown modal on load and wires close handlers.
+     */
+    setupInvoiceBreakdownModal() {
+        const modal = document.getElementById('invoice-breakdown-modal');
+        if (!modal) return;
+        this.hideModal(modal);
+        this.setupInvoiceBreakdownModalClose(modal);
+    }
+
+    /**
+     * Binds background, X, and Escape close once for the breakdown modal.
+     * @param {HTMLElement} modal - Invoice breakdown modal
+     */
+    setupInvoiceBreakdownModalClose(modal) {
+        if (!modal || modal.hasAttribute('data-close-setup')) return;
+        modal.setAttribute('data-close-setup', 'true');
+        var $this = this;
+
+        const modalBg = modal.querySelector('.invoice-breakdown-modal-bg');
+        if (modalBg) {
+            modalBg.addEventListener('click', () => {
+                $this.hideModal(modal);
+            });
+        }
+
+        const closeBtn = modal.querySelector('.upsell-buy-now-close-link');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                $this.hideModal(modal);
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && (modal.classList.contains('show') || modal.style.display === 'flex')) {
+                $this.hideModal(modal);
+            }
+        });
     }
 
     /**
@@ -2442,37 +2484,7 @@ class Portal {
 
         // Show the modal
         this.showModal(modal);
-
-        // Set up close functionality if not already set up
-        if (!modal.hasAttribute('data-close-setup')) {
-            modal.setAttribute('data-close-setup', 'true');
-
-            // Close on background click
-            const modalBg = modal.querySelector('.invoice-breakdown-modal-bg');
-            if (modalBg) {
-                modalBg.addEventListener('click', () => {
-                    $this.hideModal(modal);
-                });
-            }
-
-            // Close on close button click
-            const closeBtn = modal.querySelector('.upsell-buy-now-close-link');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    $this.hideModal(modal);
-                });
-            }
-
-            // Close on Escape key
-            const handleEscape = (e) => {
-                if (e.key === 'Escape' && modal.classList.contains('show')) {
-                    $this.hideModal(modal);
-                    document.removeEventListener('keydown', handleEscape);
-                }
-            };
-            document.addEventListener('keydown', handleEscape);
-        }
+        this.setupInvoiceBreakdownModalClose(modal);
     }
 
     /**
