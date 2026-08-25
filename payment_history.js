@@ -912,7 +912,23 @@ class PaymentHistory {
     }
 
     /**
-     * Updates the Webflow BDC Credits row and hides it when wallet is 0.
+     * Finds the full Webflow BDC Credits flex row (label + note + amount).
+     * @param {HTMLElement} amountEl - CreditBalance amount node
+     * @returns {HTMLElement|null}
+     */
+    getBdcCreditsRow(amountEl) {
+        if (!amountEl) return null;
+        const row =
+            amountEl.closest(".invoice-breakdowm-info-flex") ||
+            amountEl.closest(".invoice-breakdown-row");
+        if (row && row.id !== "invoice-breakdown-modal") return row;
+        const parent = amountEl.parentElement;
+        if (parent && parent.id !== "invoice-breakdown-modal") return parent;
+        return null;
+    }
+
+    /**
+     * Updates the Webflow BDC Credits row and hides it when wallet is 0 / missing.
      * @param {HTMLElement} modal - Invoice breakdown modal
      * @param {Function} formatCurrency - Currency formatter used by other rows
      * @returns {number} Credit amount subtracted from remaining balance
@@ -922,11 +938,11 @@ class PaymentHistory {
         const amountEl = modal.querySelector('[invoice-breakdown-data="CreditBalance"]');
         if (!amountEl) return 0;
 
-        // Only toggle the amount's parent row, never the modal wrapper
-        const row = amountEl.parentElement;
-        if (row && row.id === "invoice-breakdown-modal") return creditAmount;
+        // Hide label + "*automatically applied..." + amount together
+        const row = this.getBdcCreditsRow(amountEl);
 
         if (creditAmount === 0) {
+            amountEl.textContent = "";
             if (row) row.style.display = "none";
             return 0;
         }
