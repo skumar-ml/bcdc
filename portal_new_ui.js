@@ -2052,6 +2052,26 @@ class Portal {
         return null;
     }
 
+    // Resolves student email from session studentDetail
+    getStudentEmail(studentData, invoice) {
+        if (!studentData) return this.data?.accountEmail || '';
+        const ctx = this.findInvoiceContextInStudentData(studentData, invoice?.invoice_id);
+        const sessions = [
+            ...(studentData?.currentSession || []),
+            ...(studentData?.pastSession || []),
+            ...(studentData?.futureSession || []),
+        ];
+        const detail = ctx?.session?.studentDetail || sessions.find((s) => s?.studentDetail)?.studentDetail;
+        return (
+            detail?.studentEmail ||
+            detail?.email ||
+            detail?.emailId ||
+            detail?.parentEmail ||
+            this.data?.accountEmail ||
+            ''
+        );
+    }
+
     // Logs deposit-related dates from getPortalDetail API response
     logPortalDetailDepositDates(apiData) {
         console.group('[Portal][DepositDate] getPortalDetail — FULL API response');
@@ -2319,6 +2339,12 @@ class Portal {
                 const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
                 return `${sign}$${Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             };
+
+            // Update student email
+            const studentEmailEl = modal.querySelector('[email="email"]');
+            if (studentEmailEl) {
+                studentEmailEl.textContent = this.getStudentEmail(studentData, invoice);
+            }
 
             // Update Semester Tuition
             const semesterTuitionEl = modal.querySelector('[invoice-breakdown-data="SemesterTuition"]');
