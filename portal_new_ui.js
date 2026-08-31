@@ -17,6 +17,7 @@ class Portal {
         this.data = data; // Store configuration data
         this.spinner = document.getElementById("half-circle-spinner"); // Loading spinner element
         this.onReady = onReady; // Callback function for when portal is ready
+        this.memberCreditBalance = 0; // Wallet credits auto-applied to invoice remaining
         window.__portalApiBaseURL = this.data.apiBaseURL;
         // Hide referrals until portal data confirms access
         this.setReferralsLinksVisibility(false);
@@ -64,6 +65,26 @@ class Portal {
         };
         const millionsData = await response.json();
         return millionsData;
+    }
+
+    /**
+     * Fetches the member wallet credit that backend auto-applies to invoices.
+     * @returns {Promise<number>} Available credit amount, or 0 if missing/failed
+     */
+    async fetchCreditBalance() {
+        try {
+            const memberId = this.data.memberId;
+            const base = (window.BDC_API && window.BDC_API.referral) || this.data.apiBaseURL;
+            if (!memberId || !base) return 0;
+            const response = await bdcFetch(`${base}getCreditBalance/${memberId}`);
+            if (!response.ok) return 0;
+            const apiData = await response.json();
+            const amount = parseFloat(apiData?.creditBalance?.creditBalance);
+            return Number.isFinite(amount) ? amount : 0;
+        } catch (error) {
+            console.error('Error fetching credit balance:', error);
+            return 0;
+        }
     }
     /**
      * Returns true when a paid session qualifies for referrals (not refunded).
@@ -259,14 +280,18 @@ class Portal {
      * Fetches data, sets up tabs, initializes components, and handles UI updates
      */
     async render() {
+        // Hide breakdown if Webflow left the modal Visible after editing
+        this.setupInvoiceBreakdownModal();
         const paidResource = document.querySelector('.portal-info-wrapper')
         paidResource.style.display = "none";
         this.spinner.style.display = "block";
-        const [data, millionsData, announcements] = await Promise.all([
+        const [data, millionsData, announcements, creditBalance] = await Promise.all([
             this.fetchData(),
             this.fetchMillionsData(),
-            this.fetchAnnouncements()
+            this.fetchAnnouncements(),
+            this.fetchCreditBalance()
         ]);
+        this.memberCreditBalance = creditBalance;
         if (data == "No data Found" || !data) {
             this.hideShowFreeAndPaidResources(false);
             this.checkReferralsAccess(data);
@@ -2316,6 +2341,88 @@ class Portal {
     }
 
     /**
+     * Finds the full Webflow BDC Credits flex row (label + note + amount).
+     * @param {HTMLElement} amountEl - CreditBalance amount node
+     * @returns {HTMLElement|null}
+     */
+    getBdcCreditsRow(amountEl) {
+        if (!amountEl) return null;
+        const row =
+            amountEl.closest('.invoice-breakdowm-info-flex') ||
+            amountEl.closest('.invoice-breakdown-row');
+        if (row && row.id !== 'invoice-breakdown-modal') return row;
+        const parent = amountEl.parentElement;
+        if (parent && parent.id !== 'invoice-breakdown-modal') return parent;
+        return null;
+    }
+
+    /**
+     * Updates the Webflow BDC Credits row and hides it when wallet is 0 / missing.
+     * @param {HTMLElement} modal - Invoice breakdown modal
+     * @param {Function} formatCurrency - Currency formatter used by other rows
+     * @returns {number} Credit amount subtracted from remaining balance
+     */
+    updateBdcCreditsBreakdownRow(modal, formatCurrency) {
+        const creditAmount = Math.abs(parseFloat(this.memberCreditBalance) || 0);
+        const amountEl = modal.querySelector('[invoice-breakdown-data="CreditBalance"]');
+        if (!amountEl) return 0;
+
+        // Hide label + "*automatically applied..." + amount together
+        const row = this.getBdcCreditsRow(amountEl);
+
+        if (creditAmount === 0) {
+            amountEl.textContent = '';
+            if (row) row.style.display = 'none';
+            return 0;
+        }
+
+        amountEl.textContent = formatCurrency(-creditAmount);
+        if (row) row.style.display = 'flex';
+        return creditAmount;
+    }
+
+    /**
+     * Hides the invoice breakdown modal on load and wires close handlers.
+     */
+    setupInvoiceBreakdownModal() {
+        const modal = document.getElementById('invoice-breakdown-modal');
+        if (!modal) return;
+        this.hideModal(modal);
+        this.setupInvoiceBreakdownModalClose(modal);
+    }
+
+    /**
+     * Binds background, X, and Escape close once for the breakdown modal.
+     * @param {HTMLElement} modal - Invoice breakdown modal
+     */
+    setupInvoiceBreakdownModalClose(modal) {
+        if (!modal || modal.hasAttribute('data-close-setup')) return;
+        modal.setAttribute('data-close-setup', 'true');
+        var $this = this;
+
+        const modalBg = modal.querySelector('.invoice-breakdown-modal-bg');
+        if (modalBg) {
+            modalBg.addEventListener('click', () => {
+                $this.hideModal(modal);
+            });
+        }
+
+        const closeBtn = modal.querySelector('.upsell-buy-now-close-link');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                $this.hideModal(modal);
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && (modal.classList.contains('show') || modal.style.display === 'flex')) {
+                $this.hideModal(modal);
+            }
+        });
+    }
+
+    /**
      * Shows invoice breakdown modal and sets up close functionality
      * @param {HTMLElement} modal - The invoice breakdown modal element
      * @param {Object} invoice - Invoice data to display
@@ -2399,6 +2506,9 @@ class Portal {
 
             this.updateDepositTitleLabels(modal, studentData, invoice, breakdown);
 
+            // Wallet credits sit above remaining balance and reduce what is owed
+            const appliedCredits = this.updateBdcCreditsBreakdownRow(modal, formatCurrency);
+
             // Calculate and update remaining balance
             const remainingBalanceEl = modal.querySelector('[data-cart-total="cart-total-price"]');
             if (remainingBalanceEl) {
@@ -2408,6 +2518,7 @@ class Portal {
                 if (breakdown['New Student Fee'] !== undefined) total += breakdown['New Student Fee'];
                 if (breakdown['Sibling Discount'] !== undefined) total += breakdown['Sibling Discount'];
                 if (breakdown['Deposit'] !== undefined) total -= Math.abs(breakdown['Deposit']); // Subtract deposit
+                total -= appliedCredits;
 
                 remainingBalanceEl.innerHTML = `<strong>$${Math.max(0, total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;
             }
@@ -2415,37 +2526,7 @@ class Portal {
 
         // Show the modal
         this.showModal(modal);
-
-        // Set up close functionality if not already set up
-        if (!modal.hasAttribute('data-close-setup')) {
-            modal.setAttribute('data-close-setup', 'true');
-
-            // Close on background click
-            const modalBg = modal.querySelector('.invoice-breakdown-modal-bg');
-            if (modalBg) {
-                modalBg.addEventListener('click', () => {
-                    $this.hideModal(modal);
-                });
-            }
-
-            // Close on close button click
-            const closeBtn = modal.querySelector('.upsell-buy-now-close-link');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    $this.hideModal(modal);
-                });
-            }
-
-            // Close on Escape key
-            const handleEscape = (e) => {
-                if (e.key === 'Escape' && modal.classList.contains('show')) {
-                    $this.hideModal(modal);
-                    document.removeEventListener('keydown', handleEscape);
-                }
-            };
-            document.addEventListener('keydown', handleEscape);
-        }
+        this.setupInvoiceBreakdownModalClose(modal);
     }
 
     /**
