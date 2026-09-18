@@ -90,6 +90,11 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     return match ? Number(match[0]) : 0;
   }
 
+
+  function isUnnumberedLevel(levelId) {
+    return !/\d/.test(String(levelId || ""));
+  }
+
   function clearTemplatePlaceholders(cardEl) {
     const timeWrappers = cardEl.querySelectorAll(`.${TIME_WRAPPER_CLASS}`);
     timeWrappers.forEach((wrapper) => {
@@ -273,12 +278,12 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     );
   }
 
-  // First catalog tab is Grades 5–8 (levels 1–2); second tab is Grades 9+ (level 3+).
+  // First catalog tab is Grades 5–8 (levels 1–2); second tab is Grades 9+ (level 3+ and Level X).
   function belongsInCatalogPane(levelId, paneIndex, paneCount) {
     if (paneCount < 2) {
       return true;
     }
-    const isNinePlus = getLevelNumber(levelId) >= 3;
+    const isNinePlus = getLevelNumber(levelId) >= 3 || isUnnumberedLevel(levelId);
     return paneIndex === 0 ? !isNinePlus : isNinePlus;
   }
 
@@ -286,6 +291,11 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     return [...entries].sort((a, b) => {
       const aId = String(a.classItem.levelId || "");
       const bId = String(b.classItem.levelId || "");
+      const aUnnumbered = isUnnumberedLevel(aId);
+      const bUnnumbered = isUnnumberedLevel(bId);
+      if (aUnnumbered !== bUnnumbered) {
+        return aUnnumbered ? 1 : -1;
+      }
       const aNum = getLevelNumber(aId);
       const bNum = getLevelNumber(bId);
       if (aNum !== bNum) {
