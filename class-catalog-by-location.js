@@ -113,6 +113,19 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     });
   }
 
+  // Point every Register button on the card at the API registerLink (same tab).
+  function applyRegisterLinks(rootEl, registerLink) {
+    const url = typeof registerLink === "string" ? registerLink.trim() : "";
+    if (!url) {
+      return;
+    }
+
+    rootEl.querySelectorAll("#fort-lee_register-btn").forEach((btn) => {
+      btn.setAttribute("href", url);
+      btn.removeAttribute("target");
+    });
+  }
+
   // Match class-overview: hide syllabus triggers when API has no syllabus content.
   function applyEmptySyllabusRules(apiData) {
     if (!Array.isArray(apiData)) {
@@ -209,6 +222,7 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     setTextIfFound(cardEl, ".semester-tab", firstDay ? `First day: ${firstDay}` : "Semester: Fall");
     setAllTextIfFound(rootEl, ".prerequisite-text", classItem.prerequisites || "");
     setAllTextIfFound(rootEl, ".suggested_grade-text", classItem.suggestGrade || classItem.suggest_grade || "");
+    applyRegisterLinks(rootEl, classItem.registerLink);
 
     cardEl.setAttribute("levelid", classItem.levelId || "");
     cardEl.setAttribute("data-level-id", classItem.levelId || "");
