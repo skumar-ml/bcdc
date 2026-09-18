@@ -114,15 +114,24 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
   }
 
   // Point every Register button on the card at the API registerLink (same tab).
+  // Webflow names this element as a class (`fort-lee_register-btn`), not an ID.
   function applyRegisterLinks(rootEl, registerLink) {
     const url = typeof registerLink === "string" ? registerLink.trim() : "";
     if (!url) {
       return;
     }
 
-    rootEl.querySelectorAll("#fort-lee_register-btn").forEach((btn) => {
+    rootEl.querySelectorAll(".fort-lee_register-btn, #fort-lee_register-btn").forEach((btn) => {
       btn.setAttribute("href", url);
       btn.removeAttribute("target");
+      if (btn.dataset.registerBound === "true") {
+        return;
+      }
+      btn.dataset.registerBound = "true";
+      btn.addEventListener("click", (event) => {
+        // Keep the catalog header accordion from swallowing the click.
+        event.stopPropagation();
+      });
     });
   }
 
