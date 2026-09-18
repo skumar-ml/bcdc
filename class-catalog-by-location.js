@@ -106,6 +106,13 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     }
   }
 
+  // Prerequisite / suggested-grade classnames repeat in the header and the expanded detail row.
+  function setAllTextIfFound(rootEl, selector, textValue) {
+    rootEl.querySelectorAll(selector).forEach((target) => {
+      target.textContent = textValue || "";
+    });
+  }
+
   // Match class-overview: hide syllabus triggers when API has no syllabus content.
   function applyEmptySyllabusRules(apiData) {
     if (!Array.isArray(apiData)) {
@@ -187,10 +194,11 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     });
   }
 
-  // Fill API-driven fields only — prerequisite / suggested grades stay from Webflow CMS.
+  // Fill API-driven fields, including prerequisite and suggested grades from getClassDetails.
   function fillCard(cardEl, classItem, locationEntry) {
     const firstTiming = locationEntry.timing[0] || {};
     const firstDay = firstTiming.day || "";
+    const rootEl = getDetailWrapper(cardEl);
 
     setTextIfFound(cardEl, ".fort-lee_class-label", classItem.levelName || classItem.levelId || "");
     setTextIfFound(
@@ -199,6 +207,8 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
       `Weekly meeting times (${locationEntry.locationName || ""})`
     );
     setTextIfFound(cardEl, ".semester-tab", firstDay ? `First day: ${firstDay}` : "Semester: Fall");
+    setAllTextIfFound(rootEl, ".prerequisite-text", classItem.prerequisites || "");
+    setAllTextIfFound(rootEl, ".suggested_grade-text", classItem.suggestGrade || classItem.suggest_grade || "");
 
     cardEl.setAttribute("levelid", classItem.levelId || "");
     cardEl.setAttribute("data-level-id", classItem.levelId || "");
