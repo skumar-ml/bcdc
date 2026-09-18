@@ -1,8 +1,8 @@
 /*
 
-Purpose: Renders the per-location class catalog on program location pages (Fort Lee, Westchester, Online, Livingston, Glen Rock, etc). Fetches class details for one location from the API, fills in CMS-templated catalog cards with schedule/timing data, powers the syllabus preview modal, renders the Summer offering cards, and drives the location detail dropdown toggle.
+Purpose: Renders the per-location class catalog on program location pages (Fort Lee, Westchester, Online, Livingston, Glen Rock, etc). Fetches class details for one location from the API, clones a Webflow template card once per class, fills in schedule/timing/prerequisite data, powers the syllabus preview modal, renders the Summer offering cards, and drives the location detail dropdown toggle.
 
-Brief Logic: Reads the target location's ID from window.CATALOG_LOCATION_ID (set per-page before this script loads), activates the first schedule tab, fetches getClassDetails for that location, matches API rows to existing CMS catalog cards by levelId, fills in times/labels, hides non-matching or wrong-tab cards, and wires up the syllabus modal. Separately fetches getSummerOffering for the same location and clones the summer catalog card template once per program. Also wires up the collapsible .location-header-dropdown-wapper toggle for the location detail grid.
+Brief Logic: Reads the target location's ID from window.CATALOG_LOCATION_ID (set per-page before this script loads), activates the first schedule tab, fetches getClassDetails for that location, clones the static catalog card template in each grades tab (5–8 vs 9+), fills in times/labels/register links, and wires up the syllabus modal. Separately fetches getSummerOffering for the same location and clones the summer catalog card template once per program. Also wires up the collapsible .location-header-dropdown-wapper toggle for the location detail grid.
 
 Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_API/bdcFetch from Webflow's site-wide Head code, and window.CATALOG_LOCATION_ID to be set by a small inline script on each location page before this file loads.
 
@@ -90,6 +90,11 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     return match ? Number(match[0]) : 0;
   }
 
+
+  function isUnnumberedLevel(levelId) {
+    return !/\d/.test(String(levelId || ""));
+  }
+
   function clearTemplatePlaceholders(cardEl) {
     const timeWrappers = cardEl.querySelectorAll(`.${TIME_WRAPPER_CLASS}`);
     timeWrappers.forEach((wrapper) => {
@@ -104,6 +109,35 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     if (target) {
       target.textContent = textValue || "";
     }
+  }
+
+  // Prerequisite / suggested-grade classnames repeat in the header and the expanded detail row.
+  function setAllTextIfFound(rootEl, selector, textValue) {
+    rootEl.querySelectorAll(selector).forEach((target) => {
+      target.textContent = textValue || "";
+    });
+  }
+
+  // Point every Register button on the card at the API registerLink (same tab).
+  // Webflow names this element as a class (`fort-lee_register-btn`), not an ID.
+  function applyRegisterLinks(rootEl, registerLink) {
+    const url = typeof registerLink === "string" ? registerLink.trim() : "";
+    if (!url) {
+      return;
+    }
+
+    rootEl.querySelectorAll(".fort-lee_register-btn, #fort-lee_register-btn").forEach((btn) => {
+      btn.setAttribute("href", url);
+      btn.removeAttribute("target");
+      if (btn.dataset.registerBound === "true") {
+        return;
+      }
+      btn.dataset.registerBound = "true";
+      btn.addEventListener("click", (event) => {
+        // Keep the catalog header accordion from swallowing the click.
+        event.stopPropagation();
+      });
+    });
   }
 
   // Match class-overview: hide syllabus triggers when API has no syllabus content.
@@ -187,10 +221,11 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     });
   }
 
-  // Fill API-driven fields only — prerequisite / suggested grades stay from Webflow CMS.
+  // Fill API-driven fields, including prerequisite and suggested grades from getClassDetails.
   function fillCard(cardEl, classItem, locationEntry) {
     const firstTiming = locationEntry.timing[0] || {};
     const firstDay = firstTiming.day || "";
+    const rootEl = getDetailWrapper(cardEl);
 
     setTextIfFound(cardEl, ".fort-lee_class-label", classItem.levelName || classItem.levelId || "");
     setTextIfFound(
@@ -199,9 +234,18 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
       `Weekly meeting times (${locationEntry.locationName || ""})`
     );
     setTextIfFound(cardEl, ".semester-tab", firstDay ? `First day: ${firstDay}` : "Semester: Fall");
+    setAllTextIfFound(rootEl, ".prerequisite-text", classItem.prerequisites || "");
+    setAllTextIfFound(rootEl, ".suggested_grade-text", classItem.suggestGrade || classItem.suggest_grade || "");
+    applyRegisterLinks(rootEl, classItem.registerLink);
 
-    cardEl.setAttribute("levelid", classItem.levelId || "");
-    cardEl.setAttribute("data-level-id", classItem.levelId || "");
+    const levelId = classItem.levelId || "";
+    [cardEl, rootEl, cardEl.closest(".collection-item-fort-lee")].forEach((el) => {
+      if (!el) {
+        return;
+      }
+      el.setAttribute("levelid", levelId);
+      el.setAttribute("data-level-id", levelId);
+    });
 
     clearTemplatePlaceholders(cardEl);
     renderTimes(cardEl, locationEntry.timing || []);
@@ -211,43 +255,106 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     return cardEl.closest(DETAIL_WRAPPER_SELECTOR) || cardEl;
   }
 
-  function resolveLevelId(cardEl) {
-    const wrapper = getDetailWrapper(cardEl);
-    const raw =
-      cardEl.getAttribute("levelid") ||
-      cardEl.getAttribute("data-level-id") ||
-      (wrapper !== cardEl ? wrapper.getAttribute("levelid") : null) ||
-      (wrapper !== cardEl ? wrapper.getAttribute("data-level-id") : null);
-    return raw != null ? String(raw).trim() : "";
+  function getCloneRoot(cardEl) {
+    return (
+      cardEl.closest(".collection-item-fort-lee") ||
+      cardEl.closest(DETAIL_WRAPPER_SELECTOR) ||
+      cardEl
+    );
   }
 
-  function getPaneIndex(cardEl, tabPanes) {
-    const pane = cardEl.closest(".w-tab-pane");
-    if (!pane || tabPanes.length === 0) {
-      return -1;
-    }
-    return tabPanes.indexOf(pane);
+  function getCloneContainer(cloneRoot, pane) {
+    return (
+      cloneRoot.closest(".collection-list-fort-lee") ||
+      cloneRoot.parentElement ||
+      pane
+    );
   }
 
-  function shouldShowInPane(levelId, paneIndex) {
-    if (paneIndex < 0 || paneIndex > 1) {
+  function getCatalogTabPanes() {
+    const root = document.querySelector(".schedule-tab-container") || document;
+    return Array.from(root.querySelectorAll(".w-tab-pane")).filter((pane) =>
+      pane.querySelector(`.${CARD_CLASS}`)
+    );
+  }
+
+  // First catalog tab is Grades 5–8 (levels 1–2); second tab is Grades 9+ (level 3+ and Level X).
+  function belongsInCatalogPane(levelId, paneIndex, paneCount) {
+    if (paneCount < 2) {
       return true;
     }
-    const n = getLevelNumber(levelId);
-    const isNinePlus = n >= 3;
-    return paneIndex === 0 ? isNinePlus : !isNinePlus;
+    const isNinePlus = getLevelNumber(levelId) >= 3 || isUnnumberedLevel(levelId);
+    return paneIndex === 0 ? !isNinePlus : isNinePlus;
   }
 
-  function buildLocationLookup(apiData) {
-    const map = new Map();
-    extractLocationClasses(apiData).forEach((entry) => {
-      const id = entry.classItem.levelId;
-      if (id == null || id === "") {
+  function sortCatalogEntries(entries) {
+    return [...entries].sort((a, b) => {
+      const aId = String(a.classItem.levelId || "");
+      const bId = String(b.classItem.levelId || "");
+      const aUnnumbered = isUnnumberedLevel(aId);
+      const bUnnumbered = isUnnumberedLevel(bId);
+      if (aUnnumbered !== bUnnumbered) {
+        return aUnnumbered ? 1 : -1;
+      }
+      const aNum = getLevelNumber(aId);
+      const bNum = getLevelNumber(bId);
+      if (aNum !== bNum) {
+        return aNum - bNum;
+      }
+      return aId.localeCompare(bId, undefined, { numeric: true, sensitivity: "base" });
+    });
+  }
+
+  function collapseCardDetails(rootEl) {
+    rootEl.querySelectorAll(".fort-lee_catalog-detail-wapper").forEach((detail) => {
+      detail.style.display = "none";
+    });
+  }
+
+  // Clone the static template card once per API class for this tab pane.
+  function renderPaneFromTemplate(pane, entries) {
+    const templateCards = Array.from(pane.querySelectorAll(`.${CARD_CLASS}`));
+    if (!templateCards.length) {
+      return;
+    }
+
+    const templateRoot = getCloneRoot(templateCards[0]);
+    const container = getCloneContainer(templateRoot, pane);
+    if (!templateRoot || !container) {
+      return;
+    }
+
+    entries.forEach((entry) => {
+      const cloneRoot = templateRoot.cloneNode(true);
+      const cardEl = cloneRoot.classList.contains(CARD_CLASS)
+        ? cloneRoot
+        : cloneRoot.querySelector(`.${CARD_CLASS}`);
+      if (!cardEl) {
         return;
       }
-      map.set(String(id).trim().toLowerCase(), entry);
+
+      cloneRoot.style.display = "";
+      fillCard(cardEl, entry.classItem, entry.locationEntry);
+      collapseCardDetails(cloneRoot);
+      container.appendChild(cloneRoot);
     });
-    return map;
+
+    templateCards.forEach((cardEl) => {
+      const root = getCloneRoot(cardEl);
+      if (root && root.parentElement) {
+        root.remove();
+      }
+    });
+
+    pane.querySelectorAll(".collection-list-fort-lee").forEach((list) => {
+      if (!list.querySelector(`.${CARD_CLASS}`)) {
+        list.style.display = "none";
+      }
+    });
+
+    pane.querySelectorAll(".w-dyn-empty").forEach((emptyEl) => {
+      emptyEl.style.display = "none";
+    });
   }
 
   async function openSyllabusModal(levelId) {
@@ -392,11 +499,11 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
       .filter(Boolean);
   }
 
-  // Walk existing CMS cards only — fill API fields hide rows with no API match.
+  // Clone the static template card in each grades tab once per matching API class.
   async function render() {
-    const catalogCards = document.querySelectorAll(`.${CARD_CLASS}`);
-    if (!catalogCards.length) {
-      console.error(`No .${CARD_CLASS} catalog cards found (CMS collection items).`);
+    const templateCards = document.querySelectorAll(`.${CARD_CLASS}`);
+    if (!templateCards.length) {
+      console.error(`No .${CARD_CLASS} catalog card template found.`);
       return;
     }
 
@@ -404,35 +511,16 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
       const apiData = await fetchData(CLASS_DETAILS_ENDPOINT);
       cachedApiData = apiData;
       syllabusDataLoaded = true;
-      const lookup = buildLocationLookup(apiData);
-      const tabPanes = Array.from(document.querySelectorAll(".w-tab-pane"));
 
-      catalogCards.forEach((cardEl) => {
-        const wrapper = getDetailWrapper(cardEl);
-        const levelKey = resolveLevelId(cardEl).toLowerCase();
-        const paneIndex = getPaneIndex(cardEl, tabPanes);
+      const entries = sortCatalogEntries(extractLocationClasses(apiData));
+      const catalogPanes = getCatalogTabPanes();
+      const panes = catalogPanes.length ? catalogPanes : [templateCards[0].closest(".w-tab-pane") || document];
 
-        // Match CMS levelId to API (case-insensitive) missing binding → hide row.
-        if (!levelKey) {
-          console.warn("Catalog card missing levelid — hiding row.", cardEl);
-          wrapper.style.display = "none";
-          return;
-        }
-
-        const entry = lookup.get(levelKey);
-        if (!entry) {
-          wrapper.style.display = "none";
-          return;
-        }
-
-        // Two-tab layout: hide CMS rows that belong in the other grades band.
-        if (tabPanes.length >= 2 && !shouldShowInPane(entry.classItem.levelId, paneIndex)) {
-          wrapper.style.display = "none";
-          return;
-        }
-
-        wrapper.style.display = "";
-        fillCard(cardEl, entry.classItem, entry.locationEntry);
+      panes.forEach((pane, paneIndex) => {
+        const paneEntries = entries.filter((entry) =>
+          belongsInCatalogPane(entry.classItem.levelId, paneIndex, panes.length)
+        );
+        renderPaneFromTemplate(pane, paneEntries);
       });
 
       applyEmptySyllabusRules(apiData);
@@ -452,7 +540,7 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
   render();
 })();
 
-// Catalog card expand/collapse — shared classnames between Fall (CMS) and Summer (API) cards.
+// Catalog card expand/collapse — shared classnames between Fall and Summer cards.
 // Detail rows default to collapsed (display: none); clicking the header toggles them open.
 (function initCatalogCardToggle() {
   const HEADER_CLASS = "fort-lee_catalog-header-wapper";
