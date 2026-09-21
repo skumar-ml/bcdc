@@ -591,6 +591,24 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
 
 // Function to render the Summer offering catalog for the current location.
 (function summerOfferingCatalogRenderer() {
+  // Summer registration is over — do not fetch getSummerOffering. Set true to restore next season.
+  const SUMMER_CATALOG_ENABLED = false;
+
+  function hideSummerCatalog() {
+    document.querySelectorAll(".location-page-summer-catalog, .summer-offering-catalog-wapper").forEach((el) => {
+      el.style.display = "none";
+    });
+  }
+
+  if (!SUMMER_CATALOG_ENABLED) {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", hideSummerCatalog);
+    } else {
+      hideSummerCatalog();
+    }
+    return;
+  }
+
   const API_BASE_URL = window.BDC_API.class;
   const LOCATION_ID = window.CATALOG_LOCATION_ID;
   if (!LOCATION_ID) {
