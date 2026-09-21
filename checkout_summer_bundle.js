@@ -1744,11 +1744,8 @@ class CheckOutWebflow {
 		return n / 100;
 	}
 
-	// Format dollars the way Webflow did ($1,800 not $1800.00).
+	// Keep two decimals so CMS 1800.00 becomes 1900.00, not 1900.
 	_formatCatalogDisplayAmount(dollars) {
-		if (Math.abs(dollars - Math.round(dollars)) < 0.005) {
-			return this.numberWithCommas(String(Math.round(dollars)));
-		}
 		return this.numberWithCommas(dollars.toFixed(2));
 	}
 
