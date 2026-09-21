@@ -98,6 +98,9 @@ class CheckOutWebflow {
 	constructor(apiBaseUrl, memberData) {
 		this.baseUrl = apiBaseUrl;
 		this.memberData = memberData;
+		// Dollars from getSummerSessionDetails achPrice/cardPrice (cents / 100).
+		this._catalogAchDollars = 0;
+		this._catalogCardDollars = 0;
 		// Wipe stale checkout localStorage if the user just came back from a
 		// successful Stripe payment (referrer = /payment-confirmation). Must
 		// run before any localStorage reads so the form doesn't prefill old
@@ -1710,6 +1713,10 @@ class CheckOutWebflow {
 
 	// Base summer core deposit before any upsell or card-fee adjustments.
 	_getBaseCoreDepositAmount() {
+		// Catalog from Mongo wins over Webflow / stale $coreData.
+		if (this._catalogAchDollars > 0) {
+			return this._catalogAchDollars;
+		}
 		var base = 0;
 		if (this.$coreData) {
 			if (this.$coreData._baseAmount != null) {
@@ -1728,6 +1735,72 @@ class CheckOutWebflow {
 			base = parseFloat(String(this.memberData.achAmount).replace(/,/g, '')) || 0;
 		}
 		return isNaN(base) ? 0 : base;
+	}
+
+	// Mongo achPrice/cardPrice are cents; cart UI and checkout payload use dollars.
+	_catalogCentsToDollars(cents) {
+		var n = parseInt(cents, 10);
+		if (isNaN(n) || n <= 0) return null;
+		return n / 100;
+	}
+
+	// Format dollars the way Webflow did ($1,800 not $1800.00).
+	_formatCatalogDisplayAmount(dollars) {
+		if (Math.abs(dollars - Math.round(dollars)) < 0.005) {
+			return this.numberWithCommas(String(Math.round(dollars)));
+		}
+		return this.numberWithCommas(dollars.toFixed(2));
+	}
+
+	// Keep $coreData / selected core row on the catalog ACH amount.
+	_syncCoreDataFromCatalog() {
+		var ach = this._catalogAchDollars;
+		if (!(ach > 0) || !this.$coreData) return;
+		var bundleDiscount = parseFloat(this.$coreData._bundleDiscount || 0) || 0;
+		if (isNaN(bundleDiscount)) bundleDiscount = 0;
+		this.$coreData._baseAmount = ach;
+		this.$coreData.amount = ach;
+		this.$coreData.disc_amount = this.numberWithCommas(ach.toFixed(2));
+		this.$coreData._bundleDiscountedAmount = (ach - bundleDiscount).toFixed(2);
+		var coreId = this.$coreData.upsellProgramId;
+		if (Array.isArray(this.$selectedProgram)) {
+			this.$selectedProgram.forEach(function (program) {
+				if (program && program.upsellProgramId === coreId) {
+					program._baseAmount = ach;
+					program.amount = ach;
+					program.disc_amount = this.$coreData.disc_amount;
+					program._bundleDiscountedAmount = this.$coreData._bundleDiscountedAmount;
+				}
+			}, this);
+		}
+	}
+
+	// Overwrite Webflow CMS cart price with summer_program_details cents.
+	applySummerCatalogPrices(apiData) {
+		var achDollars = this._catalogCentsToDollars(apiData && apiData.achPrice);
+		if (achDollars == null) return;
+		this._catalogAchDollars = achDollars;
+		var cardDollars = this._catalogCentsToDollars(apiData && apiData.cardPrice);
+		if (cardDollars != null) this._catalogCardDollars = cardDollars;
+
+		this.memberData.achAmount = String(achDollars);
+		if (cardDollars != null) this.memberData.cardAmount = String(cardDollars);
+
+		var formatted = this._formatCatalogDisplayAmount(achDollars);
+		var coreInput = document.getElementById("core_product_price");
+		if (coreInput) coreInput.value = formatted;
+
+		document.querySelectorAll("[data-stripe='totalDepositPrice']").forEach(function (el) {
+			el.innerHTML = "$" + formatted;
+			el.setAttribute("data-stripe-price", formatted);
+		});
+		var grayElem = document.querySelector(".current-price-gray");
+		if (grayElem) grayElem.innerHTML = "$" + formatted;
+
+		var totalAmountInput = document.getElementById("totalAmount");
+		if (totalAmountInput) totalAmountInput.value = String(achDollars);
+
+		this._syncCoreDataFromCatalog();
 	}
 
 	// Reset Deposit (Due Now) and payment totals after Chrome back from Stripe.
@@ -1990,6 +2063,8 @@ class CheckOutWebflow {
 			spinner.style.display = 'block';
 			// API call
 			const data = await this.fetchData('getSummerSessionDetails/' + this.memberData.memberId + '/' + this.memberData.programId);
+			// Paint Mongo catalog over the Webflow CMS $1,800 (or whatever is baked in).
+			this.applySummerCatalogPrices(data);
 			// Display summer session
 			this.displaySessionsData(data)
 			this.setupLocationContainerSelection();
@@ -2510,7 +2585,11 @@ class CheckOutWebflow {
 		if (this.memberData.achAmount && typeof this.memberData.achAmount === "string") {
 			achAmount = parseFloat(this.memberData.achAmount.replace(/,/g, ""));
 		}
-		// Prefer the live Webflow deposit as the core base (e.g. half-payment $1,145).
+		// Mongo catalog wins over Webflow CMS so a DB price change shows in the cart.
+		if (this._catalogAchDollars > 0) {
+			depositBase = this._catalogAchDollars;
+		}
+		// Prefer catalog, then live Webflow deposit (e.g. half-payment $1,145).
 		if (depositBase > 0) {
 			disc_amount = depositBase.toFixed(2);
 			discounted_amount = (depositBase - bundleDiscount).toFixed(2);
@@ -2544,6 +2623,8 @@ class CheckOutWebflow {
 		// Paint initial totals immediately so users see price without waiting for full card render loop.
 		this.applyInitialBundleTotals(coreData.amount);
         this.$coreData = coreData;
+		// Upsell fetch can finish before session API; re-apply catalog onto $coreData.
+		this._syncCoreDataFromCatalog();
         this.$selectedProgram = [coreData, ...this.$selectedProgram.filter(program => program.upsellProgramId !== coreData.upsellProgramId)];
         var bundlePopUpText = creEl("p", "bundle-pop-up-text");
         bundlePopUpText.innerHTML = "*To get the bundle benefits, a future session must be selected and the full tuition is due at class registration.";
