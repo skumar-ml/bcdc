@@ -1102,7 +1102,8 @@ class CheckOutWebflow {
 		var studentGender = document.getElementById('Student-Gender');
 		var prevStudent = document.getElementById('prevStudent-2');
 		var requestAchAmount = this.getCheckoutRequestAmount();
-		var requestCardAmount = (parseFloat(requestAchAmount) + 0.3) / 0.971;
+		// Core card cents come from Mongo cardPrice, not a second (ACH+0.30)/0.971 pass.
+		var requestCardAmount = this._cardDollarsFromAchTotal(requestAchAmount, 1);
 		
 		//Utm Source
 		let localUtmSource = localStorage.getItem("utm_source");
@@ -1747,6 +1748,22 @@ class CheckOutWebflow {
 	// Keep two decimals so CMS 1800.00 becomes 1900.00, not 1900.
 	_formatCatalogDisplayAmount(dollars) {
 		return this.numberWithCommas(dollars.toFixed(2));
+	}
+
+	// Card toggle must show Mongo cardPrice ($1,379.51), not (ACH+0.30)/0.971 ($1,385.48).
+	_cardDollarsFromAchTotal(achTotal, programCount) {
+		var ach = parseFloat(achTotal) || 0;
+		var count = programCount || 1;
+		if (ach <= 0) return 0;
+		if (this._catalogCardDollars > 0 && this._catalogAchDollars > 0) {
+			var extraAch = ach - this._catalogAchDollars;
+			if (extraAch <= 0.005) {
+				return this._catalogCardDollars;
+			}
+			var extraCount = Math.max(count - 1, 1);
+			return this._catalogCardDollars + (extraAch + extraCount * 0.3) / 0.971;
+		}
+		return (ach + count * 0.3) / 0.971;
 	}
 
 	// Keep $coreData / selected core row on the catalog ACH amount.
@@ -3174,7 +3191,7 @@ class CheckOutWebflow {
 				}
 			} catch (e) { /* keep default */ }
 		}
-		var cardTotal = achTotal > 0 ? (achTotal + programCount * 0.3) / 0.971 : 0;
+		var cardTotal = this._cardDollarsFromAchTotal(achTotal, programCount);
 		return { achTotal: achTotal, cardTotal: cardTotal, programCount: programCount };
 	}
 
@@ -3656,20 +3673,15 @@ class CheckOutWebflow {
 		}
 
 		var achBaseAmount = achFee(coreBaseAch);
-		var cardBaseAmount = cardFee(coreBaseAch);
+		// Core card is Mongo cardPrice; add-ons still use the old per-item fee.
+		var cardBaseAmount = this._catalogCardDollars > 0
+			? this._catalogCardDollars
+			: cardFee(coreBaseAch);
 		var achUpsellAmount = upsellPrograms.reduce((total, program) => total + achFee(parseAmount(program)), 0);
 		var cardUpsellAmount = upsellPrograms.reduce((total, program) => total + cardFee(parseAmount(program)), 0);
 
-		// Grand totals mirror Tab 1 / Tab 2 formulas.
-		var achSum;
-		var cardSum;
-		if (selectedPrograms.length > 0) {
-			achSum = selectedPrograms.reduce((total, program) => total + achFee(parseAmount(program)), 0);
-			cardSum = selectedPrograms.reduce((total, program) => total + cardFee(parseAmount(program)), 0);
-		} else {
-			achSum = achBaseAmount;
-			cardSum = cardBaseAmount;
-		}
+		var achSum = achBaseAmount + achUpsellAmount;
+		var cardSum = cardBaseAmount + cardUpsellAmount;
 
 		var result = {
 			ach: achSum,
