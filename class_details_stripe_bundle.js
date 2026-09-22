@@ -396,24 +396,34 @@ class classDetailsStripe extends parentLogin {
     if (registration) {
       registration.style.display = "none";
     }
-    // Logic to check if the program is a bundle
-    await this.fetchData("getYearLongBundleDetails/" + this.webflowMemberId)
+    // Call with memberId when logged in; without when logged out
+    // (API still returns pre-reg timing / coming-soon state either way)
+    const memberId = this.webflowMemberId;
+    const hasMemberId = memberId && memberId !== "undefined" && memberId !== "null";
+    const bundleDetailsEndpoint = hasMemberId
+      ? "getYearLongBundleDetails/" + memberId
+      : "getYearLongBundleDetails";
+
+    await this.fetchData(bundleDetailsEndpoint)
       .then((data) => {
-        if (data.message && data.data.length == 0 && data.message == "Either pre-registration not yet started or already ended") {
+        const bundleData = Array.isArray(data.data) ? data.data : [];
+        const message = data.message || "";
+
+        if (bundleData.length == 0 && message == "Either pre-registration not yet started or already ended") {
           isBundle = "Normal";
-        } else if (data.message == "Pre-registration is coming soon") {
+        } else if (message == "Pre-registration is coming soon") {
           // currentDate < preRegStartDate
           isBundle = "Pre-Registration-Soon";
-        } else if (data.data && data.data.length == 0 && data.message == "Pre-registration is going on") {
+        } else if (bundleData.length == 0 && message == "Pre-registration is going on") {
           isBundle = "Pre-Registration-Info";
-        } else if (data.data && data.data.length > 0 && data.message == "Pre-registration is going on") {
+        } else if (hasMemberId && bundleData.length > 0 && message == "Pre-registration is going on") {
           isBundle = "Bundle-Purchase";
         } else {
           isBundle = "Normal";
         }
         // TODO: Explain what is tracked in allBundlePrograms
         // it's all available bundle programs for this member
-        this.$allBundlePrograms = data.data;
+        this.$allBundlePrograms = bundleData;
 
         // Active pre-registration: countdown until regular registration begins
         if (data.preRegistrationEndDate && isBundle == "Pre-Registration-Info") {
@@ -423,7 +433,7 @@ class classDetailsStripe extends parentLogin {
           }, 1000);
         }
 
-        // Coming soon: countdown until pre-registration opens + set session title
+        // Coming soon: countdown until pre-registration opens; show end date as regular registration begin
         if (isBundle == "Pre-Registration-Soon") {
           if (data.upcomingSessionName) {
             document.querySelectorAll('[data-name="session-tittle"]').forEach((el) => {
@@ -431,14 +441,20 @@ class classDetailsStripe extends parentLogin {
             });
           }
           const soonCountdownDate = data.preRegistrationStartDate || data.preRegistrationEndDate;
+          const regularRegistrationBeginDate = data.preRegistrationEndDate || soonCountdownDate;
           if (soonCountdownDate) {
-            this.updateCountdown(soonCountdownDate);
+            this.updateCountdown(soonCountdownDate, regularRegistrationBeginDate);
             setInterval(() => {
-              this.updateCountdown(soonCountdownDate);
+              this.updateCountdown(soonCountdownDate, regularRegistrationBeginDate);
             }, 1000);
           }
         }
 
+      })
+      .catch((error) => {
+        console.error("Error fetching year-long bundle details:", error);
+        isBundle = "Normal";
+        this.$allBundlePrograms = [];
       });
 
     this.$isCheckoutFlow = isBundle;
@@ -4166,20 +4182,21 @@ class classDetailsStripe extends parentLogin {
       });
    // }
   }
-  updateCountdown(preRegistrationEndDate) {
-    // Registration start date
-    // Convert UTC date string (e.g., "2025-10-08 03:45:00") to local date-time string in ISO format
-    // Replace space with 'T' and append 'Z' to indicate UTC
-    if (typeof preRegistrationEndDate === "string" && preRegistrationEndDate.indexOf(" ") > -1 && preRegistrationEndDate.indexOf("T") === -1) {
-      preRegistrationEndDate = preRegistrationEndDate.replace(" ", "T") + "Z";
-    }
+  updateCountdown(countdownTargetDate, registrationBeginDate) {
+    // Convert UTC date string (e.g., "2025-10-08 03:45:00") to ISO + Z
+    const toUtcIso = (dateStr) => {
+      if (typeof dateStr === "string" && dateStr.indexOf(" ") > -1 && dateStr.indexOf("T") === -1) {
+        return dateStr.replace(" ", "T") + "Z";
+      }
+      return dateStr;
+    };
 
-    var registrationStartDate = preRegistrationEndDate;
-    // change year for the 2026 session dynamicly 
-    //registrationStartDate = registrationStartDate.replace(new Date().getFullYear(), new Date().getFullYear() + 1);
+    countdownTargetDate = toUtcIso(countdownTargetDate);
+    // "Regular registration will begin on" — defaults to countdown target when not provided
+    registrationBeginDate = toUtcIso(registrationBeginDate || countdownTargetDate);
 
     const now = new Date().getTime();
-    const registrationDate = new Date(registrationStartDate).getTime();
+    const registrationDate = new Date(countdownTargetDate).getTime();
     const timeLeft = registrationDate - now;
 
     const setCountdownText = (attr, value) => {
@@ -4187,6 +4204,22 @@ class classDetailsStripe extends parentLogin {
         el.textContent = value;
       });
     };
+
+    // Format and update the registration begin date (always, even if countdown is over)
+    const registrationDateTime = new Date(registrationBeginDate);
+    const options = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    };
+    const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
+    document.querySelectorAll('[data-registration-begin="date"]').forEach((el) => {
+      el.textContent = formattedDate;
+    });
 
     // If countdown is over, set all to 0
     if (timeLeft < 0) {
@@ -4208,22 +4241,6 @@ class classDetailsStripe extends parentLogin {
     setCountdownText("hours", hours);
     setCountdownText("minutes", minutes);
     setCountdownText("seconds", seconds);
-
-    // Format and update the registration begin date
-    const registrationDateTime = new Date(registrationStartDate);
-    const options = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short'
-    };
-    const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
-    document.querySelectorAll('[data-registration-begin="date"]').forEach((el) => {
-      el.textContent = formattedDate;
-    });
   }
   initBriefs() {
     this.selectedBriefs = [];
