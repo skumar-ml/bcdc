@@ -2,7 +2,7 @@
 
 Purpose: Manages class detail page for bundle purchases with Stripe payment processing. Handles pre-registration flow, bundle program selection, location selection, supplementary programs, and briefs integration.
 
-Brief Logic: Checks if program is a bundle and determines checkout flow (Normal, Pre-Registration-Info, or Bundle-Purchase). Fetches class details, handles location and session selection, manages supplementary programs and briefs, calculates pricing with discounts, and processes payment through Stripe.
+Brief Logic: Checks if program is a bundle and determines checkout flow (Normal, Pre-Registration-Info, Pre-Registration-Soon, or Bundle-Purchase). Fetches class details, handles location and session selection, manages supplementary programs and briefs, calculates pricing with discounts, and processes payment through Stripe.
 
 Are there any dependent JS files: Yes, Utils.js
 Utils.js provides common functionality for modal management, credit data fetching, and API calls.
@@ -330,7 +330,7 @@ class classDetailsStripe extends parentLogin {
   $selectedProgram = [];
   $oldSelectedProgram = [];
   $coreData = [];
-  $isCheckoutFlow = "Normal"; // Normal | Pre-Registration-Info | Bundle-Purchase
+  $isCheckoutFlow = "Normal"; // Normal | Pre-Registration-Info | Pre-Registration-Soon | Bundle-Purchase
   $selectedBundleProgram = null;
   $allBundlePrograms = [];
   $allSuppData = [];
@@ -384,10 +384,14 @@ class classDetailsStripe extends parentLogin {
   // checkBundleProgram
   async checkBundleProgram() {
     let preRegistration = document.querySelector("[data-checkout='pre-registration']");
+    let preRegistrationSoon = document.querySelector("[data-checkout='pre-registration-soon']");
     let registration = document.querySelector("[data-checkout='registration']");
     let isBundle = "Pre-Registration-Info";
     if (preRegistration) {
       preRegistration.style.display = "none";
+    }
+    if (preRegistrationSoon) {
+      preRegistrationSoon.style.display = "none";
     }
     if (registration) {
       registration.style.display = "none";
@@ -397,8 +401,10 @@ class classDetailsStripe extends parentLogin {
       .then((data) => {
         if (data.message && data.data.length == 0 && data.message == "Either pre-registration not yet started or already ended") {
           isBundle = "Normal";
-        }
-        else if (data.data && data.data.length == 0 && data.message == "Pre-registration is going on") {
+        } else if (data.message == "Pre-registration is coming soon") {
+          // currentDate < preRegStartDate
+          isBundle = "Pre-Registration-Soon";
+        } else if (data.data && data.data.length == 0 && data.message == "Pre-registration is going on") {
           isBundle = "Pre-Registration-Info";
         } else if (data.data && data.data.length > 0 && data.message == "Pre-registration is going on") {
           isBundle = "Bundle-Purchase";
@@ -409,13 +415,28 @@ class classDetailsStripe extends parentLogin {
         // it's all available bundle programs for this member
         this.$allBundlePrograms = data.data;
 
-        // TODO: Shouldn't we only be calling this if isBundle is Pre-Registration-Info?
-        // Updated condition to check isBundle value
+        // Active pre-registration: countdown until regular registration begins
         if (data.preRegistrationEndDate && isBundle == "Pre-Registration-Info") {
           this.updateCountdown(data.preRegistrationEndDate);
           setInterval(() => {
             this.updateCountdown(data.preRegistrationEndDate);
           }, 1000);
+        }
+
+        // Coming soon: countdown until pre-registration opens + set session title
+        if (isBundle == "Pre-Registration-Soon") {
+          if (data.upcomingSessionName) {
+            document.querySelectorAll('[data-name="session-tittle"]').forEach((el) => {
+              el.textContent = data.upcomingSessionName;
+            });
+          }
+          const soonCountdownDate = data.preRegistrationStartDate || data.preRegistrationEndDate;
+          if (soonCountdownDate) {
+            this.updateCountdown(soonCountdownDate);
+            setInterval(() => {
+              this.updateCountdown(soonCountdownDate);
+            }, 1000);
+          }
         }
 
       });
@@ -427,8 +448,15 @@ class classDetailsStripe extends parentLogin {
     if (preRegistration) {
       preRegistration.style.display = isBundle == "Pre-Registration-Info" ? "block" : "none";
     }
+    if (preRegistrationSoon) {
+      preRegistrationSoon.style.display = isBundle == "Pre-Registration-Soon" ? "block" : "none";
+    }
     if (registration) {
-      registration.style.display = isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none";
+      if (isBundle == "Pre-Registration-Soon") {
+        registration.style.display = "block";
+      } else {
+        registration.style.display = isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none";
+      }
     }
     if (isBundle == "Bundle-Purchase") {
       this.updateDepositePriceForBundle()
@@ -4154,12 +4182,18 @@ class classDetailsStripe extends parentLogin {
     const registrationDate = new Date(registrationStartDate).getTime();
     const timeLeft = registrationDate - now;
 
+    const setCountdownText = (attr, value) => {
+      document.querySelectorAll(`[data-countdown="${attr}"]`).forEach((el) => {
+        el.textContent = value;
+      });
+    };
+
     // If countdown is over, set all to 0
     if (timeLeft < 0) {
-      document.querySelector('[data-countdown="days"]').textContent = '0';
-      document.querySelector('[data-countdown="hours"]').textContent = '0';
-      document.querySelector('[data-countdown="minutes"]').textContent = '0';
-      document.querySelector('[data-countdown="seconds"]').textContent = '0';
+      setCountdownText("days", "0");
+      setCountdownText("hours", "0");
+      setCountdownText("minutes", "0");
+      setCountdownText("seconds", "0");
       return;
     }
 
@@ -4169,11 +4203,11 @@ class classDetailsStripe extends parentLogin {
     const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
-    // Update DOM elements
-    document.querySelector('[data-countdown="days"]').textContent = days;
-    document.querySelector('[data-countdown="hours"]').textContent = hours;
-    document.querySelector('[data-countdown="minutes"]').textContent = minutes;
-    document.querySelector('[data-countdown="seconds"]').textContent = seconds;
+    // Update DOM elements (all matching nodes — hero + coming-soon sections)
+    setCountdownText("days", days);
+    setCountdownText("hours", hours);
+    setCountdownText("minutes", minutes);
+    setCountdownText("seconds", seconds);
 
     // Format and update the registration begin date
     const registrationDateTime = new Date(registrationStartDate);
@@ -4187,7 +4221,9 @@ class classDetailsStripe extends parentLogin {
       timeZoneName: 'short'
     };
     const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
-    document.querySelector('[data-registration-begin="date"]').textContent = formattedDate;
+    document.querySelectorAll('[data-registration-begin="date"]').forEach((el) => {
+      el.textContent = formattedDate;
+    });
   }
   initBriefs() {
     this.selectedBriefs = [];
