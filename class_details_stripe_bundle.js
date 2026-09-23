@@ -383,28 +383,23 @@ class classDetailsStripe extends parentLogin {
   }
   // checkBundleProgram
   async checkBundleProgram() {
-    let preRegistration = document.querySelector("[data-checkout='pre-registration']");
-    let preRegistrationSoon = document.querySelector("[data-checkout='pre-registration-soon']");
-    let registration = document.querySelector("[data-checkout='registration']");
+    // Use querySelectorAll — these blocks are duplicated on the page (one inside
+    // data-ms-content="members", one inside data-ms-content="!members").
+    const preRegistrationEls = document.querySelectorAll("[data-checkout='pre-registration']");
+    const preRegistrationSoonEls = document.querySelectorAll("[data-checkout='pre-registration-soon']");
+    const registrationEls = document.querySelectorAll("[data-checkout='registration']");
     let isBundle = "Pre-Registration-Info";
-    if (preRegistration) {
-      preRegistration.style.display = "none";
-    }
-    if (preRegistrationSoon) {
-      preRegistrationSoon.style.display = "none";
-    }
-    if (registration) {
-      registration.style.display = "none";
-    }
-    // Call with memberId when logged in; without when logged out
-    // (API still returns pre-reg timing / coming-soon state either way)
+    bdcSetDisplayAll(preRegistrationEls, "none");
+    bdcSetDisplayAll(preRegistrationSoonEls, "none");
+    bdcSetDisplayAll(registrationEls, "none");
+    // Same camp endpoint for logged-in (with memberId) and logged-out (without)
     const memberId = this.webflowMemberId;
     const hasMemberId = memberId && memberId !== "undefined" && memberId !== "null";
     const bundleDetailsEndpoint = hasMemberId
       ? "getYearLongBundleDetails/" + memberId
       : "getYearLongBundleDetails";
 
-    await this.fetchData(bundleDetailsEndpoint)
+    await this.fetchData(bundleDetailsEndpoint, BDC_YEAR_LONG_BUNDLE_API_BASE)
       .then((data) => {
         const bundleData = Array.isArray(data.data) ? data.data : [];
         const message = data.message || "";
@@ -459,20 +454,13 @@ class classDetailsStripe extends parentLogin {
 
     this.$isCheckoutFlow = isBundle;
 
-    // TODO: I don't understand why we have if (preRegistration). Isn't this always true, since we are selecting the element? Ditto below with registration. Could be that I'm just not familiar with this design-pattern. Seems like we should just have if-else with isBundle instead.
-    // Yes, it's always true, since we are selecting the element. But we need to check if it's there first. 
-    if (preRegistration) {
-      preRegistration.style.display = isBundle == "Pre-Registration-Info" ? "block" : "none";
-    }
-    if (preRegistrationSoon) {
-      preRegistrationSoon.style.display = isBundle == "Pre-Registration-Soon" ? "block" : "none";
-    }
-    if (registration) {
-      if (isBundle == "Pre-Registration-Soon") {
-        registration.style.display = "block";
-      } else {
-        registration.style.display = isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none";
-      }
+    // Toggle every matching block (duplicated across members / !members sections).
+    bdcSetDisplayAll(preRegistrationEls, isBundle == "Pre-Registration-Info" ? "block" : "none");
+    bdcSetDisplayAll(preRegistrationSoonEls, isBundle == "Pre-Registration-Soon" ? "block" : "none");
+    if (isBundle == "Pre-Registration-Soon") {
+      bdcSetDisplayAll(registrationEls, "block");
+    } else {
+      bdcSetDisplayAll(registrationEls, isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none");
     }
     if (isBundle == "Bundle-Purchase") {
       this.updateDepositePriceForBundle()
@@ -4183,64 +4171,9 @@ class classDetailsStripe extends parentLogin {
    // }
   }
   updateCountdown(countdownTargetDate, registrationBeginDate) {
-    // Convert UTC date string (e.g., "2025-10-08 03:45:00") to ISO + Z
-    const toUtcIso = (dateStr) => {
-      if (typeof dateStr === "string" && dateStr.indexOf(" ") > -1 && dateStr.indexOf("T") === -1) {
-        return dateStr.replace(" ", "T") + "Z";
-      }
-      return dateStr;
-    };
-
-    countdownTargetDate = toUtcIso(countdownTargetDate);
-    // "Regular registration will begin on" — defaults to countdown target when not provided
-    registrationBeginDate = toUtcIso(registrationBeginDate || countdownTargetDate);
-
-    const now = new Date().getTime();
-    const registrationDate = new Date(countdownTargetDate).getTime();
-    const timeLeft = registrationDate - now;
-
-    const setCountdownText = (attr, value) => {
-      document.querySelectorAll(`[data-countdown="${attr}"]`).forEach((el) => {
-        el.textContent = value;
-      });
-    };
-
-    // Format and update the registration begin date (always, even if countdown is over)
-    const registrationDateTime = new Date(registrationBeginDate);
-    const options = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short'
-    };
-    const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
-    document.querySelectorAll('[data-registration-begin="date"]').forEach((el) => {
-      el.textContent = formattedDate;
-    });
-
-    // If countdown is over, set all to 0
-    if (timeLeft < 0) {
-      setCountdownText("days", "0");
-      setCountdownText("hours", "0");
-      setCountdownText("minutes", "0");
-      setCountdownText("seconds", "0");
-      return;
-    }
-
-    // Calculate time units
-    const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-    // Update DOM elements (all matching nodes — hero + coming-soon sections)
-    setCountdownText("days", days);
-    setCountdownText("hours", hours);
-    setCountdownText("minutes", minutes);
-    setCountdownText("seconds", seconds);
+    // Delegates to the shared module-level helper so the logged-out guest
+    // bootstrap and this instance render the countdown identically.
+    bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate);
   }
   initBriefs() {
     this.selectedBriefs = [];
@@ -4625,4 +4558,146 @@ class classDetailsStripe extends parentLogin {
   static isMobile() {
     return window.innerWidth <= 766;
   }
+}
+
+// Shared helpers + guest bootstrap for pre-registration UI (logged-out visitors
+// don't get a classDetailsStripe instance, so we fetch the countdown for them).
+
+const BDC_YEAR_LONG_BUNDLE_API_BASE =
+  "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/";
+
+// Toggle display on every node in a NodeList (blocks are duplicated across the
+// members / !members Memberstack sections).
+function bdcSetDisplayAll(nodeList, value) {
+  if (!nodeList) return;
+  nodeList.forEach((el) => {
+    el.style.display = value;
+  });
+}
+
+// Render the pre-registration countdown + "Regular registration will begin on"
+// date into all matching nodes. Used by both classDetailsStripe.updateCountdown
+// and the guest bootstrap.
+function bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate) {
+  // Convert UTC date string (e.g., "2025-10-08 03:45:00") to ISO + Z
+  const toUtcIso = (dateStr) => {
+    if (typeof dateStr === "string" && dateStr.indexOf(" ") > -1 && dateStr.indexOf("T") === -1) {
+      return dateStr.replace(" ", "T") + "Z";
+    }
+    return dateStr;
+  };
+
+  countdownTargetDate = toUtcIso(countdownTargetDate);
+  // "Regular registration will begin on" — defaults to countdown target when not provided
+  registrationBeginDate = toUtcIso(registrationBeginDate || countdownTargetDate);
+
+  const now = new Date().getTime();
+  const registrationDate = new Date(countdownTargetDate).getTime();
+  const timeLeft = registrationDate - now;
+
+  const setCountdownText = (attr, value) => {
+    document.querySelectorAll(`[data-countdown="${attr}"]`).forEach((el) => {
+      el.textContent = value;
+    });
+  };
+
+  // Format and update the registration begin date (always, even if countdown is over)
+  const registrationDateTime = new Date(registrationBeginDate);
+  const options = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short'
+  };
+  const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
+  document.querySelectorAll('[data-registration-begin="date"]').forEach((el) => {
+    el.textContent = formattedDate;
+  });
+
+  // If countdown is over, set all to 0
+  if (timeLeft < 0) {
+    setCountdownText("days", "0");
+    setCountdownText("hours", "0");
+    setCountdownText("minutes", "0");
+    setCountdownText("seconds", "0");
+    return;
+  }
+
+  // Calculate time units
+  const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+  // Update DOM elements (all matching nodes — hero + coming-soon sections)
+  setCountdownText("days", days);
+  setCountdownText("hours", hours);
+  setCountdownText("minutes", minutes);
+  setCountdownText("seconds", seconds);
+}
+
+// Returns the logged-in Memberstack member id, or null when logged out.
+function bdcGetLoggedInMemberId() {
+  try {
+    if (window.globalMemberId) return window.globalMemberId;
+    const raw = localStorage.getItem("memberstack");
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return (data && data.information && data.information.id) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Guest-only: fetch pre-registration state and drive the coming-soon countdown.
+async function bdcInitGuestPreRegistrationSoon() {
+  const soonEls = document.querySelectorAll("[data-checkout='pre-registration-soon']");
+  if (!soonEls.length) return;
+
+  // Logged-in visitors are already handled by the classDetailsStripe instance.
+  if (bdcGetLoggedInMemberId()) return;
+
+  try {
+    const response = await bdcFetch(
+      BDC_YEAR_LONG_BUNDLE_API_BASE + "getYearLongBundleDetails"
+    );
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    const data = await response.json();
+
+    if ((data.message || "") !== "Pre-registration is coming soon") {
+      bdcSetDisplayAll(soonEls, "none");
+      return;
+    }
+
+    bdcSetDisplayAll(soonEls, "block");
+    bdcSetDisplayAll(document.querySelectorAll("[data-checkout='registration']"), "block");
+
+    if (data.upcomingSessionName) {
+      document.querySelectorAll('[data-name="session-tittle"]').forEach((el) => {
+        el.textContent = data.upcomingSessionName;
+      });
+    }
+
+    const countdownTarget = data.preRegistrationStartDate || data.preRegistrationEndDate;
+    const registrationBegin = data.preRegistrationEndDate || countdownTarget;
+    if (countdownTarget) {
+      bdcWritePreRegCountdown(countdownTarget, registrationBegin);
+      setInterval(() => {
+        bdcWritePreRegCountdown(countdownTarget, registrationBegin);
+      }, 1000);
+    }
+  } catch (error) {
+    console.error("[pre-registration-soon] guest fetch failed:", error);
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bdcInitGuestPreRegistrationSoon);
+} else {
+  bdcInitGuestPreRegistrationSoon();
 }
