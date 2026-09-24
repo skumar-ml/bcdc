@@ -331,6 +331,8 @@ class classDetailsStripe extends parentLogin {
   $oldSelectedProgram = [];
   $coreData = [];
   $isCheckoutFlow = "Normal"; // Normal | Pre-Registration-Info | Pre-Registration-Soon | Bundle-Purchase
+  // True when getYearLongBundleDetails says "Pre-registration is going on"
+  $isBundlePreRegistration = false;
   $selectedBundleProgram = null;
   $allBundlePrograms = [];
   $allSuppData = [];
@@ -412,8 +414,11 @@ class classDetailsStripe extends parentLogin {
           isBundle = "Pre-Registration-Soon";
         } else if (bundleData.length == 0 && message == "Pre-registration is going on") {
           isBundle = "Pre-Registration-Info";
+          // Student profiles API needs isBundle=true during this window
+          this.$isBundlePreRegistration = true;
         } else if (hasMemberId && bundleData.length > 0 && message == "Pre-registration is going on") {
           isBundle = "Bundle-Purchase";
+          this.$isBundlePreRegistration = true;
         } else {
           isBundle = "Normal";
         }
@@ -452,6 +457,7 @@ class classDetailsStripe extends parentLogin {
         console.error("Error fetching year-long bundle details:", error);
         isBundle = "Normal";
         this.$allBundlePrograms = [];
+        this.$isBundlePreRegistration = false;
       });
 
     this.$isCheckoutFlow = isBundle;
@@ -708,7 +714,7 @@ class classDetailsStripe extends parentLogin {
     return window.BDC_API.reporting;
   }
 
-  // Pre-Registration-Info (pre-reg going on, no bundle rows yet) needs isBundle=true
+  // Pre-registration going on: append isBundle=true for student profiles
   getCheckoutStudentProfilesEndpoint() {
     var endpoint = "getCheckoutStudentProfiles/" + this.webflowMemberId;
     if (this.$isCheckoutFlow == "Pre-Registration-Info") {
