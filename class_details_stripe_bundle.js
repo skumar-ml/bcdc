@@ -334,6 +334,9 @@ class classDetailsStripe extends parentLogin {
   $selectedBundleProgram = null;
   $allBundlePrograms = [];
   $allSuppData = [];
+  // Active academic session from getCurrentYearAndSession (used for getUpsellProgram)
+  $currentSession = "";
+  $currentYearId = "";
   // Already-enrolled modal state (set after studentEnrolled API on Next)
   _pendingAlreadyEnrolledModal = false;
   _alreadyEnrolledStudentName = "";
@@ -666,9 +669,48 @@ class classDetailsStripe extends parentLogin {
     }
   }
 
+  // Read session slug from getCurrentYearAndSession (uses API `session` field as-is).
+  async resolveUpsellSession() {
+    var sessionPayload = await this.fetchData(
+      "getCurrentYearAndSession",
+      window.BDC_API.class
+    );
+    var sessionName =
+      sessionPayload && sessionPayload.session
+        ? String(sessionPayload.session).trim().toLowerCase()
+        : "";
+    if (!sessionName) {
+      throw new Error("getCurrentYearAndSession returned no session field");
+    }
+    this.$currentSession = sessionName;
+    this.$currentYearId =
+      sessionPayload.classYearId != null ? sessionPayload.classYearId : "";
+    console.log("Resolved upsell session from getCurrentYearAndSession:", sessionName, sessionPayload);
+    return sessionName;
+  }
+
+  // Load upsells for the active session from getCurrentYearAndSession.session.
+  async fetchCurrentSessionUpsellPrograms() {
+    var upsellSession = await this.resolveUpsellSession();
+    var suppData = await this.fetchData(
+      "getUpsellProgram?session=" + encodeURIComponent(upsellSession),
+      this.typeEBaseUrl
+    );
+    return Array.isArray(suppData) ? suppData : [];
+  }
+
   // Checkout student dropdown API lives on the b4z5gqv2xj gateway (not typeFBaseUrl).
   getCheckoutStudentProfilesBaseUrl() {
     return window.BDC_API.reporting;
+  }
+
+  // Pre-Registration-Info (pre-reg going on, no bundle rows yet) needs isBundle=true
+  getCheckoutStudentProfilesEndpoint() {
+    var endpoint = "getCheckoutStudentProfiles/" + this.webflowMemberId;
+    if (this.$isCheckoutFlow == "Pre-Registration-Info") {
+      endpoint += "?isBundle=true";
+    }
+    return endpoint;
   }
 
   // Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
@@ -1403,7 +1445,8 @@ class classDetailsStripe extends parentLogin {
       );
       this.viewClassLocations(data);
       try {
-        var suppData = await this.fetchData("getUpsellProgram?session=fall", this.typeEBaseUrl);
+        // Session comes from getCurrentYearAndSession.session (e.g. winter/fall/summer)
+        var suppData = await this.fetchCurrentSessionUpsellPrograms();
         this.$allSuppData = suppData;
         // Check if there are any upsell programs
         var academicSuppData = suppData.find((item) => {
@@ -1415,7 +1458,7 @@ class classDetailsStripe extends parentLogin {
         // Onload render bundle programs
         this.createBundlePrograms(suppData);
       } catch (upsellError) {
-        console.error("Error fetching getUpsellProgramOne (fall):", upsellError);
+        console.error("Error fetching getUpsellProgram:", upsellError);
         this.hideUpsellModalAndData();
       }
       // Setup back button for browser and stripe checkout page
@@ -2725,7 +2768,7 @@ class classDetailsStripe extends parentLogin {
         data = $this.$allBundlePrograms;
       } else {
         var profilesResponse = await this.fetchData(
-          "getCheckoutStudentProfiles/" + this.webflowMemberId,
+          this.getCheckoutStudentProfilesEndpoint(),
           this.getCheckoutStudentProfilesBaseUrl()
         );
         data = this.normalizeCheckoutStudentProfiles(profilesResponse);
@@ -3037,7 +3080,7 @@ class classDetailsStripe extends parentLogin {
 
     try {
       var profilesResponse = await this.fetchData(
-        "getCheckoutStudentProfiles/" + this.webflowMemberId,
+        this.getCheckoutStudentProfilesEndpoint(),
         this.getCheckoutStudentProfilesBaseUrl()
       );
       var profiles = this.normalizeCheckoutStudentProfiles(profilesResponse)
@@ -4561,8 +4604,7 @@ class classDetailsStripe extends parentLogin {
 
 // Shared helpers + bootstrap for the pre-registration UI (guard/loader + state).
 
-const BDC_YEAR_LONG_BUNDLE_API_BASE =
-  "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/";
+const BDC_YEAR_LONG_BUNDLE_API_BASE = window.BDC_API.class;
 
 // Anti-flicker: hide all three checkout states until the API resolves which one
 // to show. Injected before paint; the shared #half-circle-spinner is the loader.
