@@ -334,6 +334,8 @@ class classDetailsStripe extends parentLogin {
   $selectedBundleProgram = null;
   $allBundlePrograms = [];
   $allSuppData = [];
+  // Active academic session from getCurrentSession (used for getUpsellProgram)
+  $currentSession = "";
   // Already-enrolled modal state (set after studentEnrolled API on Next)
   _pendingAlreadyEnrolledModal = false;
   _alreadyEnrolledStudentName = "";
@@ -631,6 +633,49 @@ class classDetailsStripe extends parentLogin {
     } catch (error) {
       console.error("Error fetching data:", error);
       throw error;
+    }
+  }
+
+  // Pull session slug out of getCurrentSession payloads (string or nested object).
+  parseCurrentSessionName(payload) {
+    if (payload == null) {
+      return "";
+    }
+    if (typeof payload === "string") {
+      return payload.trim().toLowerCase();
+    }
+    var source = payload.data != null ? payload.data : payload;
+    if (typeof source === "string") {
+      return source.trim().toLowerCase();
+    }
+    if (!source || typeof source !== "object") {
+      return "";
+    }
+    // Prefer explicit session fields the upsell API expects (fall/winter/spring/summer)
+    var raw =
+      source.session ||
+      source.sessionName ||
+      source.currentSession ||
+      source.name ||
+      "";
+    return String(raw).trim().toLowerCase();
+  }
+
+  // Asks typeE for the active academic session; falls back to fall if API is empty/down.
+  async resolveUpsellSession() {
+    try {
+      var sessionPayload = await this.fetchData("getCurrentSession", this.typeEBaseUrl);
+      var sessionName = this.parseCurrentSessionName(sessionPayload);
+      if (!sessionName) {
+        console.warn("getCurrentSession returned no session name; using fall", sessionPayload);
+        return "fall";
+      }
+      this.$currentSession = sessionName;
+      console.log("Resolved upsell session from getCurrentSession:", sessionName, sessionPayload);
+      return sessionName;
+    } catch (sessionError) {
+      console.error("Error fetching getCurrentSession; using fall:", sessionError);
+      return "fall";
     }
   }
 
@@ -1371,7 +1416,12 @@ class classDetailsStripe extends parentLogin {
       );
       this.viewClassLocations(data);
       try {
-        var suppData = await this.fetchData("getUpsellProgram?session=fall", this.typeEBaseUrl);
+        // Session comes from getCurrentSession so fall/winter/spring stays in sync with backend
+        var upsellSession = await this.resolveUpsellSession();
+        var suppData = await this.fetchData(
+          "getUpsellProgram?session=" + encodeURIComponent(upsellSession),
+          this.typeEBaseUrl
+        );
         this.$allSuppData = suppData;
         // Check if there are any upsell programs
         var academicSuppData = suppData.find((item) => {
@@ -1383,7 +1433,7 @@ class classDetailsStripe extends parentLogin {
         // Onload render bundle programs
         this.createBundlePrograms(suppData);
       } catch (upsellError) {
-        console.error("Error fetching getUpsellProgramOne (fall):", upsellError);
+        console.error("Error fetching getUpsellProgram:", upsellError);
         this.hideUpsellModalAndData();
       }
       // Setup back button for browser and stripe checkout page
