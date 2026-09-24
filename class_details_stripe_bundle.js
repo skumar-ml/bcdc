@@ -712,7 +712,7 @@ class classDetailsStripe extends parentLogin {
   getCheckoutStudentProfilesEndpoint() {
     var endpoint = "getCheckoutStudentProfiles/" + this.webflowMemberId;
     if (this.$isCheckoutFlow == "Pre-Registration-Info") {
-      endpoint += "?isBundle=true";
+      endpoint += "?isBundled=true";
     }
     return endpoint;
   }
