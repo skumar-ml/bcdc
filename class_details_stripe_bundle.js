@@ -435,10 +435,11 @@ class classDetailsStripe extends parentLogin {
           }
           const soonCountdownDate = data.preRegistrationStartDate || data.preRegistrationEndDate;
           const regularRegistrationBeginDate = data.preRegistrationEndDate || soonCountdownDate;
+          const preRegistrationBeginDate = data.preRegistrationStartDate;
           if (soonCountdownDate) {
-            this.updateCountdown(soonCountdownDate, regularRegistrationBeginDate);
+            this.updateCountdown(soonCountdownDate, regularRegistrationBeginDate, preRegistrationBeginDate);
             setInterval(() => {
-              this.updateCountdown(soonCountdownDate, regularRegistrationBeginDate);
+              this.updateCountdown(soonCountdownDate, regularRegistrationBeginDate, preRegistrationBeginDate);
             }, 1000);
           }
         }
@@ -457,7 +458,12 @@ class classDetailsStripe extends parentLogin {
     //  Pre-Registration-Info -> pre-registration      (hide pre-registration-soon + registration)
     //  Normal / Bundle-Purchase -> registration       (hide both pre-registration blocks)
     bdcSetDisplayAll(preRegistrationEls, isBundle == "Pre-Registration-Info" ? "block" : "none");
-    bdcSetDisplayAll(preRegistrationSoonEls, isBundle == "Pre-Registration-Soon" ? "block" : "none");
+    if (isBundle == "Pre-Registration-Soon") {
+      bdcRemovePreRegSoonGuard();
+      bdcSetDisplayAll(preRegistrationSoonEls, "block");
+    } else {
+      bdcSetDisplayAll(preRegistrationSoonEls, "none");
+    }
     bdcSetDisplayAll(registrationEls, isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none");
     if (isBundle == "Bundle-Purchase") {
       this.updateDepositePriceForBundle()
@@ -4167,10 +4173,10 @@ class classDetailsStripe extends parentLogin {
       });
    // }
   }
-  updateCountdown(countdownTargetDate, registrationBeginDate) {
+  updateCountdown(countdownTargetDate, registrationBeginDate, preRegistrationBeginDate) {
     // Delegates to the shared module-level helper so the logged-out guest
     // bootstrap and this instance render the countdown identically.
-    bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate);
+    bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate, preRegistrationBeginDate);
   }
   initBriefs() {
     this.selectedBriefs = [];
@@ -4563,8 +4569,23 @@ class classDetailsStripe extends parentLogin {
 const BDC_YEAR_LONG_BUNDLE_API_BASE =
   "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/";
 
-// Toggle display on every node in a NodeList (blocks are duplicated across the
-// members / !members Memberstack sections).
+// Hide coming-soon banner until API confirms that state (prevents flash).
+(function bdcInstallPreRegSoonGuard() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById("bdc-prereg-soon-guard")) return;
+  var style = document.createElement("style");
+  style.id = "bdc-prereg-soon-guard";
+  style.textContent = "[data-checkout='pre-registration-soon']{display:none !important;}";
+  (document.head || document.documentElement).appendChild(style);
+})();
+
+// Remove the guard so the coming-soon banner can be shown.
+function bdcRemovePreRegSoonGuard() {
+  var guard = document.getElementById("bdc-prereg-soon-guard");
+  if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
+}
+
+// Toggle display on every node in a NodeList.
 function bdcSetDisplayAll(nodeList, value) {
   if (!nodeList) return;
   nodeList.forEach((el) => {
@@ -4575,7 +4596,7 @@ function bdcSetDisplayAll(nodeList, value) {
 // Render the pre-registration countdown + "Regular registration will begin on"
 // date into all matching nodes. Used by both classDetailsStripe.updateCountdown
 // and the guest bootstrap.
-function bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate) {
+function bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate, preRegistrationBeginDate) {
   // Convert UTC date string (e.g., "2025-10-08 03:45:00") to ISO + Z
   const toUtcIso = (dateStr) => {
     if (typeof dateStr === "string" && dateStr.indexOf(" ") > -1 && dateStr.indexOf("T") === -1) {
@@ -4598,8 +4619,6 @@ function bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate) {
     });
   };
 
-  // Format and update the registration begin date (always, even if countdown is over)
-  const registrationDateTime = new Date(registrationBeginDate);
   const options = {
     weekday: 'long',
     year: 'numeric',
@@ -4609,10 +4628,23 @@ function bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate) {
     minute: '2-digit',
     timeZoneName: 'short'
   };
+
+  // Format and update the "Regular registration will begin on" date
+  const registrationDateTime = new Date(registrationBeginDate);
   const formattedDate = registrationDateTime.toLocaleDateString('en-US', options);
   document.querySelectorAll('[data-registration-begin="date"]').forEach((el) => {
     el.textContent = formattedDate;
   });
+
+  // Pre-registration-soon only: "Pre registration will begin on" date
+  // (preRegistrationStartDate). Only written when explicitly provided.
+  if (preRegistrationBeginDate) {
+    const preRegBeginDateTime = new Date(toUtcIso(preRegistrationBeginDate));
+    const preRegFormattedDate = preRegBeginDateTime.toLocaleDateString('en-US', options);
+    document.querySelectorAll('[data-pre-registration-begin="date"]').forEach((el) => {
+      el.textContent = preRegFormattedDate;
+    });
+  }
 
   // If countdown is over, set all to 0
   if (timeLeft < 0) {
@@ -4672,6 +4704,7 @@ async function bdcInitGuestPreRegistrationSoon() {
     }
 
     // Coming soon: show only the pre-registration-soon block, hide the rest.
+    bdcRemovePreRegSoonGuard();
     bdcSetDisplayAll(soonEls, "block");
     bdcSetDisplayAll(document.querySelectorAll("[data-checkout='registration']"), "none");
     bdcSetDisplayAll(document.querySelectorAll("[data-checkout='pre-registration']"), "none");
@@ -4684,10 +4717,11 @@ async function bdcInitGuestPreRegistrationSoon() {
 
     const countdownTarget = data.preRegistrationStartDate || data.preRegistrationEndDate;
     const registrationBegin = data.preRegistrationEndDate || countdownTarget;
+    const preRegistrationBegin = data.preRegistrationStartDate;
     if (countdownTarget) {
-      bdcWritePreRegCountdown(countdownTarget, registrationBegin);
+      bdcWritePreRegCountdown(countdownTarget, registrationBegin, preRegistrationBegin);
       setInterval(() => {
-        bdcWritePreRegCountdown(countdownTarget, registrationBegin);
+        bdcWritePreRegCountdown(countdownTarget, registrationBegin, preRegistrationBegin);
       }, 1000);
     }
   } catch (error) {
