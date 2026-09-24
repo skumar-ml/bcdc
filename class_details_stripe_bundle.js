@@ -383,8 +383,6 @@ class classDetailsStripe extends parentLogin {
   }
   // checkBundleProgram
   async checkBundleProgram() {
-    // Use querySelectorAll — these blocks are duplicated on the page (one inside
-    // data-ms-content="members", one inside data-ms-content="!members").
     const preRegistrationEls = document.querySelectorAll("[data-checkout='pre-registration']");
     const preRegistrationSoonEls = document.querySelectorAll("[data-checkout='pre-registration-soon']");
     const registrationEls = document.querySelectorAll("[data-checkout='registration']");
@@ -454,14 +452,13 @@ class classDetailsStripe extends parentLogin {
 
     this.$isCheckoutFlow = isBundle;
 
-    // Toggle every matching block (duplicated across members / !members sections).
+    // Only one block is visible per state:
+    //  Pre-Registration-Soon -> pre-registration-soon (hide pre-registration + registration)
+    //  Pre-Registration-Info -> pre-registration      (hide pre-registration-soon + registration)
+    //  Normal / Bundle-Purchase -> registration       (hide both pre-registration blocks)
     bdcSetDisplayAll(preRegistrationEls, isBundle == "Pre-Registration-Info" ? "block" : "none");
     bdcSetDisplayAll(preRegistrationSoonEls, isBundle == "Pre-Registration-Soon" ? "block" : "none");
-    if (isBundle == "Pre-Registration-Soon") {
-      bdcSetDisplayAll(registrationEls, "block");
-    } else {
-      bdcSetDisplayAll(registrationEls, isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none");
-    }
+    bdcSetDisplayAll(registrationEls, isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none");
     if (isBundle == "Bundle-Purchase") {
       this.updateDepositePriceForBundle()
       const checkout_student_container = document.getElementById("checkout_student_container");
@@ -4674,8 +4671,10 @@ async function bdcInitGuestPreRegistrationSoon() {
       return;
     }
 
+    // Coming soon: show only the pre-registration-soon block, hide the rest.
     bdcSetDisplayAll(soonEls, "block");
-    bdcSetDisplayAll(document.querySelectorAll("[data-checkout='registration']"), "block");
+    bdcSetDisplayAll(document.querySelectorAll("[data-checkout='registration']"), "none");
+    bdcSetDisplayAll(document.querySelectorAll("[data-checkout='pre-registration']"), "none");
 
     if (data.upcomingSessionName) {
       document.querySelectorAll('[data-name="session-tittle"]').forEach((el) => {
