@@ -414,7 +414,7 @@ class classDetailsStripe extends parentLogin {
           isBundle = "Pre-Registration-Soon";
         } else if (bundleData.length == 0 && message == "Pre-registration is going on") {
           isBundle = "Pre-Registration-Info";
-          // Student profiles API needs isBundle=true during this window
+          // Student profiles API needs isBundled=true during this window
           this.$isBundlePreRegistration = true;
         } else if (hasMemberId && bundleData.length > 0 && message == "Pre-registration is going on") {
           isBundle = "Bundle-Purchase";
@@ -714,10 +714,10 @@ class classDetailsStripe extends parentLogin {
     return window.BDC_API.reporting;
   }
 
-  // Pre-registration going on: append isBundle=true for student profiles
+  // Pre-registration going on: append isBundled=true for student profiles
   getCheckoutStudentProfilesEndpoint() {
     var endpoint = "getCheckoutStudentProfiles/" + this.webflowMemberId;
-    if (this.$isCheckoutFlow == "Pre-Registration-Info") {
+    if (this.$isBundlePreRegistration) {
       endpoint += "?isBundled=true";
     }
     return endpoint;
