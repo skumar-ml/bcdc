@@ -458,13 +458,10 @@ class classDetailsStripe extends parentLogin {
     //  Pre-Registration-Info -> pre-registration      (hide pre-registration-soon + registration)
     //  Normal / Bundle-Purchase -> registration       (hide both pre-registration blocks)
     bdcSetDisplayAll(preRegistrationEls, isBundle == "Pre-Registration-Info" ? "block" : "none");
-    if (isBundle == "Pre-Registration-Soon") {
-      bdcRemovePreRegSoonGuard();
-      bdcSetDisplayAll(preRegistrationSoonEls, "block");
-    } else {
-      bdcSetDisplayAll(preRegistrationSoonEls, "none");
-    }
+    bdcSetDisplayAll(preRegistrationSoonEls, isBundle == "Pre-Registration-Soon" ? "block" : "none");
     bdcSetDisplayAll(registrationEls, isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none");
+    // State resolved — drop the loader/guard so the chosen block can render.
+    bdcResolveCheckoutGuard();
     if (isBundle == "Bundle-Purchase") {
       this.updateDepositePriceForBundle()
       const checkout_student_container = document.getElementById("checkout_student_container");
@@ -4174,8 +4171,7 @@ class classDetailsStripe extends parentLogin {
    // }
   }
   updateCountdown(countdownTargetDate, registrationBeginDate, preRegistrationBeginDate) {
-    // Delegates to the shared module-level helper so the logged-out guest
-    // bootstrap and this instance render the countdown identically.
+    // Delegates to the shared countdown helper.
     bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate, preRegistrationBeginDate);
   }
   initBriefs() {
@@ -4563,27 +4559,65 @@ class classDetailsStripe extends parentLogin {
   }
 }
 
-// Shared helpers + guest bootstrap for pre-registration UI (logged-out visitors
-// don't get a classDetailsStripe instance, so we fetch the countdown for them).
+// Shared helpers + bootstrap for the pre-registration UI (guard/loader + state).
 
 const BDC_YEAR_LONG_BUNDLE_API_BASE =
   "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/";
 
-// Hide coming-soon banner until API confirms that state (prevents flash).
-(function bdcInstallPreRegSoonGuard() {
+// Anti-flicker: hide all three checkout states until the API resolves which one
+// to show, displaying a loader in the meantime. Injected before paint.
+(function bdcInstallCheckoutGuard() {
   if (typeof document === "undefined") return;
-  if (document.getElementById("bdc-prereg-soon-guard")) return;
+  if (document.getElementById("bdc-checkout-guard")) return;
   var style = document.createElement("style");
-  style.id = "bdc-prereg-soon-guard";
-  style.textContent = "[data-checkout='pre-registration-soon']{display:none !important;}";
+  style.id = "bdc-checkout-guard";
+  style.textContent =
+    "[data-checkout='registration'],[data-checkout='pre-registration'],[data-checkout='pre-registration-soon']{display:none !important;}" +
+    "#bdc-checkout-loader{display:flex;align-items:center;justify-content:center;width:100%;padding:48px 0;}" +
+    "#bdc-checkout-loader .bdc-spinner{width:40px;height:40px;border:4px solid #e5e5e5;border-top-color:#7a1f2b;border-radius:50%;animation:bdc-spin 0.8s linear infinite;}" +
+    "@keyframes bdc-spin{to{transform:rotate(360deg);}}";
   (document.head || document.documentElement).appendChild(style);
 })();
 
-// Remove the guard so the coming-soon banner can be shown.
-function bdcRemovePreRegSoonGuard() {
-  var guard = document.getElementById("bdc-prereg-soon-guard");
-  if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
+// Insert the loader in the checkout area while the state is being resolved.
+function bdcShowCheckoutLoader() {
+  if (!document.getElementById("bdc-checkout-guard")) return; // already resolved
+  if (document.getElementById("bdc-checkout-loader")) return;
+  var anchor =
+    document.querySelector("[data-checkout='registration']") ||
+    document.querySelector("[data-checkout='pre-registration']") ||
+    document.querySelector("[data-checkout='pre-registration-soon']");
+  if (!anchor || !anchor.parentNode) return;
+  var loader = document.createElement("div");
+  loader.id = "bdc-checkout-loader";
+  loader.innerHTML = '<div class="bdc-spinner"></div>';
+  anchor.parentNode.insertBefore(loader, anchor);
 }
+
+// Reveal the resolved state: drop the guard and remove the loader so the inline
+// display values set by the flows take effect.
+function bdcResolveCheckoutGuard() {
+  var guard = document.getElementById("bdc-checkout-guard");
+  if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
+  var loader = document.getElementById("bdc-checkout-loader");
+  if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+}
+
+// Show the loader as soon as the DOM is available.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bdcShowCheckoutLoader);
+} else {
+  bdcShowCheckoutLoader();
+}
+
+// Safety net: if nothing resolved the guard, fall back to the create-account
+// (registration) state so visitors are never stuck on the loader.
+setTimeout(function () {
+  if (document.getElementById("bdc-checkout-guard")) {
+    bdcSetDisplayAll(document.querySelectorAll("[data-checkout='registration']"), "grid");
+    bdcResolveCheckoutGuard();
+  }
+}, 8000);
 
 // Toggle display on every node in a NodeList.
 function bdcSetDisplayAll(nodeList, value) {
@@ -4595,7 +4629,7 @@ function bdcSetDisplayAll(nodeList, value) {
 
 // Render the pre-registration countdown + "Regular registration will begin on"
 // date into all matching nodes. Used by both classDetailsStripe.updateCountdown
-// and the guest bootstrap.
+// and the standalone bootstrap.
 function bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate, preRegistrationBeginDate) {
   // Convert UTC date string (e.g., "2025-10-08 03:45:00") to ISO + Z
   const toUtcIso = (dateStr) => {
@@ -4681,14 +4715,19 @@ function bdcGetLoggedInMemberId() {
   }
 }
 
-// Guest-only: fetch pre-registration state and drive the coming-soon countdown.
-async function bdcInitGuestPreRegistrationSoon() {
+// Resolve the checkout state when no classDetailsStripe instance exists (logged-out); bails out when one does.
+async function bdcInitCheckoutState() {
+  const registrationEls = document.querySelectorAll("[data-checkout='registration']");
+  const preRegistrationEls = document.querySelectorAll("[data-checkout='pre-registration']");
   const soonEls = document.querySelectorAll("[data-checkout='pre-registration-soon']");
-  if (!soonEls.length) return;
+
+  // No checkout blocks on this page — nothing to manage.
+  if (!registrationEls.length && !preRegistrationEls.length && !soonEls.length) return;
 
   // Logged-in visitors are already handled by the classDetailsStripe instance.
   if (bdcGetLoggedInMemberId()) return;
 
+  let data = {};
   try {
     const response = await bdcFetch(
       BDC_YEAR_LONG_BUNDLE_API_BASE + "getYearLongBundleDetails"
@@ -4696,18 +4735,17 @@ async function bdcInitGuestPreRegistrationSoon() {
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
-    const data = await response.json();
+    data = await response.json();
+  } catch (error) {
+    console.error("[pre-registration] fetch failed:", error);
+    // Fall through — default to the create-account/registration state below.
+  }
 
-    if ((data.message || "") !== "Pre-registration is coming soon") {
-      bdcSetDisplayAll(soonEls, "none");
-      return;
-    }
-
-    // Coming soon: show only the pre-registration-soon block, hide the rest.
-    bdcRemovePreRegSoonGuard();
+  if ((data.message || "") === "Pre-registration is coming soon") {
+    // Coming soon: show only the pre-registration-soon banner.
     bdcSetDisplayAll(soonEls, "block");
-    bdcSetDisplayAll(document.querySelectorAll("[data-checkout='registration']"), "none");
-    bdcSetDisplayAll(document.querySelectorAll("[data-checkout='pre-registration']"), "none");
+    bdcSetDisplayAll(preRegistrationEls, "none");
+    bdcSetDisplayAll(registrationEls, "none");
 
     if (data.upcomingSessionName) {
       document.querySelectorAll('[data-name="session-tittle"]').forEach((el) => {
@@ -4724,13 +4762,19 @@ async function bdcInitGuestPreRegistrationSoon() {
         bdcWritePreRegCountdown(countdownTarget, registrationBegin, preRegistrationBegin);
       }, 1000);
     }
-  } catch (error) {
-    console.error("[pre-registration-soon] guest fetch failed:", error);
+  } else {
+    // Default: show the create-account / registration form.
+    bdcSetDisplayAll(soonEls, "none");
+    bdcSetDisplayAll(preRegistrationEls, "none");
+    bdcSetDisplayAll(registrationEls, "grid");
   }
+
+  // State resolved — drop the loader so the chosen block can render.
+  bdcResolveCheckoutGuard();
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", bdcInitGuestPreRegistrationSoon);
+  document.addEventListener("DOMContentLoaded", bdcInitCheckoutState);
 } else {
-  bdcInitGuestPreRegistrationSoon();
+  bdcInitCheckoutState();
 }
