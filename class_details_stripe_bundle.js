@@ -704,6 +704,15 @@ class classDetailsStripe extends parentLogin {
     return window.BDC_API.reporting;
   }
 
+  // Pre-Registration-Info (pre-reg going on, no bundle rows yet) needs isBundle=true
+  getCheckoutStudentProfilesEndpoint() {
+    var endpoint = "getCheckoutStudentProfiles/" + this.webflowMemberId;
+    if (this.$isCheckoutFlow == "Pre-Registration-Info") {
+      endpoint += "?isBundle=true";
+    }
+    return endpoint;
+  }
+
   // Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
   normalizeCheckoutStudentProfiles(response) {
     var list = response;
@@ -2759,7 +2768,7 @@ class classDetailsStripe extends parentLogin {
         data = $this.$allBundlePrograms;
       } else {
         var profilesResponse = await this.fetchData(
-          "getCheckoutStudentProfiles/" + this.webflowMemberId,
+          this.getCheckoutStudentProfilesEndpoint(),
           this.getCheckoutStudentProfilesBaseUrl()
         );
         data = this.normalizeCheckoutStudentProfiles(profilesResponse);
@@ -3071,7 +3080,7 @@ class classDetailsStripe extends parentLogin {
 
     try {
       var profilesResponse = await this.fetchData(
-        "getCheckoutStudentProfiles/" + this.webflowMemberId,
+        this.getCheckoutStudentProfilesEndpoint(),
         this.getCheckoutStudentProfilesBaseUrl()
       );
       var profiles = this.normalizeCheckoutStudentProfiles(profilesResponse)
