@@ -3895,7 +3895,8 @@ class classDetailsStripe extends parentLogin {
   }
 
   displayTotalDiscount(bundleData) {
-    const totalDiscount = bundleData.reduce((acc, bundle) => {
+    const programs = Array.isArray(bundleData) ? bundleData : [];
+    const totalDiscount = programs.reduce((acc, bundle) => {
       const amount = Number(bundle.portal_amount) || 0;
       const discAmount = Number(bundle.portal_disc_amount) || 0;
       return acc + (discAmount - amount);
@@ -3904,6 +3905,23 @@ class classDetailsStripe extends parentLogin {
     discountEl.forEach(el => {
       el.innerHTML = "$" + this.numberWithCommas(totalDiscount);
     })
+
+    // Popup title: second upsell program label (e.g. "Summer 2027")
+    const secondLabel = programs[1] && programs[1].label ? programs[1].label : "";
+    if (secondLabel) {
+      document.querySelectorAll('[data-upsell-popup="bundle-tittle"]').forEach((el) => {
+        el.textContent = secondLabel;
+      });
+    }
+
+    // Card title: "{label} + {label2}!" (e.g. "Winter/Spring + Summer 2027!")
+    const firstLabel = programs[0] && programs[0].label ? programs[0].label : "";
+    if (firstLabel && secondLabel) {
+      const bothTitle = firstLabel + " + " + secondLabel + "!";
+      document.querySelectorAll('[data-upsell-card="both-upsell-tittle"]').forEach((el) => {
+        el.textContent = bothTitle;
+      });
+    }
   }
 
   createBundleCard(singleBundleData, type = "upsell", position = "", coreData) {
