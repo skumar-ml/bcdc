@@ -469,6 +469,10 @@ class classDetailsStripe extends parentLogin {
     bdcSetDisplayAll(preRegistrationEls, isBundle == "Pre-Registration-Info" ? "block" : "none");
     bdcSetDisplayAll(preRegistrationSoonEls, isBundle == "Pre-Registration-Soon" ? "block" : "none");
     bdcSetDisplayAll(registrationEls, isBundle == "Bundle-Purchase" || isBundle == "Normal" ? "grid" : "none");
+    // Hide "create new student" when pre-registration is going on
+    if (isBundle == "Pre-Registration-Info" || isBundle == "Bundle-Purchase") {
+      bdcSetDisplayAll(document.querySelectorAll(".create-student-container"), "none");
+    }
     // State resolved — drop the loader/guard so the chosen block can render.
     bdcResolveCheckoutGuard();
     if (isBundle == "Bundle-Purchase") {
@@ -713,8 +717,8 @@ class classDetailsStripe extends parentLogin {
   // Pre-registration going on: append isBundle=true for student profiles
   getCheckoutStudentProfilesEndpoint() {
     var endpoint = "getCheckoutStudentProfiles/" + this.webflowMemberId;
-    if (this.$isBundlePreRegistration) {
-      endpoint += "?isBundle=true";
+    if (this.$isCheckoutFlow == "Pre-Registration-Info") {
+      endpoint += "?isBundled=true";
     }
     return endpoint;
   }
