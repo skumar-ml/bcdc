@@ -4565,45 +4565,34 @@ const BDC_YEAR_LONG_BUNDLE_API_BASE =
   "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/";
 
 // Anti-flicker: hide all three checkout states until the API resolves which one
-// to show, displaying a loader in the meantime. Injected before paint.
+// to show. Injected before paint; the shared #half-circle-spinner is the loader.
 (function bdcInstallCheckoutGuard() {
   if (typeof document === "undefined") return;
   if (document.getElementById("bdc-checkout-guard")) return;
   var style = document.createElement("style");
   style.id = "bdc-checkout-guard";
   style.textContent =
-    "[data-checkout='registration'],[data-checkout='pre-registration'],[data-checkout='pre-registration-soon']{display:none !important;}" +
-    "#bdc-checkout-loader{display:flex;align-items:center;justify-content:center;width:100%;padding:48px 0;}" +
-    "#bdc-checkout-loader .bdc-spinner{width:40px;height:40px;border:4px solid #e5e5e5;border-top-color:#7a1f2b;border-radius:50%;animation:bdc-spin 0.8s linear infinite;}" +
-    "@keyframes bdc-spin{to{transform:rotate(360deg);}}";
+    "[data-checkout='registration'],[data-checkout='pre-registration'],[data-checkout='pre-registration-soon']{display:none !important;}";
   (document.head || document.documentElement).appendChild(style);
 })();
 
-// Insert the loader in the checkout area while the state is being resolved.
+// Show the shared page spinner while the checkout state is being resolved.
 function bdcShowCheckoutLoader() {
   if (!document.getElementById("bdc-checkout-guard")) return; // already resolved
-  if (document.getElementById("bdc-checkout-loader")) return;
-  var anchor =
-    document.querySelector("[data-checkout='registration']") ||
-    document.querySelector("[data-checkout='pre-registration']") ||
-    document.querySelector("[data-checkout='pre-registration-soon']");
-  if (!anchor || !anchor.parentNode) return;
-  var loader = document.createElement("div");
-  loader.id = "bdc-checkout-loader";
-  loader.innerHTML = '<div class="bdc-spinner"></div>';
-  anchor.parentNode.insertBefore(loader, anchor);
+  var spinner = document.getElementById("half-circle-spinner");
+  if (spinner) spinner.style.display = "block";
 }
 
-// Reveal the resolved state: drop the guard and remove the loader so the inline
+// Reveal the resolved state: drop the guard and hide the spinner so the inline
 // display values set by the flows take effect.
 function bdcResolveCheckoutGuard() {
   var guard = document.getElementById("bdc-checkout-guard");
   if (guard && guard.parentNode) guard.parentNode.removeChild(guard);
-  var loader = document.getElementById("bdc-checkout-loader");
-  if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+  var spinner = document.getElementById("half-circle-spinner");
+  if (spinner) spinner.style.display = "none";
 }
 
-// Show the loader as soon as the DOM is available.
+// Show the spinner as soon as the DOM is available.
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", bdcShowCheckoutLoader);
 } else {
