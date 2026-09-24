@@ -334,8 +334,9 @@ class classDetailsStripe extends parentLogin {
   $selectedBundleProgram = null;
   $allBundlePrograms = [];
   $allSuppData = [];
-  // Active academic session from getCurrentSession (used for getUpsellProgram)
+  // Active academic session from getCurrentYearAndSession (used for getUpsellProgram)
   $currentSession = "";
+  $currentYearId = "";
   // Already-enrolled modal state (set after studentEnrolled API on Next)
   _pendingAlreadyEnrolledModal = false;
   _alreadyEnrolledStudentName = "";
@@ -665,47 +666,34 @@ class classDetailsStripe extends parentLogin {
     }
   }
 
-  // Pull session slug out of getCurrentSession payloads (string or nested object).
-  parseCurrentSessionName(payload) {
-    if (payload == null) {
-      return "";
+  // Read session slug from getCurrentYearAndSession (uses API `session` field as-is).
+  async resolveUpsellSession() {
+    var sessionPayload = await this.fetchData(
+      "getCurrentYearAndSession",
+      window.BDC_API.class
+    );
+    var sessionName =
+      sessionPayload && sessionPayload.session
+        ? String(sessionPayload.session).trim().toLowerCase()
+        : "";
+    if (!sessionName) {
+      throw new Error("getCurrentYearAndSession returned no session field");
     }
-    if (typeof payload === "string") {
-      return payload.trim().toLowerCase();
-    }
-    var source = payload.data != null ? payload.data : payload;
-    if (typeof source === "string") {
-      return source.trim().toLowerCase();
-    }
-    if (!source || typeof source !== "object") {
-      return "";
-    }
-    // Prefer explicit session fields the upsell API expects (fall/winter/spring/summer)
-    var raw =
-      source.session ||
-      source.sessionName ||
-      source.currentSession ||
-      source.name ||
-      "";
-    return String(raw).trim().toLowerCase();
+    this.$currentSession = sessionName;
+    this.$currentYearId =
+      sessionPayload.classYearId != null ? sessionPayload.classYearId : "";
+    console.log("Resolved upsell session from getCurrentYearAndSession:", sessionName, sessionPayload);
+    return sessionName;
   }
 
-  // Asks typeE for the active academic session; falls back to fall if API is empty/down.
-  async resolveUpsellSession() {
-    try {
-      var sessionPayload = await this.fetchData("getCurrentSession", this.typeEBaseUrl);
-      var sessionName = this.parseCurrentSessionName(sessionPayload);
-      if (!sessionName) {
-        console.warn("getCurrentSession returned no session name; using fall", sessionPayload);
-        return "fall";
-      }
-      this.$currentSession = sessionName;
-      console.log("Resolved upsell session from getCurrentSession:", sessionName, sessionPayload);
-      return sessionName;
-    } catch (sessionError) {
-      console.error("Error fetching getCurrentSession; using fall:", sessionError);
-      return "fall";
-    }
+  // Load upsells for the active session from getCurrentYearAndSession.session.
+  async fetchCurrentSessionUpsellPrograms() {
+    var upsellSession = await this.resolveUpsellSession();
+    var suppData = await this.fetchData(
+      "getUpsellProgram?session=" + encodeURIComponent(upsellSession),
+      this.typeEBaseUrl
+    );
+    return Array.isArray(suppData) ? suppData : [];
   }
 
   // Checkout student dropdown API lives on the b4z5gqv2xj gateway (not typeFBaseUrl).
@@ -1445,12 +1433,8 @@ class classDetailsStripe extends parentLogin {
       );
       this.viewClassLocations(data);
       try {
-        // Session comes from getCurrentSession so fall/winter/spring stays in sync with backend
-        var upsellSession = await this.resolveUpsellSession();
-        var suppData = await this.fetchData(
-          "getUpsellProgram?session=" + encodeURIComponent(upsellSession),
-          this.typeEBaseUrl
-        );
+        // Session comes from getCurrentYearAndSession.session (e.g. winter/fall/summer)
+        var suppData = await this.fetchCurrentSessionUpsellPrograms();
         this.$allSuppData = suppData;
         // Check if there are any upsell programs
         var academicSuppData = suppData.find((item) => {
@@ -4610,8 +4594,7 @@ class classDetailsStripe extends parentLogin {
 // Shared helpers + guest bootstrap for pre-registration UI (logged-out visitors
 // don't get a classDetailsStripe instance, so we fetch the countdown for them).
 
-const BDC_YEAR_LONG_BUNDLE_API_BASE =
-  "https://xkopkui840.execute-api.us-east-1.amazonaws.com/prod/camp/";
+const BDC_YEAR_LONG_BUNDLE_API_BASE = window.BDC_API.class;
 
 // Toggle display on every node in a NodeList (blocks are duplicated across the
 // members / !members Memberstack sections).
