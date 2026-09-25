@@ -360,7 +360,7 @@ function creEl(name, className, idName) {
         var $this = this;
         xhr.open(
           "POST",
-          "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/checkPreviousStudent",
+          window.BDC_API.scheduler + "checkPreviousStudent",
           true
         );
         xhr.withCredentials = false;
@@ -744,7 +744,7 @@ function creEl(name, className, idName) {
       var $this = this;
       xhr.open(
         "POST",
-        "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl",
+        window.BDC_API.scheduler + "updateDataToCheckoutUrl",
         true
       );
       xhr.withCredentials = false;
@@ -923,7 +923,7 @@ function creEl(name, className, idName) {
       var $this = this;
       xhr.open(
         "POST",
-        "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/checkoutUrlForClasses",
+        window.BDC_API.scheduler + "checkoutUrlForClasses",
         true
       );
       xhr.withCredentials = false;

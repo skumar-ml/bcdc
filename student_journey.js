@@ -681,7 +681,6 @@ function fetchAndUpdateActiveClassText() {
         mobileRegisterButton(filteredData, activeIndex);
 
     } else {
-        // const apiUrl = `https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getClassLevel`;
         const apiUrl = `${window.BDC_API.class}getClassLevel`;
 
         bdcFetch(apiUrl)

@@ -166,7 +166,7 @@ class CheckOutWebflow {
 			"lastName": studentLastName.value,
 			"memberId": this.memberData.memberId,
 		}
-		const rawResponse = await fetch('https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/validateUserForProgram', {
+		const rawResponse = await fetch(window.BDC_API.scheduler + 'validateUserForProgram', {
 			method: 'POST',
 			headers: {
 				'Accept': 'application/json',
@@ -247,7 +247,7 @@ class CheckOutWebflow {
 
 		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/createNewProgramCheckoutUrls", true)
+		xhr.open("POST", window.BDC_API.scheduler + "createNewProgramCheckoutUrls", true)
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
@@ -297,7 +297,7 @@ class CheckOutWebflow {
 		
 		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl", true)
+		xhr.open("POST", window.BDC_API.scheduler + "updateDataToCheckoutUrl", true)
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {
@@ -326,7 +326,7 @@ class CheckOutWebflow {
 
 		var xhr = new XMLHttpRequest()
 		var $this = this;
-		xhr.open("POST", "https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/updateDataToCheckoutUrl", true)
+		xhr.open("POST", window.BDC_API.scheduler + "updateDataToCheckoutUrl", true)
 		xhr.withCredentials = false
 		xhr.send(JSON.stringify(data))
 		xhr.onload = function () {

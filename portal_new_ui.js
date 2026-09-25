@@ -2954,7 +2954,6 @@ async function checkStudentDetailsAndShowModal() {
   //  already shown within 24 hours
   if (!canShowStudentModal()) return;
 const apiURL = `${window.BDC_API.member}getMissingStudentDetails/${globalMemberId}`;
-/* const apiURL = `https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/getStudentDetails/${globalMemberId}`;*/
   const res = await bdcFetch(apiURL);
   const data = await res.json();
 

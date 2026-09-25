@@ -924,7 +924,7 @@ class InvoiceApi {
 	 * Get Invoice Data after calling API
 	 */
 	async getInvoiceData() {
-		const data = await this.fetchData("https://73u5k1iw5h.execute-api.us-east-1.amazonaws.com/prod/camp/getSemesterInvoiceDataV2/" + this.webflowMemberId);
+		const data = await this.fetchData(window.BDC_API.scheduler + "getSemesterInvoiceDataV2/" + this.webflowMemberId);
 		new InvoiceList(this.webflowMemberId, data);
 	}
 }
