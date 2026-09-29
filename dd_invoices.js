@@ -316,8 +316,9 @@ class DDInvoices {
             "paymentId": this.$studentDetail.uniqueIdentification,
             "paymentLinkId": paymentLinkId,
             "memberId": this.webflowMemberId,
-            "successUrl": encodeURI("https://www.debatedrills.com/payment-confirmation?programName=" + title),
-            "cancelUrl": "https://www.debatedrills.com/invoices" ,
+            // Prod / staging host from current page (was debatedrills.com)
+            "successUrl": encodeURI(window.location.origin + "/payment-confirmation?programName=" + title),
+            "cancelUrl": window.location.origin + "/invoices",
         }
         var xhr = new XMLHttpRequest()
         var $this = this;

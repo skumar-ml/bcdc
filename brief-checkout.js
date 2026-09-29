@@ -483,8 +483,9 @@ class BriefsCheckout {
             payNowButton.style.pointerEvents = "none";
         }
 
-        // Create cancel URL
-        const cancelUrl = new URL("https://www.bergendebate.com/" + window.location.pathname);
+        // Prod = bergendebate.com, staging = webflow.io — pick from current page
+        const SITE_HOST = window.location.origin;
+        const cancelUrl = new URL(SITE_HOST + window.location.pathname);
         if (!cancelUrl.searchParams.has('returnType')) {
             cancelUrl.searchParams.set('returnType', 'back');
         }
@@ -501,7 +502,8 @@ class BriefsCheckout {
             productType: "brief",
             device: /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop",
             deviceUserAgent: navigator.userAgent,
-            successUrl: "https://www.bergendebate.com/portal/dashboard?briefsPayment=true",
+            // Stripe success lands on this host's dashboard with briefs flag
+            successUrl: SITE_HOST + "/portal/dashboard?briefsPayment=true",
             cancelUrl: cancelUrl.href,
             source: "brief-checkout",
             utm_source: (localUtmSource != null) ? localUtmSource : "",
