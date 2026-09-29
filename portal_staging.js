@@ -704,12 +704,13 @@ class Portal {
         const timeBasedVisibility = this.getTimeBasedVisibility(recommendedLevel, studentData);
         const hasRecommendedCondition = hasReturnerConversion && timeBasedVisibility.showRegistration;
 
-        // Generate the enrollment URL based on condition
+        // Prod / staging host from current page so Enroll/Register Now stays on this env
+        const SITE_HOST = window.location.origin;
         let enrollUrl;
         if (hasRecommendedCondition) {
-            enrollUrl = `https://www.bergendebate.com/programs/${levelUrl}`;
+            enrollUrl = `${SITE_HOST}/programs/${levelUrl}`;
         } else {
-            enrollUrl = 'https://www.bergendebate.com/classes-overview';
+            enrollUrl = SITE_HOST + '/classes-overview';
         }
 
         // Find and update all Enroll Now buttons in the context

@@ -659,12 +659,12 @@ class classDetailsStripe {
 			upsellProgramIds : upsellProgramIds,
       has_fee: has_fee,
       successUrl: encodeURI(
-        "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
+        window.location.origin + "/payment-confirmation?type=Academic&programName=" +
           label +
           "&pType=" +
           type
       ),
-      cancelUrl: (cancelUrl.href).includes('file:///') ? "https://www.bergendebate.com/payment-confirmation" : cancelUrl.href,
+      cancelUrl: (cancelUrl.href).includes('file:///') ? (window.location.origin + "/payment-confirmation") : cancelUrl.href,
     };
 
     //console.log('Data !!!!!', data)

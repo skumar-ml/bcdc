@@ -148,7 +148,8 @@ class ReferralProgram {
     alert(
       "You are not enrolled in the referral program. Please contact Bergen Academy for more information."
     );
-    window.location.href = "https://www.bergendebate.com";
+    // Stay on current host (staging or prod)
+    window.location.href = window.location.origin + "/";
   }
 
   // Loads referral data from the API and updates the UI
@@ -186,7 +187,8 @@ class ReferralProgram {
       if (data.coupon_code) {
         var encryptedCode = btoa(data.coupon_code);
         var encryptedMemberId = btoa(this.memberId);
-        this.referralLinkInput.value = `https://www.bergendebate.com?code=${encryptedCode}&id=${encryptedMemberId}`;
+        // Share link uses current host so staging tests stay on staging
+        this.referralLinkInput.value = `${window.location.origin}/?code=${encryptedCode}&id=${encryptedMemberId}`;
       } else if (this.referralLinkInput) {
         this.referralLinkInput.value = "";
       }

@@ -1640,7 +1640,8 @@ class classDetailsStripe extends parentLogin {
             window.location.href = responseText.achUrl;
           }
         } else {
-          window.location.href = 'https://www.bergendebate.com/portal/dashboard';
+          // Checkout failed / free pre-reg path — stay on current host (staging or prod)
+          window.location.href = window.location.origin + '/portal/dashboard';
         }
       });
     }

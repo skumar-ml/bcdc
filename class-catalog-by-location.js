@@ -693,7 +693,8 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
 
   function getRegisterUrl(programName) {
     const slug = PROGRAM_SLUG_OVERRIDES[programName] || slugifyProgramName(programName);
-    return `https://www.bergendebate.com/summer/${slug}`;
+    // Keep register links on the current host (staging webflow or prod)
+    return `${window.location.origin}/summer/${slug}`;
   }
 
   // Fixed display order for summer programs (by programId). Anything not listed falls to the end,
