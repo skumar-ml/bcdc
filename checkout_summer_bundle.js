@@ -1113,7 +1113,9 @@ class CheckOutWebflow {
 		next_page_2.innerHTML ="Processing..."
 		next_page_2.style.pointerEvents = "none";
 		
-		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
+		// Prod = bergendebate.com, staging = webflow.io — pick from current page
+		var SITE_HOST = window.location.origin;
+		var cancelUrl = new URL(SITE_HOST + window.location.pathname);
 		// Always enforce returnType for Stripe cancel-back flow
 		cancelUrl.searchParams.set('returnType', 'back');
 		var data = {
@@ -1129,7 +1131,8 @@ class CheckOutWebflow {
 			// "locationId": (fort_lee_location.checked) ? 2 : 1,
 			// "summerSessionId": parseInt(summerSessionId),
 			"programId": this.memberData.programId,
-			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
+			// Stripe success lands on this host's payment-confirmation page
+			"successUrl": SITE_HOST + "/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href,
 			"memberId": this.memberData.memberId,
@@ -1253,8 +1256,9 @@ class CheckOutWebflow {
 		if(checkOutData == undefined){
 			return true
 		}
-		//
-		var cancelUrl = new URL("https://www.bergendebate.com"+window.location.pathname);
+		// Prod = bergendebate.com, staging = webflow.io — pick from current page
+		var SITE_HOST = window.location.origin;
+		var cancelUrl = new URL(SITE_HOST + window.location.pathname);
 		//var cancelUrl = new URL(window.location.href);
 		// Always enforce returnType for Stripe cancel-back flow
 		cancelUrl.searchParams.set('returnType', 'back');
@@ -1313,7 +1317,8 @@ class CheckOutWebflow {
 			"source": "cart_page",
 			"has_fee": hasFee,
 			"applyCredit": applyCredit,
-			"successUrl": "https://www.bergendebate.com/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
+			// Stripe success lands on this host's payment-confirmation page
+			"successUrl": SITE_HOST + "/payment-confirmation?type=Summer&programName=" + this.memberData.programName,
 			//"successUrl":"https://www.bergendebate.com/members/"+this.webflowMemberId,
 			"cancelUrl": cancelUrl.href
 		}

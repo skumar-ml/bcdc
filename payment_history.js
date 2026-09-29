@@ -494,11 +494,13 @@ class PaymentHistory {
             paymentId: paymentId,
             paymentLinkId: paymentLinkId,
             memberId: this.data.memberId,
+            // Prod = bergendebate.com, staging = webflow.io — pick from current page
             successUrl: encodeURI(
-                "https://www.bergendebate.com/portal/payment-history?programName=" +
+                window.location.origin +
+                "/portal/payment-history?programName=" +
                 title
             ),
-            cancelUrl: "https://www.bergendebate.com/portal/payment-history",
+            cancelUrl: window.location.origin + "/portal/payment-history",
         };
         // Send payment request to API
         bdcFetch(

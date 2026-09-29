@@ -1548,7 +1548,8 @@ class classDetailsStripe extends parentLogin {
     preRegistrationDiv.innerHTML = "Processing...";
     preRegistrationDiv.disabled = true;
     preRegistrationDiv.style.pointerEvents = "none";
-    //var cancelUrl = new URL("https://www.nsdebatecamp.com"+window.location.pathname);
+    // Prod = bergendebate.com, staging = webflow.io — pick from current page
+    var SITE_HOST = window.location.origin;
     var cancelUrl = new URL(window.location.href);
     //console.log(window.location.href)
     cancelUrl.searchParams.set("returnType", "back");
@@ -1575,14 +1576,17 @@ class classDetailsStripe extends parentLogin {
       source: "cart_page",
       amount: finalPrice,
       applyCredit: applyCredit,
+      // Stripe success lands on this host's payment-confirmation page
       successUrl: encodeURI(
-        "https://www.bergendebate.com/payment-confirmation?type=Academic&programName=" +
+        SITE_HOST +
+        "/payment-confirmation?type=Academic&programName=" +
         label +
         "&pType=" +
         type
       ),
+      // Cancel returns to this page; local file:// falls back to confirmation
       cancelUrl: cancelUrl.href.includes("file:///")
-        ? "https://www.bergendebate.com/payment-confirmation"
+        ? SITE_HOST + "/payment-confirmation"
         : cancelUrl.href,
     };
 

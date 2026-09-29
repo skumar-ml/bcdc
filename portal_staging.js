@@ -2204,8 +2204,9 @@ class Portal {
             "paymentId": paymentId,
             "paymentLinkId": paymentLinkId,
             "memberId": this.data.memberId,
-            "successUrl": encodeURI("https://www.bergendebate.com/portal/dashboard?programName=" + title),
-            "cancelUrl": "https://www.bergendebate.com/portal/dashboard",
+            // Prod = bergendebate.com, staging = webflow.io — pick from current page
+            "successUrl": encodeURI(window.location.origin + "/portal/dashboard?programName=" + title),
+            "cancelUrl": window.location.origin + "/portal/dashboard",
         }
         bdcFetch(`${window.BDC_API.paymentCheckout}checkoutUrlForInvoice`, {
             method: "POST",
