@@ -1354,7 +1354,8 @@ class Portal {
         } else {
             calendarDiv.innerHTML = '';
             calendarDiv.style.display = 'none';
-            if (calendarWrapper) calendarWrapper.style.display = 'none';
+            // Wrapper also holds class tools (homework, makeup, zoom, resources)
+            if (calendarWrapper) calendarWrapper.style.display = 'block';
         }
     }
 
