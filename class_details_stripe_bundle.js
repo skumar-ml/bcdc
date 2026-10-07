@@ -1098,16 +1098,21 @@ class classDetailsStripe extends parentLogin {
       prevStudentCheckBox[i].addEventListener("change", function (ele) {
         if (prevStudentCheckBox[i].checked) {
           $this.$isPrevStudent = true;
-          for (let j = 0; j < total_price.length; j++) {
-            total_price[j].innerHTML =
-              "$" + $this.numberWithCommas(totalAmount + 100);
+          // Rate sheet drives the row once loaded; otherwise the Webflow tuition as before
+          if (!bdcRenderTuitionPrice(true)) {
+            for (let j = 0; j < total_price.length; j++) {
+              total_price[j].innerHTML =
+                "$" + $this.numberWithCommas(totalAmount + 100);
+            }
           }
           prevStudentCheckBox[i].setAttribute("checked", true);
         } else {
           $this.$isPrevStudent = false;
-          for (let j = 0; j < total_price.length; j++) {
-            total_price[j].innerHTML =
-              "$" + $this.numberWithCommas(totalAmount);
+          if (!bdcRenderTuitionPrice(false)) {
+            for (let j = 0; j < total_price.length; j++) {
+              total_price[j].innerHTML =
+                "$" + $this.numberWithCommas(totalAmount);
+            }
           }
           prevStudentCheckBox[i].removeAttribute("checked");
         }
@@ -3602,7 +3607,10 @@ class classDetailsStripe extends parentLogin {
         totalDue === 0
           ? 'Free'
           : '$' + $this.numberWithCommas($this.trimToTwoDecimals(totalDue));
-      totalPriceEl.innerHTML = totalFormatted;
+      // Semester Tuition row shows rate-sheet tuition once loaded, not the deposit
+      if (!bdcRenderTuitionPrice(!!(prevCheckbox && prevCheckbox.checked))) {
+        totalPriceEl.innerHTML = totalFormatted;
+      }
 
       if (addonDepositEl && $this.$isCheckoutFlow !== 'Bundle-Purchase') {
         addonDepositEl.innerHTML =
@@ -4765,6 +4773,201 @@ function bdcWritePreRegCountdown(countdownTargetDate, registrationBeginDate, pre
   setCountdownText("seconds", seconds);
 }
 
+// Same fixed new student fee the checkbox handler has always added to Semester Tuition
+var BDC_NEW_STUDENT_FEE = 100;
+var bdcInvoiceRates = null;
+var bdcInvoiceRatesPromise = null;
+
+// One public getInvoiceRates call per page; resolves null on failure so Webflow's static copy stays.
+function bdcFetchInvoiceRates() {
+  if (!bdcInvoiceRatesPromise) {
+    bdcInvoiceRatesPromise = bdcFetch(window.BDC_API.class + "getInvoiceRates")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("getInvoiceRates returned " + response.status);
+        }
+        return response.json();
+      })
+      .then((rates) => {
+        bdcInvoiceRates = rates;
+        return rates;
+      })
+      .catch((error) => {
+        console.error("[invoice-rates] fetch failed:", error);
+        return null;
+      });
+  }
+  return bdcInvoiceRatesPromise;
+}
+
+// "$2,500" for whole dollars, "$1,750.50" otherwise; null when not a number.
+function bdcFormatRateMoney(value) {
+  const amount = parseFloat(value);
+  if (isNaN(amount)) return null;
+  const digits = Number.isInteger(amount) ? 0 : 2;
+  return "$" + amount.toLocaleString("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+// API sends the stored UTC time with no zone; pin it to UTC before parsing.
+function bdcParseRateDate(value) {
+  if (!value) return null;
+  let iso = String(value).replace(" ", "T");
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(iso)) {
+    iso += "Z";
+  }
+  const date = new Date(iso);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Single early-bird rule for every price on the page.
+ * Active only when there is a positive discount, a valid deadline, and now < deadline.
+ * Both sides are UTC instants, so the visitor's own timezone can't shift the cutoff;
+ * exactly at the deadline counts as expired. Returns null when there is no base price.
+ */
+function bdcGetEarlyBirdState(rates) {
+  if (!rates) return null;
+  const base = parseFloat(rates.basePrice);
+  if (isNaN(base)) return null;
+  const discount = parseFloat(rates.earlyBirdsDiscount);
+  const deadline = bdcParseRateDate(rates.earlyBirdDeadlineDate);
+  const active =
+    !isNaN(discount) && discount > 0 && !!deadline && Date.now() < deadline.getTime();
+  return { base, discount: active ? discount : 0, deadline, active };
+}
+
+/**
+ * Write the base price into el and, while early bird is active, strike it and show
+ * base - discount in a sibling .bdc-early-bird-price. el itself never holds the
+ * discounted amount, so code that reads its text still gets the base price.
+ */
+function bdcPaintEarlyBirdPrice(el, baseAmount, state) {
+  el.textContent = bdcFormatRateMoney(baseAmount);
+  const next = el.nextElementSibling;
+  let discountedEl = next && next.classList.contains("bdc-early-bird-price") ? next : null;
+
+  if (state.active) {
+    // Inline so the struck and current prices sit side by side
+    el.style.display = "inline-block";
+    el.style.textDecoration = "line-through";
+    el.style.opacity = "0.6";
+    if (!discountedEl) {
+      discountedEl = document.createElement("span");
+      discountedEl.className = "main-text order-details-price-no-strike bdc-early-bird-price";
+      discountedEl.style.display = "inline-block";
+      discountedEl.style.marginLeft = "6px";
+      el.insertAdjacentElement("afterend", discountedEl);
+    }
+    discountedEl.textContent = bdcFormatRateMoney(Math.max(baseAmount - state.discount, 0));
+  } else {
+    // Expired or no early bird: plain base price, Webflow's own styling back in charge
+    el.style.display = "";
+    el.style.textDecoration = "";
+    el.style.opacity = "";
+    if (discountedEl) {
+      discountedEl.remove();
+    }
+  }
+}
+
+// One timer per page: repaint the moment the deadline passes so an open tab drops early bird.
+var bdcEarlyBirdExpiryTimer = null;
+function bdcScheduleEarlyBirdExpiry(state) {
+  if (bdcEarlyBirdExpiryTimer || !state || !state.active) return;
+  const msLeft = state.deadline.getTime() - Date.now();
+  // setTimeout tops out near 24.8 days; farther deadlines are handled on a later page load
+  if (msLeft > 2147483647) return;
+  bdcEarlyBirdExpiryTimer = setTimeout(() => {
+    bdcRenderInvoiceRates(bdcInvoiceRates);
+  }, msLeft + 50);
+}
+
+// Paint [data-invoice-rate="<key>"] nodes, early-bird blocks, and Semester Tuition from the rate sheet.
+function bdcRenderInvoiceRates(rates) {
+  const state = bdcGetEarlyBirdState(rates);
+  if (!state) return;
+  const siblingPct = parseFloat(rates.siblingDiscPercentage);
+  const values = {
+    sessionName: rates.sessionName || null,
+    yearId: rates.yearId != null ? String(rates.yearId) : null,
+    basePrice: bdcFormatRateMoney(state.base),
+    depositAmount: bdcFormatRateMoney(rates.depositAmount),
+    siblingDiscPercentage: isNaN(siblingPct) ? null : siblingPct + "%",
+  };
+  // Early-bird-only values; hidden entirely once early bird is off
+  const earlyBirdValues = {
+    earlyBirdsDiscount: bdcFormatRateMoney(state.discount),
+    earlyBirdPrice: bdcFormatRateMoney(Math.max(state.base - state.discount, 0)),
+    // BDC runs on Eastern time, so show the deadline's ET calendar date
+    earlyBirdDeadlineDate: state.deadline
+      ? state.deadline.toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+          timeZone: "America/New_York",
+        })
+      : null,
+  };
+
+  document.querySelectorAll("[data-invoice-rate]").forEach((el) => {
+    const key = el.getAttribute("data-invoice-rate");
+    // Struck base + discounted pair, same rule as Semester Tuition
+    if (key === "tuition") {
+      bdcPaintEarlyBirdPrice(el, state.base, state);
+      return;
+    }
+    if (key in earlyBirdValues) {
+      if (state.active && earlyBirdValues[key] != null) {
+        el.textContent = earlyBirdValues[key];
+        el.style.display = "";
+      } else {
+        el.style.display = "none";
+      }
+      return;
+    }
+    // Unknown keys or missing values leave Webflow's text alone
+    const value = values[key];
+    if (value != null) {
+      el.textContent = value;
+    }
+  });
+
+  // Early-bird copy only shows while early bird is active
+  bdcSetDisplayAll(
+    document.querySelectorAll('[data-invoice-rate-show="early-bird"]'),
+    state.active ? "" : "none"
+  );
+
+  // Semester Tuition row (.total_price) follows the same rule
+  bdcRenderTuitionPrice();
+  bdcScheduleEarlyBirdExpiry(state);
+}
+
+/**
+ * Paint every .total_price (Semester Tuition) with the early-bird rule.
+ * The fixed $100 new student fee is added when its checkbox is on, exactly as before.
+ * Returns false when rates are not loaded so callers keep their old fallback.
+ */
+function bdcRenderTuitionPrice(addNewStudentFee) {
+  const state = bdcGetEarlyBirdState(bdcInvoiceRates);
+  if (!state) return false;
+
+  // No explicit flag means "use whatever the fee checkbox says right now"
+  if (addNewStudentFee === undefined) {
+    addNewStudentFee = Array.from(document.querySelectorAll(".prev_student_checkbox"))
+      .some((checkbox) => checkbox.checked);
+  }
+  const fee = addNewStudentFee ? BDC_NEW_STUDENT_FEE : 0;
+
+  document.querySelectorAll(".total_price").forEach((el) => {
+    bdcPaintEarlyBirdPrice(el, state.base + fee, state);
+  });
+  return true;
+}
+
 // Returns the logged-in Memberstack member id, or null when logged out.
 function bdcGetLoggedInMemberId() {
   try {
@@ -4840,4 +5043,14 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", bdcInitCheckoutState);
 } else {
   bdcInitCheckoutState();
+}
+
+// Start the rate request now (logged in or out); paint once the DOM is ready
+bdcFetchInvoiceRates();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    bdcFetchInvoiceRates().then(bdcRenderInvoiceRates);
+  });
+} else {
+  bdcFetchInvoiceRates().then(bdcRenderInvoiceRates);
 }
