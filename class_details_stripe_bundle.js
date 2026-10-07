@@ -4848,25 +4848,33 @@ function bdcPaintEarlyBirdPrice(el, baseAmount, state) {
   el.textContent = bdcFormatRateMoney(baseAmount);
   const next = el.nextElementSibling;
   let discountedEl = next && next.classList.contains("bdc-early-bird-price") ? next : null;
+  // .total_price sits alone in a w-embed cell; right-align the pair there so it lines up with the other prices
+  const holder = el.classList.contains("total_price") ? el.parentElement : null;
 
   if (state.active) {
-    // Inline so the struck and current prices sit side by side
-    el.style.display = "inline-block";
     el.style.textDecoration = "line-through";
     el.style.opacity = "0.6";
+    if (holder) {
+      holder.style.display = "flex";
+      holder.style.justifyContent = "flex-end";
+      holder.style.alignItems = "baseline";
+    }
     if (!discountedEl) {
       discountedEl = document.createElement("span");
       discountedEl.className = "main-text order-details-price-no-strike bdc-early-bird-price";
-      discountedEl.style.display = "inline-block";
       discountedEl.style.marginLeft = "6px";
       el.insertAdjacentElement("afterend", discountedEl);
     }
     discountedEl.textContent = bdcFormatRateMoney(Math.max(baseAmount - state.discount, 0));
   } else {
     // Expired or no early bird: plain base price, Webflow's own styling back in charge
-    el.style.display = "";
     el.style.textDecoration = "";
     el.style.opacity = "";
+    if (holder) {
+      holder.style.display = "";
+      holder.style.justifyContent = "";
+      holder.style.alignItems = "";
+    }
     if (discountedEl) {
       discountedEl.remove();
     }
