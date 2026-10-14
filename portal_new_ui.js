@@ -560,9 +560,12 @@ class Portal {
             }
         }
 
+        // Hide once this exact next class is already on the future list
+        const alreadyPurchased = this.hasPurchasedRecommendedProgram(studentData, recommendedLevel);
+
         // Handle recommended program visibility based on registration timing
         let showRecommendedSection = false;
-        if (isRecommendedEmpty) {
+        if (isRecommendedEmpty || alreadyPurchased) {
             recommendedSection.style.display = 'none';
             showRecommendedSection = false;
         } else {
@@ -606,6 +609,14 @@ class Portal {
 
         // Implement new button visibility logic
         this.updateButtonVisibility(bundleContainer, recommendedLevel, timeBasedVisibility, studentData);
+
+        // Those buttons sit outside the card, so hide them again after the button pass
+        if (alreadyPurchased) {
+            const registerNowBtn = bundleContainer.querySelector('#enroll-now-btn-2');
+            const learnMoreBtn = bundleContainer.querySelector('[data-portal="next-recomm-learn-more"]');
+            if (registerNowBtn) registerNowBtn.style.display = 'none';
+            if (learnMoreBtn) learnMoreBtn.style.display = 'none';
+        }
 
         // Update modal content and add click event for Learn More button
         this.updateModalContent(student, recommendedLevel, tabPane, studentData);
@@ -667,6 +678,33 @@ class Portal {
             learnMoreBtn.style.display = 'none';
             recommendedSection.style.display = 'none';
         }
+    }
+    /**
+     * True when a non-refunded future class matches the recommended session, year, and level.
+     * @param {Object} studentData - Portal student payload
+     * @param {Object} recommendedLevel - Published next program from the current session
+     * @returns {boolean}
+     */
+    hasPurchasedRecommendedProgram(studentData, recommendedLevel) {
+        const sessions = studentData?.futureSession;
+        const levelName = recommendedLevel?.level;
+        const sessionLabel = recommendedLevel?.session;
+        const year = recommendedLevel?.year;
+        // Session and year are required so only the matching term counts
+        if (!Array.isArray(sessions) || !levelName || !sessionLabel || year == null || year === '') {
+            return false;
+        }
+
+        const recommendedLevelName = String(levelName).trim().toLowerCase();
+        const recommendedSession = `${String(sessionLabel).trim()} ${String(year).trim()}`.toLowerCase();
+
+        return sessions.some((session) => {
+            // Bundle rows have no classId; a withdrawn class can still need the card
+            if (!session || session.isRefunded || !session.classId) return false;
+            const futureLevel = String(session.classDetail?.classLevel || '').trim().toLowerCase();
+            const futureSessionName = String(session.sessionName || '').trim().toLowerCase();
+            return futureLevel === recommendedLevelName && futureSessionName === recommendedSession;
+        });
     }
     /**
      * Checks if student has bundle in future sessions (excluding Summer sessions)
