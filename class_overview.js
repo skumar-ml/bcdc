@@ -262,6 +262,30 @@ class classLists {
     el.querySelectorAll('a').forEach((link) => link.classList.add('any-link'));
   }
 
+  // Fill a syllabus list and its preceding .description-header.
+  // An empty section (for example accomplishments: []) hides both.
+  fillSyllabusSection(listEl, items) {
+    const header = listEl.previousElementSibling;
+    const hasItems = Array.isArray(items) && items.some((item) => String(item || '').trim());
+
+    listEl.innerHTML = '';
+    listEl.style.display = hasItems ? '' : 'none';
+    if (header && header.classList.contains('description-header')) {
+      header.style.display = hasItems ? '' : 'none';
+    }
+    if (!hasItems) return;
+
+    const ul = document.createElement('ul');
+    items.forEach((item) => {
+      if (!String(item || '').trim()) return;
+      const li = document.createElement('li');
+      this.fillRichText(li, item);
+      li.classList.add('DM-Sans');
+      ul.appendChild(li);
+    });
+    listEl.appendChild(ul);
+  }
+
   // ---- Card population ---------------------------------------------------
   fillCard(card, item) {
     const levelId = item.levelId || '';
@@ -433,38 +457,8 @@ class classLists {
         return;
       }
 
-      descriptionEl.innerHTML = '';
-      accomplishmentsEl.innerHTML = '';
-
-      // Populate Description
-      if (Array.isArray(syllabusData.description)) {
-        const ul = document.createElement('ul');
-        syllabusData.description.forEach((item) => {
-          const li = document.createElement('li');
-          this.fillRichText(li, item);
-          li.classList.add('DM-Sans');
-          ul.appendChild(li);
-        });
-        descriptionEl.appendChild(ul);
-      } else {
-        console.warn('No description data or invalid format.');
-        descriptionEl.textContent = 'No description available.';
-      }
-
-      // Populate Accomplishments
-      if (Array.isArray(syllabusData.accomplishments)) {
-        const ul = document.createElement('ul');
-        syllabusData.accomplishments.forEach((item) => {
-          const li = document.createElement('li');
-          this.fillRichText(li, item);
-          li.classList.add('DM-Sans');
-          ul.appendChild(li);
-        });
-        accomplishmentsEl.appendChild(ul);
-      } else {
-        console.warn('No accomplishments data or invalid format.');
-        accomplishmentsEl.textContent = 'No accomplishments available.';
-      }
+      this.fillSyllabusSection(descriptionEl, syllabusData.description);
+      this.fillSyllabusSection(accomplishmentsEl, syllabusData.accomplishments);
 
       // --- Show the modal ---
       const syllabusModal = document.querySelector('.syllabus-modal');
