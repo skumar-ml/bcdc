@@ -595,29 +595,25 @@ class DisplaySuppProgram {
   getDedupedStudents(data) {
     return data
       .filter((item, index, self) => {
-        const dedupeKey = item.studentEmail && item.studentEmail.trim()
-          ? `email:${item.studentEmail.trim().toLowerCase()}`
-          : `payment:${item.paymentId}`;
-        return (
-          index ===
-          self.findIndex((obj) => {
-            const objKey = obj.studentEmail && obj.studentEmail.trim()
-              ? `email:${obj.studentEmail.trim().toLowerCase()}`
-              : `payment:${obj.paymentId}`;
-            return objKey === dedupeKey;
-          })
-        );
+        // Same identity rule as purchase checks so siblings never collapse into one
+        const dedupeKey = this.getStudentIdentityKey(item);
+        return index === self.findIndex((obj) => this.getStudentIdentityKey(obj) === dedupeKey);
       })
       .sort(function (a, b) {
         return a.studentName.trim().localeCompare(b.studentName.trim());
       });
   }
+  /** One key per student: member _id first, else email + name (siblings often share the parent's email). */
   getStudentIdentityKey(student) {
-    if (student && student.studentEmail && student.studentEmail.trim()) {
-      return `email:${student.studentEmail.trim().toLowerCase()}`;
+    if (student && student._id && String(student._id).trim()) {
+      return `id:${String(student._id).trim()}`;
     }
-    if (student && student.studentName && student.studentName.trim()) {
-      return `name:${student.studentName.trim().toLowerCase()}`;
+    // String() guards against non-text values coming back from the API
+    const email = student && student.studentEmail ? String(student.studentEmail).trim().toLowerCase() : "";
+    const name = student && student.studentName ? String(student.studentName).trim().toLowerCase() : "";
+    // Email alone is not unique per child, so pair it with the name
+    if (email || name) {
+      return `student:${email}|${name}`;
     }
     return `payment:${student && student.paymentId ? student.paymentId : ""}`;
   }
