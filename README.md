@@ -16,7 +16,6 @@ This folder contains utility scripts used by BCDC, including checkout customizat
 - `credit_points.js` – Credit balance manager that displays member credit balance, transaction history, and credit point details.
 - `dd_invoices.js` – Invoice management handler for direct debit invoices and payment processing.
 - `instructor-attendance.js` – Instructor-facing attendance tracking system for managing student check-ins.
-- `make_up_session.js` – Manages make-up session scheduling and availability for students.
 - `millions-coach.js` – Coach-facing interface for managing millions program transactions and data.
 - `millions.js` – Renders millions transaction data, displays transaction history, and manages millions program UI.
 - `notification-count.js` – Fetches unread notifications and injects the badge count beside the bell icon.
