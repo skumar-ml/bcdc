@@ -265,7 +265,7 @@ class Portal {
             this.renderStudentTab(tabPane, studentData, millionsData, announcements);
             if (currentSession) {
                 // Show all main sections
-                tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .class-tools-quick-links-div, .millions-balance-flex-wrapper').forEach(el => {
+                tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .millions-balance-flex-wrapper').forEach(el => {
                     if (el) el.style.display = '';
                 });
                 // Show/hide registration-form-accordian based on formList in currentSession
@@ -279,7 +279,7 @@ class Portal {
 
             } else {
                 // Hide all main sections if no currentSession
-                tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .class-tools-quick-links-div, .millions-balance-flex-wrapper').forEach(el => {
+                tabPane.querySelectorAll('.recent-announcement-div.current-class, .recent-announcement-info-div, [data-portal="invoice-form-accordian"], .calendar-info-grid-wrapper, .millions-balance-flex-wrapper').forEach(el => {
                     if (el) el.style.display = 'none';
                 });
                 // Hide registration-form-accordian if no currentSession
@@ -1172,7 +1172,6 @@ class Portal {
         Webflow.require('tabs').redraw();
         this.renderGoogleCalendar(tabPane, student);
         this.renderCalendarIframe(tabPane, student);
-        this.renderMakeupLinks(tabPane, student);
         this.renderZoomLinks(tabPane, student);
         this.renderGeneralResources(tabPane, student);
     }
@@ -1201,78 +1200,6 @@ class Portal {
             calendarDiv.appendChild(iframe);
         } else {
             calendarDiv.innerHTML = '<p class="portal-node-title">Calendar Graph</p><div>Coming Soon...</div>';
-        }
-    }
-
-    /**
-     * Renders makeup scheduling links
-     * @param {HTMLElement} tabPane - The tab pane element
-     * @param {Object} student - Current student data
-     */
-    renderMakeupLinks(tabPane, student) {
-        const makeupDiv = tabPane.querySelector('.class-tools-quick-links-div');
-        if (!makeupDiv) return;
-        const makeupSection = makeupDiv.querySelector('.class-tools-quick-links-flex-wrapper');
-        if (!makeupSection) return;
-        makeupSection.innerHTML = '';
-
-        const makeupLink = student.uploadedContent?.find(u => u.label === 'Make-up Acuity Link');
-        if (makeupLink?.upload_content?.length > 0) {
-            makeupLink.upload_content.forEach(item => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'class-tools-quick-links-flex-wrapper';
-
-                const icon = document.createElement('img');
-                icon.loading = 'lazy';
-                icon.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68752684beabb8d0a43428b5_calendar_today.svg';
-                icon.alt = '';
-                icon.className = 'inline-block-icon';
-
-                const textDiv = document.createElement('div');
-                const titleDiv = document.createElement('div');
-                titleDiv.className = 'dm-sans title';
-                const titleSpan = document.createElement('span');
-                titleSpan.textContent = 'Schedule a Makeup';
-                titleDiv.appendChild(titleSpan);
-
-                const subtitleDiv = document.createElement('div');
-                subtitleDiv.className = 'poppins-para class-tools-quick-links';
-                const subtitleSpan = document.createElement('span');
-                subtitleSpan.textContent = 'One-click redirect to Acuity';
-                subtitleDiv.appendChild(subtitleSpan);
-
-                const linkDiv = document.createElement('div');
-                linkDiv.className = 'poppins-para scheduling';
-                const a = document.createElement('a');
-                a.href = item.link;
-                a.classList.add('any-link', 'underline');
-                a.textContent = 'Go to scheduling';
-                a.target = '_blank';
-                a.style.marginRight = '8px';
-
-                const img = document.createElement('img');
-                img.src = 'https://cdn.prod.website-files.com/64091ce7166e6d5fb836545e/68835aaecba0da532a6b3d19_Group%20(2).svg';
-                img.alt = 'click to open link';
-                img.style.cursor = 'pointer';
-                img.style.width = '18px';
-                img.style.height = '18px';
-
-                this.addTooltipCopyBehavior(img, item.link);
-
-                linkDiv.appendChild(a);
-                var imgContainer = document.createElement('div');
-                imgContainer.classList.add("new-tab-icon-wrapper")
-                imgContainer.appendChild(img);
-                linkDiv.appendChild(imgContainer);
-                textDiv.appendChild(titleDiv);
-                textDiv.appendChild(subtitleDiv);
-                textDiv.appendChild(linkDiv);
-
-                makeupSection.appendChild(icon);
-                makeupSection.appendChild(textDiv);
-            });
-        } else {
-            makeupSection.innerHTML = '<div>Coming Soon...</div>';
         }
     }
 
