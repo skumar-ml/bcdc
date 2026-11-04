@@ -1,7 +1,7 @@
 /*
-Purpose: Admin portal peek gate for ?testMemberId= — prefer Mongo/API, keep legacy ids only if the API is unreachable or no Memberstack token is available yet.
+Purpose: Admin portal peek gate for ?testMemberId= — API allow (Mongo/SSM) or legacy list; never lock out known peeks on API deny during migration.
 
-Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek(loggedInMemberId). Sends Bearer when a Memberstack JWT is present so canPortalPeek can use admin_users + SSM. Legacy ids are a production safety net for deploy gaps only — not used to override a healthy API deny when a token was sent.
+Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek(loggedInMemberId). Sends Bearer when a Memberstack JWT is present. allowed=true from API opens the peek; otherwise legacy ids keep current production peeks working until Webflow legacy is removed.
 
 dependent-files: window.BDC_API.member, optional bdcFetch, Memberstack cookie/localStorage
 
@@ -92,12 +92,10 @@ Load this file on portal pages before the page bootstrap script.
         return legacyAllows(loggedInMemberId);
       }
       var data = await res.json();
-      // Token was sent and API answered — trust Mongo/SSM (do not override deny with legacy)
-      if (bearer) {
-        return !!(data && data.allowed === true);
-      }
-      // No Bearer yet (Phase 4 rollout) — legacy list keeps current peeks working
+      // API allow wins (Mongo or SSM on the server)
       if (data && data.allowed === true) return true;
+      // API deny or no token: still honor legacy so a bad/missing JWT cannot lock out
+      // current production peeks until every admin is linked in Mongo and legacy is removed
       return legacyAllows(loggedInMemberId);
     } catch (e) {
       console.warn("canPortalPeek failed; using legacy allowlist", e);
