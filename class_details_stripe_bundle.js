@@ -699,38 +699,38 @@ class classDetailsStripe extends parentLogin {
     return sessionName;
   }
 
-  // "Loading...." inside #choose-student-card while getUpsellProgram is in loading.
-  showChooseStudentLoading() {
-    var card = document.getElementById("choose-student-card");
-    if (!card || card.dataset.upsellLoading === "1") return;
-    card.dataset.upsellLoading = "1";
-    card.dataset.upsellLoadingPrevDisplay = card.style.display || "";
-    card.style.display = "block";
-    Array.from(card.children).forEach(function (child) {
+  // "Loading...." inside #stripe-checkout-tab while getUpsellProgram is in flight.
+  showStripeCheckoutLoading() {
+    var tab = document.getElementById("stripe-checkout-tab");
+    if (!tab || tab.dataset.upsellLoading === "1") return;
+    tab.dataset.upsellLoading = "1";
+    tab.dataset.upsellLoadingPrevDisplay = tab.style.display || "";
+    tab.style.display = "block";
+    Array.from(tab.children).forEach(function (child) {
       child.dataset.prevDisplay = child.style.display;
       child.style.display = "none";
     });
     var loading = document.createElement("div");
-    loading.id = "choose-student-loading";
+    loading.id = "stripe-checkout-loading";
     loading.textContent = "Loading....";
     loading.style.cssText = "display:block;padding:24px 16px;";
-    card.appendChild(loading);
+    tab.appendChild(loading);
   }
 
-  hideChooseStudentLoading() {
-    var loading = document.getElementById("choose-student-loading");
+  hideStripeCheckoutLoading() {
+    var loading = document.getElementById("stripe-checkout-loading");
     if (loading) loading.remove();
-    var card = document.getElementById("choose-student-card");
-    if (!card || card.dataset.upsellLoading !== "1") return;
-    delete card.dataset.upsellLoading;
-    var profileRendererUpdated = Array.from(card.children).some(function (child) {
-      return child.id !== "choose-student-loading" && !("prevDisplay" in child.dataset);
+    var tab = document.getElementById("stripe-checkout-tab");
+    if (!tab || tab.dataset.upsellLoading !== "1") return;
+    delete tab.dataset.upsellLoading;
+    var tabUpdated = Array.from(tab.children).some(function (child) {
+      return child.id !== "stripe-checkout-loading" && !("prevDisplay" in child.dataset);
     });
-    if (!profileRendererUpdated && card.style.display === "block") {
-      card.style.display = card.dataset.upsellLoadingPrevDisplay || "";
+    if (!tabUpdated && tab.style.display === "block") {
+      tab.style.display = tab.dataset.upsellLoadingPrevDisplay || "";
     }
-    delete card.dataset.upsellLoadingPrevDisplay;
-    Array.from(card.children).forEach(function (child) {
+    delete tab.dataset.upsellLoadingPrevDisplay;
+    Array.from(tab.children).forEach(function (child) {
       if (!("prevDisplay" in child.dataset)) return;
       if (child.style.display === "none") {
         child.style.display = child.dataset.prevDisplay;
@@ -742,7 +742,7 @@ class classDetailsStripe extends parentLogin {
   // Load upsells for the active session from getCurrentYearAndSession.session.
   async fetchCurrentSessionUpsellPrograms() {
     var upsellSession = await this.resolveUpsellSession();
-    this.showChooseStudentLoading();
+    this.showStripeCheckoutLoading();
     try {
       var suppData = await this.fetchData(
         "getUpsellProgram?session=" + encodeURIComponent(upsellSession),
@@ -750,7 +750,7 @@ class classDetailsStripe extends parentLogin {
       );
       return Array.isArray(suppData) ? suppData : [];
     } finally {
-      this.hideChooseStudentLoading();
+      this.hideStripeCheckoutLoading();
     }
   }
 
