@@ -699,14 +699,59 @@ class classDetailsStripe extends parentLogin {
     return sessionName;
   }
 
+  // "Loading...." inside #choose-student-card while getUpsellProgram is in loading.
+  showChooseStudentLoading() {
+    var card = document.getElementById("choose-student-card");
+    if (!card || card.dataset.upsellLoading === "1") return;
+    card.dataset.upsellLoading = "1";
+    card.dataset.upsellLoadingPrevDisplay = card.style.display || "";
+    card.style.display = "block";
+    Array.from(card.children).forEach(function (child) {
+      child.dataset.prevDisplay = child.style.display;
+      child.style.display = "none";
+    });
+    var loading = document.createElement("div");
+    loading.id = "choose-student-loading";
+    loading.textContent = "Loading....";
+    loading.style.cssText = "display:block;padding:24px 16px;";
+    card.appendChild(loading);
+  }
+
+  hideChooseStudentLoading() {
+    var loading = document.getElementById("choose-student-loading");
+    if (loading) loading.remove();
+    var card = document.getElementById("choose-student-card");
+    if (!card || card.dataset.upsellLoading !== "1") return;
+    delete card.dataset.upsellLoading;
+    var profileRendererUpdated = Array.from(card.children).some(function (child) {
+      return child.id !== "choose-student-loading" && !("prevDisplay" in child.dataset);
+    });
+    if (!profileRendererUpdated && card.style.display === "block") {
+      card.style.display = card.dataset.upsellLoadingPrevDisplay || "";
+    }
+    delete card.dataset.upsellLoadingPrevDisplay;
+    Array.from(card.children).forEach(function (child) {
+      if (!("prevDisplay" in child.dataset)) return;
+      if (child.style.display === "none") {
+        child.style.display = child.dataset.prevDisplay;
+      }
+      delete child.dataset.prevDisplay;
+    });
+  }
+
   // Load upsells for the active session from getCurrentYearAndSession.session.
   async fetchCurrentSessionUpsellPrograms() {
     var upsellSession = await this.resolveUpsellSession();
-    var suppData = await this.fetchData(
-      "getUpsellProgram?session=" + encodeURIComponent(upsellSession),
-      this.typeEBaseUrl
-    );
-    return Array.isArray(suppData) ? suppData : [];
+    this.showChooseStudentLoading();
+    try {
+      var suppData = await this.fetchData(
+        "getUpsellProgram?session=" + encodeURIComponent(upsellSession),
+        this.typeEBaseUrl
+      );
+      return Array.isArray(suppData) ? suppData : [];
+    } finally {
+      this.hideChooseStudentLoading();
+    }
   }
 
   // Checkout student dropdown API lives on the b4z5gqv2xj gateway (not typeFBaseUrl).

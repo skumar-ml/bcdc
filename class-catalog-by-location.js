@@ -2,7 +2,7 @@
 
 Purpose: Renders the per-location class catalog on program location pages (Fort Lee, Westchester, Online, Livingston, Glen Rock, etc). Fetches class details for one location from the API, clones a Webflow template card once per class, fills in schedule/timing/prerequisite data, powers the syllabus preview modal, renders the Summer offering cards, and drives the location detail dropdown toggle.
 
-Brief Logic: Reads the target location's ID from window.CATALOG_LOCATION_ID (set per-page before this script loads), activates the first schedule tab, fetches getClassDetails for that location, clones the static catalog card template in each grades tab (5–8 vs 9+), fills in times/labels/register links, and wires up the syllabus modal. Separately fetches getSummerOffering for the same location and clones the summer catalog card template once per program. Also wires up the collapsible .location-header-dropdown-wapper toggle for the location detail grid.
+Brief Logic: Reads the target location's ID from window.CATALOG_LOCATION_ID (set per-page before this script loads), activates the first schedule tab, shows the site spinner while getClassDetails loads, clones the static catalog card template in each grades tab (5–8 vs 9+), fills in times/labels/register links, and wires up the syllabus modal. Separately fetches getSummerOffering for the same location and clones the summer catalog card template once per program. Also wires up the collapsible .location-header-dropdown-wapper toggle for the location detail grid.
 
 Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_API/bdcFetch from Webflow's site-wide Head code, and window.CATALOG_LOCATION_ID to be set by a small inline script on each location page before this file loads.
 
@@ -22,6 +22,8 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
 
   let cachedApiData = null;
   let syllabusDataLoaded = false;
+  let catalogSpinner = null;
+  let catalogLoaderRow = null;
 
   const DAY_SELECTOR_MAP = {
     Sunday: [".class-sun"],
@@ -33,6 +35,85 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     Saturday: [".class-sat"]
   };
   const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  // Show the site spinner in the catalog tabs while class data loads.
+  function ensureSpinner() {
+    let spinner = document.getElementById("half-circle-spinner");
+    if (spinner) return spinner;
+
+    spinner = document.createElement("div");
+    spinner.id = "half-circle-spinner";
+    spinner.className = "half-circle-spinner";
+    spinner.innerHTML = '<div class="circle circle-1"></div><div class="circle circle-2"></div>';
+    document.body.appendChild(spinner);
+    return spinner;
+  }
+
+  function getLoaderHost() {
+    const root =
+      document.querySelector(".schedule_tab-container") ||
+      document.querySelector(".schedule-tab-container");
+    if (!root) return null;
+
+    return root.querySelector(".tabs-content") || root.querySelector(".w-tab-content");
+  }
+
+  function setCatalogCardsHidden(hidden) {
+    document.querySelectorAll(`.${CARD_CLASS}`).forEach((el) => {
+      const row = el.closest(".collection-item-fort-lee") || el.closest(DETAIL_WRAPPER_SELECTOR) || el;
+      row.style.display = hidden ? "none" : "";
+    });
+  }
+
+  function showCatalogLoader() {
+    setCatalogCardsHidden(true);
+
+    const host = getLoaderHost();
+    const spinner = catalogSpinner || ensureSpinner();
+    catalogSpinner = spinner;
+    if (!host || !spinner) return;
+
+    if (!catalogLoaderRow) {
+      catalogLoaderRow = document.createElement("div");
+      catalogLoaderRow.id = "class-catalog-loader";
+      catalogLoaderRow.setAttribute("aria-live", "polite");
+      catalogLoaderRow.setAttribute("aria-busy", "true");
+      catalogLoaderRow.style.cssText =
+        "width:100%;display:flex;justify-content:center;align-items:center;min-height:140px;padding:32px 0;box-sizing:border-box;";
+    }
+
+    catalogLoaderRow.style.display = "flex";
+    catalogLoaderRow.appendChild(spinner);
+    if (catalogLoaderRow.parentElement !== host) {
+      host.insertBefore(catalogLoaderRow, host.firstChild);
+    }
+
+    // Site CSS parks the spinner as a fixed overlay. Override so it sits
+    // inline in the catalog row (full-width, centered).
+    spinner.style.display = "block";
+    spinner.style.position = "relative";
+    spinner.style.top = "auto";
+    spinner.style.left = "auto";
+    spinner.style.transform = "none";
+    spinner.style.margin = "0";
+  }
+
+  function hideCatalogLoader() {
+    if (catalogLoaderRow) {
+      catalogLoaderRow.style.display = "none";
+      catalogLoaderRow.setAttribute("aria-busy", "false");
+    }
+    const spinner = catalogSpinner || document.getElementById("half-circle-spinner");
+    if (spinner) {
+      spinner.style.display = "none";
+      spinner.style.position = "";
+      spinner.style.top = "";
+      spinner.style.left = "";
+      spinner.style.transform = "";
+      spinner.style.margin = "";
+    }
+    setCatalogCardsHidden(false);
+  }
 
   // Activate the first schedule tab (same on every location page).
   function activateFirstTab() {
@@ -501,8 +582,11 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
 
   // Clone the static template card in each grades tab once per matching API class.
   async function render() {
+    showCatalogLoader();
+
     const templateCards = document.querySelectorAll(`.${CARD_CLASS}`);
     if (!templateCards.length) {
+      hideCatalogLoader();
       console.error(`No .${CARD_CLASS} catalog card template found.`);
       return;
     }
@@ -526,6 +610,8 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
       applyEmptySyllabusRules(apiData);
     } catch (error) {
       console.error("Failed to render class catalog cards:", error);
+    } finally {
+      hideCatalogLoader();
     }
   }
 
