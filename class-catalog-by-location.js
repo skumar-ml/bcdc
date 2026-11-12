@@ -50,13 +50,12 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
   }
 
   function getLoaderHost() {
-    const root = document.querySelector(".schedule-tab-container") || document;
-    return (
-      root.querySelector(".w-tab-content") ||
-      root.querySelector(".tabs-content") ||
-      root.querySelector(".w-tab-pane") ||
-      root
-    );
+    const root =
+      document.querySelector(".schedule_tab-container") ||
+      document.querySelector(".schedule-tab-container");
+    if (!root) return null;
+
+    return root.querySelector(".tabs-content") || root.querySelector(".w-tab-content");
   }
 
   function setCatalogCardsHidden(hidden) {
