@@ -700,21 +700,26 @@ class classDetailsStripe extends parentLogin {
   }
 
   // "Loading...." inside #stripe-checkout-tab while getUpsellProgram is in flight.
+  // .active_checkout_tab is display:block !important, so a normal display:none
+  // cannot hide the checkout form. Override that and put the text at the top.
   showStripeCheckoutLoading() {
     var tab = document.getElementById("stripe-checkout-tab");
     if (!tab || tab.dataset.upsellLoading === "1") return;
     tab.dataset.upsellLoading = "1";
     tab.dataset.upsellLoadingPrevDisplay = tab.style.display || "";
-    tab.style.display = "block";
+    tab.style.setProperty("display", "block", "important");
     Array.from(tab.children).forEach(function (child) {
-      child.dataset.prevDisplay = child.style.display;
-      child.style.display = "none";
+      child.dataset.prevDisplay = child.style.display || "";
+      child.dataset.prevActive = child.classList.contains("active_checkout_tab") ? "1" : "0";
+      child.classList.remove("active_checkout_tab");
+      child.style.setProperty("display", "none", "important");
     });
     var loading = document.createElement("div");
     loading.id = "stripe-checkout-loading";
+    loading.className = "active_checkout_tab";
     loading.textContent = "Loading....";
     loading.style.cssText = "display:block;padding:24px 16px;";
-    tab.appendChild(loading);
+    tab.insertBefore(loading, tab.firstChild);
   }
 
   hideStripeCheckoutLoading() {
@@ -723,27 +728,30 @@ class classDetailsStripe extends parentLogin {
     var tab = document.getElementById("stripe-checkout-tab");
     if (!tab || tab.dataset.upsellLoading !== "1") return;
     delete tab.dataset.upsellLoading;
-    var tabUpdated = Array.from(tab.children).some(function (child) {
-      return child.id !== "stripe-checkout-loading" && !("prevDisplay" in child.dataset);
-    });
-    if (!tabUpdated && tab.style.display === "block") {
-      tab.style.display = tab.dataset.upsellLoadingPrevDisplay || "";
+    tab.style.removeProperty("display");
+    if (tab.dataset.upsellLoadingPrevDisplay) {
+      tab.style.display = tab.dataset.upsellLoadingPrevDisplay;
     }
     delete tab.dataset.upsellLoadingPrevDisplay;
     Array.from(tab.children).forEach(function (child) {
       if (!("prevDisplay" in child.dataset)) return;
-      if (child.style.display === "none") {
+      child.style.removeProperty("display");
+      if (child.dataset.prevDisplay) {
         child.style.display = child.dataset.prevDisplay;
       }
+      if (child.dataset.prevActive === "1") {
+        child.classList.add("active_checkout_tab");
+      }
       delete child.dataset.prevDisplay;
+      delete child.dataset.prevActive;
     });
   }
 
   // Load upsells for the active session from getCurrentYearAndSession.session.
   async fetchCurrentSessionUpsellPrograms() {
-    var upsellSession = await this.resolveUpsellSession();
     this.showStripeCheckoutLoading();
     try {
+      var upsellSession = await this.resolveUpsellSession();
       var suppData = await this.fetchData(
         "getUpsellProgram?session=" + encodeURIComponent(upsellSession),
         this.typeEBaseUrl
