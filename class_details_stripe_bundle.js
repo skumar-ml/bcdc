@@ -776,6 +776,25 @@ class classDetailsStripe extends parentLogin {
     return endpoint;
   }
 
+  // The dropdown and the Choose Student cards both need this list. Share one
+  // in-flight request so checkout does not call the API twice.
+  loadCheckoutStudentProfiles() {
+    if (this._checkoutStudentProfilesPromise) {
+      return this._checkoutStudentProfilesPromise;
+    }
+    var $this = this;
+    this._checkoutStudentProfilesPromise = this.fetchData(
+      this.getCheckoutStudentProfilesEndpoint(),
+      this.getCheckoutStudentProfilesBaseUrl()
+    ).then(function (response) {
+      return $this.normalizeCheckoutStudentProfiles(response);
+    }).catch(function (error) {
+      $this._checkoutStudentProfilesPromise = null;
+      throw error;
+    });
+    return this._checkoutStudentProfilesPromise;
+  }
+
   // Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
   normalizeCheckoutStudentProfiles(response) {
     var list = response;
@@ -2839,11 +2858,7 @@ class classDetailsStripe extends parentLogin {
       if ($this.$allBundlePrograms.length > 0 && $this.$isCheckoutFlow == "Bundle-Purchase") {
         data = $this.$allBundlePrograms;
       } else {
-        var profilesResponse = await this.fetchData(
-          this.getCheckoutStudentProfilesEndpoint(),
-          this.getCheckoutStudentProfilesBaseUrl()
-        );
-        data = this.normalizeCheckoutStudentProfiles(profilesResponse);
+        data = await this.loadCheckoutStudentProfiles();
       }
       //finding unique value and sorting by firstName
       if (data == "No data Found" || !Array.isArray(data) || data.length == 0) {
@@ -3151,11 +3166,7 @@ class classDetailsStripe extends parentLogin {
     });
 
     try {
-      var profilesResponse = await this.fetchData(
-        this.getCheckoutStudentProfilesEndpoint(),
-        this.getCheckoutStudentProfilesBaseUrl()
-      );
-      var profiles = this.normalizeCheckoutStudentProfiles(profilesResponse)
+      var profiles = (await this.loadCheckoutStudentProfiles())
         .filter(function (item) { return item && item.studentName; });
 
       if (profiles.length === 0) {
