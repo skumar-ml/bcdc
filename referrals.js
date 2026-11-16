@@ -10,6 +10,15 @@ Are there any dependent JS files: No
 class ReferralProgram {
   // Initializes the ReferralProgram instance
   constructor(data) {
+    // Admin peek: copy memberId after URL override (this.memberId is snapshotted below)
+    if (window.BdcPortalPeek && typeof window.BdcPortalPeek.applyPeekMemberIdToData === "function") {
+      window.BdcPortalPeek.applyPeekMemberIdToData(data);
+    } else {
+      try {
+        var peekId = new URLSearchParams(window.location.search).get("testMemberId");
+        if (peekId) data.memberId = peekId;
+      } catch (e) { /* keep embed memberId */ }
+    }
     this.referralCount = data.referralCount;
     this.maxReferrals = data.maxReferrals;
     this.rewards = data.rewards;

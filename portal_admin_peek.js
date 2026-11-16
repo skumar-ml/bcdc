@@ -1,9 +1,9 @@
 /*
 Purpose: Admin portal peek gate for ?testMemberId= — Admin-minted peekToken; stamps token onto portal API calls.
 
-Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). When peekToken is in the URL, auto-wraps fetch/bdcFetch so getPortalDetail and friends stop 403ing. Forces path/query memberId to URL testMemberId so Memberstack's logged-in id cannot show the wrong family. Only BDC API hosts get peekToken (never third-party URLs).
+Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). When peeking, forces every BDC API call (fetch / bdcFetch / XHR) onto URL testMemberId + peekToken so Memberstack's logged-in id cannot show the wrong family. Only BDC API hosts are touched.
 
-dependent-files: window.BDC_API.member, optional bdcFetch, portal_new_ui / portal_staging fetch calls
+dependent-files: window.BDC_API.member, optional bdcFetch, portal_new_ui / portal_staging / sidebar / announcement / payment_history / millions / credit_points / referrals
 
 Webflow embed (dashboard bootstrap — memberId MUST prefer testMemberId):
 
@@ -15,7 +15,7 @@ Webflow embed (dashboard bootstrap — memberId MUST prefer testMemberId):
     ? window.BdcPortalPeek.resolveMemberId(webflowMemberId)
     : (testMemberId || webflowMemberId);
 
-  if (testMemberId && testAccountEmail && testAccountType) {
+  if (testMemberId && window.BdcPortalPeek) {
     const allowed = await window.BdcPortalPeek.canPortalPeek();
     if (!allowed) {
       window.location.href = window.location.origin + "/portal/login-admit-account";
@@ -23,9 +23,10 @@ Webflow embed (dashboard bootstrap — memberId MUST prefer testMemberId):
     }
   }
 
-  // Pass memberId into Portal / Sidebar / Announcement data — not webflowMemberId alone
+  // Pass memberId (and testAccountEmail) into Portal / Sidebar / Announcement data
 
-Load this file on portal pages BEFORE portal_new_ui / portal_staging.
+Load this file on portal pages BEFORE portal_new_ui / portal_staging / other portal scripts.
+Pin scripts by commit SHA in Webflow — do not rely on main merge.
 */
 
 (function () {
@@ -49,6 +50,8 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     "getMillionsDetails",
     "getMillionsStoreDetails",
     "signInActivity",
+    "getSemesterInvoiceDataV2",
+    "getAllPreviousStudents",
   ];
 
   function peekTokenFromUrl() {
@@ -62,6 +65,22 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
   function testMemberIdFromUrl() {
     try {
       return new URLSearchParams(window.location.search).get("testMemberId") || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function testAccountEmailFromUrl() {
+    try {
+      return new URLSearchParams(window.location.search).get("testAccountEmail") || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function testAccountTypeFromUrl() {
+    try {
+      return new URLSearchParams(window.location.search).get("testAccountType") || "";
     } catch (e) {
       return "";
     }
@@ -114,7 +133,7 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
       // .../getPortalDetail/{anyId} → .../getPortalDetail/{testMemberId}
       absolute.pathname = absolute.pathname.replace(
         new RegExp("/(" + escaped + ")/[^/]+(?=/|$)", "i"),
-        "/" + "$1/" + peekMemberId
+        "/$1/" + peekMemberId
       );
       if (absolute.searchParams.has("memberId")) {
         absolute.searchParams.set("memberId", peekMemberId);
@@ -146,11 +165,38 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     return withPeekQuery(next, token);
   }
 
+  /** Add peek header so APIs that ignore query still see the session. */
+  function withPeekHeaders(init, token) {
+    if (!token) return init;
+    var next = init ? Object.assign({}, init) : {};
+    var headers = next.headers;
+    if (typeof Headers !== "undefined" && (headers instanceof Headers || !headers)) {
+      var h = headers instanceof Headers ? new Headers(headers) : new Headers();
+      if (!h.get("X-BDC-Peek-Token")) h.set("X-BDC-Peek-Token", token);
+      next.headers = h;
+      return next;
+    }
+    // Plain object headers
+    var plain = {};
+    if (headers && typeof headers === "object") {
+      for (var k in headers) {
+        if (Object.prototype.hasOwnProperty.call(headers, k)) plain[k] = headers[k];
+      }
+    }
+    var hasPeek = Object.keys(plain).some(function (k) {
+      return String(k).toLowerCase() === "x-bdc-peek-token";
+    });
+    if (!hasPeek) plain["X-BDC-Peek-Token"] = token;
+    next.headers = plain;
+    return next;
+  }
+
   /**
    * @returns {Promise<boolean>}
    */
   async function canPortalPeek() {
     var token = peekTokenFromUrl();
+    // Peek gate requires Admin-minted token — no Memberstack fallback here
     if (!token) return false;
 
     var base = (window.BDC_API && window.BDC_API.member) || "";
@@ -168,12 +214,12 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     try {
       // Use unwrapped fetch for the gate call if we already patched window.fetch
       var fetchFn = window.__bdcPeekOriginalFetch || window.fetch;
-      if (typeof window.bdcFetch === "function" && !window.__bdcPeekFetchInstalled) {
+      if (typeof window.bdcFetch === "function" && !window.bdcFetch.__bdcPeekWrapped) {
         fetchFn = window.bdcFetch;
       }
       var res = await fetchFn.call(window, url, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: { Accept: "application/json", "X-BDC-Peek-Token": token },
         credentials: "omit",
       });
       if (!res.ok) return false;
@@ -185,40 +231,93 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     }
   }
 
-  /** Stamp peekToken + correct memberId on portal API fetches. */
+  function wrapFetchFn(original, token, peekMemberId) {
+    var wrapped = function (input, init) {
+      var nextInput = input;
+      var nextInit = init;
+      if (typeof input === "string") {
+        nextInput = applyPeekToUrl(input, token, peekMemberId);
+        nextInit = withPeekHeaders(init, token);
+      } else if (input && typeof Request !== "undefined" && input instanceof Request) {
+        nextInput = new Request(applyPeekToUrl(input.url, token, peekMemberId), input);
+        nextInit = withPeekHeaders(init, token);
+      }
+      return original.call(this, nextInput, nextInit);
+    };
+    wrapped.__bdcPeekWrapped = true;
+    return wrapped;
+  }
+
+  /** Stamp peekToken + correct memberId on fetch, late bdcFetch, and XHR. */
   function installPeekFetch() {
     var token = peekTokenFromUrl();
     var peekMemberId = testMemberIdFromUrl();
-    if (!token || window.__bdcPeekFetchInstalled) return;
+    // Need at least one peek signal — token for auth, member id for family routing
+    if ((!token && !peekMemberId) || window.__bdcPeekFetchInstalled) return;
     window.__bdcPeekFetchInstalled = true;
 
-    var wrap = function (original) {
-      return function (input, init) {
-        var nextInput = input;
-        if (typeof input === "string") {
-          nextInput = applyPeekToUrl(input, token, peekMemberId);
-        } else if (input && typeof Request !== "undefined" && input instanceof Request) {
-          nextInput = new Request(applyPeekToUrl(input.url, token, peekMemberId), input);
-        }
-        return original.call(this, nextInput, init);
-      };
-    };
-
-    // portal_new_ui uses raw fetch — wrap it when peeking
-    if (typeof window.fetch === "function") {
+    // portal_new_ui uses raw fetch
+    if (typeof window.fetch === "function" && !window.fetch.__bdcPeekWrapped) {
       window.__bdcPeekOriginalFetch = window.fetch.bind(window);
-      window.fetch = wrap(window.__bdcPeekOriginalFetch);
+      window.fetch = wrapFetchFn(window.__bdcPeekOriginalFetch, token, peekMemberId);
     }
-    if (typeof window.bdcFetch === "function") {
-      window.bdcFetch = wrap(window.bdcFetch);
+
+    // bdcFetch may be assigned by Webflow after this file — wrap now and watch
+    function ensureBdcFetchWrapped() {
+      if (typeof window.bdcFetch !== "function" || window.bdcFetch.__bdcPeekWrapped) return;
+      window.bdcFetch = wrapFetchFn(window.bdcFetch, token, peekMemberId);
+    }
+    ensureBdcFetchWrapped();
+    var tries = 0;
+    var timer = setInterval(function () {
+      tries += 1;
+      ensureBdcFetchWrapped();
+      if (tries >= 60 || (typeof window.bdcFetch === "function" && window.bdcFetch.__bdcPeekWrapped)) {
+        clearInterval(timer);
+      }
+    }, 50);
+
+    // Invoice/checkout still use XMLHttpRequest — rewrite URL + stamp peek header
+    if (!window.__bdcPeekXhrInstalled && typeof XMLHttpRequest !== "undefined") {
+      window.__bdcPeekXhrInstalled = true;
+      var originalOpen = XMLHttpRequest.prototype.open;
+      var originalSetHeader = XMLHttpRequest.prototype.setRequestHeader;
+      var originalSend = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.open = function (method, url) {
+        var nextUrl = url;
+        if (typeof url === "string") {
+          nextUrl = applyPeekToUrl(url, token, peekMemberId);
+          this._bdcPeekUrl = nextUrl;
+        }
+        var args = [method, nextUrl].concat(Array.prototype.slice.call(arguments, 2));
+        return originalOpen.apply(this, args);
+      };
+      XMLHttpRequest.prototype.send = function (body) {
+        try {
+          if (token && this._bdcPeekUrl && isBdcApiUrl(this._bdcPeekUrl)) {
+            originalSetHeader.call(this, "X-BDC-Peek-Token", token);
+          }
+        } catch (e) {
+          /* header may already be set */
+        }
+        return originalSend.apply(this, arguments);
+      };
     }
   }
 
-  /** Mutate shared Webflow data.memberId when peeking (XHR paths use this too). */
+  /** Mutate shared Webflow data when peeking (covers XHR bodies that read data.memberId). */
   function applyPeekMemberIdToData(data) {
     if (!data || typeof data !== "object") return data;
     var peekId = testMemberIdFromUrl();
     if (peekId) data.memberId = peekId;
+    var email = testAccountEmailFromUrl();
+    if (email) {
+      // Announcement / forms read accountEmail from the embed data object
+      data.accountEmail = email;
+      if (!data.email) data.email = email;
+    }
+    var type = testAccountTypeFromUrl();
+    if (type) data.accountType = type;
     return data;
   }
 
@@ -235,8 +334,8 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     isBdcApiUrl: isBdcApiUrl,
   };
 
-  // Auto-install as soon as this file loads so APIs get the peeked family, not Memberstack's
-  if (peekTokenFromUrl()) {
+  // Install as soon as peek query is present — before Portal/Sidebar construct
+  if (peekTokenFromUrl() || testMemberIdFromUrl()) {
     installPeekFetch();
   }
 })();

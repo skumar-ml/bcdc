@@ -11,6 +11,15 @@ class PaymentHistory {
     // Initializes the PaymentHistory instance
     constructor(data) {
         this.data = data;
+        // Admin peek: URL family wins over Memberstack session id
+        if (window.BdcPortalPeek && typeof window.BdcPortalPeek.applyPeekMemberIdToData === "function") {
+            window.BdcPortalPeek.applyPeekMemberIdToData(this.data);
+        } else {
+            try {
+                var peekId = new URLSearchParams(window.location.search).get("testMemberId");
+                if (peekId) this.data.memberId = peekId;
+            } catch (e) { /* keep embed memberId */ }
+        }
         this.spinner = document.getElementById("half-circle-spinner");
         this.no_record = document.querySelector('[data-container="no-record-found"]');
         this.render();

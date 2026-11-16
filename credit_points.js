@@ -12,6 +12,15 @@ class CreditBalance {
             // Initializes the CreditBalance class with data and DOM elements
             constructor(data) {
                 this.data = data;
+                // Admin peek: URL family wins over Memberstack session id
+                if (window.BdcPortalPeek && typeof window.BdcPortalPeek.applyPeekMemberIdToData === "function") {
+                    window.BdcPortalPeek.applyPeekMemberIdToData(this.data);
+                } else {
+                    try {
+                        var peekId = new URLSearchParams(window.location.search).get("testMemberId");
+                        if (peekId) this.data.memberId = peekId;
+                    } catch (e) { /* keep embed memberId */ }
+                }
                 this.balance = 0.0; // Initial balance
                 this.transactions = [];
                 this.spinner = document.getElementById("half-circle-spinner");
