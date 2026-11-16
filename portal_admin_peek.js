@@ -5,28 +5,13 @@ Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch()
 
 dependent-files: window.BDC_API.member, optional bdcFetch, portal_new_ui / portal_staging / sidebar / announcement / payment_history / millions / credit_points / referrals
 
-Webflow embed (dashboard bootstrap — memberId MUST prefer testMemberId):
+Webflow (required):
+  1) Load this file, then sidebar/utils, then portal_new_ui.js, then portal_dashboard_boot.js
+  2) DELETE the inline script under portal_new_ui that does `if (memberstack) new Portal` / else redirect log-in
+  3) In the Sidebar DOMContentLoaded embed, set window.globalMemberId = testMemberId || webflowMemberId
+     (locals alone cause ReferenceError in Portal / portal_new_ui)
 
-  const params = new URLSearchParams(window.location.search);
-  const testMemberId = params.get("testMemberId");
-  const testAccountEmail = params.get("testAccountEmail");
-  const testAccountType = params.get("testAccountType");
-  const memberId = (window.BdcPortalPeek && window.BdcPortalPeek.resolveMemberId)
-    ? window.BdcPortalPeek.resolveMemberId(webflowMemberId)
-    : (testMemberId || webflowMemberId);
-
-  if (testMemberId && window.BdcPortalPeek) {
-    const allowed = await window.BdcPortalPeek.canPortalPeek();
-    if (!allowed) {
-      window.location.href = window.location.origin + "/portal/login-admit-account";
-      return;
-    }
-  }
-
-  // Pass memberId (and testAccountEmail) into Portal / Sidebar / Announcement data
-
-Load this file on portal pages BEFORE portal_new_ui / portal_staging / other portal scripts.
-Pin scripts by commit SHA in Webflow — do not rely on main merge.
+Pin all of these to the SAME commit SHA via jsDelivr.
 */
 
 (function () {
@@ -333,6 +318,19 @@ Pin scripts by commit SHA in Webflow — do not rely on main merge.
     applyPeekToUrl: applyPeekToUrl,
     isBdcApiUrl: isBdcApiUrl,
   };
+
+  // Publish peek ids on window early so Portal bootstrap / portal_new_ui can read them
+  // (Webflow had these as locals inside DOMContentLoaded → ReferenceError)
+  (function publishPeekGlobals() {
+    var peekId = testMemberIdFromUrl();
+    if (!peekId) return;
+    window.testMemberId = peekId;
+    window.globalMemberId = peekId;
+    var email = testAccountEmailFromUrl();
+    if (email) window.globalAccountEmail = email;
+    var type = testAccountTypeFromUrl();
+    if (type) window.globalAccountType = type;
+  })();
 
   // Only Admin-minted peekToken installs network wraps (normal portal traffic untouched)
   if (peekTokenFromUrl()) {
