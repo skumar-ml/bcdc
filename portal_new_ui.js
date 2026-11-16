@@ -2909,8 +2909,13 @@ function setupNextRecommModalEvents() {
 // Test account: popup must always open for this webflow member id, ignoring the 24h cooldown
 const ALWAYS_SHOW_STUDENT_MODAL_MEMBER_ID = '6a4cce88069f10e3eabac0b3';
 
+/** Webflow embed must set window.globalMemberId (peek URL or Memberstack). */
+function portalGlobalMemberId() {
+  return (typeof window !== 'undefined' && window.globalMemberId) || '';
+}
+
 function canShowStudentModal() {
-  if (globalMemberId === ALWAYS_SHOW_STUDENT_MODAL_MEMBER_ID) return true;
+  if (portalGlobalMemberId() === ALWAYS_SHOW_STUDENT_MODAL_MEMBER_ID) return true;
 
   const lastShown = localStorage.getItem('studDetailsModalShownAt');
   if (!lastShown) return true;
@@ -2927,8 +2932,8 @@ async function checkStudentDetailsAndShowModal() {
 
   //  already shown within 24 hours
   if (!canShowStudentModal()) return;
-const apiURL = `${window.BDC_API.member}getMissingStudentDetails/${globalMemberId}`;
-/* const apiURL = `https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/getStudentDetails/${globalMemberId}`;*/
+const apiURL = `${window.BDC_API.member}getMissingStudentDetails/${portalGlobalMemberId()}`;
+/* const apiURL = `https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/getStudentDetails/${portalGlobalMemberId()}`;*/
   const res = await bdcFetch(apiURL);
   const data = await res.json();
 
@@ -3348,7 +3353,7 @@ function attachStudDetailsFormHandler(formId, options = {}) {
    setLoading(true);
 
     try {
-      const payload = { memberId: globalMemberId, students };
+      const payload = { memberId: portalGlobalMemberId(), students };
 
       if (typeof buildExtraPayload === 'function') {
         Object.assign(payload, buildExtraPayload(form, students) || {});
