@@ -27,6 +27,15 @@ class TrialClassDetails {
      */
     constructor(data) {
         this.data = data;
+        // Admin peek: URL family wins over Memberstack session id
+        if (window.BdcPortalPeek && typeof window.BdcPortalPeek.applyPeekMemberIdToData === "function") {
+            window.BdcPortalPeek.applyPeekMemberIdToData(this.data);
+        } else {
+            try {
+                var peekId = new URLSearchParams(window.location.search).get("testMemberId");
+                if (peekId) this.data.memberId = peekId;
+            } catch (e) { /* keep embed memberId */ }
+        }
         this.noRecordDiv = document.querySelector('.no-record-div');
         this.appointmentTypeListDiv = document.querySelector('[data-trial-class-details="appointmentTypeList"]');
         this.studentListDiv = document.querySelector('[data-trial-class-details="trialClassStudentList"]');
