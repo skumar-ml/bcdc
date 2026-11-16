@@ -2860,23 +2860,19 @@ class Portal {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("start debugging memberstack token");
-// 1. Dump the object your script already uses — look for any token/jwt field
-console.log(JSON.parse(localStorage.getItem("memberstack")));
-
-// 2. List every localStorage key — look for _ms-mid or anything token-like
-console.log(Object.keys(localStorage));
-
-// 3. Cookies — Memberstack 2.0 stores the JWT in _ms-mid
-console.log(document.cookie);
-
-// 4. Is the 2.0 SDK present at all?
-console.log(typeof window.$memberstackDom, typeof window.MemberStack);
-
-console.log("end debugging memberstack token");
   setupNextRecommModalEvents();
-  checkStudentDetailsAndShowModal();
-  //console.log("Function Called");
+  // Wait for portal_dashboard_boot / embed to set window.globalMemberId (peek or Memberstack)
+  function runStudentModalWhenReady(attempt) {
+    if (portalGlobalMemberId() && window.BDC_API && window.BDC_API.member) {
+      checkStudentDetailsAndShowModal();
+      return;
+    }
+    if ((attempt || 0) >= 40) return; // ~2s — avoid Failed to fetch on empty memberId
+    setTimeout(function () {
+      runStudentModalWhenReady((attempt || 0) + 1);
+    }, 50);
+  }
+  runStudentModalWhenReady(0);
 });
 
 function setupNextRecommModalEvents() {
@@ -2929,12 +2925,22 @@ function canShowStudentModal() {
 
 //Function 2
 async function checkStudentDetailsAndShowModal() {
+  // Skip deny/login pages and peeks that have not set a member id yet
+  var path = (window.location.pathname || "").toLowerCase();
+  if (path.indexOf("login-admit-account") !== -1 || path.indexOf("/log-in") !== -1) {
+    return;
+  }
+  var memberId = portalGlobalMemberId();
+  var apiBase = window.BDC_API && window.BDC_API.member;
+  if (!memberId || !apiBase) return;
 
   //  already shown within 24 hours
   if (!canShowStudentModal()) return;
-const apiURL = `${window.BDC_API.member}getMissingStudentDetails/${portalGlobalMemberId()}`;
-/* const apiURL = `https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/getStudentDetails/${portalGlobalMemberId()}`;*/
+  const apiURL = `${apiBase}getMissingStudentDetails/${memberId}`;
+  /* const apiURL = `https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/getStudentDetails/${memberId}`;*/
+  try {
   const res = await bdcFetch(apiURL);
+  if (!res || !res.ok) return;
   const data = await res.json();
 
   // API returns both buckets in one response:
@@ -2983,6 +2989,9 @@ const apiURL = `${window.BDC_API.member}getMissingStudentDetails/${portalGlobalM
     });
   } else if (reviewWrapper) {
     reviewWrapper.style.setProperty('display', 'none');
+  }
+  } catch (e) {
+    console.warn("checkStudentDetailsAndShowModal skipped", e);
   }
 }
 

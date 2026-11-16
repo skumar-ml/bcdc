@@ -83,12 +83,19 @@ Load this file instead, AFTER portal_new_ui.js:
       }
       var allowed = await window.BdcPortalPeek.canPortalPeek();
       if (!allowed) {
+        // Deny page only — do NOT load portal_new_ui / this boot file on login-admit-account
+        console.warn("portal_dashboard_boot: peek denied (expired token or canPortalPeek failed)");
         window.location.href = window.location.origin + "/portal/login-admit-account";
         return;
       }
       window.BdcPortalPeek.installPeekFetch();
       // Peek does not need Memberstack — start Portal on the URL family
       startPortal(testMemberId, testAccountEmail);
+      return;
+    }
+
+    // Never run portal boot on the peek-deny page (avoids Failed to fetch spam)
+    if ((window.location.pathname || "").indexOf("login-admit-account") !== -1) {
       return;
     }
 

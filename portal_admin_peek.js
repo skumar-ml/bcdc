@@ -182,10 +182,24 @@ Pin all of these to the SAME commit SHA via jsDelivr.
   async function canPortalPeek() {
     var token = peekTokenFromUrl();
     // Peek gate requires Admin-minted token — no Memberstack fallback here
-    if (!token) return false;
+    if (!token) {
+      console.warn("canPortalPeek: no peekToken in URL");
+      return false;
+    }
 
-    var base = (window.BDC_API && window.BDC_API.member) || "";
-    if (!base) return false;
+    // Wait briefly for Webflow head embed to define BDC_API
+    var base = "";
+    for (var i = 0; i < 40; i++) {
+      base = (window.BDC_API && window.BDC_API.member) || "";
+      if (base) break;
+      await new Promise(function (r) {
+        setTimeout(r, 50);
+      });
+    }
+    if (!base) {
+      console.warn("canPortalPeek: window.BDC_API.member missing");
+      return false;
+    }
 
     var testMemberId = testMemberIdFromUrl();
     var url =
@@ -207,9 +221,14 @@ Pin all of these to the SAME commit SHA via jsDelivr.
         headers: { Accept: "application/json", "X-BDC-Peek-Token": token },
         credentials: "omit",
       });
-      if (!res.ok) return false;
+      if (!res.ok) {
+        console.warn("canPortalPeek: HTTP", res.status);
+        return false;
+      }
       var data = await res.json();
-      return !!(data && data.allowed === true);
+      var ok = !!(data && data.allowed === true);
+      if (!ok) console.warn("canPortalPeek: allowed=false (expired token or wrong family)");
+      return ok;
     } catch (e) {
       console.warn("canPortalPeek failed", e);
       return false;
