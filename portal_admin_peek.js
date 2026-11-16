@@ -71,10 +71,10 @@ Pin all of these to the SAME commit SHA via jsDelivr.
     }
   }
 
-  /** Prefer URL testMemberId so peeks load that family, not the Memberstack session. */
+  /** Prefer URL testMemberId only during a real Admin peek (token required). */
   function resolveMemberId(fallback) {
     var peekId = testMemberIdFromUrl();
-    if (peekId) return peekId;
+    if (peekId && peekTokenFromUrl()) return peekId;
     return fallback == null ? "" : String(fallback);
   }
 
@@ -370,6 +370,8 @@ Pin all of these to the SAME commit SHA via jsDelivr.
   /** Mutate shared Webflow data when peeking (covers XHR bodies that read data.memberId). */
   function applyPeekMemberIdToData(data) {
     if (!data || typeof data !== "object") return data;
+    // Never override a normal Memberstack session from a stray testMemberId query
+    if (!peekTokenFromUrl()) return data;
     var peekId = testMemberIdFromUrl();
     if (peekId) data.memberId = peekId;
     var email = testAccountEmailFromUrl();
@@ -400,8 +402,9 @@ Pin all of these to the SAME commit SHA via jsDelivr.
   // Publish peek ids on window early so Portal bootstrap / portal_new_ui can read them
   // (Webflow had these as locals inside DOMContentLoaded → ReferenceError)
   (function publishPeekGlobals() {
+    // Require peekToken so normal logins are never overwritten by a leftover query param
     var peekId = testMemberIdFromUrl();
-    if (!peekId) return;
+    if (!peekId || !peekTokenFromUrl()) return;
     window.testMemberId = peekId;
     window.globalMemberId = peekId;
     var email = testAccountEmailFromUrl();
