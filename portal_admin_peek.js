@@ -1,110 +1,131 @@
 /*
-Purpose: Admin portal peek gate for ?testMemberId= — API allow (Mongo/SSM) or legacy list; never lock out known peeks on API deny during migration.
+Purpose: Admin portal peek gate for ?testMemberId= — Admin-minted peekToken; stamps token onto portal API calls.
 
-Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek(loggedInMemberId). Sends Bearer when a Memberstack JWT is present. allowed=true from API opens the peek; otherwise legacy ids keep current production peeks working until Webflow legacy is removed.
+Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). When peekToken is in the URL, auto-wraps fetch/bdcFetch so getPortalDetail and friends stop 403ing. Optional Webflow embed can still gate the page.
 
-dependent-files: window.BDC_API.member, optional bdcFetch, Memberstack cookie/localStorage
+dependent-files: window.BDC_API.member, optional bdcFetch, portal_new_ui / portal_staging fetch calls
 
-Webflow embed change (replace the hardcode-only if):
+Webflow embed (optional page gate — keep if you want deny → login-admit):
 
   if (testMemberId && testAccountEmail && testAccountType) {
-    const allowed = await window.BdcPortalPeek.canPortalPeek(webflowMemberId);
+    const allowed = await window.BdcPortalPeek.canPortalPeek();
     if (!allowed) {
-      window.location.href = "https://www.bergendebate.com/portal/login-admit-account";
+      window.location.href = window.location.origin + "/portal/login-admit-account";
       return;
     }
   }
 
-Load this file on portal pages before the page bootstrap script.
+Load this file on portal pages BEFORE portal_new_ui / portal_staging.
 */
 
 (function () {
-  // Network / pre-deploy fallback only — matches prior Webflow embed + SSM extras
-  var LEGACY_PORTAL_PEEK_MEMBER_IDS = [
-    "6425ddab8d8aff00027e10b4",
-    "68920737da84535585da1714",
-    "68d52fd957a0b1d70c05b04c",
-    "6892074a0df27d037230cdea",
-    "677ee4c0814b6a0002f34431",
-    "64fa2b4cf82fef000265f9e0",
-    "6a97c778e9992ef6b43368f9",
-    "6a8c16ce147fb42632894a61",
-  ];
-
-  function legacyAllows(memberId) {
-    return LEGACY_PORTAL_PEEK_MEMBER_IDS.indexOf(String(memberId || "")) !== -1;
-  }
-
-  function cookieValue(name) {
-    var parts = ("; " + document.cookie).split("; " + name + "=");
-    if (parts.length < 2) return null;
-    return decodeURIComponent(parts.pop().split(";").shift() || "") || null;
-  }
-
-  /** Best-effort Memberstack JWT for Authorization — cookie first, then localStorage shapes. */
-  function memberstackBearer() {
-    var fromCookie = cookieValue("_ms-mid") || cookieValue("ms-mid");
-    if (fromCookie && fromCookie.split(".").length === 3) return fromCookie;
-
+  function peekTokenFromUrl() {
     try {
-      var raw = localStorage.getItem("memberstack");
-      var parsed = raw ? JSON.parse(raw) : null;
-      var token =
-        (parsed && (parsed.token || parsed.jwt || parsed.accessToken)) ||
-        (parsed && parsed.information && (parsed.information.token || parsed.information.jwt));
-      if (token && String(token).split(".").length === 3) return String(token);
+      return new URLSearchParams(window.location.search).get("peekToken") || "";
     } catch (e) {
-      /* ignore */
+      return "";
     }
+  }
 
+  function testMemberIdFromUrl() {
     try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var key = localStorage.key(i) || "";
-        if (key.indexOf("_ms-mid") === -1 && key.indexOf("memberstack") === -1) continue;
-        var val = localStorage.getItem(key);
-        if (val && val.split(".").length === 3) return val;
-      }
-    } catch (e2) {
-      /* ignore */
+      return new URLSearchParams(window.location.search).get("testMemberId") || "";
+    } catch (e) {
+      return "";
     }
-    return null;
+  }
+
+  /** Append peekToken to a relative or absolute URL when missing. */
+  function withPeekQuery(url, token) {
+    if (!token || !url) return url;
+    try {
+      var absolute = new URL(url, window.location.origin);
+      if (!absolute.searchParams.get("peekToken")) {
+        absolute.searchParams.set("peekToken", token);
+      }
+      return absolute.toString();
+    } catch (e) {
+      if (String(url).indexOf("peekToken=") !== -1) return url;
+      return url + (url.indexOf("?") >= 0 ? "&" : "?") + "peekToken=" + encodeURIComponent(token);
+    }
   }
 
   /**
-   * @param {string} loggedInMemberId Memberstack id of the staffer on this browser (legacy fallback only)
    * @returns {Promise<boolean>}
    */
-  async function canPortalPeek(loggedInMemberId) {
+  async function canPortalPeek() {
+    var token = peekTokenFromUrl();
+    if (!token) return false;
+
     var base = (window.BDC_API && window.BDC_API.member) || "";
-    if (!base) {
-      return legacyAllows(loggedInMemberId);
+    if (!base) return false;
+
+    var testMemberId = testMemberIdFromUrl();
+    var url =
+      base.replace(/\/?$/, "/") +
+      "canPortalPeek?peekToken=" +
+      encodeURIComponent(token);
+    if (testMemberId) {
+      url += "&testMemberId=" + encodeURIComponent(testMemberId);
     }
-    var url = base.replace(/\/?$/, "/") + "canPortalPeek";
-    var headers = { Accept: "application/json" };
-    var bearer = memberstackBearer();
-    if (bearer) headers.Authorization = "Bearer " + bearer;
 
     try {
-      var fetchFn = typeof bdcFetch === "function" ? bdcFetch : fetch;
-      var res = await fetchFn(url, { method: "GET", headers: headers, credentials: "omit" });
-      if (!res.ok) {
-        // Keep peeks working if the new Lambda is not live yet
-        return legacyAllows(loggedInMemberId);
+      // Use unwrapped fetch for the gate call if we already patched window.fetch
+      var fetchFn = window.__bdcPeekOriginalFetch || window.fetch;
+      if (typeof window.bdcFetch === "function" && !window.__bdcPeekFetchInstalled) {
+        fetchFn = window.bdcFetch;
       }
+      var res = await fetchFn.call(window, url, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        credentials: "omit",
+      });
+      if (!res.ok) return false;
       var data = await res.json();
-      // API allow wins (Mongo or SSM on the server)
-      if (data && data.allowed === true) return true;
-      // API deny or no token: still honor legacy so a bad/missing JWT cannot lock out
-      // current production peeks until every admin is linked in Mongo and legacy is removed
-      return legacyAllows(loggedInMemberId);
+      return !!(data && data.allowed === true);
     } catch (e) {
-      console.warn("canPortalPeek failed; using legacy allowlist", e);
-      return legacyAllows(loggedInMemberId);
+      console.warn("canPortalPeek failed", e);
+      return false;
+    }
+  }
+
+  /** Stamp peekToken on portal fetches — wrap both fetch and bdcFetch when present. */
+  function installPeekFetch() {
+    var token = peekTokenFromUrl();
+    if (!token || window.__bdcPeekFetchInstalled) return;
+    window.__bdcPeekFetchInstalled = true;
+
+    var wrap = function (original) {
+      return function (input, init) {
+        var nextInput = input;
+        if (typeof input === "string") {
+          nextInput = withPeekQuery(input, token);
+        } else if (input && typeof Request !== "undefined" && input instanceof Request) {
+          nextInput = new Request(withPeekQuery(input.url, token), input);
+        }
+        return original.call(this, nextInput, init);
+      };
+    };
+
+    // portal_new_ui uses raw fetch — always wrap it when peeking
+    if (typeof window.fetch === "function") {
+      window.__bdcPeekOriginalFetch = window.fetch.bind(window);
+      window.fetch = wrap(window.__bdcPeekOriginalFetch);
+    }
+    if (typeof window.bdcFetch === "function") {
+      window.bdcFetch = wrap(window.bdcFetch);
     }
   }
 
   window.BdcPortalPeek = {
     canPortalPeek: canPortalPeek,
-    legacyAllows: legacyAllows,
+    installPeekFetch: installPeekFetch,
+    peekTokenFromUrl: peekTokenFromUrl,
+    withPeekQuery: withPeekQuery,
   };
+
+  // Auto-install as soon as this file loads so APIs get peekToken without waiting on embed
+  if (peekTokenFromUrl()) {
+    installPeekFetch();
+  }
 })();
