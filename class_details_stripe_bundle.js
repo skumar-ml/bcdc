@@ -699,58 +699,66 @@ class classDetailsStripe extends parentLogin {
     return sessionName;
   }
 
-  // "Loading...." inside #choose-student-card while getUpsellProgram is in loading.
-  showChooseStudentLoading() {
-    var card = document.getElementById("choose-student-card");
-    if (!card || card.dataset.upsellLoading === "1") return;
-    card.dataset.upsellLoading = "1";
-    card.dataset.upsellLoadingPrevDisplay = card.style.display || "";
-    card.style.display = "block";
-    Array.from(card.children).forEach(function (child) {
-      child.dataset.prevDisplay = child.style.display;
-      child.style.display = "none";
+  // "Loading...." inside #stripe-checkout-tab while getUpsellProgram is in flight.
+  // .active_checkout_tab is display:block !important, so a normal display:none
+  // cannot hide the checkout form. Override that and put the text at the top.
+  showStripeCheckoutLoading() {
+    var tab = document.getElementById("stripe-checkout-tab");
+    if (!tab || tab.dataset.upsellLoading === "1") return;
+    tab.dataset.upsellLoading = "1";
+    tab.dataset.upsellLoadingPrevDisplay = tab.style.display || "";
+    tab.style.setProperty("display", "block", "important");
+    Array.from(tab.children).forEach(function (child) {
+      child.dataset.prevDisplay = child.style.display || "";
+      child.dataset.prevActive = child.classList.contains("active_checkout_tab") ? "1" : "0";
+      child.classList.remove("active_checkout_tab");
+      child.style.setProperty("display", "none", "important");
     });
     var loading = document.createElement("div");
-    loading.id = "choose-student-loading";
+    loading.id = "stripe-checkout-loading";
+    loading.className = "active_checkout_tab";
     loading.textContent = "Loading....";
     loading.style.cssText = "display:block;padding:24px 16px;";
-    card.appendChild(loading);
+    tab.insertBefore(loading, tab.firstChild);
   }
 
-  hideChooseStudentLoading() {
-    var loading = document.getElementById("choose-student-loading");
+  hideStripeCheckoutLoading() {
+    var loading = document.getElementById("stripe-checkout-loading");
     if (loading) loading.remove();
-    var card = document.getElementById("choose-student-card");
-    if (!card || card.dataset.upsellLoading !== "1") return;
-    delete card.dataset.upsellLoading;
-    var profileRendererUpdated = Array.from(card.children).some(function (child) {
-      return child.id !== "choose-student-loading" && !("prevDisplay" in child.dataset);
-    });
-    if (!profileRendererUpdated && card.style.display === "block") {
-      card.style.display = card.dataset.upsellLoadingPrevDisplay || "";
+    var tab = document.getElementById("stripe-checkout-tab");
+    if (!tab || tab.dataset.upsellLoading !== "1") return;
+    delete tab.dataset.upsellLoading;
+    tab.style.removeProperty("display");
+    if (tab.dataset.upsellLoadingPrevDisplay) {
+      tab.style.display = tab.dataset.upsellLoadingPrevDisplay;
     }
-    delete card.dataset.upsellLoadingPrevDisplay;
-    Array.from(card.children).forEach(function (child) {
+    delete tab.dataset.upsellLoadingPrevDisplay;
+    Array.from(tab.children).forEach(function (child) {
       if (!("prevDisplay" in child.dataset)) return;
-      if (child.style.display === "none") {
+      child.style.removeProperty("display");
+      if (child.dataset.prevDisplay) {
         child.style.display = child.dataset.prevDisplay;
       }
+      if (child.dataset.prevActive === "1") {
+        child.classList.add("active_checkout_tab");
+      }
       delete child.dataset.prevDisplay;
+      delete child.dataset.prevActive;
     });
   }
 
   // Load upsells for the active session from getCurrentYearAndSession.session.
   async fetchCurrentSessionUpsellPrograms() {
-    var upsellSession = await this.resolveUpsellSession();
-    this.showChooseStudentLoading();
+    this.showStripeCheckoutLoading();
     try {
+      var upsellSession = await this.resolveUpsellSession();
       var suppData = await this.fetchData(
         "getUpsellProgram?session=" + encodeURIComponent(upsellSession),
         this.typeEBaseUrl
       );
       return Array.isArray(suppData) ? suppData : [];
     } finally {
-      this.hideChooseStudentLoading();
+      this.hideStripeCheckoutLoading();
     }
   }
 
@@ -766,6 +774,25 @@ class classDetailsStripe extends parentLogin {
       endpoint += "?isBundled=true";
     }
     return endpoint;
+  }
+
+  // The dropdown and the Choose Student cards both need this list. Share one
+  // in-flight request so checkout does not call the API twice.
+  loadCheckoutStudentProfiles() {
+    if (this._checkoutStudentProfilesPromise) {
+      return this._checkoutStudentProfilesPromise;
+    }
+    var $this = this;
+    this._checkoutStudentProfilesPromise = this.fetchData(
+      this.getCheckoutStudentProfilesEndpoint(),
+      this.getCheckoutStudentProfilesBaseUrl()
+    ).then(function (response) {
+      return $this.normalizeCheckoutStudentProfiles(response);
+    }).catch(function (error) {
+      $this._checkoutStudentProfilesPromise = null;
+      throw error;
+    });
+    return this._checkoutStudentProfilesPromise;
   }
 
   // Normalize getCheckoutStudentProfiles payload; API has no parentEmail — use account email.
@@ -2831,11 +2858,7 @@ class classDetailsStripe extends parentLogin {
       if ($this.$allBundlePrograms.length > 0 && $this.$isCheckoutFlow == "Bundle-Purchase") {
         data = $this.$allBundlePrograms;
       } else {
-        var profilesResponse = await this.fetchData(
-          this.getCheckoutStudentProfilesEndpoint(),
-          this.getCheckoutStudentProfilesBaseUrl()
-        );
-        data = this.normalizeCheckoutStudentProfiles(profilesResponse);
+        data = await this.loadCheckoutStudentProfiles();
       }
       //finding unique value and sorting by firstName
       if (data == "No data Found" || !Array.isArray(data) || data.length == 0) {
@@ -3143,11 +3166,7 @@ class classDetailsStripe extends parentLogin {
     });
 
     try {
-      var profilesResponse = await this.fetchData(
-        this.getCheckoutStudentProfilesEndpoint(),
-        this.getCheckoutStudentProfilesBaseUrl()
-      );
-      var profiles = this.normalizeCheckoutStudentProfiles(profilesResponse)
+      var profiles = (await this.loadCheckoutStudentProfiles())
         .filter(function (item) { return item && item.studentName; });
 
       if (profiles.length === 0) {
