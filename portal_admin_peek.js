@@ -1,23 +1,21 @@
 /*
-Purpose: Admin portal peek gate for ?testMemberId= — requires Admin-minted peekToken; no Memberstack login, no legacy id list.
+Purpose: Admin portal peek gate for ?testMemberId= — Admin-minted peekToken; stamps token onto portal API calls.
 
-Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). Reads peekToken from the URL, asks canPortalPeek, and stamps peekToken onto portal API calls (query param so CORS stays default).
+Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). When peekToken is in the URL, auto-wraps fetch/bdcFetch so getPortalDetail and friends stop 403ing. Optional Webflow embed can still gate the page.
 
-dependent-files: window.BDC_API.member, optional bdcFetch
+dependent-files: window.BDC_API.member, optional bdcFetch, portal_new_ui / portal_staging fetch calls
 
-Webflow embed change (replace the hardcode-only if):
+Webflow embed (optional page gate — keep if you want deny → login-admit):
 
   if (testMemberId && testAccountEmail && testAccountType) {
     const allowed = await window.BdcPortalPeek.canPortalPeek();
     if (!allowed) {
-      // Stay on this host (staging webflow.io vs live) — never hardcode prod
       window.location.href = window.location.origin + "/portal/login-admit-account";
       return;
     }
-    window.BdcPortalPeek.installPeekFetch();
   }
 
-Load this file on portal pages before the page bootstrap script.
+Load this file on portal pages BEFORE portal_new_ui / portal_staging.
 */
 
 (function () {
@@ -47,7 +45,6 @@ Load this file on portal pages before the page bootstrap script.
       }
       return absolute.toString();
     } catch (e) {
-      // Relative path without origin context — append manually
       if (String(url).indexOf("peekToken=") !== -1) return url;
       return url + (url.indexOf("?") >= 0 ? "&" : "?") + "peekToken=" + encodeURIComponent(token);
     }
@@ -73,8 +70,12 @@ Load this file on portal pages before the page bootstrap script.
     }
 
     try {
-      var fetchFn = typeof bdcFetch === "function" ? bdcFetch : fetch;
-      var res = await fetchFn(url, {
+      // Use unwrapped fetch for the gate call if we already patched window.fetch
+      var fetchFn = window.__bdcPeekOriginalFetch || window.fetch;
+      if (typeof window.bdcFetch === "function" && !window.__bdcPeekFetchInstalled) {
+        fetchFn = window.bdcFetch;
+      }
+      var res = await fetchFn.call(window, url, {
         method: "GET",
         headers: { Accept: "application/json" },
         credentials: "omit",
@@ -88,7 +89,7 @@ Load this file on portal pages before the page bootstrap script.
     }
   }
 
-  /** Stamp peekToken on subsequent portal fetches for this tab. */
+  /** Stamp peekToken on portal fetches — wrap both fetch and bdcFetch when present. */
   function installPeekFetch() {
     var token = peekTokenFromUrl();
     if (!token || window.__bdcPeekFetchInstalled) return;
@@ -106,11 +107,13 @@ Load this file on portal pages before the page bootstrap script.
       };
     };
 
-    // Prefer wrapping bdcFetch when Webflow injects it; else wrap window.fetch
+    // portal_new_ui uses raw fetch — always wrap it when peeking
+    if (typeof window.fetch === "function") {
+      window.__bdcPeekOriginalFetch = window.fetch.bind(window);
+      window.fetch = wrap(window.__bdcPeekOriginalFetch);
+    }
     if (typeof window.bdcFetch === "function") {
       window.bdcFetch = wrap(window.bdcFetch);
-    } else if (typeof window.fetch === "function") {
-      window.fetch = wrap(window.fetch);
     }
   }
 
@@ -118,5 +121,11 @@ Load this file on portal pages before the page bootstrap script.
     canPortalPeek: canPortalPeek,
     installPeekFetch: installPeekFetch,
     peekTokenFromUrl: peekTokenFromUrl,
+    withPeekQuery: withPeekQuery,
   };
+
+  // Auto-install as soon as this file loads so APIs get peekToken without waiting on embed
+  if (peekTokenFromUrl()) {
+    installPeekFetch();
+  }
 })();
