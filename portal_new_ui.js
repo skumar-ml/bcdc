@@ -15,6 +15,15 @@ class Portal {
      */
     constructor(data, onReady) {
         this.data = data; // Store configuration data
+        // Admin peek: URL testMemberId wins so we don't load the Memberstack session's family
+        if (window.BdcPortalPeek && typeof window.BdcPortalPeek.applyPeekMemberIdToData === "function") {
+            window.BdcPortalPeek.applyPeekMemberIdToData(this.data);
+        } else {
+            try {
+                var peekId = new URLSearchParams(window.location.search).get("testMemberId");
+                if (peekId) this.data.memberId = peekId;
+            } catch (e) { /* keep embed memberId */ }
+        }
         this.spinner = document.getElementById("half-circle-spinner"); // Loading spinner element
         this.onReady = onReady; // Callback function for when portal is ready
         this.memberCreditBalance = 0; // Wallet credits auto-applied to invoice remaining

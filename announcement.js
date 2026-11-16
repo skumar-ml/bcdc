@@ -39,6 +39,15 @@ Are there any dependent JS files: No
              */
             constructor(data) {
                 this.data = data;
+                // Admin peek: load announcements for the URL family, not Memberstack's logged-in id
+                if (window.BdcPortalPeek && typeof window.BdcPortalPeek.applyPeekMemberIdToData === "function") {
+                    window.BdcPortalPeek.applyPeekMemberIdToData(this.data);
+                } else {
+                    try {
+                        var peekId = new URLSearchParams(window.location.search).get("testMemberId");
+                        if (peekId) this.data.memberId = peekId;
+                    } catch (e) { /* keep embed memberId */ }
+                }
                 this.$selectedEmailId = data.accountEmail;
                 
                 // Check if testMemberId is present in URL parameters
