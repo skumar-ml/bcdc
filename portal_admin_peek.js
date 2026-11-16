@@ -1,7 +1,7 @@
 /*
 Purpose: Admin portal peek gate for ?testMemberId= — Admin-minted peekToken; stamps token onto portal API calls.
 
-Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). When peekToken is in the URL, auto-wraps fetch/bdcFetch so getPortalDetail and friends stop 403ing. Optional Webflow embed can still gate the page.
+Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). When peekToken is in the URL, auto-wraps fetch/bdcFetch so getPortalDetail and friends stop 403ing. Only BDC API hosts get peekToken (never third-party URLs). Optional Webflow embed can still gate the page.
 
 dependent-files: window.BDC_API.member, optional bdcFetch, portal_new_ui / portal_staging fetch calls
 
@@ -35,9 +35,38 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     }
   }
 
-  /** Append peekToken to a relative or absolute URL when missing. */
+  /** True only for our API hosts — never stamp analytics/CDN/third-party fetches. */
+  function isBdcApiUrl(url) {
+    try {
+      var absolute = new URL(url, window.location.origin);
+      var host = (absolute.hostname || "").toLowerCase();
+      if (!host) return false;
+      if (host === "api.bergendebate.com" || host === "staging.api.bergendebate.com") {
+        return true;
+      }
+      // Legacy camp execute-api URLs still used by some portal scripts
+      if (host.indexOf("execute-api.") !== -1 && host.indexOf("amazonaws.com") !== -1) {
+        return true;
+      }
+      var api = window.BDC_API || {};
+      for (var key in api) {
+        if (!Object.prototype.hasOwnProperty.call(api, key) || !api[key]) continue;
+        try {
+          var baseHost = new URL(String(api[key]), window.location.origin).hostname.toLowerCase();
+          if (baseHost && host === baseHost) return true;
+        } catch (e) {
+          /* ignore bad BDC_API entry */
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /** Append peekToken to a BDC API URL when missing. */
   function withPeekQuery(url, token) {
-    if (!token || !url) return url;
+    if (!token || !url || !isBdcApiUrl(url)) return url;
     try {
       var absolute = new URL(url, window.location.origin);
       if (!absolute.searchParams.get("peekToken")) {
@@ -89,7 +118,7 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     }
   }
 
-  /** Stamp peekToken on portal fetches — wrap both fetch and bdcFetch when present. */
+  /** Stamp peekToken on portal API fetches only — wrap fetch and bdcFetch when present. */
   function installPeekFetch() {
     var token = peekTokenFromUrl();
     if (!token || window.__bdcPeekFetchInstalled) return;
@@ -107,7 +136,7 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
       };
     };
 
-    // portal_new_ui uses raw fetch — always wrap it when peeking
+    // portal_new_ui uses raw fetch — wrap it when peeking
     if (typeof window.fetch === "function") {
       window.__bdcPeekOriginalFetch = window.fetch.bind(window);
       window.fetch = wrap(window.__bdcPeekOriginalFetch);
@@ -122,6 +151,7 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     installPeekFetch: installPeekFetch,
     peekTokenFromUrl: peekTokenFromUrl,
     withPeekQuery: withPeekQuery,
+    isBdcApiUrl: isBdcApiUrl,
   };
 
   // Auto-install as soon as this file loads so APIs get peekToken without waiting on embed
