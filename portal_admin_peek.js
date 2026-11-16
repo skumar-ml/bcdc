@@ -211,14 +211,11 @@ Pin all of these to the SAME commit SHA via jsDelivr.
     }
 
     try {
-      // Use unwrapped fetch for the gate call if we already patched window.fetch
+      // Query-only gate: API Gateway CORS does not allow X-BDC-Peek-Token, so a
+      // custom header here fails preflight and falsely redirects to login-admit.
       var fetchFn = window.__bdcPeekOriginalFetch || window.fetch;
-      if (typeof window.bdcFetch === "function" && !window.bdcFetch.__bdcPeekWrapped) {
-        fetchFn = window.bdcFetch;
-      }
       var res = await fetchFn.call(window, url, {
         method: "GET",
-        headers: { Accept: "application/json", "X-BDC-Peek-Token": token },
         credentials: "omit",
       });
       if (!res.ok) {
@@ -238,15 +235,13 @@ Pin all of these to the SAME commit SHA via jsDelivr.
   function wrapFetchFn(original, token, peekMemberId) {
     var wrapped = function (input, init) {
       var nextInput = input;
-      var nextInit = init;
+      // Stamp peekToken on the URL only — custom headers trip CORS on camp APIs
       if (typeof input === "string") {
         nextInput = applyPeekToUrl(input, token, peekMemberId);
-        nextInit = withPeekHeaders(init, token);
       } else if (input && typeof Request !== "undefined" && input instanceof Request) {
         nextInput = new Request(applyPeekToUrl(input.url, token, peekMemberId), input);
-        nextInit = withPeekHeaders(init, token);
       }
-      return original.call(this, nextInput, nextInit);
+      return original.call(this, nextInput, init);
     };
     wrapped.__bdcPeekWrapped = true;
     return wrapped;
@@ -285,7 +280,6 @@ Pin all of these to the SAME commit SHA via jsDelivr.
     if (!window.__bdcPeekXhrInstalled && typeof XMLHttpRequest !== "undefined") {
       window.__bdcPeekXhrInstalled = true;
       var originalOpen = XMLHttpRequest.prototype.open;
-      var originalSetHeader = XMLHttpRequest.prototype.setRequestHeader;
       var originalSend = XMLHttpRequest.prototype.send;
       XMLHttpRequest.prototype.open = function (method, url) {
         var nextUrl = url;
@@ -296,17 +290,81 @@ Pin all of these to the SAME commit SHA via jsDelivr.
         var args = [method, nextUrl].concat(Array.prototype.slice.call(arguments, 2));
         return originalOpen.apply(this, args);
       };
+      // peekToken already on the rewritten URL — do not set X-BDC-Peek-Token (CORS)
       XMLHttpRequest.prototype.send = function (body) {
-        try {
-          if (token && this._bdcPeekUrl && isBdcApiUrl(this._bdcPeekUrl)) {
-            originalSetHeader.call(this, "X-BDC-Peek-Token", token);
-          }
-        } catch (e) {
-          /* header may already be set */
-        }
         return originalSend.apply(this, arguments);
       };
     }
+  }
+
+  /**
+   * Webflow still has a legacy footer that sends no-Memberstack peeks to /log-in,
+   * and the sidebar embed sends failed peeks to login-admit. Keep the dashboard
+   * on-screen during a live peek without asking the client to delete those embeds.
+   */
+  function installLegacyRedirectGuard() {
+    if (!peekTokenFromUrl() || !testMemberIdFromUrl()) return;
+    if (window.__bdcPeekRedirectGuard) return;
+    window.__bdcPeekRedirectGuard = true;
+    window.__bdcPeekDenyRedirectAllowed = false;
+
+    function shouldBlock(url) {
+      try {
+        var path = new URL(String(url), window.location.origin).pathname.toLowerCase();
+        if (path.indexOf("login-admit-account") !== -1) {
+          return !window.__bdcPeekDenyRedirectAllowed;
+        }
+        // Legacy footer: no memberstack → /log-in (blocks Admin peek without login)
+        if (path.indexOf("/log-in") !== -1) return true;
+        return false;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function allowOrRun(url, run) {
+      if (shouldBlock(url)) {
+        console.warn("BdcPortalPeek: blocked legacy redirect during peek", url);
+        return;
+      }
+      return run();
+    }
+
+    try {
+      var proto = Location.prototype;
+      ["assign", "replace"].forEach(function (name) {
+        var orig = proto[name];
+        if (typeof orig !== "function") return;
+        proto[name] = function (url) {
+          var ctx = this;
+          var args = arguments;
+          return allowOrRun(url, function () {
+            return orig.apply(ctx, args);
+          });
+        };
+      });
+      var desc = Object.getOwnPropertyDescriptor(proto, "href");
+      if (desc && desc.set) {
+        Object.defineProperty(proto, "href", {
+          configurable: true,
+          enumerable: desc.enumerable,
+          get: desc.get,
+          set: function (v) {
+            var setter = desc.set;
+            var ctx = this;
+            allowOrRun(v, function () {
+              setter.call(ctx, v);
+            });
+          },
+        });
+      }
+    } catch (e) {
+      console.warn("BdcPortalPeek: redirect guard failed", e);
+    }
+  }
+
+  function allowDenyRedirect() {
+    window.__bdcPeekDenyRedirectAllowed = true;
   }
 
   /** Mutate shared Webflow data when peeking (covers XHR bodies that read data.memberId). */
@@ -328,6 +386,7 @@ Pin all of these to the SAME commit SHA via jsDelivr.
   window.BdcPortalPeek = {
     canPortalPeek: canPortalPeek,
     installPeekFetch: installPeekFetch,
+    allowDenyRedirect: allowDenyRedirect,
     peekTokenFromUrl: peekTokenFromUrl,
     testMemberIdFromUrl: testMemberIdFromUrl,
     resolveMemberId: resolveMemberId,
@@ -350,6 +409,9 @@ Pin all of these to the SAME commit SHA via jsDelivr.
     var type = testAccountTypeFromUrl();
     if (type) window.globalAccountType = type;
   })();
+
+  // Stop legacy Webflow /log-in + premature login-admit redirects before footer runs
+  installLegacyRedirectGuard();
 
   // Only Admin-minted peekToken installs network wraps (normal portal traffic untouched)
   if (peekTokenFromUrl()) {

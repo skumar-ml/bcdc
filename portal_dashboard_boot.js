@@ -83,8 +83,11 @@ Load this file instead, AFTER portal_new_ui.js:
       }
       var allowed = await window.BdcPortalPeek.canPortalPeek();
       if (!allowed) {
-        // Deny page only — do NOT load portal_new_ui / this boot file on login-admit-account
+        // Real deny (expired/invalid token) — unlock guard then go to login-admit
         console.warn("portal_dashboard_boot: peek denied (expired token or canPortalPeek failed)");
+        if (typeof window.BdcPortalPeek.allowDenyRedirect === "function") {
+          window.BdcPortalPeek.allowDenyRedirect();
+        }
         window.location.href = window.location.origin + "/portal/login-admit-account";
         return;
       }
