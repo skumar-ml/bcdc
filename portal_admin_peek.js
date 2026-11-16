@@ -252,8 +252,8 @@ Pin scripts by commit SHA in Webflow — do not rely on main merge.
   function installPeekFetch() {
     var token = peekTokenFromUrl();
     var peekMemberId = testMemberIdFromUrl();
-    // Need at least one peek signal — token for auth, member id for family routing
-    if ((!token && !peekMemberId) || window.__bdcPeekFetchInstalled) return;
+    // Require Admin peekToken — never monkey-patch fetch/XHR for normal Memberstack sessions
+    if (!token || window.__bdcPeekFetchInstalled) return;
     window.__bdcPeekFetchInstalled = true;
 
     // portal_new_ui uses raw fetch
@@ -334,8 +334,8 @@ Pin scripts by commit SHA in Webflow — do not rely on main merge.
     isBdcApiUrl: isBdcApiUrl,
   };
 
-  // Install as soon as peek query is present — before Portal/Sidebar construct
-  if (peekTokenFromUrl() || testMemberIdFromUrl()) {
+  // Only Admin-minted peekToken installs network wraps (normal portal traffic untouched)
+  if (peekTokenFromUrl()) {
     installPeekFetch();
   }
 })();
