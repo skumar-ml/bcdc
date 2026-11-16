@@ -10,7 +10,8 @@ Webflow embed change (replace the hardcode-only if):
   if (testMemberId && testAccountEmail && testAccountType) {
     const allowed = await window.BdcPortalPeek.canPortalPeek();
     if (!allowed) {
-      window.location.href = "https://www.bergendebate.com/portal/login-admit-account";
+      // Stay on this host (staging webflow.io vs live) — never hardcode prod
+      window.location.href = window.location.origin + "/portal/login-admit-account";
       return;
     }
     window.BdcPortalPeek.installPeekFetch();
