@@ -11,6 +11,15 @@ class Sidebar {
   // Initializes the Sidebar instance
   constructor(data) {
     this.data = data;
+    // Admin peek: keep sidebar APIs on the URL family, not Memberstack's logged-in id
+    if (window.BdcPortalPeek && typeof window.BdcPortalPeek.applyPeekMemberIdToData === "function") {
+      window.BdcPortalPeek.applyPeekMemberIdToData(this.data);
+    } else {
+      try {
+        var peekId = new URLSearchParams(window.location.search).get("testMemberId");
+        if (peekId) this.data.memberId = peekId;
+      } catch (e) { /* keep embed memberId */ }
+    }
     this.init();
     this.updateAllPortalLinks();
     // update count in sidebar
@@ -116,7 +125,8 @@ class Sidebar {
     const testMemberId = urlParams.get('testMemberId');
     const testAccountEmail = urlParams.get('testAccountEmail');
     const testAccountType = urlParams.get('testAccountType');
-    if(!testMemberId && !testAccountEmail && !testAccountType){
+    const peekToken = urlParams.get('peekToken');
+    if(!testMemberId && !testAccountEmail && !testAccountType && !peekToken){
       return;
     }
     const allPortalLinks = document.querySelectorAll('a[href*="/portal/"]');
@@ -136,13 +146,16 @@ class Sidebar {
           const url = new URL(currentHref, window.location.origin);
           
           // Add or update testMemberId parameter
-          url.searchParams.set('testMemberId', testMemberId);
+          if (testMemberId) url.searchParams.set('testMemberId', testMemberId);
           
           // Add or update testAccountEmail parameter
-          url.searchParams.set('testAccountEmail', testAccountEmail);
+          if (testAccountEmail) url.searchParams.set('testAccountEmail', testAccountEmail);
           
           // Add or update testAccountType parameter
-          url.searchParams.set('testAccountType', testAccountType);
+          if (testAccountType) url.searchParams.set('testAccountType', testAccountType);
+
+          // Keep Admin peek session on in-portal navigation
+          if (peekToken) url.searchParams.set('peekToken', peekToken);
           
           // Update the link
           link.setAttribute('href', url.pathname + url.search);

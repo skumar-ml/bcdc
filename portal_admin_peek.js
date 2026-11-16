@@ -1,11 +1,19 @@
 /*
 Purpose: Admin portal peek gate for ?testMemberId= — Admin-minted peekToken; stamps token onto portal API calls.
 
-Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). When peekToken is in the URL, auto-wraps fetch/bdcFetch so getPortalDetail and friends stop 403ing. Only BDC API hosts get peekToken (never third-party URLs). Optional Webflow embed can still gate the page.
+Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). When peekToken is in the URL, auto-wraps fetch/bdcFetch so getPortalDetail and friends stop 403ing. Forces path/query memberId to URL testMemberId so Memberstack's logged-in id cannot show the wrong family. Only BDC API hosts get peekToken (never third-party URLs).
 
 dependent-files: window.BDC_API.member, optional bdcFetch, portal_new_ui / portal_staging fetch calls
 
-Webflow embed (optional page gate — keep if you want deny → login-admit):
+Webflow embed (dashboard bootstrap — memberId MUST prefer testMemberId):
+
+  const params = new URLSearchParams(window.location.search);
+  const testMemberId = params.get("testMemberId");
+  const testAccountEmail = params.get("testAccountEmail");
+  const testAccountType = params.get("testAccountType");
+  const memberId = (window.BdcPortalPeek && window.BdcPortalPeek.resolveMemberId)
+    ? window.BdcPortalPeek.resolveMemberId(webflowMemberId)
+    : (testMemberId || webflowMemberId);
 
   if (testMemberId && testAccountEmail && testAccountType) {
     const allowed = await window.BdcPortalPeek.canPortalPeek();
@@ -15,10 +23,34 @@ Webflow embed (optional page gate — keep if you want deny → login-admit):
     }
   }
 
+  // Pass memberId into Portal / Sidebar / Announcement data — not webflowMemberId alone
+
 Load this file on portal pages BEFORE portal_new_ui / portal_staging.
 */
 
 (function () {
+  // Path segments that end with /{memberId} on camp APIs
+  var MEMBER_PATH_ENDPOINTS = [
+    "getPortalDetail",
+    "getMillionsTransactionData",
+    "getAnnouncement",
+    "getReferralData",
+    "getCreditBalance",
+    "getMemberDetails",
+    "getFamilyMembers",
+    "getAllParentDataByMemberId",
+    "getMissingStudentDetails",
+    "getTrialClassDetails",
+    "getClassDetails",
+    "getTopicsDetails",
+    "getAttendance",
+    "getSummerSessionDetails",
+    "getNotificationData",
+    "getMillionsDetails",
+    "getMillionsStoreDetails",
+    "signInActivity",
+  ];
+
   function peekTokenFromUrl() {
     try {
       return new URLSearchParams(window.location.search).get("peekToken") || "";
@@ -33,6 +65,13 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     } catch (e) {
       return "";
     }
+  }
+
+  /** Prefer URL testMemberId so peeks load that family, not the Memberstack session. */
+  function resolveMemberId(fallback) {
+    var peekId = testMemberIdFromUrl();
+    if (peekId) return peekId;
+    return fallback == null ? "" : String(fallback);
   }
 
   /** True only for our API hosts — never stamp analytics/CDN/third-party fetches. */
@@ -64,6 +103,28 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     }
   }
 
+  /** Swap wrong Memberstack id in path/query for the peeked family's id. */
+  function withPeekMemberId(url, peekMemberId) {
+    if (!peekMemberId || !url || !isBdcApiUrl(url)) return url;
+    try {
+      var absolute = new URL(url, window.location.origin);
+      var escaped = MEMBER_PATH_ENDPOINTS.map(function (name) {
+        return name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }).join("|");
+      // .../getPortalDetail/{anyId} → .../getPortalDetail/{testMemberId}
+      absolute.pathname = absolute.pathname.replace(
+        new RegExp("/(" + escaped + ")/[^/]+(?=/|$)", "i"),
+        "/" + "$1/" + peekMemberId
+      );
+      if (absolute.searchParams.has("memberId")) {
+        absolute.searchParams.set("memberId", peekMemberId);
+      }
+      return absolute.toString();
+    } catch (e) {
+      return url;
+    }
+  }
+
   /** Append peekToken to a BDC API URL when missing. */
   function withPeekQuery(url, token) {
     if (!token || !url || !isBdcApiUrl(url)) return url;
@@ -77,6 +138,12 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
       if (String(url).indexOf("peekToken=") !== -1) return url;
       return url + (url.indexOf("?") >= 0 ? "&" : "?") + "peekToken=" + encodeURIComponent(token);
     }
+  }
+
+  /** Rewrite memberId then stamp peekToken for one outbound API URL. */
+  function applyPeekToUrl(url, token, peekMemberId) {
+    var next = withPeekMemberId(url, peekMemberId);
+    return withPeekQuery(next, token);
   }
 
   /**
@@ -118,9 +185,10 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     }
   }
 
-  /** Stamp peekToken on portal API fetches only — wrap fetch and bdcFetch when present. */
+  /** Stamp peekToken + correct memberId on portal API fetches. */
   function installPeekFetch() {
     var token = peekTokenFromUrl();
+    var peekMemberId = testMemberIdFromUrl();
     if (!token || window.__bdcPeekFetchInstalled) return;
     window.__bdcPeekFetchInstalled = true;
 
@@ -128,9 +196,9 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
       return function (input, init) {
         var nextInput = input;
         if (typeof input === "string") {
-          nextInput = withPeekQuery(input, token);
+          nextInput = applyPeekToUrl(input, token, peekMemberId);
         } else if (input && typeof Request !== "undefined" && input instanceof Request) {
-          nextInput = new Request(withPeekQuery(input.url, token), input);
+          nextInput = new Request(applyPeekToUrl(input.url, token, peekMemberId), input);
         }
         return original.call(this, nextInput, init);
       };
@@ -146,15 +214,28 @@ Load this file on portal pages BEFORE portal_new_ui / portal_staging.
     }
   }
 
+  /** Mutate shared Webflow data.memberId when peeking (XHR paths use this too). */
+  function applyPeekMemberIdToData(data) {
+    if (!data || typeof data !== "object") return data;
+    var peekId = testMemberIdFromUrl();
+    if (peekId) data.memberId = peekId;
+    return data;
+  }
+
   window.BdcPortalPeek = {
     canPortalPeek: canPortalPeek,
     installPeekFetch: installPeekFetch,
     peekTokenFromUrl: peekTokenFromUrl,
+    testMemberIdFromUrl: testMemberIdFromUrl,
+    resolveMemberId: resolveMemberId,
+    applyPeekMemberIdToData: applyPeekMemberIdToData,
     withPeekQuery: withPeekQuery,
+    withPeekMemberId: withPeekMemberId,
+    applyPeekToUrl: applyPeekToUrl,
     isBdcApiUrl: isBdcApiUrl,
   };
 
-  // Auto-install as soon as this file loads so APIs get peekToken without waiting on embed
+  // Auto-install as soon as this file loads so APIs get the peeked family, not Memberstack's
   if (peekTokenFromUrl()) {
     installPeekFetch();
   }
