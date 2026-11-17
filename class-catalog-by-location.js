@@ -36,6 +36,13 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
   };
   const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+  // getClassDetails sessionId → catalog label.
+  const SESSION_NAME_BY_ID = {
+    1: "Winter/Spring",
+    2: "Summer",
+    3: "Fall"
+  };
+
   // Show the site spinner in the catalog tabs while class data loads.
   function ensureSpinner() {
     let spinner = document.getElementById("half-circle-spinner");
@@ -302,10 +309,35 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
     });
   }
 
+  function getSessionName(sessionId) {
+    const id = Number(sessionId);
+    return SESSION_NAME_BY_ID[id] || "";
+  }
+
+  // "Semester: Winter/Spring"
+  function applySemesterLabel(cardEl, classItem, locationEntry) {
+    const sessionId =
+      (classItem && classItem.sessionId != null ? classItem.sessionId : null) ??
+      (locationEntry && locationEntry.sessionId != null ? locationEntry.sessionId : null);
+    const sessionName = getSessionName(sessionId);
+    if (!sessionName) {
+      return;
+    }
+
+    const semesterText = cardEl.querySelector(".fort-lee_semester-text");
+    const nameEl = semesterText
+      ? semesterText.querySelector(".fort-lee_semi-bold")
+      : cardEl.querySelector(".fort-lee_semester-text .fort-lee_semi-bold, .fort-lee_semi-bold");
+    if (nameEl) {
+      nameEl.textContent = sessionName;
+      return;
+    }
+
+    setTextIfFound(cardEl, ".semester-tab", `Semester: ${sessionName}`);
+  }
+
   // Fill API-driven fields, including prerequisite and suggested grades from getClassDetails.
   function fillCard(cardEl, classItem, locationEntry) {
-    const firstTiming = locationEntry.timing[0] || {};
-    const firstDay = firstTiming.day || "";
     const rootEl = getDetailWrapper(cardEl);
 
     setTextIfFound(cardEl, ".fort-lee_class-label", classItem.levelName || classItem.levelId || "");
@@ -314,7 +346,7 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
       ".fort-lee_schedule-text",
       `Weekly meeting times (${locationEntry.locationName || ""})`
     );
-    setTextIfFound(cardEl, ".semester-tab", firstDay ? `First day: ${firstDay}` : "Semester: Fall");
+    applySemesterLabel(cardEl, classItem, locationEntry);
     setAllTextIfFound(rootEl, ".prerequisite-text", classItem.prerequisites || "");
     setAllTextIfFound(rootEl, ".suggested_grade-text", classItem.suggestGrade || classItem.suggest_grade || "");
     applyRegisterLinks(rootEl, classItem.registerLink);
