@@ -2,7 +2,7 @@
 
 Purpose: Manages and displays member credit balance and transaction history. Shows credit balance amount and lists all credit transactions with dates and descriptions.
 
-Brief Logic: Fetches credit balance data from API, always shows the balance + FAQ area, and hides the "Credit Transaction History" title + table banner when there are no rows (or shows a No record found line under the title).
+Brief Logic: Fetches credit balance data from API, always shows the balance + FAQ area, and hides both the "Credit Transaction History" title (.portal-node-title.transactions) and the table banner when there are no rows.
 
 Are there any dependent JS files: No
 
@@ -51,33 +51,25 @@ class CreditBalance {
                     return;
                 }
             }
-            // Show real history rows, or a single "No record found" under the section title
+            // History title + banner only when there are real rows
             renderTransactionsSection(hasHistory) {
                 if (this.transactionsTitle) {
-                    this.transactionsTitle.style.display = "";
+                    // Same condition as the table — do not leave an orphan heading
+                    this.transactionsTitle.style.display = hasHistory ? "" : "none";
                 }
                 if (this.transactionsBanner) {
-                    this.transactionsBanner.style.display = "";
+                    this.transactionsBanner.style.display = hasHistory ? "" : "none";
                 }
                 if (this.transactionsHeader) {
-                    // Column headers only make sense when there are real rows
                     this.transactionsHeader.style.display = hasHistory ? "" : "none";
                 }
                 if (this.tableElement) {
-                    this.tableElement.style.display = "block";
                     this.tableElement.innerHTML = "";
-                    if (hasHistory) {
-                        this.updateTransactionTable();
-                    } else {
-                        // Empty history — keep the section but avoid a blank orphan title
-                        const empty = document.createElement("p");
-                        empty.className = "transactions-table-row-text no-record";
-                        empty.textContent = "No record found";
-                        this.tableElement.appendChild(empty);
-                    }
+                    this.tableElement.style.display = hasHistory ? "block" : "none";
+                    if (hasHistory) this.updateTransactionTable();
                 }
             }
-            // Balance + FAQ stay up; history section shows rows or No record found
+            // Balance + FAQ stay up; hide history title and table when empty
             applyCreditUi(balance, transactions) {
                 this.balance = Number(balance) || 0;
                 this.transactions = Array.isArray(transactions) ? transactions : [];
@@ -95,8 +87,10 @@ class CreditBalance {
             async init() {
                 if (this.spinner) this.spinner.style.display = "block";
                 if (this.balanceElement) this.balanceElement.style.display = "none";
-                // Clear designer sample rows before the API returns
+                // Clear designer sample rows; hide history title/table until we know there are rows
                 if (this.tableElement) this.tableElement.innerHTML = "";
+                if (this.transactionsTitle) this.transactionsTitle.style.display = "none";
+                if (this.transactionsBanner) this.transactionsBanner.style.display = "none";
                 if (this.noRecordDiv) this.noRecordDiv.style.display = "none";
                 try {
                     const apiData = await this.fetchCreditData();
