@@ -2,7 +2,7 @@
 
 Purpose: Manages and displays member credit balance and transaction history. Shows credit balance amount and lists all credit transactions with dates and descriptions.
 
-Brief Logic: Fetches credit balance data from API, always shows the balance + FAQ area, and only hides the transactions history banner when there are no rows. Webflow keeps table headers outside [data-credit="table"], so the row wrapper alone is not enough to hide.
+Brief Logic: Fetches credit balance data from API, always shows the balance + FAQ area, and hides the "Credit Transaction History" title + table banner when there are no rows (or shows a No record found line under the title).
 
 Are there any dependent JS files: No
 
@@ -21,6 +21,13 @@ class CreditBalance {
                 this.transactionsBanner =
                     (this.tableElement && this.tableElement.closest(".portal-white-banner.transactions")) ||
                     document.querySelector(".portal-white-banner.transactions");
+                // Heading sits above the banner in Webflow — hide it with empty history
+                this.transactionsTitle = document.querySelector(".portal-node-title.transactions");
+                // Column headers inside the banner (sibling of [data-credit="table"])
+                this.transactionsHeader =
+                    (this.transactionsBanner &&
+                        this.transactionsBanner.querySelector(".transactions-header-grid-wrapper")) ||
+                    null;
                 // Balance + FAQ live here; keep this visible even when history is empty
                 this.portalInfoWrapper = document.querySelector('.portal-info-wrapper');
                 this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
@@ -44,17 +51,33 @@ class CreditBalance {
                     return;
                 }
             }
-            // Hide only the transactions history block (headers + rows)
-            setTransactionsVisible(visible) {
-                if (this.tableElement) {
-                    if (!visible) this.tableElement.innerHTML = "";
-                    this.tableElement.style.display = visible ? "block" : "none";
+            // Show real history rows, or a single "No record found" under the section title
+            renderTransactionsSection(hasHistory) {
+                if (this.transactionsTitle) {
+                    this.transactionsTitle.style.display = "";
                 }
                 if (this.transactionsBanner) {
-                    this.transactionsBanner.style.display = visible ? "" : "none";
+                    this.transactionsBanner.style.display = "";
+                }
+                if (this.transactionsHeader) {
+                    // Column headers only make sense when there are real rows
+                    this.transactionsHeader.style.display = hasHistory ? "" : "none";
+                }
+                if (this.tableElement) {
+                    this.tableElement.style.display = "block";
+                    this.tableElement.innerHTML = "";
+                    if (hasHistory) {
+                        this.updateTransactionTable();
+                    } else {
+                        // Empty history — keep the section but avoid a blank orphan title
+                        const empty = document.createElement("p");
+                        empty.className = "transactions-table-row-text no-record";
+                        empty.textContent = "No record found";
+                        this.tableElement.appendChild(empty);
+                    }
                 }
             }
-            // Balance + FAQ stay up; history only when there are rows
+            // Balance + FAQ stay up; history section shows rows or No record found
             applyCreditUi(balance, transactions) {
                 this.balance = Number(balance) || 0;
                 this.transactions = Array.isArray(transactions) ? transactions : [];
@@ -66,15 +89,14 @@ class CreditBalance {
                     this.balanceElement.style.display = "block";
                     this.balanceElement.textContent = `$${this.balance.toFixed(2)}`;
                 }
-                this.updateTransactionTable();
-                this.setTransactionsVisible(this.transactions.length > 0);
+                this.renderTransactionsSection(this.transactions.length > 0);
             }
             // Initializes the UI, fetches credit data, and updates display
             async init() {
                 if (this.spinner) this.spinner.style.display = "block";
                 if (this.balanceElement) this.balanceElement.style.display = "none";
-                // Clear designer sample rows; hide history until we know there is some
-                this.setTransactionsVisible(false);
+                // Clear designer sample rows before the API returns
+                if (this.tableElement) this.tableElement.innerHTML = "";
                 if (this.noRecordDiv) this.noRecordDiv.style.display = "none";
                 try {
                     const apiData = await this.fetchCreditData();
@@ -99,13 +121,12 @@ class CreditBalance {
                     this.applyCreditUi(0, []);
                 }
             }
-            // Populates and sorts the transaction history table
+            // Populates and sorts the transaction history table (caller already cleared the node)
             updateTransactionTable() {
                 if (!this.tableElement) {
                     console.error("Transaction table element not found");
                     return;
                 }
-                this.tableElement.innerHTML = "";
                 if (!this.transactions.length) return;
                 // Newest first
                 this.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
