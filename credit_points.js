@@ -2,7 +2,7 @@
 
 Purpose: Manages and displays member credit balance and transaction history. Shows credit balance amount and lists all credit transactions with dates and descriptions.
 
-Brief Logic: Fetches credit balance data from API, displays current balance amount, renders transaction history table sorted by date in descending order, and handles empty state when no credits are available. Hides the whole transactions banner (not just the row wrapper) when there is no history — Webflow keeps headers outside [data-credit="table"].
+Brief Logic: Fetches credit balance data from API, always shows the balance + FAQ area, and only hides the transactions history banner when there are no rows. Webflow keeps table headers outside [data-credit="table"], so the row wrapper alone is not enough to hide.
 
 Are there any dependent JS files: No
 
@@ -17,104 +17,87 @@ class CreditBalance {
                 this.spinner = document.getElementById("half-circle-spinner");
                 this.balanceElement = document.querySelector('[data-credit="balance"]');
                 this.tableElement = document.querySelector('[data-credit="table"]');
-                // Whole white banner — headers live outside [data-credit="table"] in Webflow
+                // Only the history table banner — not the balance / FAQ section
                 this.transactionsBanner =
                     (this.tableElement && this.tableElement.closest(".portal-white-banner.transactions")) ||
                     document.querySelector(".portal-white-banner.transactions");
-                // .credit-balance-rounded-div, .transactions
+                // Balance + FAQ live here; keep this visible even when history is empty
                 this.portalInfoWrapper = document.querySelector('.portal-info-wrapper');
-                // data-millions="no-record-div"
                 this.noRecordDiv = document.querySelector('[data-container="no-record-found"]');
-                // Check if elements are found
                 this.init();
             }
             // Fetches credit balance data from the API
             async fetchCreditData() {
                 try {
-                    const response = await bdcFetch(
+                    // Prefer bdcFetch when peek/utils installed; fall back for older embeds
+                    const doFetch = typeof bdcFetch === "function" ? bdcFetch : fetch;
+                    const response = await doFetch(
                         `${this.data.apiBaseURL}getCreditBalance/${this.data.memberId}`
                     );
                     if (!response.ok) throw new Error("Network response was not ok");
                     const apiData = await response.json();
                     return apiData;
                 } catch (error) {
-                    this.showEmptyState();
                     console.error("Fetch error:", error);
+                    // Still show $0 balance + FAQ; only history stays hidden
+                    this.applyCreditUi(0, []);
+                    return;
                 }
             }
-            // Hide balance + transactions; show the shared empty placeholder
-            showEmptyState() {
-                if (this.spinner) this.spinner.style.display = "none";
-                if (this.balanceElement) this.balanceElement.style.display = "none";
+            // Hide only the transactions history block (headers + rows)
+            setTransactionsVisible(visible) {
                 if (this.tableElement) {
-                    this.tableElement.innerHTML = "";
-                    this.tableElement.style.display = "none";
+                    if (!visible) this.tableElement.innerHTML = "";
+                    this.tableElement.style.display = visible ? "block" : "none";
                 }
-                // Banner includes Date/Type/Session headers — must hide with the rows
-                if (this.transactionsBanner) this.transactionsBanner.style.display = "none";
-                if (this.portalInfoWrapper) this.portalInfoWrapper.style.display = "none";
-                if (this.noRecordDiv) this.noRecordDiv.style.display = "block";
+                if (this.transactionsBanner) {
+                    this.transactionsBanner.style.display = visible ? "" : "none";
+                }
             }
-            // Show balance; only show the transactions banner when there are rows
-            showCreditState(hasHistory) {
+            // Balance + FAQ stay up; history only when there are rows
+            applyCreditUi(balance, transactions) {
+                this.balance = Number(balance) || 0;
+                this.transactions = Array.isArray(transactions) ? transactions : [];
                 if (this.spinner) this.spinner.style.display = "none";
-                if (this.balanceElement) this.balanceElement.style.display = "block";
+                // Keep page chrome (balance card + FAQ) — never hide for empty history
                 if (this.portalInfoWrapper) this.portalInfoWrapper.style.display = "block";
                 if (this.noRecordDiv) this.noRecordDiv.style.display = "none";
-                if (this.transactionsBanner) {
-                    this.transactionsBanner.style.display = hasHistory ? "" : "none";
+                if (this.balanceElement) {
+                    this.balanceElement.style.display = "block";
+                    this.balanceElement.textContent = `$${this.balance.toFixed(2)}`;
                 }
-                if (this.tableElement) {
-                    this.tableElement.style.display = hasHistory ? "block" : "none";
-                }
+                this.updateTransactionTable();
+                this.setTransactionsVisible(this.transactions.length > 0);
             }
             // Initializes the UI, fetches credit data, and updates display
             async init() {
                 if (this.spinner) this.spinner.style.display = "block";
                 if (this.balanceElement) this.balanceElement.style.display = "none";
-                if (this.tableElement) {
-                    // Drop any Webflow designer sample rows before the API returns
-                    this.tableElement.innerHTML = "";
-                    this.tableElement.style.display = "none";
-                }
-                if (this.transactionsBanner) this.transactionsBanner.style.display = "none";
-                if (this.portalInfoWrapper) this.portalInfoWrapper.style.display = "none";
+                // Clear designer sample rows; hide history until we know there is some
+                this.setTransactionsVisible(false);
                 if (this.noRecordDiv) this.noRecordDiv.style.display = "none";
                 try {
                     const apiData = await this.fetchCreditData();
+                    // fetchCreditData already applied UI on network failure
+                    if (apiData === undefined) return;
                     if (!apiData || !apiData.creditBalance) {
-                        // Backend returns 200 with a "message" key (instead of an error status)
-                        // when there's no credit balance for this member.
+                        // No credit doc yet — still show $0.00 + FAQ, not a blank page
                         if (apiData && apiData.message) {
                             console.warn("No credit balance data found:", apiData.message);
-                        } else {
-                            console.error("No credit balance data found");
                         }
-                        this.showEmptyState();
+                        this.applyCreditUi(0, []);
                         return;
                     }
-                    this.$creditData = apiData.creditBalance;
-                    this.balance = Number(this.$creditData.creditBalance) || 0;
-                    // Always an array so empty history does not keep designer HTML
-                    this.transactions = Array.isArray(this.$creditData.creditHistory)
-                        ? this.$creditData.creditHistory
-                        : [];
-                    this.updateCreditBalanceDisplay();
-                    this.showCreditState(this.transactions.length > 0);
-                    } catch (error) {
+                    const credit = apiData.creditBalance;
+                    this.$creditData = credit;
+                    this.applyCreditUi(
+                        credit.creditBalance,
+                        Array.isArray(credit.creditHistory) ? credit.creditHistory : []
+                    );
+                } catch (error) {
                     console.error("Error during initialization:", error);
-                    this.showEmptyState();
-                    return;
+                    this.applyCreditUi(0, []);
                 }
-            }
-            // Updates the displayed credit balance amount
-            updateCreditBalanceDisplay() {
-                if (this.balanceElement) {
-                    this.balanceElement.textContent = `$${this.balance.toFixed(2)}`;
-                } else {
-                    console.error("Balance element not found");
-                }
-                this.updateTransactionTable();
             }
             // Populates and sorts the transaction history table
             updateTransactionTable() {
@@ -122,15 +105,13 @@ class CreditBalance {
                     console.error("Transaction table element not found");
                     return;
                 }
-                this.tableElement.innerHTML = ""; // Clear existing content
+                this.tableElement.innerHTML = "";
                 if (!this.transactions.length) return;
-                // sort by date in descending order
+                // Newest first
                 this.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-                // Populate the table with transactions
                 this.transactions.forEach((transaction) => {
                     const row = document.createElement("div");
                     row.className = "transactions-table-row-grid-wrapper columns-5";
-                    //date format should be like Jul 6, 2025
                     row.innerHTML = `
                         <div class="transactions-table-row-text">${new Date(
                         transaction.date
