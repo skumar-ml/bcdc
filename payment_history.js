@@ -2,7 +2,7 @@
         
 Purpose: Displays member payment history with transaction details and status. Shows invoices and millions transactions in tabs for each student.
 
-Brief Logic: Fetches portal detail and millions transaction data from API, creates tabs for each student, displays invoice list with payment details, shows millions transactions, updates sidebar with millions count, and handles tab switching.
+Brief Logic: Fetches portal detail and millions transaction data from API, creates tabs for each student, displays invoice list with payment details, shows millions transactions, updates sidebar with millions count, and handles tab switching. Render failures must not leave Webflow Lorem/Rohit placeholders visible.
 
 Are there any dependent JS files: No
 
@@ -15,12 +15,34 @@ class PaymentHistory {
         this.spinner = document.getElementById("half-circle-spinner");
         this.no_record = document.querySelector('[data-container="no-record-found"]');
         this.memberCreditBalance = 0; // Wallet credits auto-applied to invoice remaining
-        this.render();
+        // Hide Webflow Lorem/Rohit before any await — old boots left template visible on throw
+        const paidResource = document.querySelector(".portal-info-wrapper");
+        if (paidResource) paidResource.style.display = "none";
+        if (this.spinner) this.spinner.style.display = "block";
+        // Uncaught render errors left Webflow Lorem/Rohit placeholders on screen
+        this.render().catch((error) => {
+            console.error("PaymentHistory render failed", error);
+            this.showRenderFailure();
+        });
+    }
+
+    // Prefer bdcFetch (peek-aware); fall back so a missing helper does not blank the page
+    async apiFetch(url, options) {
+        const runner = typeof bdcFetch === "function" ? bdcFetch : fetch;
+        return runner(url, options);
+    }
+
+    // Hide spinner and show empty state instead of stuck Webflow template
+    showRenderFailure() {
+        if (this.spinner) this.spinner.style.display = "none";
+        const paidResource = document.querySelector(".portal-info-wrapper");
+        if (paidResource) paidResource.style.display = "none";
+        if (this.no_record) this.no_record.style.display = "block";
     }
 
     // Fetches portal detail data from the API
     async fetchData() {
-        const response = await bdcFetch(
+        const response = await this.apiFetch(
             `${this.data.apiBaseURL}getPortalDetail/${this.data.memberId}`
         );
         if (!response.ok) throw new Error("Network response was not ok");
@@ -31,14 +53,25 @@ class PaymentHistory {
 
     // Fetches millions transaction data from the API
     async fetchMillionsData() {
-        const response = await bdcFetch(
-            `${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`
-        );
-        if (!response.ok) {
-            return [];
+        try {
+            const response = await this.apiFetch(
+                `${this.data.apiBaseURL}getMillionsTransactionData/${this.data.memberId}`
+            );
+            if (!response.ok) {
+                return { millions_transactions: [] };
+            }
+            const millionsData = await response.json();
+            // Normalize so callers can always use .millions_transactions
+            if (Array.isArray(millionsData)) {
+                return { millions_transactions: millionsData };
+            }
+            return {
+                millions_transactions: millionsData?.millions_transactions || [],
+            };
+        } catch (error) {
+            console.error("Error fetching millions data:", error);
+            return { millions_transactions: [] };
         }
-        const millionsData = await response.json();
-        return millionsData;
     }
 
     /**
@@ -50,7 +83,7 @@ class PaymentHistory {
             const memberId = this.data.memberId;
             const base = (window.BDC_API && window.BDC_API.referral) || this.data.apiBaseURL;
             if (!memberId || !base) return 0;
-            const response = await bdcFetch(`${base}getCreditBalance/${memberId}`);
+            const response = await this.apiFetch(`${base}getCreditBalance/${memberId}`);
             if (!response.ok) return 0;
             const apiData = await response.json();
             const amount = parseFloat(apiData?.creditBalance?.creditBalance);
@@ -63,13 +96,20 @@ class PaymentHistory {
 
     // Main render method to orchestrate UI setup
     async render() {
+        if (!this.data?.memberId) {
+            throw new Error("PaymentHistory missing memberId");
+        }
+
         // Hide breakdown if Webflow left the modal Visible after editing
         this.setupInvoiceBreakdownModal();
 
-        // Hide content and show loading spinner
+        // Hide Webflow placeholder content while we load real invoices
         const paidResource = document.querySelector(".portal-info-wrapper");
+        if (!paidResource) {
+            throw new Error("PaymentHistory missing .portal-info-wrapper");
+        }
         paidResource.style.display = "none";
-        this.spinner.style.display = "block";
+        if (this.spinner) this.spinner.style.display = "block";
 
         // Fetch all required data in parallel
         const [data, millionsData, creditBalance] = await Promise.all([
@@ -80,21 +120,27 @@ class PaymentHistory {
         this.memberCreditBalance = creditBalance;
 
         // Check if data exists
-        if (data == "No data Found") {
-            this.spinner.style.display = "none";
-            this.no_record.style.display = "block";
+        if (data == "No data Found" || !Array.isArray(data) || data.length === 0) {
+            if (this.spinner) this.spinner.style.display = "none";
+            if (this.no_record) this.no_record.style.display = "block";
             return false;
         }
 
         // Setup tabs with the fetched data
-        const millions_transactions = millionsData.millions_transactions;
+        const millions_transactions = millionsData.millions_transactions || [];
         this.setupTabs(data);
 
         // Redraw Webflow tabs and show content
-        Webflow.require("tabs").redraw();
+        try {
+            if (window.Webflow && Webflow.require) {
+                Webflow.require("tabs").redraw();
+            }
+        } catch (error) {
+            console.warn("Webflow tabs redraw skipped", error);
+        }
         paidResource.style.display = "block";
         setTimeout(() => {
-            this.spinner.style.display = "none";
+            if (this.spinner) this.spinner.style.display = "none";
         }, 500);
 
         // Initialize invoice breakdown links
@@ -128,12 +174,21 @@ class PaymentHistory {
     setupTabs(data) {
         // Get DOM references for tab elements
         const tabMenu = document.querySelector(".portal-tab-menus");
-        const tabLinks = tabMenu.querySelectorAll(".portal-tab-link");
         const tabContent = document.querySelector(".portal-tab-content");
+        if (!tabMenu || !tabContent) {
+            throw new Error("PaymentHistory missing tab menu/content");
+        }
+        const tabLinks = tabMenu.querySelectorAll(".portal-tab-link");
         const tabPanes = tabContent.querySelectorAll(".portal-tab-pane");
+        if (!tabLinks.length || !tabPanes.length) {
+            throw new Error("PaymentHistory missing tab templates");
+        }
 
         // Use all students data
-        var students = data;
+        var students = Array.isArray(data) ? data : [];
+        if (!students.length) {
+            throw new Error("PaymentHistory setupTabs called with no students");
+        }
 
         // Clone first tab and pane as templates for new tabs
         const tabLinkTemplate = tabLinks[0].cloneNode(true);
@@ -1020,16 +1075,18 @@ class PaymentHistory {
         const sidebarCountEls = document.querySelectorAll(
             '[data-millions="sidebarCount"]'
         );
-        if (!sidebarCountEls) return;
+        if (!sidebarCountEls.length) return;
+        // Failed millions fetch used to return [] and crash on .find here
+        const rows = Array.isArray(millionsData) ? millionsData : [];
 
         sidebarCountEls.forEach((el) => {
             // Find millions data for current student
-            const entry = millionsData.find((e) => e.studentName === studentName);
+            const entry = rows.find((e) => e.studentName === studentName);
             const millionsCount = entry?.earnAmount || 0;
 
             // Update display with count
             el.innerText = `${millionsCount}M`;
-            el.parentElement.style.display = "block";
+            if (el.parentElement) el.parentElement.style.display = "block";
         });
     }
     /**
@@ -1290,6 +1347,123 @@ class PaymentHistory {
                 imgElement.style.animation = "";
                 imgElement.style.cursor = "pointer";
             }
+        }
+    }
+
+    // Resolve member for normal login or Admin peek (URL / window / Memberstack)
+    static resolveMemberContext() {
+        const params = new URLSearchParams(window.location.search || "");
+        const peekToken = params.get("peekToken") || "";
+        const testMemberId = params.get("testMemberId") || "";
+        const testAccountEmail = params.get("testAccountEmail") || "";
+        const isPeek = Boolean(peekToken && testMemberId);
+
+        let memberId = (window.globalMemberId || "").trim();
+        let accountEmail = (window.globalAccountEmail || "").trim();
+
+        // Peek URL is authoritative once token is present
+        if (isPeek && testMemberId) {
+            memberId = memberId || testMemberId;
+            accountEmail = accountEmail || testAccountEmail;
+        }
+
+        if (!memberId) {
+            try {
+                const raw = localStorage.getItem("memberstack");
+                const ms = raw ? JSON.parse(raw) : null;
+                memberId = (ms && ms.information && ms.information.id) || "";
+                accountEmail = accountEmail || (ms && ms.email) || "";
+            } catch (e) {
+                console.warn("PaymentHistory: memberstack unreadable", e);
+            }
+        }
+
+        return { memberId, accountEmail, isPeek, peekToken };
+    }
+
+    // Mid-page peek boot is async; wait briefly so we do not redirect before globals exist
+    static waitForMemberId(maxMs = 4000, stepMs = 50) {
+        return new Promise((resolve) => {
+            const started = Date.now();
+            const tick = () => {
+                const ctx = PaymentHistory.resolveMemberContext();
+                if (ctx.memberId) {
+                    resolve(ctx);
+                    return;
+                }
+                if (Date.now() - started >= maxMs) {
+                    resolve(ctx);
+                    return;
+                }
+                setTimeout(tick, stepMs);
+            };
+            tick();
+        });
+    }
+
+    // Webflow footer should only call this — keeps boot logic in one place
+    static bootFromWebflow() {
+        const start = async () => {
+            try {
+                // Hide Webflow Lorem/Rohit as soon as boot starts (before any await)
+                const paidResource = document.querySelector(".portal-info-wrapper");
+                if (paidResource) paidResource.style.display = "none";
+                const spinner = document.getElementById("half-circle-spinner");
+                if (spinner) spinner.style.display = "block";
+
+                const params = new URLSearchParams(window.location.search || "");
+                const peekToken = params.get("peekToken") || "";
+                const testMemberId = params.get("testMemberId") || "";
+                const isPeek = Boolean(peekToken && testMemberId);
+
+                // Peek APIs need token wrapper before getPortalDetail fires
+                if (isPeek) {
+                    if (!window.BdcPortalPeek) {
+                        throw new Error("portal_admin_peek.js must load before PaymentHistory boot");
+                    }
+                    const allowed = await window.BdcPortalPeek.canPortalPeek();
+                    if (!allowed) {
+                        window.location.href =
+                            window.location.origin + "/portal/login-admit-account";
+                        return;
+                    }
+                    window.BdcPortalPeek.installPeekFetch();
+                }
+
+                const ctx = await PaymentHistory.waitForMemberId();
+                if (!ctx.memberId) {
+                    console.error("PaymentHistory boot: no memberId after wait");
+                    window.location.href = window.location.origin + "/log-in";
+                    return;
+                }
+                // Keep window globals aligned for other embeds on the page
+                window.globalMemberId = ctx.memberId;
+                if (ctx.accountEmail) window.globalAccountEmail = ctx.accountEmail;
+
+                if (typeof PaymentHistory !== "function") {
+                    throw new Error("PaymentHistory class failed to load from CDN");
+                }
+                new PaymentHistory({
+                    accountEmail: ctx.accountEmail || "",
+                    memberId: ctx.memberId,
+                    apiBaseURL: window.BDC_API && window.BDC_API.member,
+                    bTypeApiBaseURL: window.BDC_API && window.BDC_API.communication,
+                });
+            } catch (error) {
+                console.error("PaymentHistory.bootFromWebflow failed", error);
+                const paidResource = document.querySelector(".portal-info-wrapper");
+                if (paidResource) paidResource.style.display = "none";
+                const spinner = document.getElementById("half-circle-spinner");
+                if (spinner) spinner.style.display = "none";
+                const noRecord = document.querySelector('[data-container="no-record-found"]');
+                if (noRecord) noRecord.style.display = "block";
+            }
+        };
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", start);
+        } else {
+            start();
         }
     }
 }
