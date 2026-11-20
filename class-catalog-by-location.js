@@ -1,6 +1,6 @@
 /*
 
-Purpose: Renders the per-location class catalog on program location pages (Fort Lee, Westchester, Online, Livingston, Glen Rock, etc). Fetches class details for one location from the API, clones a Webflow template card once per class, fills in schedule/timing/prerequisite data, powers the syllabus preview modal, renders the Summer offering cards, and drives the location detail dropdown toggle.
+Purpose: Renders the per-location class catalog on program location pages (Fort Lee, Westchester, Online, Livingston, Glen Rock, etc). Fetches class details for one location from the API, clones a Webflow template card once per class, fills in schedule/timing/prerequisite data, powers the syllabus preview modal, sets the catalog heading from getCurrentYearAndSession, renders the Summer offering cards, and drives the location detail dropdown toggle.
 
 Brief Logic: Reads the target location's ID from window.CATALOG_LOCATION_ID (set per-page before this script loads), activates the first schedule tab, shows the site spinner while getClassDetails loads, clones the static catalog card template in each grades tab (5–8 vs 9+), fills in times/labels/register links, and wires up the syllabus modal. Separately fetches getSummerOffering for the same location and clones the summer catalog card template once per program. Also wires up the collapsible .location-header-dropdown-wapper toggle for the location detail grid.
 
@@ -312,6 +312,25 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
   function getSessionName(sessionId) {
     const id = Number(sessionId);
     return SESSION_NAME_BY_ID[id] || "";
+  }
+
+  // "#location-class-catalog-heading" → "{classSessionName} {classYearId} Class Catalog".
+  async function renderCatalogHeading() {
+    const heading = document.getElementById("location-class-catalog-heading");
+    if (!heading) {
+      return;
+    }
+
+    try {
+      const { classSessionName, classYearId } = await fetchData("getCurrentYearAndSession");
+      if (!classSessionName || classYearId == null) {
+        return;
+      }
+
+      heading.textContent = `${classSessionName} ${classYearId} Class Catalog`;
+    } catch (error) {
+      console.error("Failed to render catalog heading:", error);
+    }
   }
 
   // "Semester: Winter/Spring"
@@ -651,10 +670,14 @@ Are there any dependent JS files: No — expects getMemberstackToken/window.BDC_
   initSyllabusModal();
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", render);
+    document.addEventListener("DOMContentLoaded", () => {
+      renderCatalogHeading();
+      render();
+    });
     return;
   }
 
+  renderCatalogHeading();
   render();
 })();
 
