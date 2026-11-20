@@ -15,6 +15,15 @@ class Portal {
      */
     constructor(data, onReady) {
         this.data = data; // Store configuration data
+        // Admin peek: URL testMemberId wins so we don't load the Memberstack session's family
+        if (window.BdcPortalPeek && typeof window.BdcPortalPeek.applyPeekMemberIdToData === "function") {
+            window.BdcPortalPeek.applyPeekMemberIdToData(this.data);
+        } else {
+            try {
+                var peekId = new URLSearchParams(window.location.search).get("testMemberId");
+                if (peekId) this.data.memberId = peekId;
+            } catch (e) { /* keep embed memberId */ }
+        }
         this.spinner = document.getElementById("half-circle-spinner"); // Loading spinner element
         this.onReady = onReady; // Callback function for when portal is ready
         this.memberCreditBalance = 0; // Wallet credits auto-applied to invoice remaining
@@ -2851,23 +2860,19 @@ class Portal {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("start debugging memberstack token");
-// 1. Dump the object your script already uses — look for any token/jwt field
-console.log(JSON.parse(localStorage.getItem("memberstack")));
-
-// 2. List every localStorage key — look for _ms-mid or anything token-like
-console.log(Object.keys(localStorage));
-
-// 3. Cookies — Memberstack 2.0 stores the JWT in _ms-mid
-console.log(document.cookie);
-
-// 4. Is the 2.0 SDK present at all?
-console.log(typeof window.$memberstackDom, typeof window.MemberStack);
-
-console.log("end debugging memberstack token");
   setupNextRecommModalEvents();
-  checkStudentDetailsAndShowModal();
-  //console.log("Function Called");
+  // Wait for portal_dashboard_boot / embed to set window.globalMemberId (peek or Memberstack)
+  function runStudentModalWhenReady(attempt) {
+    if (portalGlobalMemberId() && window.BDC_API && window.BDC_API.member) {
+      checkStudentDetailsAndShowModal();
+      return;
+    }
+    if ((attempt || 0) >= 40) return; // ~2s — avoid Failed to fetch on empty memberId
+    setTimeout(function () {
+      runStudentModalWhenReady((attempt || 0) + 1);
+    }, 50);
+  }
+  runStudentModalWhenReady(0);
 });
 
 function setupNextRecommModalEvents() {
@@ -2900,8 +2905,13 @@ function setupNextRecommModalEvents() {
 // Test account: popup must always open for this webflow member id, ignoring the 24h cooldown
 const ALWAYS_SHOW_STUDENT_MODAL_MEMBER_ID = '6a4cce88069f10e3eabac0b3';
 
+/** Webflow embed must set window.globalMemberId (peek URL or Memberstack). */
+function portalGlobalMemberId() {
+  return (typeof window !== 'undefined' && window.globalMemberId) || '';
+}
+
 function canShowStudentModal() {
-  if (globalMemberId === ALWAYS_SHOW_STUDENT_MODAL_MEMBER_ID) return true;
+  if (portalGlobalMemberId() === ALWAYS_SHOW_STUDENT_MODAL_MEMBER_ID) return true;
 
   const lastShown = localStorage.getItem('studDetailsModalShownAt');
   if (!lastShown) return true;
@@ -2915,12 +2925,22 @@ function canShowStudentModal() {
 
 //Function 2
 async function checkStudentDetailsAndShowModal() {
+  // Skip deny/login pages and peeks that have not set a member id yet
+  var path = (window.location.pathname || "").toLowerCase();
+  if (path.indexOf("login-admit-account") !== -1 || path.indexOf("/log-in") !== -1) {
+    return;
+  }
+  var memberId = portalGlobalMemberId();
+  var apiBase = window.BDC_API && window.BDC_API.member;
+  if (!memberId || !apiBase) return;
 
   //  already shown within 24 hours
   if (!canShowStudentModal()) return;
-const apiURL = `${window.BDC_API.member}getMissingStudentDetails/${globalMemberId}`;
-/* const apiURL = `https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/getStudentDetails/${globalMemberId}`;*/
+  const apiURL = `${apiBase}getMissingStudentDetails/${memberId}`;
+  /* const apiURL = `https://mxqvqi3685.execute-api.us-east-1.amazonaws.com/prod/camp/getStudentDetails/${memberId}`;*/
+  try {
   const res = await bdcFetch(apiURL);
+  if (!res || !res.ok) return;
   const data = await res.json();
 
   // API returns both buckets in one response:
@@ -2969,6 +2989,9 @@ const apiURL = `${window.BDC_API.member}getMissingStudentDetails/${globalMemberI
     });
   } else if (reviewWrapper) {
     reviewWrapper.style.setProperty('display', 'none');
+  }
+  } catch (e) {
+    console.warn("checkStudentDetailsAndShowModal skipped", e);
   }
 }
 
@@ -3339,7 +3362,7 @@ function attachStudDetailsFormHandler(formId, options = {}) {
    setLoading(true);
 
     try {
-      const payload = { memberId: globalMemberId, students };
+      const payload = { memberId: portalGlobalMemberId(), students };
 
       if (typeof buildExtraPayload === 'function') {
         Object.assign(payload, buildExtraPayload(form, students) || {});

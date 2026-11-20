@@ -1,110 +1,423 @@
 /*
-Purpose: Admin portal peek gate for ?testMemberId= — API allow (Mongo/SSM) or legacy list; never lock out known peeks on API deny during migration.
+Purpose: Admin portal peek gate for ?testMemberId= — Admin-minted peekToken; stamps token onto portal API calls.
 
-Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek(loggedInMemberId). Sends Bearer when a Memberstack JWT is present. allowed=true from API opens the peek; otherwise legacy ids keep current production peeks working until Webflow legacy is removed.
+Brief Logic: Exposes window.BdcPortalPeek.canPortalPeek() and installPeekFetch(). When peeking, forces every BDC API call (fetch / bdcFetch / XHR) onto URL testMemberId + peekToken so Memberstack's logged-in id cannot show the wrong family. Only BDC API hosts are touched.
 
-dependent-files: window.BDC_API.member, optional bdcFetch, Memberstack cookie/localStorage
+dependent-files: window.BDC_API.member, optional bdcFetch, portal_new_ui / portal_staging / sidebar / announcement / payment_history / millions / credit_points / referrals
 
-Webflow embed change (replace the hardcode-only if):
+Webflow (required):
+  1) Load this file, then sidebar/utils, then portal_new_ui.js, then portal_dashboard_boot.js
+  2) DELETE the inline script under portal_new_ui that does `if (memberstack) new Portal` / else redirect log-in
+  3) In the Sidebar DOMContentLoaded embed, set window.globalMemberId = testMemberId || webflowMemberId
+     (locals alone cause ReferenceError in Portal / portal_new_ui)
 
-  if (testMemberId && testAccountEmail && testAccountType) {
-    const allowed = await window.BdcPortalPeek.canPortalPeek(webflowMemberId);
-    if (!allowed) {
-      window.location.href = "https://www.bergendebate.com/portal/login-admit-account";
-      return;
-    }
-  }
-
-Load this file on portal pages before the page bootstrap script.
+Pin all of these to the SAME commit SHA via jsDelivr.
 */
 
 (function () {
-  // Network / pre-deploy fallback only — matches prior Webflow embed + SSM extras
-  var LEGACY_PORTAL_PEEK_MEMBER_IDS = [
-    "6425ddab8d8aff00027e10b4",
-    "68920737da84535585da1714",
-    "68d52fd957a0b1d70c05b04c",
-    "6892074a0df27d037230cdea",
-    "677ee4c0814b6a0002f34431",
-    "64fa2b4cf82fef000265f9e0",
-    "6a97c778e9992ef6b43368f9",
-    "6a8c16ce147fb42632894a61",
+  // Path segments that end with /{memberId} on camp APIs
+  var MEMBER_PATH_ENDPOINTS = [
+    "getPortalDetail",
+    "getMillionsTransactionData",
+    "getAnnouncement",
+    "getReferralData",
+    "getCreditBalance",
+    "getMemberDetails",
+    "getFamilyMembers",
+    "getAllParentDataByMemberId",
+    "getMissingStudentDetails",
+    "getTrialClassDetails",
+    "getClassDetails",
+    "getTopicsDetails",
+    "getAttendance",
+    "getSummerSessionDetails",
+    "getNotificationData",
+    "getMillionsDetails",
+    "getMillionsStoreDetails",
+    "signInActivity",
+    "getSemesterInvoiceDataV2",
+    "getAllPreviousStudents",
   ];
 
-  function legacyAllows(memberId) {
-    return LEGACY_PORTAL_PEEK_MEMBER_IDS.indexOf(String(memberId || "")) !== -1;
-  }
-
-  function cookieValue(name) {
-    var parts = ("; " + document.cookie).split("; " + name + "=");
-    if (parts.length < 2) return null;
-    return decodeURIComponent(parts.pop().split(";").shift() || "") || null;
-  }
-
-  /** Best-effort Memberstack JWT for Authorization — cookie first, then localStorage shapes. */
-  function memberstackBearer() {
-    var fromCookie = cookieValue("_ms-mid") || cookieValue("ms-mid");
-    if (fromCookie && fromCookie.split(".").length === 3) return fromCookie;
-
+  function peekTokenFromUrl() {
     try {
-      var raw = localStorage.getItem("memberstack");
-      var parsed = raw ? JSON.parse(raw) : null;
-      var token =
-        (parsed && (parsed.token || parsed.jwt || parsed.accessToken)) ||
-        (parsed && parsed.information && (parsed.information.token || parsed.information.jwt));
-      if (token && String(token).split(".").length === 3) return String(token);
+      return new URLSearchParams(window.location.search).get("peekToken") || "";
     } catch (e) {
-      /* ignore */
+      return "";
     }
+  }
 
+  function testMemberIdFromUrl() {
     try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var key = localStorage.key(i) || "";
-        if (key.indexOf("_ms-mid") === -1 && key.indexOf("memberstack") === -1) continue;
-        var val = localStorage.getItem(key);
-        if (val && val.split(".").length === 3) return val;
-      }
-    } catch (e2) {
-      /* ignore */
+      return new URLSearchParams(window.location.search).get("testMemberId") || "";
+    } catch (e) {
+      return "";
     }
-    return null;
+  }
+
+  function testAccountEmailFromUrl() {
+    try {
+      return new URLSearchParams(window.location.search).get("testAccountEmail") || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function testAccountTypeFromUrl() {
+    try {
+      return new URLSearchParams(window.location.search).get("testAccountType") || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  /** Prefer URL testMemberId only during a real Admin peek (token required). */
+  function resolveMemberId(fallback) {
+    var peekId = testMemberIdFromUrl();
+    if (peekId && peekTokenFromUrl()) return peekId;
+    return fallback == null ? "" : String(fallback);
+  }
+
+  /** True only for our API hosts — never stamp analytics/CDN/third-party fetches. */
+  function isBdcApiUrl(url) {
+    try {
+      var absolute = new URL(url, window.location.origin);
+      var host = (absolute.hostname || "").toLowerCase();
+      if (!host) return false;
+      if (host === "api.bergendebate.com" || host === "staging.api.bergendebate.com") {
+        return true;
+      }
+      // Legacy camp execute-api URLs still used by some portal scripts
+      if (host.indexOf("execute-api.") !== -1 && host.indexOf("amazonaws.com") !== -1) {
+        return true;
+      }
+      var api = window.BDC_API || {};
+      for (var key in api) {
+        if (!Object.prototype.hasOwnProperty.call(api, key) || !api[key]) continue;
+        try {
+          var baseHost = new URL(String(api[key]), window.location.origin).hostname.toLowerCase();
+          if (baseHost && host === baseHost) return true;
+        } catch (e) {
+          /* ignore bad BDC_API entry */
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /** Swap wrong Memberstack id in path/query for the peeked family's id. */
+  function withPeekMemberId(url, peekMemberId) {
+    if (!peekMemberId || !url || !isBdcApiUrl(url)) return url;
+    try {
+      var absolute = new URL(url, window.location.origin);
+      var escaped = MEMBER_PATH_ENDPOINTS.map(function (name) {
+        return name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }).join("|");
+      // .../getPortalDetail/{anyId} → .../getPortalDetail/{testMemberId}
+      absolute.pathname = absolute.pathname.replace(
+        new RegExp("/(" + escaped + ")/[^/]+(?=/|$)", "i"),
+        "/$1/" + peekMemberId
+      );
+      if (absolute.searchParams.has("memberId")) {
+        absolute.searchParams.set("memberId", peekMemberId);
+      }
+      return absolute.toString();
+    } catch (e) {
+      return url;
+    }
+  }
+
+  /** Append peekToken to a BDC API URL when missing. */
+  function withPeekQuery(url, token) {
+    if (!token || !url || !isBdcApiUrl(url)) return url;
+    try {
+      var absolute = new URL(url, window.location.origin);
+      if (!absolute.searchParams.get("peekToken")) {
+        absolute.searchParams.set("peekToken", token);
+      }
+      return absolute.toString();
+    } catch (e) {
+      if (String(url).indexOf("peekToken=") !== -1) return url;
+      return url + (url.indexOf("?") >= 0 ? "&" : "?") + "peekToken=" + encodeURIComponent(token);
+    }
+  }
+
+  /** Rewrite memberId then stamp peekToken for one outbound API URL. */
+  function applyPeekToUrl(url, token, peekMemberId) {
+    var next = withPeekMemberId(url, peekMemberId);
+    return withPeekQuery(next, token);
+  }
+
+  /** Add peek header so APIs that ignore query still see the session. */
+  function withPeekHeaders(init, token) {
+    if (!token) return init;
+    var next = init ? Object.assign({}, init) : {};
+    var headers = next.headers;
+    if (typeof Headers !== "undefined" && (headers instanceof Headers || !headers)) {
+      var h = headers instanceof Headers ? new Headers(headers) : new Headers();
+      if (!h.get("X-BDC-Peek-Token")) h.set("X-BDC-Peek-Token", token);
+      next.headers = h;
+      return next;
+    }
+    // Plain object headers
+    var plain = {};
+    if (headers && typeof headers === "object") {
+      for (var k in headers) {
+        if (Object.prototype.hasOwnProperty.call(headers, k)) plain[k] = headers[k];
+      }
+    }
+    var hasPeek = Object.keys(plain).some(function (k) {
+      return String(k).toLowerCase() === "x-bdc-peek-token";
+    });
+    if (!hasPeek) plain["X-BDC-Peek-Token"] = token;
+    next.headers = plain;
+    return next;
   }
 
   /**
-   * @param {string} loggedInMemberId Memberstack id of the staffer on this browser (legacy fallback only)
    * @returns {Promise<boolean>}
    */
-  async function canPortalPeek(loggedInMemberId) {
-    var base = (window.BDC_API && window.BDC_API.member) || "";
-    if (!base) {
-      return legacyAllows(loggedInMemberId);
+  async function canPortalPeek() {
+    var token = peekTokenFromUrl();
+    // Peek gate requires Admin-minted token — no Memberstack fallback here
+    if (!token) {
+      console.warn("canPortalPeek: no peekToken in URL");
+      return false;
     }
-    var url = base.replace(/\/?$/, "/") + "canPortalPeek";
-    var headers = { Accept: "application/json" };
-    var bearer = memberstackBearer();
-    if (bearer) headers.Authorization = "Bearer " + bearer;
+
+    // Wait briefly for Webflow head embed to define BDC_API
+    var base = "";
+    for (var i = 0; i < 40; i++) {
+      base = (window.BDC_API && window.BDC_API.member) || "";
+      if (base) break;
+      await new Promise(function (r) {
+        setTimeout(r, 50);
+      });
+    }
+    if (!base) {
+      console.warn("canPortalPeek: window.BDC_API.member missing");
+      return false;
+    }
+
+    var testMemberId = testMemberIdFromUrl();
+    var url =
+      base.replace(/\/?$/, "/") +
+      "canPortalPeek?peekToken=" +
+      encodeURIComponent(token);
+    if (testMemberId) {
+      url += "&testMemberId=" + encodeURIComponent(testMemberId);
+    }
 
     try {
-      var fetchFn = typeof bdcFetch === "function" ? bdcFetch : fetch;
-      var res = await fetchFn(url, { method: "GET", headers: headers, credentials: "omit" });
+      // Query-only gate: API Gateway CORS does not allow X-BDC-Peek-Token, so a
+      // custom header here fails preflight and falsely redirects to login-admit.
+      var fetchFn = window.__bdcPeekOriginalFetch || window.fetch;
+      var res = await fetchFn.call(window, url, {
+        method: "GET",
+        credentials: "omit",
+      });
       if (!res.ok) {
-        // Keep peeks working if the new Lambda is not live yet
-        return legacyAllows(loggedInMemberId);
+        console.warn("canPortalPeek: HTTP", res.status);
+        return false;
       }
       var data = await res.json();
-      // API allow wins (Mongo or SSM on the server)
-      if (data && data.allowed === true) return true;
-      // API deny or no token: still honor legacy so a bad/missing JWT cannot lock out
-      // current production peeks until every admin is linked in Mongo and legacy is removed
-      return legacyAllows(loggedInMemberId);
+      var ok = !!(data && data.allowed === true);
+      if (!ok) console.warn("canPortalPeek: allowed=false (expired token or wrong family)");
+      return ok;
     } catch (e) {
-      console.warn("canPortalPeek failed; using legacy allowlist", e);
-      return legacyAllows(loggedInMemberId);
+      console.warn("canPortalPeek failed", e);
+      return false;
     }
+  }
+
+  function wrapFetchFn(original, token, peekMemberId) {
+    var wrapped = function (input, init) {
+      var nextInput = input;
+      // Stamp peekToken on the URL only — custom headers trip CORS on camp APIs
+      if (typeof input === "string") {
+        nextInput = applyPeekToUrl(input, token, peekMemberId);
+      } else if (input && typeof Request !== "undefined" && input instanceof Request) {
+        nextInput = new Request(applyPeekToUrl(input.url, token, peekMemberId), input);
+      }
+      return original.call(this, nextInput, init);
+    };
+    wrapped.__bdcPeekWrapped = true;
+    return wrapped;
+  }
+
+  /** Stamp peekToken + correct memberId on fetch, late bdcFetch, and XHR. */
+  function installPeekFetch() {
+    var token = peekTokenFromUrl();
+    var peekMemberId = testMemberIdFromUrl();
+    // Require Admin peekToken — never monkey-patch fetch/XHR for normal Memberstack sessions
+    if (!token || window.__bdcPeekFetchInstalled) return;
+    window.__bdcPeekFetchInstalled = true;
+
+    // portal_new_ui uses raw fetch
+    if (typeof window.fetch === "function" && !window.fetch.__bdcPeekWrapped) {
+      window.__bdcPeekOriginalFetch = window.fetch.bind(window);
+      window.fetch = wrapFetchFn(window.__bdcPeekOriginalFetch, token, peekMemberId);
+    }
+
+    // bdcFetch may be assigned by Webflow after this file — wrap now and watch
+    function ensureBdcFetchWrapped() {
+      if (typeof window.bdcFetch !== "function" || window.bdcFetch.__bdcPeekWrapped) return;
+      window.bdcFetch = wrapFetchFn(window.bdcFetch, token, peekMemberId);
+    }
+    ensureBdcFetchWrapped();
+    var tries = 0;
+    var timer = setInterval(function () {
+      tries += 1;
+      ensureBdcFetchWrapped();
+      if (tries >= 60 || (typeof window.bdcFetch === "function" && window.bdcFetch.__bdcPeekWrapped)) {
+        clearInterval(timer);
+      }
+    }, 50);
+
+    // Invoice/checkout still use XMLHttpRequest — rewrite URL + stamp peek header
+    if (!window.__bdcPeekXhrInstalled && typeof XMLHttpRequest !== "undefined") {
+      window.__bdcPeekXhrInstalled = true;
+      var originalOpen = XMLHttpRequest.prototype.open;
+      var originalSend = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.open = function (method, url) {
+        var nextUrl = url;
+        if (typeof url === "string") {
+          nextUrl = applyPeekToUrl(url, token, peekMemberId);
+          this._bdcPeekUrl = nextUrl;
+        }
+        var args = [method, nextUrl].concat(Array.prototype.slice.call(arguments, 2));
+        return originalOpen.apply(this, args);
+      };
+      // peekToken already on the rewritten URL — do not set X-BDC-Peek-Token (CORS)
+      XMLHttpRequest.prototype.send = function (body) {
+        return originalSend.apply(this, arguments);
+      };
+    }
+  }
+
+  /**
+   * Webflow still has a legacy footer that sends no-Memberstack peeks to /log-in,
+   * and the sidebar embed sends failed peeks to login-admit. Keep the dashboard
+   * on-screen during a live peek without asking the client to delete those embeds.
+   */
+  function installLegacyRedirectGuard() {
+    if (!peekTokenFromUrl() || !testMemberIdFromUrl()) return;
+    if (window.__bdcPeekRedirectGuard) return;
+    window.__bdcPeekRedirectGuard = true;
+    window.__bdcPeekDenyRedirectAllowed = false;
+
+    function shouldBlock(url) {
+      try {
+        var path = new URL(String(url), window.location.origin).pathname.toLowerCase();
+        if (path.indexOf("login-admit-account") !== -1) {
+          return !window.__bdcPeekDenyRedirectAllowed;
+        }
+        // Legacy footer: no memberstack → /log-in (blocks Admin peek without login)
+        if (path.indexOf("/log-in") !== -1) return true;
+        return false;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function allowOrRun(url, run) {
+      if (shouldBlock(url)) {
+        console.warn("BdcPortalPeek: blocked legacy redirect during peek", url);
+        return;
+      }
+      return run();
+    }
+
+    try {
+      var proto = Location.prototype;
+      ["assign", "replace"].forEach(function (name) {
+        var orig = proto[name];
+        if (typeof orig !== "function") return;
+        proto[name] = function (url) {
+          var ctx = this;
+          var args = arguments;
+          return allowOrRun(url, function () {
+            return orig.apply(ctx, args);
+          });
+        };
+      });
+      var desc = Object.getOwnPropertyDescriptor(proto, "href");
+      if (desc && desc.set) {
+        Object.defineProperty(proto, "href", {
+          configurable: true,
+          enumerable: desc.enumerable,
+          get: desc.get,
+          set: function (v) {
+            var setter = desc.set;
+            var ctx = this;
+            allowOrRun(v, function () {
+              setter.call(ctx, v);
+            });
+          },
+        });
+      }
+    } catch (e) {
+      console.warn("BdcPortalPeek: redirect guard failed", e);
+    }
+  }
+
+  function allowDenyRedirect() {
+    window.__bdcPeekDenyRedirectAllowed = true;
+  }
+
+  /** Mutate shared Webflow data when peeking (covers XHR bodies that read data.memberId). */
+  function applyPeekMemberIdToData(data) {
+    if (!data || typeof data !== "object") return data;
+    // Never override a normal Memberstack session from a stray testMemberId query
+    if (!peekTokenFromUrl()) return data;
+    var peekId = testMemberIdFromUrl();
+    if (peekId) data.memberId = peekId;
+    var email = testAccountEmailFromUrl();
+    if (email) {
+      // Announcement / forms read accountEmail from the embed data object
+      data.accountEmail = email;
+      if (!data.email) data.email = email;
+    }
+    var type = testAccountTypeFromUrl();
+    if (type) data.accountType = type;
+    return data;
   }
 
   window.BdcPortalPeek = {
     canPortalPeek: canPortalPeek,
-    legacyAllows: legacyAllows,
+    installPeekFetch: installPeekFetch,
+    allowDenyRedirect: allowDenyRedirect,
+    peekTokenFromUrl: peekTokenFromUrl,
+    testMemberIdFromUrl: testMemberIdFromUrl,
+    resolveMemberId: resolveMemberId,
+    applyPeekMemberIdToData: applyPeekMemberIdToData,
+    withPeekQuery: withPeekQuery,
+    withPeekMemberId: withPeekMemberId,
+    applyPeekToUrl: applyPeekToUrl,
+    isBdcApiUrl: isBdcApiUrl,
   };
+
+  // Publish peek ids on window early so Portal bootstrap / portal_new_ui can read them
+  // (Webflow had these as locals inside DOMContentLoaded → ReferenceError)
+  (function publishPeekGlobals() {
+    // Require peekToken so normal logins are never overwritten by a leftover query param
+    var peekId = testMemberIdFromUrl();
+    if (!peekId || !peekTokenFromUrl()) return;
+    window.testMemberId = peekId;
+    window.globalMemberId = peekId;
+    var email = testAccountEmailFromUrl();
+    if (email) window.globalAccountEmail = email;
+    var type = testAccountTypeFromUrl();
+    if (type) window.globalAccountType = type;
+  })();
+
+  // Stop legacy Webflow /log-in + premature login-admit redirects before footer runs
+  installLegacyRedirectGuard();
+
+  // Only Admin-minted peekToken installs network wraps (normal portal traffic untouched)
+  if (peekTokenFromUrl()) {
+    installPeekFetch();
+  }
 })();
