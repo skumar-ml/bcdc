@@ -2,8 +2,8 @@
 Purpose: Start the dashboard Portal for Admin peek OR normal Memberstack login.
 
 Brief Logic: Replaces the broken Webflow inline script that required Memberstack and
-read local-only testMemberId/globalMemberId (ReferenceError). Peek runs without login;
-normal members still need Memberstack.
+read local-only testMemberId/globalMemberId (ReferenceError). Memberstack login is
+always required; peekToken only switches which family Portal loads.
 
 Sidebar embed is shared across every portal page, so this file also loads on
 payment-history / millions / etc. Those pages do not load Portal — exit quietly
@@ -39,6 +39,16 @@ sidebar symbol on other portal pages.
     } catch (e) {
       return null;
     }
+  }
+
+  // Save peek URL so Memberstack can return here after login
+  function redirectToMemberstackLogin() {
+    try {
+      localStorage.setItem("redirect_url", window.location.href);
+    } catch (e) {
+      /* ignore */
+    }
+    window.location.href = window.location.origin + "/log-in";
   }
 
   function startPortal(memberId, accountEmail) {
@@ -87,10 +97,23 @@ sidebar symbol on other portal pages.
     var peekToken = qs("peekToken");
     var isPeek = Boolean(testMemberId && peekToken);
 
+    // Never run portal boot on the peek-deny page (avoids Failed to fetch spam)
+    if ((window.location.pathname || "").indexOf("login-admit-account") !== -1) {
+      return;
+    }
+
+    // Client promise: Memberstack login always required (peek only switches family data)
+    var ms = memberstackInfo();
+    var msId = ms && ms.information && ms.information.id;
+    if (!msId) {
+      redirectToMemberstackLogin();
+      return;
+    }
+
     if (isPeek) {
       if (!window.BdcPortalPeek) {
         console.error("portal_dashboard_boot: portal_admin_peek.js must load first");
-        window.location.href = window.location.origin + "/log-in";
+        redirectToMemberstackLogin();
         return;
       }
       var allowed = await window.BdcPortalPeek.canPortalPeek();
@@ -104,23 +127,11 @@ sidebar symbol on other portal pages.
         return;
       }
       window.BdcPortalPeek.installPeekFetch();
-      // Peek does not need Memberstack — start Portal on the URL family
+      // Logged-in staff session required above; load the peeked family from the URL
       startPortal(testMemberId, testAccountEmail);
       return;
     }
 
-    // Never run portal boot on the peek-deny page (avoids Failed to fetch spam)
-    if ((window.location.pathname || "").indexOf("login-admit-account") !== -1) {
-      return;
-    }
-
-    // Normal portal: Memberstack required
-    var ms = memberstackInfo();
-    var msId = ms && ms.information && ms.information.id;
-    if (!msId) {
-      window.location.href = window.location.origin + "/log-in";
-      return;
-    }
     startPortal(msId, (ms && ms.email) || "");
 
     var firstName = ms.information["first-name"];

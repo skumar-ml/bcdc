@@ -1416,6 +1416,26 @@ class PaymentHistory {
                 const testMemberId = params.get("testMemberId") || "";
                 const isPeek = Boolean(peekToken && testMemberId);
 
+                // Client promise: Memberstack session required even during Admin peek
+                let memberstackId = "";
+                try {
+                    const raw = localStorage.getItem("memberstack");
+                    const ms = raw ? JSON.parse(raw) : null;
+                    memberstackId =
+                        (ms && ms.information && ms.information.id) || "";
+                } catch (e) {
+                    memberstackId = "";
+                }
+                if (!memberstackId) {
+                    try {
+                        localStorage.setItem("redirect_url", window.location.href);
+                    } catch (e) {
+                        /* ignore */
+                    }
+                    window.location.href = window.location.origin + "/log-in";
+                    return;
+                }
+
                 // Peek APIs need token wrapper before getPortalDetail fires
                 if (isPeek) {
                     if (!window.BdcPortalPeek) {
